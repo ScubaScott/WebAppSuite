@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Keeper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #e0424244 url("./media/saber.png") no-repeat center top/cover;
+            background-attachment:  fixed;
+            background-size: cover;
+            /* background-blend-mode: overlay; */
+        }
+        .interactive-box { cursor: pointer; user-select: none; }
+        .history-table::-webkit-scrollbar { width: 4px; }
+        .history-table::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
+    <div class="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-md flex flex-col items-center space-y-6">
+        
+        <div class="flex justify-between items-center w-full px-2">
+            <div class="flex flex-col items-center">
+                <div id="home-team-name" class="interactive-box bg-transparent text-red-500 text-center font-bold uppercase text-[10px] w-20 mb-1">Us</div>
+                <div id="score-home" class="interactive-box text-5xl font-bold text-red-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">0</div>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <div class="text-[10px] text-gray-500 font-bold uppercase mb-1">Period</div>
+                <div id="period-display" class="interactive-box text-3xl font-black text-white bg-gray-700 rounded-lg px-4 py-2 border-2 border-gray-600 hover:bg-gray-600 transition">P1</div>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <div id="away-team-name" class="interactive-box bg-transparent text-blue-500 text-center font-bold uppercase text-[10px] w-20 mb-1">Them</div>
+                <div id="score-away" class="interactive-box text-5xl font-bold text-blue-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">0</div>
+            </div>
+        </div>
+
+        <!-- Team edit panels (hidden until name clicked) - full width and responsive -->
+        <div id="team-edit-panels" class="w-full flex flex-col md:flex-row md:justify-between items-start px-2 space-y-3 md:space-y-0 md:space-x-4">
+            <div id="home-edit-panel" class="hidden bg-gray-800/80 p-3 rounded-xl border border-red-900/30 w-full md:w-1/2">
+                <div class="flex items-center justify-between">
+                    <div class="text-xs text-red-300 font-bold uppercase mb-2">Edit Home Team</div>
+                    <div id="home-color-swatch" class="h-6 w-6 rounded border ml-2" style="background:#ef4444"></div>
+                </div>
+                <input id="home-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white" placeholder="Team name">
+                <div class="flex items-center gap-2">
+                    <select id="home-color-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
+                        <option value="#ef4444">Red</option>
+                        <option value="#3b82f6">Blue</option>
+                        <option value="#10b981">Green</option>
+                        <option value="#f59e0b">Yellow</option>
+                        <option value="#ffffff">White</option>
+                        <option value="#000000">Black</option>
+                        <option value="#fb923c">Orange</option>
+                        <option value="#8b5cf6">Purple</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="home-bg-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
+                        <option value="saber.png">Saber</option>
+                        <option value="chill.png">Chill</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button id="home-save-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">Save</button>
+                    <button onclick="hideHomeEditPanel()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
+                </div>
+            </div>
+
+            <div id="away-edit-panel" class="hidden bg-gray-800/80 p-3 rounded-xl border border-blue-900/30 w-full md:w-1/2">
+                <div class="flex items-center justify-between">
+                    <div class="text-xs text-blue-300 font-bold uppercase mb-2">Edit Away Team</div>
+                    <div id="away-color-swatch" class="h-6 w-6 rounded border ml-2" style="background:#3b82f6"></div>
+                </div>
+                <input id="away-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white" placeholder="Team name">
+                <div class="flex items-center gap-2">
+                    <select id="away-color-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
+                        <option value="#3b82f6">Blue</option>
+                        <option value="#ef4444">Red</option>
+                        <option value="#10b981">Green</option>
+                        <option value="#f59e0b">Yellow</option>
+                        <option value="#ffffff">White</option>
+                        <option value="#000000">Black</option>
+                        <option value="#fb923c">Orange</option>
+                        <option value="#8b5cf6">Purple</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button id="away-save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Save</button>
+                    <button onclick="hideAwayEditPanel()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center w-full space-y-6">
+            <div class="flex flex-col items-center w-full">
+                <div class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Remaining</div>
+                <div id="timer-display" class="interactive-box text-6xl font-mono text-center tracking-tight font-extrabold text-white" title="Tap while stopped to choose a time limit">00:40:00.0</div>
+            </div>
+            
+            <div class="flex flex-col items-center w-full group">
+                <div class="text-xs text-gray-600 uppercase tracking-widest font-bold mb-1 group-hover:text-red-400 transition">Elapsed</div>
+                <div id="elapsed-time-display" class="interactive-box text-3xl font-mono text-center text-gray-400 transition">00:00:00.0</div>
+            </div>
+        </div>
+        
+        <div id="adjustment-panel" class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-red-900/30 flex flex-col items-center space-y-3">
+            <div class="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Select Time Limit</div>
+            <div class="flex flex-wrap justify-center gap-2 w-full">
+                <button onclick="setTimeLimitOption(12 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">12 min</button>
+                <button onclick="setTimeLimitOption(20 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">20 min</button>
+                <button onclick="setTimeLimitOption(35 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">35 min</button>
+                <button onclick="setTimeLimitOption(40 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">40 min</button>
+                <button onclick="chooseManualLimit()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">Manual</button>
+            </div>
+        </div>
+
+        <div id="elapsed-adjust-panel" class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-blue-900/30 flex flex-col items-center space-y-3">
+            <div class="text-[10px] text-blue-300 font-bold uppercase tracking-tighter">Adjust elapsed time</div>
+            <div class="flex flex-wrap justify-center gap-2 w-full">
+                <button onclick="adjustElapsedMinutes(1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+1 min</button>
+                <button onclick="adjustElapsedMinutes(-1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-1 min</button>
+                <button onclick="adjustElapsedMinutes(5)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+5 min</button>
+                <button onclick="adjustElapsedMinutes(-5)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-5 min</button>
+                <button onclick="hideElapsedAdjustPanel()" class="bg-red-700 hover:bg-red-600 px-3 py-2 rounded text-xs font-bold">Close</button>
+            </div>
+            <div class="text-[10px] text-gray-400 text-center">Tap elapsed time during a running clock to correct early/late starts.</div>
+        </div>
+
+        <div class="w-full flex justify-center space-x-2">
+            <button id="start-stop-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">Start</button>
+            <button id="pause-btn" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hidden">Pause</button>
+            <button id="reset-btn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">Reset</button>
+        </div>
+
+        <div class="w-full bg-gray-800 rounded-xl overflow-hidden shadow-xl border border-gray-700">
+            <div class="bg-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-300">Score History</div>
+            <div class="max-h-48 overflow-y-auto history-table">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-800 sticky top-0">
+                        <tr class="text-gray-500 text-[10px] uppercase">
+                            <th class="px-4 py-2">Team (Score)</th>
+                            <th class="px-4 py-2">Elapsed</th>
+                            <th class="px-4 py-2 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body" class="divide-y divide-gray-700"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="w-full text-center pt-4">
+            <a href="ScoreKeeperHelp.html" class="text-sm font-bold text-blue-400 hover:text-blue-200 underline">help!</a>
+        </div>
+
+    </div>
+
+    <div class="fixed right-4 bottom-4">
+        <button id="mute-btn" class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition" title="Mute / unmute sound">
+            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor">
+                <path d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="fixed left-4 bottom-4">
+        <button id="settings-btn" class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition" title="Timer Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor">
+                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm flex flex-col space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-gray-400" fill="currentColor">
+                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                    </svg>
+                    Timer Settings
+                </h3>
+                <button id="close-settings-x" class="text-gray-400 hover:text-white text-2xl leading-none transition">&times;</button>
+            </div>
+            <div class="flex flex-col space-y-4">
+                <!-- Add Pause Button Setting -->
+                <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
+                    <div class="flex flex-col pr-2">
+                        <span class="text-sm font-semibold text-white">Add Pause Button</span>
+                        <span class="text-xs text-gray-400">Shows a dedicated button to pause the timer without advancing the period.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="setting-add-pause" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                    </label>
+                </div>
+                <!-- Pause on Score Setting -->
+                <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
+                    <div class="flex flex-col pr-2">
+                        <span class="text-sm font-semibold text-white">Pause on Score</span>
+                        <span class="text-xs text-gray-400">Automatically pauses the timer when a score is registered.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="setting-pause-on-score" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                    </label>
+                </div>
+                <!-- Log Pause/Resume Setting -->
+                <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
+                    <div class="flex flex-col pr-2">
+                        <span class="text-sm font-semibold text-white">Log Pause/Resume Times</span>
+                        <span class="text-xs text-gray-400">Logs pause and resume events in the history.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="setting-log-pause-resume" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                    </label>
+                </div>
+                <!-- Log Period Start/Stop Setting -->
+                <div class="flex items-center justify-between py-2 gap-4">
+                    <div class="flex flex-col pr-2">
+                        <span class="text-sm font-semibold text-white">Log Period Start/Stop Times</span>
+                        <span class="text-xs text-gray-400">Logs local time when periods start and stop.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="setting-log-period-start-stop" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                    </label>
+                </div>
+            </div>
+            <div class="pt-2">
+                <button id="close-settings-btn" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition">Done</button>
+            </div>
+        </div>
+    </div>
+    <audio id="whistle-sound" src="media/whistle.mp3" preload="auto"></audio>
+
+    <script>
+        // DOM references for the visible timer, score, and control elements.
+        const timerDisplay = document.getElementById('timer-display');
+        const startStopBtn = document.getElementById('start-stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const elapsedTimeDisplay = document.getElementById('elapsed-time-display');
+        const scoreHomeEl = document.getElementById('score-home');
+        const scoreAwayEl = document.getElementById('score-away');
+        const homeNameEl = document.getElementById('home-team-name');
+        const awayNameEl = document.getElementById('away-team-name');
+        const homeNameInput = document.getElementById('home-name-input');
+        const awayNameInput = document.getElementById('away-name-input');
+        const homeColorSelect = document.getElementById('home-color-select');
+        const awayColorSelect = document.getElementById('away-color-select');
+        const homeSaveBtn = document.getElementById('home-save-btn');
+        const awaySaveBtn = document.getElementById('away-save-btn');
+        const homeColorSwatch = document.getElementById('home-color-swatch');
+        const awayColorSwatch = document.getElementById('away-color-swatch');
+        const periodDisplay = document.getElementById('period-display');
+        const historyBody = document.getElementById('history-body');
+        const adjustmentPanel = document.getElementById('adjustment-panel');
+        const homeEditPanel = document.getElementById('home-edit-panel');
+        const homeBgSelect = document.getElementById('home-bg-select');
+        const elapsedAdjustPanel = document.getElementById('elapsed-adjust-panel');
+        const muteBtn = document.getElementById('mute-btn');
+        const muteIcon = document.getElementById('mute-icon');
+        const whistleAudio = document.getElementById('whistle-sound');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const settingAddPause = document.getElementById('setting-add-pause');
+        const settingPauseOnScore = document.getElementById('setting-pause-on-score');
+        const settingLogPauseResume = document.getElementById('setting-log-pause-resume');
+        const settingLogPeriodStartStop = document.getElementById('setting-log-period-start-stop');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const closeSettingsX = document.getElementById('close-settings-x');
+        const pauseBtn = document.getElementById('pause-btn');
+
+        // Timer state and game state variables persisted between reloads.
+        let timerInterval = null;
+        let startTime = null;
+        let timeLimit = 2400000; 
+        let isCountingUp = false; 
+        let accumulatedTime = 0;
+        let timerRunning = false;
+        let homeScore = 0;
+        let awayScore = 0;
+        let homeTeamName = 'Us';
+        let awayTeamName = 'Them';
+        let homeTeamColor = '#ef4444';
+        let awayTeamColor = '#3b82f6';
+        let homeBackgroundImage = 'saber.png';
+        let currentPeriod = 1;
+        let scoreHistory = []; 
+        let muted = false;
+        let addPauseButton = false;
+        let pauseOnScore = false;
+        let isPaused = false;
+        let logPauseResume = false;
+        let logPeriodStartStop = true;
+
+        const STORAGE_KEY = 'timerStateV7';
+
+        // Persist the timer state to localStorage for page reloads.
+        function saveState() {
+            const state = {
+                startTime, accumulatedTime, timeLimit, isCountingUp,
+                running: timerRunning, homeScore, awayScore,
+                currentPeriod, scoreHistory, homeTeamName, awayTeamName,
+                homeTeamColor, awayTeamColor, homeBackgroundImage, muted,
+                addPauseButton, pauseOnScore, isPaused,
+                logPauseResume, logPeriodStartStop,
+                lastSavedAt: Date.now()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        // Restore the timer state from localStorage when the page loads.
+        function loadState() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        }
+
+        function formatTime(ms) {
+            const absMs = Math.abs(ms);
+            const totalSeconds = Math.floor(absMs / 1000);
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const s = totalSeconds % 60;
+            const decis = Math.floor((absMs % 1000) / 100);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${ms < 0 ? '-' : ''}${totalMinutes}:${pad(s)}.${decis}`;
+        }
+
+        function getElapsedStamp() {
+            const now = Date.now();
+            let elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+            return `P${currentPeriod} - ${formatTime(elapsed)}`;
+        }
+
+        function formatLocalLabel(date) {
+            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+        }
+
+        function updateMuteButton() {
+            if (muted) {
+                muteIcon.innerHTML = '<path d="M16.5 12c0 1.17-.51 2.22-1.32 2.94l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94s-.51-2.22-1.32-2.94l-1.42 1.42C15.97 10.58 16.5 11.74 16.5 12z"/><path d="M4.27 3L3 4.27l5 5V15h4l5 5 1.27-1.27L4.27 3zm6.73 12.73H9V8.27l4-4v11.45l-1 .01z"/>';
+                muteBtn.classList.add('bg-red-600');
+                muteBtn.classList.remove('bg-gray-900/90');
+            } else {
+                muteIcon.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z"/>';
+                muteBtn.classList.add('bg-gray-900/90');
+                muteBtn.classList.remove('bg-red-600');
+            }
+        }
+
+        function updateHomeEditBackground(image = homeBackgroundImage) {
+            if (homeEditPanel) {
+                homeEditPanel.style.backgroundImage = `url("media/bgimages/${image}")`;
+                homeEditPanel.style.backgroundSize = 'cover';
+                homeEditPanel.style.backgroundPosition = 'center';
+            }
+            document.body.style.backgroundImage = `url("media/bgimages/${image}")`;
+        }
+
+        function playWhistle() {
+            if (muted || !whistleAudio) return;
+            whistleAudio.currentTime = 0;
+            whistleAudio.play().catch(() => {});
+        }
+
+        function addHistoryEvent(text) {
+            scoreHistory.push({ type: 'event', text, timestamp: new Date().toISOString() });
+            renderHistory();
+            saveState();
+        }
+
+        function setTimeLimitOption(ms) {
+            timeLimit = ms;
+            isCountingUp = ms <= 0;
+            accumulatedTime = 0;
+            startTime = null;
+            adjustmentPanel.classList.add('hidden');
+            if (timerRunning) stopTimer();
+            updateTimer();
+            saveState();
+        }
+
+        function chooseManualLimit() {
+            const input = prompt('Enter time limit in minutes, or mm:ss if you need seconds:', '40');
+            if (!input) return;
+            const trimmed = input.trim();
+            let totalSeconds = 0;
+            if (trimmed.includes(':')) {
+                const parts = trimmed.split(':').map(p => parseInt(p, 10));
+                if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+                    totalSeconds = parts[0] * 60 + parts[1];
+                }
+            } else {
+                const minutes = parseFloat(trimmed);
+                if (Number.isFinite(minutes)) totalSeconds = Math.round(minutes * 60);
+            }
+            if (totalSeconds <= 0) return;
+            setTimeLimitOption(totalSeconds * 1000);
+        }
+
+        // Show or hide the elapsed-time adjustment panel while the timer is running.
+        // This is used for small corrections when the clock was started early or late.
+        function showElapsedAdjustPanel() {
+            elapsedAdjustPanel.classList.remove('hidden');
+            adjustmentPanel.classList.add('hidden');
+        }
+
+        function hideElapsedAdjustPanel() {
+            elapsedAdjustPanel.classList.add('hidden');
+        }
+
+        // Adjust the internal elapsed time by a positive or negative number of minutes.
+        // Works during a running timer to correct early / late start behavior.
+        window.adjustElapsedMinutes = function(minutes) {
+            if (!timerRunning) return;
+            const changeMs = minutes * 60 * 1000;
+            accumulatedTime += changeMs;
+
+            // Prevent negative elapsed time on count-up timers.
+            if (isCountingUp && accumulatedTime < 0) {
+                accumulatedTime = 0;
+            }
+
+            //addHistoryEvent(`Adjusted elapsed time ${minutes > 0 ? '+' : ''}${minutes} min`);
+            updateTimer();
+            saveState();
+        };
+
+        timerDisplay.addEventListener('click', () => {
+            if (!timerRunning) adjustmentPanel.classList.toggle('hidden');
+        });
+
+        elapsedTimeDisplay.addEventListener('click', () => {
+            if (timerRunning) showElapsedAdjustPanel();
+        });
+
+        function cyclePeriod() {
+            currentPeriod = (currentPeriod % 4) + 1;
+            periodDisplay.textContent = `P${currentPeriod}`;
+            saveState();
+        }
+
+        function renderHistory() {
+            historyBody.innerHTML = '';
+            scoreHistory.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-gray-700/50 transition";
+                if (entry.type === 'event') {
+                    row.innerHTML = `
+                        <td class="px-4 py-2 text-gray-300" colspan="2">${entry.text}</td>
+                        <td class="px-4 py-2 text-right">
+                            <button onclick="deleteScore(${index})" class="text-gray-500 hover:text-white transition">✕</button>
+                        </td>
+                    `;
+                } else {
+                    const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
+                    row.innerHTML = `
+                        <td class="px-4 py-2 font-bold">
+                            <span class="inline-block h-3 w-3 rounded-full mr-2 align-middle" style="background: ${color}; border: 1px solid rgba(255,255,255,0.15)"></span>
+                            <span style="color: ${color};">${entry.teamName}</span>
+                            <span class="text-gray-300"> (${entry.currentScore})</span>
+                        </td>
+                        <td class="px-4 py-2 text-gray-400 text-xs font-mono">${entry.gameTime}</td>
+                        <td class="px-4 py-2 text-right">
+                            <button onclick="deleteScore(${index})" class="text-gray-500 hover:text-white transition">✕</button>
+                        </td>
+                    `;
+                }
+                historyBody.prepend(row);
+            });
+        }
+
+        window.deleteScore = function(index) {
+            const entry = scoreHistory[index];
+            if (!entry) return;
+            if (entry.type === 'score') {
+                if (entry.teamId === 'home') homeScore--; else awayScore--;
+                scoreHomeEl.textContent = homeScore;
+                scoreAwayEl.textContent = awayScore;
+            }
+            scoreHistory.splice(index, 1);
+            renderHistory();
+            saveState();
+        };
+
+        function addScore(teamId) {
+            if (teamId === 'home') homeScore++; else awayScore++;
+            scoreHomeEl.textContent = homeScore;
+            scoreAwayEl.textContent = awayScore;
+            const snapshot = `${homeScore}-${awayScore}`;
+            scoreHistory.push({ 
+                type: 'score',
+                teamId, 
+                teamName: teamId === 'home' ? homeTeamName : awayTeamName,
+                currentScore: snapshot,
+                gameTime: getElapsedStamp(),
+                teamColor: teamId === 'home' ? homeTeamColor : awayTeamColor
+            });
+            renderHistory();
+            if (pauseOnScore && timerRunning) {
+                pauseTimer();
+            } else {
+                saveState();
+            }
+        }
+
+        function updateTimerDisplayColor(remaining = null) {
+            if (remaining === null || remaining > 120000) {
+                timerDisplay.classList.remove('text-red-500');
+                timerDisplay.classList.add('text-white');
+            } else {
+                timerDisplay.classList.remove('text-white');
+                timerDisplay.classList.add('text-red-500');
+            }
+        }
+
+        // Update the visible timer display on each tick.
+        // For count-up timers, show elapsed time; for count-down timers, show remaining time.
+        function updateTimer() {
+            const now = Date.now();
+            let elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+
+            if (isCountingUp) {
+                timerDisplay.textContent = formatTime(elapsed);
+                elapsedTimeDisplay.textContent = formatTime(elapsed);
+                updateTimerDisplayColor();
+            } else {
+                const remaining = Math.max(0, (timeLimit || 0) - elapsed);
+                timerDisplay.textContent = formatTime(remaining);
+                elapsedTimeDisplay.textContent = formatTime(Math.min(timeLimit || 0, elapsed));
+                updateTimerDisplayColor(remaining);
+                if (remaining <= 0 && timerRunning) {
+                    playWhistle();
+                    stopTimer(true);
+                }
+            }
+        }
+
+        function updateStartStopButton() {
+            if (timerRunning) {
+                startStopBtn.textContent = 'Stop';
+                startStopBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+                startStopBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            } else {
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                startStopBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+            }
+        }
+
+        // Start the timer and optionally add a history note for the period start.
+        function startTimer(logStart = true) {
+            if (!startTime) startTime = Date.now();
+            if (logStart) {
+                if (isPaused) {
+                    if (logPauseResume) {
+                        addHistoryEvent(`Resumed P${currentPeriod} ${formatLocalLabel(new Date())}`);
+                    }
+                    isPaused = false;
+                } else {
+                    if (logPeriodStartStop) {
+                        addHistoryEvent(`Start of P${currentPeriod} ${formatLocalLabel(new Date())}`);
+                    }
+                }
+            }
+            adjustmentPanel.classList.add('hidden');
+            timerInterval = setInterval(updateTimer, 100);
+            timerRunning = true;
+            updateStartStopButton();
+            if (pauseBtn) pauseBtn.disabled = false;
+            saveState();
+        }
+
+        // Pause the timer without ending the period.
+        function pauseTimer() {
+            if (!timerRunning) return;
+            clearInterval(timerInterval);
+            if (startTime) {
+                accumulatedTime += Date.now() - startTime;
+            }
+            if (logPauseResume) {
+                addHistoryEvent(`Paused P${currentPeriod} ${formatLocalLabel(new Date())}`);
+            }
+            startTime = null;
+            timerRunning = false;
+            isPaused = true;
+            updateStartStopButton();
+            if (pauseBtn) pauseBtn.disabled = true;
+            saveState();
+        }
+
+        // Stop the timer and record elapsed time, or reset when the period ends.
+        function stopTimer(resetToLimit = false) {
+            clearInterval(timerInterval);
+            if (resetToLimit) {
+                accumulatedTime = 0;
+            } else if (startTime) {
+                accumulatedTime += Date.now() - startTime;
+            }
+            if (logPeriodStartStop) {
+                addHistoryEvent(`End of P${currentPeriod} ${formatLocalLabel(new Date())}`);
+            }
+            startTime = null;
+            timerRunning = false;
+            isPaused = false;
+            updateStartStopButton();
+            if (pauseBtn) pauseBtn.disabled = true;
+            cyclePeriod(); 
+            if (resetToLimit) updateTimer();
+            saveState();
+        }
+
+        // Toggle the running state when the main Start/Stop button is pressed.
+        startStopBtn.addEventListener('click', () => {
+            if (timerRunning) stopTimer(); else startTimer();
+        });
+
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => {
+                if (timerRunning) pauseTimer();
+            });
+        }
+
+        function updatePauseButtonVisibility() {
+            if (!pauseBtn) return;
+            if (addPauseButton) {
+                pauseBtn.classList.remove('hidden');
+            } else {
+                pauseBtn.classList.add('hidden');
+            }
+            pauseBtn.disabled = !timerRunning;
+        }
+
+        function openSettings() {
+            settingAddPause.checked = addPauseButton;
+            settingPauseOnScore.checked = pauseOnScore;
+            settingLogPauseResume.checked = logPauseResume;
+            settingLogPeriodStartStop.checked = logPeriodStartStop;
+            settingsModal.classList.remove('hidden');
+        }
+
+        // Allow closing settings
+        function closeSettings() {
+            settingsModal.classList.add('hidden');
+        }
+
+        if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
+        if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
+        if (closeSettingsX) closeSettingsX.addEventListener('click', closeSettings);
+
+        if (settingAddPause) {
+            settingAddPause.addEventListener('change', () => {
+                addPauseButton = settingAddPause.checked;
+                updatePauseButtonVisibility();
+                saveState();
+            });
+        }
+
+        if (settingPauseOnScore) {
+            settingPauseOnScore.addEventListener('change', () => {
+                pauseOnScore = settingPauseOnScore.checked;
+                saveState();
+            });
+        }
+
+        if (settingLogPauseResume) {
+            settingLogPauseResume.addEventListener('change', () => {
+                logPauseResume = settingLogPauseResume.checked;
+                saveState();
+            });
+        }
+
+        if (settingLogPeriodStartStop) {
+            settingLogPeriodStartStop.addEventListener('change', () => {
+                logPeriodStartStop = settingLogPeriodStartStop.checked;
+                saveState();
+            });
+        }
+
+        periodDisplay.addEventListener('click', () => {
+            if (!timerRunning) cyclePeriod();
+        });
+
+        scoreHomeEl.addEventListener('click', () => addScore('home'));
+        scoreAwayEl.addEventListener('click', () => addScore('away'));
+        muteBtn.addEventListener('click', () => {
+            muted = !muted;
+            updateMuteButton();
+            saveState();
+        });
+
+        // Allow tapping team names to edit them while the clock is stopped
+        // Show edit panels instead of simple prompts so user can change name + color
+        function showHomeEditPanel() {
+            if (timerRunning) return;
+            homeNameInput.value = homeTeamName;
+            homeColorSelect.value = homeTeamColor;
+            if (homeBgSelect) homeBgSelect.value = homeBackgroundImage;
+            updateHomeEditBackground();
+            document.getElementById('home-edit-panel').classList.remove('hidden');
+            document.getElementById('away-edit-panel').classList.add('hidden');
+        }
+        function hideHomeEditPanel() { document.getElementById('home-edit-panel').classList.add('hidden'); }
+        function showAwayEditPanel() {
+            if (timerRunning) return;
+            awayNameInput.value = awayTeamName;
+            awayColorSelect.value = awayTeamColor;
+            document.getElementById('away-edit-panel').classList.remove('hidden');
+            document.getElementById('home-edit-panel').classList.add('hidden');
+        }
+        function hideAwayEditPanel() { document.getElementById('away-edit-panel').classList.add('hidden'); }
+
+        homeNameEl.addEventListener('click', showHomeEditPanel);
+        awayNameEl.addEventListener('click', showAwayEditPanel);
+
+        // Save handlers
+        homeSaveBtn.addEventListener('click', () => {
+            const newName = homeNameInput.value.trim();
+            const newColor = homeColorSelect.value;
+            const newBackground = homeBgSelect ? homeBgSelect.value : homeBackgroundImage;
+            if (newName) homeTeamName = newName;
+            homeTeamColor = newColor || homeTeamColor;
+            homeBackgroundImage = newBackground || homeBackgroundImage;
+            homeNameEl.textContent = homeTeamName;
+            scoreHomeEl.textContent = homeScore;
+            // apply color to visible elements
+            homeNameEl.style.color = homeTeamColor;
+            scoreHomeEl.style.color = homeTeamColor;
+            if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
+            updateHomeEditBackground();
+            // update all existing history entries for this team to use the new color and name
+            scoreHistory.forEach(e => { if (e.teamId === 'home') { e.teamName = homeTeamName; e.teamColor = homeTeamColor; } });
+            renderHistory();
+            saveState();
+            hideHomeEditPanel();
+        });
+
+        awaySaveBtn.addEventListener('click', () => {
+            const newName = awayNameInput.value.trim();
+            const newColor = awayColorSelect.value;
+            if (newName) awayTeamName = newName;
+            awayTeamColor = newColor || awayTeamColor;
+            awayNameEl.textContent = awayTeamName;
+            scoreAwayEl.textContent = awayScore;
+            awayNameEl.style.color = awayTeamColor;
+            scoreAwayEl.style.color = awayTeamColor;
+            if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
+            scoreHistory.forEach(e => { if (e.teamId === 'away') { e.teamName = awayTeamName; e.teamColor = awayTeamColor; } });
+            renderHistory();
+            saveState();
+            hideAwayEditPanel();
+        });
+
+        // Update swatches when user changes the select so they see the color immediately
+        if (homeColorSelect && homeColorSwatch) {
+            homeColorSelect.addEventListener('change', () => homeColorSwatch.style.background = homeColorSelect.value);
+        }
+        if (homeBgSelect) {
+            homeBgSelect.addEventListener('change', () => {
+                updateHomeEditBackground(homeBgSelect.value || homeBackgroundImage);
+            });
+        }
+        if (awayColorSelect && awayColorSwatch) {
+            awayColorSelect.addEventListener('change', () => awayColorSwatch.style.background = awayColorSelect.value);
+        }
+
+        resetBtn.addEventListener('click', () => {
+            if(confirm("Reset everything?")) {
+                clearInterval(timerInterval);
+                startTime = null; accumulatedTime = 0;
+                timerRunning = false;
+                isPaused = false;
+                homeScore = 0; awayScore = 0; currentPeriod = 1; scoreHistory = [];
+                scoreHomeEl.textContent = '0'; scoreAwayEl.textContent = '0';
+                periodDisplay.textContent = 'P1';
+                renderHistory();
+                updateTimer();
+                adjustmentPanel.classList.add('hidden');
+                if (pauseBtn) pauseBtn.disabled = true;
+                saveState();
+            }
+        });
+
+
+        // Initialize the page from saved state when the browser loads.
+        window.onload = function () {
+            const saved = loadState();
+            if (saved) {
+                homeScore = saved.homeScore || saved.redScore || 0;
+                awayScore = saved.awayScore || saved.blueScore || 0;
+                currentPeriod = saved.currentPeriod || 1;
+                scoreHistory = saved.scoreHistory || [];
+                accumulatedTime = saved.accumulatedTime || 0;
+                timeLimit = saved.timeLimit;
+                isCountingUp = saved.isCountingUp;
+                muted = !!saved.muted;
+                addPauseButton = !!saved.addPauseButton;
+                pauseOnScore = !!saved.pauseOnScore;
+                isPaused = !!saved.isPaused;
+                logPauseResume = !!saved.logPauseResume;
+                logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
+                // restore team names and colors if present
+                homeTeamName = saved.homeTeamName || saved.redTeamName || homeTeamName;
+                awayTeamName = saved.awayTeamName || saved.blueTeamName || awayTeamName;
+                homeTeamColor = saved.homeTeamColor || saved.redTeamColor || homeTeamColor;
+                awayTeamColor = saved.awayTeamColor || saved.blueTeamColor || awayTeamColor;
+                homeBackgroundImage = saved.homeBackgroundImage || 'saber.png';
+                scoreHistory = scoreHistory.map(entry => ({
+                    ...entry,
+                    type: entry.type || (entry.teamId ? 'score' : 'event')
+                }));
+                homeNameEl.textContent = homeTeamName;
+                awayNameEl.textContent = awayTeamName;
+                
+                scoreHomeEl.textContent = homeScore;
+                scoreAwayEl.textContent = awayScore;
+                periodDisplay.textContent = `P${currentPeriod}`;
+                renderHistory();
+
+                // Apply stored colors to visible elements
+                homeNameEl.style.color = homeTeamColor;
+                scoreHomeEl.style.color = homeTeamColor;
+                awayNameEl.style.color = awayTeamColor;
+                scoreAwayEl.style.color = awayTeamColor;
+                if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
+                if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
+
+                if (saved.running && saved.startTime) {
+                    const drift = Date.now() - saved.lastSavedAt;
+                    accumulatedTime += drift;
+                    startTimer(false);
+                } else {
+                    updateStartStopButton();
+                    updateTimer();
+                }
+                updateHomeEditBackground();
+                updateMuteButton();
+                updatePauseButtonVisibility();
+            } else {
+                updateTimer(); 
+                updateMuteButton();
+                updatePauseButtonVisibility();
+            }
+        };
+    </script>
+</body>
+</html>

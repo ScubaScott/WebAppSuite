@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveScore Pro - Telematics Tracker</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --primary: #2196f3;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        h1 { margin-top: 0; font-weight: 600; font-size: 1.8rem; margin-bottom: 5px; }
+
+        .settings-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .settings-link:hover { text-decoration: underline; }
+
+        .selector-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #aaa;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .toggle-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .score-display {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 10px auto 20px auto;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.5s ease;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+        }
+
+        .score-value {
+            font-size: 3.5rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 5px;
+            color: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        #btnStart { background-color: #4caf50; color: white; }
+        #btnStart.recording { background-color: #f44336; }
+        #btnReset { background-color: #555; color: white; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .log {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 15px;
+            max-height: 130px;
+            overflow-y: auto;
+            text-align: left;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>DriveScore</h1>
+    <a href="VehicleSettings.html" class="settings-link">Manage Vehicles Garage →</a>
+
+    <div class="selector-row">
+        <div>
+            <label for="ddlDriver">Driver</label>
+            <select id="ddlDriver"></select>
+        </div>
+        <div>
+            <label for="ddlVehicle">Vehicle</label>
+            <select id="ddlVehicle"></select>
+        </div>
+    </div>
+
+    <div class="toggle-row">
+        <input type="checkbox" id="chkWakeLock" checked>
+        <label for="chkWakeLock" style="display:inline; margin:0; cursor:pointer;">Keep Screen Awake During Trip</label>
+    </div>
+    
+    <div class="score-display" id="scoreCircle">
+        <div class="score-value" id="lblScore">100</div>
+        <div class="score-label" id="lblScoreType">Trip Score</div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div>Filtered G-Force</div>
+            <div class="stat-value" id="lblCurrentG">0.00g</div>
+        </div>
+        <div class="stat-card">
+            <div>Duration</div>
+            <div class="stat-value" id="lblDuration">00:00</div>
+        </div>
+        <div class="stat-card">
+            <div>Speed</div>
+            <div class="stat-value" id="lblSpeed">0.0 mph</div>
+        </div>
+        <div class="stat-card">
+            <div>Active Profile</div>
+            <div class="stat-value" id="lblConfig">T:0.32 A:0.20</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="btnStart">Start Trip</button>
+        <button id="btnReset" disabled>Reset</button>
+    </div>
+
+    <div class="log" id="txtLog">System ready. Select profiles to begin.</div>
+</div>
+
+<script>
+    // System Configurations & Core Variables
+    let isTracking = false;
+    let score = 100.0;
+    let maxG = 0.0;
+    let startTime = null;
+    let timerInterval = null;
+    let watchPositionId = null;
+    let wakeLock = null;
+    let currentSpeedMph = 0.0;
+
+    // Filter Running States
+    let filteredX = 0, filteredY = 0, filteredZ = 0;
+    let calX = 0, calY = 0, calZ = 0;
+    
+    // Default Fallback Vehicle Configuration Baselines
+    let activeThreshold = 0.32;
+    let activeAlpha = 0.20;
+    const REWARD_PER_SECOND = 0.02; 
+    const PENALTY_MULTIPLIER = 5.0;
+
+    // Cooldown window configuration (in milliseconds)
+    const INCIDENT_COOLDOWN_MS = 2000; 
+    let lastPenaltyTime = 0; 
+
+    // Clean driving counters
+    let cleanStreakSeconds = 0;
+    let hadPenaltyThisSecond = false;
+
+    // Persistent Local Profiles Arrays
+    let driverProfiles = JSON.parse(localStorage.getItem('driver_profiles')) || {};
+    let vehicleProfiles = JSON.parse(localStorage.getItem('vehicle_profiles')) || {};
+    let currentDriverSelection = ""; 
+    let currentVehicleSelection = "";
+
+    // DOM Wireframes
+    const ddlDriver = document.getElementById('ddlDriver');
+    const ddlVehicle = document.getElementById('ddlVehicle');
+    const chkWakeLock = document.getElementById('chkWakeLock');
+    const btnStart = document.getElementById('btnStart');
+    const btnReset = document.getElementById('btnReset');
+    const lblScore = document.getElementById('lblScore');
+    const lblScoreType = document.getElementById('lblScoreType');
+    const lblCurrentG = document.getElementById('lblCurrentG');
+    const lblDuration = document.getElementById('lblDuration');
+    const lblSpeed = document.getElementById('lblSpeed');
+    const lblConfig = document.getElementById('lblConfig');
+    const scoreCircle = document.getElementById('scoreCircle');
+    const txtLog = document.getElementById('txtLog');
+
+    function renderDriverDropdown() {
+        ddlDriver.innerHTML = '';
+        if (Object.keys(driverProfiles).length === 0) {
+            ddlDriver.appendChild(new Option("-- Select Driver --", ""));
+        }
+        for (const [name, data] of Object.entries(driverProfiles)) {
+            ddlDriver.appendChild(new Option(`${name} - ${Math.round(data.averageScore)}`, name));
+        }
+        ddlDriver.appendChild(new Option("add new...", "__ADD_NEW__"));
+    }
+
+    function renderVehicleDropdown() {
+        ddlVehicle.innerHTML = '';
+        if (Object.keys(vehicleProfiles).length === 0) {
+            ddlVehicle.appendChild(new Option("-- Select Vehicle --", ""));
+        }
+        for (const [vName, config] of Object.entries(vehicleProfiles)) {
+            ddlVehicle.appendChild(new Option(`${vName}`, vName));
+        }
+        ddlVehicle.appendChild(new Option("add/modify vehicle...", "__MANAGE_VEHICLES__"));
+    }
+
+    function updateActiveConfigurationUI() {
+        if(ddlVehicle.value && vehicleProfiles[ddlVehicle.value]) {
+            const current = vehicleProfiles[ddlVehicle.value];
+            activeThreshold = current.threshold;
+            activeAlpha = current.alpha;
+            lblConfig.innerHTML = `T:${activeThreshold.toFixed(2)} A:${activeAlpha.toFixed(2)}`;
+        }
+    }
+
+    ddlDriver.addEventListener('change', () => {
+        if (ddlDriver.value === "__ADD_NEW__") {
+            setTimeout(() => {
+                const raw = prompt("Enter new driver's name:");
+                const clean = raw ? raw.trim() : "";
+                if (clean && clean !== "__ADD_NEW__" && !driverProfiles[clean]) {
+                    driverProfiles[clean] = { totalDrives: 0, averageScore: 100 };
+                    localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+                    renderDriverDropdown();
+                    ddlDriver.value = clean;
+                } else {
+                    ddlDriver.value = currentDriverSelection;
+                }
+                currentDriverSelection = ddlDriver.value;
+            }, 10);
+        } else {
+            currentDriverSelection = ddlDriver.value;
+        }
+    });
+
+    ddlVehicle.addEventListener('change', () => {
+        if (ddlVehicle.value === "__MANAGE_VEHICLES__") {
+            window.location.href = "VehicleSettings.html";
+        } else {
+            currentVehicleSelection = ddlVehicle.value;
+            updateActiveConfigurationUI();
+        }
+    });
+
+    function updateScoreUI() {
+        const roundedScore = Math.max(0, Math.min(100, Math.round(score)));
+        lblScore.textContent = roundedScore;
+        const hue = (roundedScore / 100) * 120; 
+        scoreCircle.style.background = `radial-gradient(circle, hsl(${hue}, 70%, 25%) 0%, hsl(${hue}, 80%, 15%) 100%)`;
+        scoreCircle.style.border = `2px solid hsl(${hue}, 80%, 40%)`;
+    }
+
+    function logMessage(msg) {
+        txtLog.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + txtLog.innerHTML;
+    }
+
+    async function requestWakeLock() {
+        if (!('wakeLock' in navigator)) return;
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            logMessage("Wake Lock active. Screen will stay awake.");
+        } catch (err) {
+            logMessage(`Wake Lock error: ${err.message}`);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release();
+            wakeLock = null;
+        }
+    }
+
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible' && isTracking && chkWakeLock.checked) {
+            await requestWakeLock();
+        }
+    });
+
+    async function startEngine() {
+        if (!ddlDriver.value || ddlDriver.value === "__ADD_NEW__" || !ddlVehicle.value || ddlVehicle.value === "__MANAGE_VEHICLES__") {
+            alert("Ensure an active Driver and Vehicle are selected before starting a trip.");
+            return;
+        }
+
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permissionState = await DeviceMotionEvent.requestPermission();
+                if (permissionState === 'granted') initSensors();
+            } catch (e) { logMessage("Sensor Permission Denied: " + e); }
+        } else {
+            initSensors();
+        }
+    }
+
+    async function initSensors() {
+        isTracking = true;
+        startTime = Date.now();
+        lastPenaltyTime = 0; 
+        cleanStreakSeconds = 0;
+        hadPenaltyThisSecond = false;
+        currentSpeedMph = 0.0;
+
+        if (chkWakeLock.checked) {
+            await requestWakeLock();
+        }
+
+        btnStart.textContent = "Stop Trip";
+        btnStart.classList.add('recording');
+        btnReset.disabled = true;
+        ddlDriver.disabled = true;
+        ddlVehicle.disabled = true;
+        chkWakeLock.disabled = true;
+
+        filteredX = 0; filteredY = 0; filteredZ = 0;
+        let isCalibrated = false;
+
+        const motionHandler = (event) => {
+            if (!isTracking) return;
+
+            let rawX = event.acceleration?.x || 0;
+            let rawY = event.acceleration?.y || 0;
+            let rawZ = event.acceleration?.z || 0;
+
+            if (!event.acceleration && event.accelerationIncludingGravity) {
+                rawX = event.accelerationIncludingGravity.x;
+                rawY = event.accelerationIncludingGravity.y;
+                rawZ = event.accelerationIncludingGravity.z - 9.81;
+            }
+
+            if (!isCalibrated) {
+                calX = rawX; calY = rawY; calZ = rawZ;
+                isCalibrated = true;
+                logMessage("Device orientation matrix zeroed.");
+                return;
+            }
+
+            const cx = rawX - calX; const cy = rawY - calY; const cz = rawZ - calZ;
+
+            filteredX = (activeAlpha * cx) + ((1 - activeAlpha) * filteredX);
+            filteredY = (activeAlpha * cy) + ((1 - activeAlpha) * filteredY);
+            filteredZ = (activeAlpha * cz) + ((1 - activeAlpha) * filteredZ);
+
+            const totalAcceleration = Math.sqrt(filteredX*filteredX + filteredY*filteredY + filteredZ*filteredZ);
+            const currentG = totalAcceleration / 9.80665;
+
+            lblCurrentG.textContent = `${currentG.toFixed(2)}g`;
+
+            if (currentG > activeThreshold && currentSpeedMph > 0.5) {
+                hadPenaltyThisSecond = true;
+                cleanStreakSeconds = 0; 
+
+                // COOLDOWN CHECK: Has it been 2000ms since the last penalty?
+                const now = Date.now();
+                if (now - lastPenaltyTime > INCIDENT_COOLDOWN_MS) {
+                    lastPenaltyTime = now; // Lock the gate
+
+                    const severity = currentG - activeThreshold;
+                    const deduction = severity * PENALTY_MULTIPLIER;
+                    score = Math.max(0, score - deduction);
+                    updateScoreUI();
+
+                    let reason = "Bumpy Surface";
+                    const absX = Math.abs(filteredX), absY = Math.abs(filteredY);
+                    if (absX > absY) reason = "Hard Turn";
+                    else if (absY > absX) reason = (filteredY > 0) ? "Hard Braking" : "Hard Acceleration";
+
+                    logMessage(`Penalty: -${deduction.toFixed(1)} pts (${currentG.toFixed(2)}g) ${reason}`);
+                }
+            }
+        };
+
+        window.addEventListener('devicemotion', motionHandler, true);
+        window.activeMotionHandler = motionHandler;
+
+        if ("geolocation" in navigator) {
+            watchPositionId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    currentSpeedMph = (pos.coords.speed !== null) ? pos.coords.speed * 2.23694 : 0.0;
+                    lblSpeed.textContent = `${currentSpeedMph.toFixed(1)} mph`;
+                },
+                (err) => {}, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        }
+
+        timerInterval = setInterval(() => {
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            
+            const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+            const secs = String(elapsedSeconds % 60).padStart(2, '0');
+            lblDuration.textContent = `${mins}:${secs}`;
+
+            if (currentSpeedMph > 0.5 && !hadPenaltyThisSecond) {
+                cleanStreakSeconds++;
+                if (cleanStreakSeconds >= 30) {
+                    cleanStreakSeconds = 0;
+                    if (score < 100.0) {
+                        const addedPoints = REWARD_PER_SECOND * 30; 
+                        const previousScore = score;
+                        score = Math.min(100.0, score + addedPoints);
+                        updateScoreUI();
+                        
+                        const realAdded = score - previousScore;
+                        if (realAdded > 0.05) {
+                            logMessage(`Reward: +${realAdded.toFixed(2)} pts for 30s of clean driving.`);
+                        }
+                    }
+                }
+            }
+            hadPenaltyThisSecond = false;
+        }, 1000);
+    }
+
+    function stopEngineExecution() {
+        isTracking = false;
+        releaseWakeLock();
+
+        btnStart.textContent = "Start Trip";
+        btnStart.classList.remove('recording');
+        btnReset.disabled = false;
+        ddlDriver.disabled = false;
+        ddlVehicle.disabled = false;
+        chkWakeLock.disabled = false;
+
+        if (window.activeMotionHandler) {
+            window.removeEventListener('devicemotion', window.activeMotionHandler, true);
+        }
+        if (watchPositionId !== null) navigator.geolocation.clearWatch(watchPositionId);
+        clearInterval(timerInterval);
+
+        const activeDriverName = ddlDriver.value;
+        if (driverProfiles[activeDriverName]) {
+            const p = driverProfiles[activeDriverName];
+            p.averageScore = ((p.averageScore * p.totalDrives) + score) / (p.totalDrives + 1);
+            p.totalDrives += 1;
+            localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+            renderDriverDropdown();
+            ddlDriver.value = activeDriverName;
+        }
+        logMessage("Trip execution logged successfully.");
+        updateScoreUI();
+    }
+
+    btnStart.addEventListener('click', () => {
+        if (!isTracking) startEngine();
+        else stopEngineExecution();
+    });
+
+    btnReset.addEventListener('click', () => {
+        score = 100.0; maxG = 0.0;
+        lblScore.textContent = "100";
+        lblCurrentG.textContent = "0.00g";
+        lblDuration.textContent = "00:00";
+        lblSpeed.textContent = "0.0 mph";
+        btnReset.disabled = true;
+        updateScoreUI();
+        logMessage("Metrics cleared.");
+    });
+
+    renderDriverDropdown();
+    renderVehicleDropdown();
+    currentDriverSelection = ddlDriver.value;
+    if(ddlVehicle.options.length > 1) {
+        ddlVehicle.selectedIndex = 0;
+        currentVehicleSelection = ddlVehicle.value;
+    }
+    updateActiveConfigurationUI();
+    updateScoreUI();
+</script>
+</body>
+</html>

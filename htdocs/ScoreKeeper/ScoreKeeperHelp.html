@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Keeper Help</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
+    <div class="bg-gray-900 rounded-3xl shadow-2xl p-6 w-full max-w-2xl space-y-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">Score Keeper Help</h1>
+                <p class="text-sm text-gray-400 mt-1">Instructions for using the timer, scoring, and history features.</p>
+            </div>
+            <a href="index.html" class="text-sm font-bold text-blue-400 hover:text-blue-200 underline">Back</a>
+        </div>
+        <div class="space-y-4 text-sm text-gray-300">
+            <div>
+                <h2 class="text-lg font-semibold text-white">Timer Controls</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li><strong>Remaining</strong>: shows the current time left in the selected period. Tap it while the timer is stopped to open the time-limit selector.</li>
+                    <li><strong>Elapsed</strong>: shows the elapsed time within the current period. Tap it while running to adjust elapsed time if the clock was started early or late.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Time Limit Options</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>Choose one of the preset limits: <strong>12 min</strong>, <strong>20 min</strong>, <strong>35 min</strong>, or <strong>40 min</strong>.</li>
+                    <li>Tap <strong>Manual</strong> to enter a custom time in minutes or <code>mm:ss</code> format.</li>
+                    <li>The timer will use the selected limit and waits for you to start.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Starting & Stopping</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>Tap <strong>Start</strong> to begin the timer; the button toggles to <strong>Stop</strong> while running.</li>
+                    <li>Stopping the timer logs the end of the current period and advances the period counter (P1–P4).</li>
+                    <li>When a countdown reaches zero it plays the whistle, logs the end of the period, and resets to the chosen time limit.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Audio & Mute</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>A whistle sound plays when the timer reaches zero.</li>
+                    <li>Use the <strong>Mute</strong> button (lower-right) to toggle sound on/off; this setting is saved across reloads and resets.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Score Tracking</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li><strong>Tap a team's score area</strong> to increment that team's score. The big red/blue score tiles are tappable.</li>
+                    <li>Each score entry is saved in the history with the team name, score snapshot (e.g. <em>2-1</em>), and a timestamped elapsed label.</li>
+                    <li>Tap the ✕ icon on a history row to remove that entry; removing a score will decrement the associated team's total.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Teams & Colors</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>Tap a team name while the timer is stopped to open the edit panel for that team (name and color).</li>
+                    <li>The edit panel contains a name field and a color selector. As you change the color the small swatch updates immediately so you can preview the selection.</li>
+                    <li>Saving updates the team name, the large score tile color, and all existing history rows for that team. Colors are persisted in local storage.</li>
+                    <li>History rows display a small colored badge and show the team name in the chosen color for quick visual reference.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Period & Manual Adjustments</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>Tap the period display while stopped to cycle through P1–P4.</li>
+                    <li>While the timer is running, tap the <strong>Elapsed</strong> display to open quick adjustment buttons (+/- 1 min, +/- 5 min) to correct early or late starts.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Reset & Saved State</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>Tap <strong>Reset</strong> to clear timer, scores, period, and history. Team names, selected colors, time limit, and mute state are preserved.</li>
+                    <li>The app stores its state (timer, scores, period, history, team names/colors, time limit, mute) in local storage so reloading the page restores the previous session.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Notes & Tips</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>Use the swatches and history badges to quickly distinguish teams during live scoring.</li>
+                    <li>Small-screen behavior: edit panels expand to full width and stack vertically for easier input on phones.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+name: Deploy Website to InfinityFree
+
+on:
+  push:
+    branches:
+      - main # Change this to 'master' if your default branch uses the older naming
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+
+    - name: 🚀 Sync files via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./htdocs/           # The folder in GitHub you want to upload
+        server-dir: ./htdocs/          # InfinityFree requires public files to live in htdocs

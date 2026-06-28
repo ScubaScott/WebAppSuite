@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveScore Pro - Garage Settings</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --primary: #2196f3;
+            --accent: #ff9800;
+            --success: #4caf50;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 { margin-top: 0; font-weight: 600; font-size: 1.6rem; text-align: center; }
+        
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .nav-link:hover { text-decoration: underline; }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #aaa;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .settings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        .settings-table th, .settings-table td {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        .settings-table th {
+            color: #aaa;
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .settings-table input[type="number"], .settings-table input[type="text"] {
+            width: 90%;
+            padding: 6px 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .calibration-box {
+            background: rgba(255, 152, 0, 0.05);
+            border: 1px dashed var(--accent);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .cal-timer {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin: 10px 0;
+            display: none;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        #btnSave { background-color: var(--success); color: white; }
+        #btnCalibrate { background-color: var(--accent); color: white; }
+        #btnCalibrate.running { background-color: #9c27b0; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .log {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 20px;
+            max-height: 100px;
+            overflow-y: auto;
+            text-align: left;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="nav-link">← Back to Drive Tracker</a>
+    <h1>Vehicle Configuration Profiles</h1>
+
+    <div class="form-group">
+        <label for="ddlVehicle">Select Vehicle to Edit</label>
+        <select id="ddlVehicle"></select>
+    </div>
+
+    <table class="settings-table" id="tblEditor" style="display:none;">
+        <thead>
+            <tr>
+                <th style="width: 40%;">Parameter</th>
+                <th style="width: 60%;">Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Profile Name</td>
+                <td><input type="text" id="txtVehicleName"></td>
+            </tr>
+            <tr>
+                <td>G-Threshold (g)</td>
+                <td><input type="number" id="numThreshold" step="0.01" min="0.10" max="1.00"></td>
+            </tr>
+            <tr>
+                <td>Filter Alpha (Smoothing)</td>
+                <td><input type="number" id="numAlpha" step="0.01" min="0.01" max="1.00"></td>
+            </tr>
+            <tr>
+                <td>Calibration Status</td>
+                <td id="lblCalStatus" style="font-weight: bold; font-size: 0.9rem;">Uncalibrated</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="action-row" id="rowActions" style="display:none;">
+        <button id="btnSave">Save Changes</button>
+    </div>
+
+    <div class="calibration-box" id="boxCalibration" style="display:none;">
+        <h3 style="margin-top:0; font-size:1.1rem; color:var(--accent);">Vehicle Tuning Lab</h3>
+        <p style="font-size:0.85rem; color:#aaa; margin:5px 0 15px 0;">
+            Securing your phone to its dashboard mount, tap below to sample 3 minutes of routine operating noise floor patterns.
+        </p>
+        <div class="cal-timer" id="lblCalTimer">180</div>
+        <button id="btnCalibrate">Start Standalone Calibration</button>
+    </div>
+
+    <div class="log" id="txtLog">Select a vehicle from the roster to review parameter maps.</div>
+</div>
+
+<script>
+    // System Config Modules & State Mechanics
+    let isCalibrating = false;
+    let wakeLock = null;
+    let timerInterval = null;
+    let calibrationSamples = [];
+    const CALIBRATION_DURATION = 180; 
+
+    // Filter Arrays Running Vectors
+    let filteredX = 0, filteredY = 0, filteredZ = 0;
+    let calX = 0, calY = 0, calZ = 0;
+
+    // Local Storage File Systems Linkages
+    let vehicleProfiles = JSON.parse(localStorage.getItem('vehicle_profiles')) || {};
+    let currentVehicleSelection = "";
+
+    // DOM Target Map Wireframes
+    const ddlVehicle = document.getElementById('ddlVehicle');
+    const tblEditor = document.getElementById('tblEditor');
+    const rowActions = document.getElementById('rowActions');
+    const boxCalibration = document.getElementById('boxCalibration');
+    
+    const txtVehicleName = document.getElementById('txtVehicleName');
+    const numThreshold = document.getElementById('numThreshold');
+    const numAlpha = document.getElementById('numAlpha');
+    const lblCalStatus = document.getElementById('lblCalStatus');
+    const lblCalTimer = document.getElementById('lblCalTimer');
+    
+    const btnSave = document.getElementById('btnSave');
+    const btnCalibrate = document.getElementById('btnCalibrate');
+    const txtLog = document.getElementById('txtLog');
+
+    function renderDropdown() {
+        ddlVehicle.innerHTML = '';
+        if (Object.keys(vehicleProfiles).length === 0) {
+            ddlVehicle.appendChild(new Option("-- Select Vehicle --", ""));
+        }
+        for (const name of Object.keys(vehicleProfiles)) {
+            ddlVehicle.appendChild(new Option(name, name));
+        }
+        ddlVehicle.appendChild(new Option("add new...", "__ADD_NEW__"));
+    }
+
+    function loadVehicleData(vehicleName) {
+        if (!vehicleName || !vehicleProfiles[vehicleName]) {
+            tblEditor.style.display = "none";
+            rowActions.style.display = "none";
+            boxCalibration.style.display = "none";
+            return;
+        }
+
+        const profile = vehicleProfiles[vehicleName];
+        txtVehicleName.value = vehicleName;
+        numThreshold.value = profile.threshold.toFixed(2);
+        numAlpha.value = profile.alpha.toFixed(2);
+        
+        if (profile.calibrated) {
+            lblCalStatus.textContent = "Calibrated (Custom)";
+            lblCalStatus.style.color = "var(--success)";
+        } else {
+            lblCalStatus.textContent = "Using Baseline Defaults";
+            lblCalStatus.style.color = "var(--accent)";
+        }
+
+        tblEditor.style.display = "table";
+        rowActions.style.display = "flex";
+        boxCalibration.style.display = "block";
+    }
+
+    ddlVehicle.addEventListener('change', () => {
+        if (ddlVehicle.value === "__ADD_NEW__") {
+            setTimeout(() => {
+                const raw = prompt("Enter new vehicle identification tag:");
+                const clean = raw ? raw.trim() : "";
+                if (clean && clean !== "__ADD_NEW__" && !vehicleProfiles[clean]) {
+                    vehicleProfiles[clean] = { threshold: 0.32, alpha: 0.20, calibrated: false };
+                    localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
+                    renderDropdown();
+                    ddlVehicle.value = clean;
+                    currentVehicleSelection = clean;
+                    loadVehicleData(clean);
+                    logMessage(`Created asset profile: ${clean}`);
+                } else {
+                    ddlVehicle.value = currentVehicleSelection;
+                }
+            }, 10);
+        } else {
+            currentVehicleSelection = ddlVehicle.value;
+            loadVehicleData(currentVehicleSelection);
+        }
+    });
+
+    btnSave.addEventListener('click', () => {
+        const oldName = currentVehicleSelection;
+        const newName = txtVehicleName.value.trim();
+        const nextThreshold = parseFloat(numThreshold.value);
+        const nextAlpha = parseFloat(numAlpha.value);
+
+        if (!newName) { alert("Profile tag name cannot be blank."); return; }
+
+        const template = {
+            threshold: nextThreshold,
+            alpha: nextAlpha,
+            calibrated: vehicleProfiles[oldName].calibrated
+        };
+
+        if (oldName !== newName) {
+            delete vehicleProfiles[oldName];
+            vehicleProfiles[newName] = template;
+            currentVehicleSelection = newName;
+        } else {
+            vehicleProfiles[oldName] = template;
+        }
+
+        localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
+        renderDropdown();
+        ddlVehicle.value = currentVehicleSelection;
+        loadVehicleData(currentVehicleSelection);
+        logMessage("Configuration matrices updated successfully.");
+    });
+
+    function logMessage(msg) {
+        txtLog.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + txtLog.innerHTML;
+    }
+
+    async function requestWakeLock() {
+        if (!('wakeLock' in navigator)) return;
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            logMessage("Wake Lock active for calibration.");
+        } catch (err) {
+            logMessage(`Wake Lock error: ${err.message}`);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release();
+            wakeLock = null;
+        }
+    }
+
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible' && isCalibrating) {
+            await requestWakeLock();
+        }
+    });
+
+    // Separate Standalone Lab Calibration Pipeline Loops
+    async function toggleCalibration() {
+        if (isCalibrating) {
+            stopCalibration(true); // Abort signal
+            return;
+        }
+
+        const proceed = confirm("Begin standalone vehicle profile calibration routine? This captures environmental accelerometer data for exactly 3 minutes.");
+        if (!proceed) return;
+
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const state = await DeviceMotionEvent.requestPermission();
+                if (state === 'granted') startCalibrationEngine();
+            } catch (e) { logMessage("Sensor permissions rejected: " + e); }
+        } else {
+            startCalibrationEngine();
+        }
+    }
+
+    async function startCalibrationEngine() {
+        isCalibrating = true;
+        await requestWakeLock();
+        calibrationSamples = [];
+        const startTimestamp = Date.now();
+        
+        btnCalibrate.textContent = "Abort Calibration";
+        btnCalibrate.classList.add('running');
+        lblCalTimer.style.display = "block";
+        lblCalTimer.textContent = CALIBRATION_DURATION;
+        
+        ddlVehicle.disabled = true;
+        btnSave.disabled = true;
+        txtVehicleName.disabled = true;
+        numThreshold.disabled = true;
+        numAlpha.disabled = true;
+
+        filteredX = 0; filteredY = 0; filteredZ = 0;
+        let isZeroed = false;
+
+        const calMotionInterferenceHandler = (event) => {
+            let rx = event.acceleration?.x || 0;
+            let ry = event.acceleration?.y || 0;
+            let rz = event.acceleration?.z || 0;
+
+            if (!event.acceleration && event.accelerationIncludingGravity) {
+                rx = event.accelerationIncludingGravity.x;
+                ry = event.accelerationIncludingGravity.y;
+                rz = event.accelerationIncludingGravity.z - 9.81;
+            }
+
+            if (!isZeroed) {
+                calX = rx; calY = ry; calZ = rz;
+                isZeroed = true;
+                return;
+            }
+
+            // Reference baseline fallback values during diagnostic tests
+            filteredX = (0.20 * (rx - calX)) + (0.80 * filteredX);
+            filteredY = (0.20 * (ry - calY)) + (0.80 * filteredY);
+            filteredZ = (0.20 * (rz - calZ)) + (0.80 * filteredZ);
+
+            const dynamicMagnitude = Math.sqrt(filteredX*filteredX + filteredY*filteredY + filteredZ*filteredZ);
+            calibrationSamples.push(dynamicMagnitude / 9.80665);
+        };
+
+        window.addEventListener('devicemotion', calMotionInterferenceHandler, true);
+        window.activeCalHandler = calMotionInterferenceHandler;
+
+        timerInterval = setInterval(() => {
+            const delta = Math.floor((Date.now() - startTimestamp) / 1000);
+            const remaining = CALIBRATION_DURATION - delta;
+            lblCalTimer.textContent = Math.max(0, remaining);
+
+            if (delta >= CALIBRATION_DURATION) {
+                processCalculatedTuningMetrics();
+                stopCalibration(false);
+            }
+        }, 1000);
+
+        logMessage("Tuning lab engine active. Analyzing cabin noise variables...");
+    }
+
+    function processCalculatedTuningMetrics() {
+        if (calibrationSamples.length === 0) {
+            logMessage("Error: Diagnostics yielded empty vector collections.");
+            return;
+        }
+
+        calibrationSamples.sort((a, b) => a - b);
+        let accumulatedTotal = 0;
+        for (let i = 0; i < calibrationSamples.length; i++) accumulatedTotal += calibrationSamples[i];
+        const floorAverage = accumulatedTotal / calibrationSamples.length;
+
+        const limitIndex95 = Math.floor(calibrationSamples.length * 0.95);
+        const dynamic95thPercentile = calibrationSamples[limitIndex95];
+
+        let dynamicThreshold = Math.max(0.25, Math.min(0.45, dynamic95thPercentile * 1.3));
+        let dynamicAlpha = Math.max(0.10, Math.min(0.25, 0.25 - (floorAverage * 0.5)));
+
+        const targetVehicle = currentVehicleSelection;
+        if (vehicleProfiles[targetVehicle]) {
+            vehicleProfiles[targetVehicle] = {
+                threshold: dynamicThreshold,
+                alpha: dynamicAlpha,
+                calibrated: true
+            };
+            localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
+            logMessage(`SUCCESS: [${targetVehicle}] parameters compiled.`);
+        }
+    }
+
+    function stopCalibration(wasAborted) {
+        isCalibrating = false;
+        releaseWakeLock();
+        clearInterval(timerInterval);
+        lblCalTimer.style.display = "none";
+        btnCalibrate.textContent = "Start Standalone Calibration";
+        btnCalibrate.classList.remove('running');
+
+        ddlVehicle.disabled = false;
+        btnSave.disabled = false;
+        txtVehicleName.disabled = false;
+        numThreshold.disabled = false;
+        numAlpha.disabled = false;
+
+        if (window.activeCalHandler) {
+            window.removeEventListener('devicemotion', window.activeCalHandler, true);
+        }
+
+        if (wasAborted) logMessage("Calibration sequence aborted.");
+        loadVehicleData(currentVehicleSelection);
+    }
+
+    btnCalibrate.addEventListener('click', toggleCalibration);
+
+    // Initial Bootstrap
+    renderDropdown();
+    currentVehicleSelection = ddlVehicle.value;
+    loadVehicleData(currentVehicleSelection);
+</script>
+</body>
+</html>
