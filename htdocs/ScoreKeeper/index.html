@@ -156,7 +156,8 @@
             </div>
         </div>
 
-        <div class="w-full text-center pt-4">
+        <div class="w-full text-center pt-4 space-y-2">
+            <a href="ScoreKeeperActiveGames.html" class="text-sm font-bold text-emerald-400 hover:text-emerald-200 underline">View Active Games</a>
             <a href="ScoreKeeperHelp.html" class="text-sm font-bold text-blue-400 hover:text-blue-200 underline">help!</a>
         </div>
 
@@ -302,8 +303,159 @@
         let isPaused = false;
         let logPauseResume = false;
         let logPeriodStartStop = true;
+        let activeGameId = null;
 
         const STORAGE_KEY = 'timerStateV7';
+        const ACTIVE_GAMES_KEY = 'scoreKeeperActiveGamesV1';
+        const ACTIVE_GAME_ID_KEY = 'scoreKeeperCurrentGameIdV1';
+
+        function safeLocalStorageGet(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function safeLocalStorageSet(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (error) {
+                // Fail silently if storage is unavailable.
+            }
+        }
+
+        function safeLocalStorageRemove(key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (error) {
+                // Fail silently.
+            }
+        }
+
+        function getActiveGames() {
+            const raw = safeLocalStorageGet(ACTIVE_GAMES_KEY);
+            if (!raw) return {};
+            try {
+                return JSON.parse(raw) || {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        function setActiveGames(games) {
+            try {
+                safeLocalStorageSet(ACTIVE_GAMES_KEY, JSON.stringify(games));
+            } catch (error) {
+                // Fail silently.
+            }
+        }
+
+        function pruneStaleActiveGames(games) {
+            const now = Date.now();
+            Object.keys(games).forEach(key => {
+                if (games[key] && games[key].expiresAt && games[key].expiresAt < now) {
+                    delete games[key];
+                }
+            });
+            return games;
+        }
+
+        function updateActiveGameEntry() {
+            if (!activeGameId) return;
+            const now = Date.now();
+            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+            const games = pruneStaleActiveGames(getActiveGames());
+            games[activeGameId] = {
+                id: activeGameId,
+                homeTeamName,
+                awayTeamName,
+                homeScore,
+                awayScore,
+                currentPeriod,
+                timerRunning,
+                isPaused,
+                isCountingUp,
+                timeLimit,
+                elapsedMs: elapsed,
+                lastUpdate: now,
+                expiresAt: now + 3 * 60 * 1000,
+                gameTitle: `${homeTeamName} vs ${awayTeamName}`
+            };
+            setActiveGames(games);
+        }
+
+        function removeActiveGameEntry() {
+            if (!activeGameId) return;
+            const games = getActiveGames();
+            if (games[activeGameId]) {
+                delete games[activeGameId];
+                setActiveGames(games);
+            }
+        }
+
+        function loadOrCreateActiveGameId() {
+            let id = safeLocalStorageGet(ACTIVE_GAME_ID_KEY);
+            if (!id) {
+                id = `scorekeeper-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, id);
+            }
+            return id;
+        }
+
+        async function publishActiveGameStateServer() {
+            if (!activeGameId) return;
+            const payload = {
+                id: activeGameId,
+                homeTeamName,
+                awayTeamName,
+                homeScore,
+                awayScore,
+                currentPeriod,
+                timerRunning,
+                isPaused,
+                isCountingUp,
+                timeLimit,
+                elapsedMs: accumulatedTime + (startTime ? Date.now() - startTime : 0),
+                lastUpdate: Date.now(),
+                expiresAt: Date.now() + 3 * 60 * 1000,
+                gameTitle: `${homeTeamName} vs ${awayTeamName}`
+            };
+
+            try {
+                await fetch('./active-games.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                });
+            } catch (error) {
+                // Fail silently if the server is unavailable.
+            }
+        }
+
+        function publishActiveGameState() {
+            try {
+                updateActiveGameEntry();
+            } catch (error) {
+                // Fail silently if local active game publishing is unavailable.
+            }
+            publishActiveGameStateServer();
+        }
+
+        async function removeActiveGameFromServer() {
+            if (!activeGameId) return;
+            try {
+                await fetch('./active-games.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: activeGameId }),
+                    keepalive: true
+                });
+            } catch (error) {
+                // Fail silently.
+            }
+        }
 
         // Persist the timer state to localStorage for page reloads.
         function saveState() {
@@ -316,13 +468,19 @@
                 logPauseResume, logPeriodStartStop,
                 lastSavedAt: Date.now()
             };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
+            publishActiveGameState();
         }
 
         // Restore the timer state from localStorage when the page loads.
         function loadState() {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : null;
+            const raw = safeLocalStorageGet(STORAGE_KEY);
+            if (!raw) return null;
+            try {
+                return JSON.parse(raw);
+            } catch (error) {
+                return null;
+            }
         }
 
         function formatTime(ms) {
@@ -511,6 +669,19 @@
             } else {
                 saveState();
             }
+        }
+
+        function safePublishAfterAction() {
+            try {
+                publishActiveGameState();
+            } catch (error) {
+                // Fail silently.
+            }
+        }
+
+        function updateAllState() {
+            saveState();
+            safePublishAfterAction();
         }
 
         function updateTimerDisplayColor(remaining = null) {
@@ -793,6 +964,7 @@
 
         // Initialize the page from saved state when the browser loads.
         window.onload = function () {
+            activeGameId = loadOrCreateActiveGameId();
             const saved = loadState();
             if (saved) {
                 homeScore = saved.homeScore || saved.redScore || 0;
@@ -850,7 +1022,17 @@
                 updateMuteButton();
                 updatePauseButtonVisibility();
             }
+            saveState();
         };
-    </script>
-</body>
-</html>
+
+        window.addEventListener('beforeunload', () => {
+            saveState();
+            removeActiveGameEntry();
+            removeActiveGameFromServer();
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === ACTIVE_GAMES_KEY) {
+                publishActiveGameState();
+            }
+        });
