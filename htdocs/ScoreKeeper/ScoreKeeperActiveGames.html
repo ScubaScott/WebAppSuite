@@ -175,7 +175,7 @@
                 const scoreLabel = `${game.homeScore || 0} - ${game.awayScore || 0}`;
                 const periodLabel = `P${game.currentPeriod || 1}`;
                 const lastUpdate = formatAge(game.lastUpdate);
-                return `<div class="board-row">
+                return `<div class="board-row" data-id="${game.id}" onclick="openViewer('${game.id}')">
                     <div class="game-title"><strong>${title}</strong><span>${game.gameTitle || ''}</span></div>
                     <div>${scoreLabel}</div>
                     <div>${periodLabel}</div>
@@ -184,6 +184,12 @@
                 </div>`;
             }).join('');
         }
+
+            function openViewer(id) {
+                try {
+                    window.open(`ScoreKeeperViewer.html?id=${encodeURIComponent(id)}`, '_blank');
+                } catch (e) {}
+            }
 
         async function loadServerGames() {
             try {

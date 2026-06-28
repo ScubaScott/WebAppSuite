@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ScoreKeeper — Viewer</title>
+    <style>
+        body { background:#071024; color:#e6eef8; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; padding:20px; }
+        .shell { max-width:900px; margin:0 auto; }
+        .header { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+        .teams { display:flex; gap:12px; align-items:center; }
+        .team { text-align:center; }
+        .score { font-size:48px; font-weight:800; }
+        .period { font-size:20px; color:#9fb4d6; }
+        .timer { font-family:monospace; font-size:36px; margin-top:8px; }
+        .history { margin-top:20px; background:#041028; border:1px solid #13324a; border-radius:12px; padding:12px; }
+        .history-item { padding:8px 6px; border-bottom:1px solid #0b2a40; }
+        .history-item:last-child { border-bottom: none; }
+        .muted { opacity:0.7 }
+        .meta { color:#9fb4d6; font-size:14px }
+        a.back { color:#7dd3fc; text-decoration:none; font-weight:700 }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <div class="header">
+        <div>
+            <a class="back" href="ScoreKeeperActiveGames.html">← Back</a>
+            <h1 id="title">Game Viewer</h1>
+            <div id="meta" class="meta">Loading…</div>
+        </div>
+        <div class="teams">
+            <div class="team">
+                <div id="homeName">Home</div>
+                <div id="homeScore" class="score">0</div>
+            </div>
+            <div class="team">
+                <div id="period" class="period">P1</div>
+                <div id="timer" class="timer">00:00.0</div>
+            </div>
+            <div class="team">
+                <div id="awayName">Away</div>
+                <div id="awayScore" class="score">0</div>
+            </div>
+        </div>
+
+        <div class="history" id="history">
+            <div class="meta">Activity log</div>
+            <div id="historyList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SERVER = './active-games.php';
+    function qs(name) { return new URLSearchParams(location.search).get(name); }
+    const gameId = qs('id');
+
+    const homeNameEl = document.getElementById('homeName');
+    const awayNameEl = document.getElementById('awayName');
+    const homeScoreEl = document.getElementById('homeScore');
+    const awayScoreEl = document.getElementById('awayScore');
+    const timerEl = document.getElementById('timer');
+    const periodEl = document.getElementById('period');
+    const titleEl = document.getElementById('title');
+    const metaEl = document.getElementById('meta');
+    const historyList = document.getElementById('historyList');
+
+    let current = null;
+    let tickInterval = null;
+
+    function formatTimeMs(ms) {
+        const totalSeconds = Math.floor(Math.abs(ms) / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const tenths = Math.floor((Math.abs(ms) % 1000) / 100);
+        return `${minutes}:${String(seconds).padStart(2,'0')}.${tenths}`;
+    }
+
+    function formatAge(ts) {
+        if (!ts) return 'unknown';
+        const diff = Date.now() - ts;
+        const seconds = Math.round(diff / 1000);
+        if (seconds < 10) return 'just now';
+        if (seconds < 60) return `${seconds}s ago`;
+        const minutes = Math.round(seconds / 60);
+        return `${minutes}m ago`;
+    }
+
+    function render() {
+        if (!current) return;
+        homeNameEl.textContent = current.homeTeamName || 'Home';
+        awayNameEl.textContent = current.awayTeamName || 'Away';
+        homeScoreEl.textContent = current.homeScore || 0;
+        awayScoreEl.textContent = current.awayScore || 0;
+        periodEl.textContent = `P${current.currentPeriod || 1}`;
+        titleEl.textContent = current.gameTitle || `${homeNameEl.textContent} vs ${awayNameEl.textContent}`;
+        metaEl.textContent = `Last update: ${formatAge(current.lastUpdate)}`;
+
+        // Render history
+        historyList.innerHTML = '';
+        const hist = Array.isArray(current.scoreHistory) ? current.scoreHistory.slice().reverse() : [];
+        hist.forEach(entry => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            if (entry.type === 'event') {
+                div.innerHTML = `<div>${entry.text || ''}</div><div class="meta">${entry.timestamp || entry.time || ''}</div>`;
+            } else {
+                const timeLabel = entry.timestamp || entry.time || '';
+                div.innerHTML = `<div><strong>${entry.teamName || (entry.teamId==='home' ? 'Home' : 'Away')}</strong> — ${entry.currentScore || ''}</div><div class="meta">${timeLabel}</div>`;
+            }
+            historyList.appendChild(div);
+        });
+    }
+
+    function startTicker() {
+        if (tickInterval) clearInterval(tickInterval);
+        tickInterval = setInterval(() => {
+            if (!current) return;
+            const now = Date.now();
+            let displayMs = (current.elapsedMs || 0);
+            if (current.timerRunning && current.lastUpdate) {
+                displayMs = (current.elapsedMs || 0) + (now - current.lastUpdate);
+            }
+            timerEl.textContent = formatTimeMs(displayMs);
+        }, 100);
+    }
+
+    async function loadGame() {
+        if (!gameId) {
+            document.body.innerHTML = '<div style="padding:20px">Missing game id</div>';
+            return;
+        }
+        try {
+            const resp = await fetch(`${SERVER}?id=${encodeURIComponent(gameId)}`);
+            if (!resp.ok) throw new Error('server');
+            const payload = await resp.json();
+            current = payload.game || null;
+            if (!current) {
+                document.body.innerHTML = '<div style="padding:20px">Game not found or expired.</div>';
+                return;
+            }
+            // Ensure numeric fields
+            current.homeScore = Number(current.homeScore) || 0;
+            current.awayScore = Number(current.awayScore) || 0;
+            current.elapsedMs = Number(current.elapsedMs) || 0;
+            current.lastUpdate = Number(current.lastUpdate) || Date.now();
+            render();
+            startTicker();
+        } catch (e) {
+            document.body.innerHTML = '<div style="padding:20px">Unable to fetch game.</div>';
+        }
+    }
+
+    // Poll for updates
+    setInterval(() => loadGame(), 4000);
+    loadGame();
+</script>
+</body>
+</html>

@@ -416,9 +416,13 @@
                 isPaused,
                 isCountingUp,
                 timeLimit,
+                // include full score history so viewers can render exact local timestamps
+                scoreHistory: scoreHistory || [],
+                // elapsedMs is the cumulative elapsed time at the moment of publish
                 elapsedMs: accumulatedTime + (startTime ? Date.now() - startTime : 0),
                 lastUpdate: Date.now(),
-                expiresAt: Date.now() + 3 * 60 * 1000,
+                // 24 hours expiry to keep games visible when users return later
+                expiresAt: Date.now() + 24 * 60 * 60 * 1000,
                 gameTitle: `${homeTeamName} vs ${awayTeamName}`
             };
 
@@ -958,6 +962,7 @@
                 adjustmentPanel.classList.add('hidden');
                 if (pauseBtn) pauseBtn.disabled = true;
                 saveState();
+                try { publishActiveGameStateServer().catch(()=>{}); } catch(e){}
             }
         });
 
@@ -1026,9 +1031,9 @@
         };
 
         window.addEventListener('beforeunload', () => {
+            // Save local state when unloading. Do NOT remove server entry here so
+            // a game left running will remain discoverable for up to 24 hours.
             saveState();
-            removeActiveGameEntry();
-            removeActiveGameFromServer();
         });
 
         window.addEventListener('storage', (event) => {
@@ -1036,6 +1041,13 @@
                 publishActiveGameState();
             }
         });
+
+        // Heartbeat: ensure server copy is refreshed while the page is open.
+        try {
+            setInterval(() => {
+                publishActiveGameStateServer().catch(() => {});
+            }, 20 * 1000);
+        } catch (e) {}
     </script>
 </body>
 </html>
