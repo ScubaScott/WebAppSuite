@@ -32,7 +32,9 @@ let settings = { ...defaultSettings };
     - dice: the values entered so far for this roll
     - locked: true once Roll is pressed again (previous rows can't be edited)
 
-  game.turnScore accumulates the running points for this turn.
+  game.hotDiceBase: Points accumulated before a hot-dice reset. These are
+    preserved across field clears so recalcTurnScore() can add them back.
+
   game.playerOpened: array of booleans, whether each player has passed opening threshold
 */
 let game = freshGame();
@@ -43,12 +45,13 @@ function freshGame() {
     currentPlayerIndex:   0,
     scores:               [],
     turnScore:            0,
+    hotDiceBase:          0,   // accumulated points from previous hot-dice cycles
     field:                [],   // array of roll rows
     turnActive:           false,
     lastRoundTriggered:   false,
-    lastRoundStartIndex:  -1,   // player index who triggered the last round
+    lastRoundStartIndex:  -1,
     gameOver:             false,
-    playerOpened:         []    // has each player passed opening threshold
+    playerOpened:         []
   };
 }
 
@@ -74,10 +77,10 @@ function loadState() {
 
     if (sg && sg.started) {
       game = { ...freshGame(), ...sg };
-      // ensure arrays are arrays
       if (!Array.isArray(game.field))         game.field         = [];
       if (!Array.isArray(game.scores))        game.scores        = players.map(() => 0);
       if (!Array.isArray(game.playerOpened))  game.playerOpened  = players.map(() => false);
+      if (typeof game.hotDiceBase !== 'number') game.hotDiceBase = 0;
     } else {
       game = freshGame();
       game.scores       = players.map(() => 0);
@@ -105,7 +108,6 @@ function bindEvents() {
     document.getElementById('bankButton').addEventListener('click',   handleBank);
     document.getElementById('farkleButton').addEventListener('click', handleFarkle);
 
-    // Die input buttons — each tap adds one die to the current roll row
     document.querySelectorAll('.die-input-btn').forEach(btn => {
       btn.addEventListener('click', () => addDieToCurrentRoll(Number(btn.dataset.value)));
     });
@@ -142,7 +144,6 @@ function renderGame() {
     return;
   }
 
-  // Auto-start
   if (!game.started) {
     game.started      = true;
     game.scores       = players.map(() => 0);
@@ -161,7 +162,6 @@ function renderGame() {
   const place         = rankings.findIndex(e => e.index === idx) + 1;
   const opened        = game.playerOpened[idx] || false;
 
-  // Player hero
   document.getElementById('currentPlayerInfo').innerHTML = `
     <span class="player-name">${escHtml(currentPlayer)}</span>
   `;
@@ -169,13 +169,11 @@ function renderGame() {
   document.getElementById('playerPlace').textContent = place ? `${place}${ordinal(place)}` : '--';
   document.getElementById('turnScore').textContent   = game.turnScore.toLocaleString();
 
-  // Status pill
   const statusEl = document.getElementById('gameStatus');
-  if (game.gameOver)        { statusEl.textContent = 'Game over';  statusEl.className = 'status-pill pill-over'; }
-  else if (!game.turnActive){ statusEl.textContent = 'Ready';      statusEl.className = 'status-pill pill-ready'; }
-  else                      { statusEl.textContent = 'In turn';    statusEl.className = 'status-pill pill-active'; }
+  if (game.gameOver)         { statusEl.textContent = 'Game over';  statusEl.className = 'status-pill pill-over'; }
+  else if (!game.turnActive) { statusEl.textContent = 'Ready';      statusEl.className = 'status-pill pill-ready'; }
+  else                       { statusEl.textContent = 'In turn';    statusEl.className = 'status-pill pill-active'; }
 
-  // Opening threshold message
   const openMsg = document.getElementById('openingMessage');
   if (!opened && game.turnActive) {
     openMsg.textContent = `Must score at least ${settings.openingThreshold.toLocaleString()} pts this turn to open.`;
@@ -230,7 +228,6 @@ function renderField() {
     `;
   }).join('');
 
-  // Bind remove clicks on current row
   container.querySelectorAll('.field-die-removable').forEach(btn => {
     btn.addEventListener('click', () => {
       removeDieFromCurrentRoll(Number(btn.dataset.die));
@@ -240,15 +237,12 @@ function renderField() {
 
 // ─── Dice input buttons ───────────────────────────────────────────────────────
 function renderDiceButtons() {
-  const totalDiceInTurn = game.field.reduce((sum, row) => sum + row.dice.length, 0);
-  const diceInCurrentRow = currentRow() ? currentRow().dice.length : 0;
-
-  // Count dice used in locked rows
-  const lockedDice = game.field.slice(0, -1).reduce((sum, row) => sum + row.dice.length, 0);
+  const lockedDice       = game.field.slice(0, -1).reduce((sum, row) => sum + row.dice.length, 0);
+  const currentRowDice   = currentRow() ? currentRow().dice.length : 0;
   const maxForCurrentRow = 6 - lockedDice;
 
   document.querySelectorAll('.die-input-btn').forEach(btn => {
-    const disabled = !game.turnActive || game.gameOver || diceInCurrentRow >= maxForCurrentRow;
+    const disabled = !game.turnActive || game.gameOver || currentRowDice >= maxForCurrentRow;
     btn.disabled = disabled;
     btn.classList.toggle('die-btn-disabled', disabled);
   });
@@ -260,10 +254,7 @@ function renderValidation() {
   if (!el) return;
 
   const row = currentRow();
-  if (!row) {
-    el.classList.add('hidden');
-    return;
-  }
+  if (!row) { el.classList.add('hidden'); return; }
 
   if (!row.dice.length) {
     el.textContent = '⚠ Add at least one die before saving this roll.';
@@ -286,32 +277,26 @@ function renderActionButtons() {
   const bankBtn   = document.getElementById('bankButton');
   const farkleBtn = document.getElementById('farkleButton');
 
-  const row             = currentRow();
-  const rowDice         = row ? row.dice : [];
-  const rowScore        = scoreForSelection(rowDice);
-  const rowIsValid      = rowDice.length === 0 || rowScore > 0;
-  const totalDiceUsed   = game.field.reduce((s, r) => s + r.dice.length, 0);
-  const lockedDice      = game.field.slice(0, -1).reduce((s, r) => s + r.dice.length, 0);
-  const currentRowDice  = rowDice.length;
-  const allDiceUsed     = lockedDice + currentRowDice === 6;
-  const turnHasScore    = game.turnScore > 0 || rowScore > 0;
+  const row            = currentRow();
+  const rowDice        = row ? row.dice : [];
+  const rowScore       = scoreForSelection(rowDice);
+  const rowIsValid     = rowDice.length === 0 || rowScore > 0;
+  const lockedDice     = game.field.slice(0, -1).reduce((s, r) => s + r.dice.length, 0);
+  const currentRowLen  = rowDice.length;
 
-  const idx    = game.currentPlayerIndex;
-  const opened = game.playerOpened[idx] || false;
+  const idx            = game.currentPlayerIndex;
+  const opened         = game.playerOpened[idx] || false;
   const projectedTotal = game.turnScore + rowScore;
   const meetsOpening   = opened || projectedTotal >= settings.openingThreshold;
 
-  // Roll: allowed when turn is active, the current roll has at least one die,
-  // the current row is valid, and not all 6 dice are used
-  const hasRollDice = rowDice.length > 0;
-  const canRoll = game.turnActive && hasRollDice && rowIsValid && (lockedDice < 6);
+  // Roll: need at least one valid die in current row, and not all 6 locked
+  const canRoll = game.turnActive && rowDice.length > 0 && rowIsValid && (lockedDice < 6);
   rollBtn.disabled = game.gameOver || !canRoll;
-  rollBtn.textContent = game.turnActive ? 'Roll' : 'Roll';
 
-  // Bank: turn must be active, there must be a score, and opening threshold must be met
+  // Bank: must have a score and meet opening threshold
   bankBtn.disabled = !game.turnActive || projectedTotal === 0 || !meetsOpening || !rowIsValid;
 
-  // Farkle: always available while turn is active
+  // Farkle: always available while turn active
   farkleBtn.disabled = !game.turnActive;
 }
 
@@ -319,15 +304,11 @@ function renderActionButtons() {
 
 function addDieToCurrentRoll(value) {
   if (!game.turnActive || game.gameOver) return;
-
-  // Ensure there's a current row
   if (!game.field.length) return;
 
-  const row = currentRow();
-
-  // How many dice are locked (in previous rows)
+  const row        = currentRow();
   const lockedDice = game.field.slice(0, -1).reduce((s, r) => s + r.dice.length, 0);
-  if (lockedDice + row.dice.length >= 6) return; // can't add more than 6 total
+  if (lockedDice + row.dice.length >= 6) return;
 
   row.dice.push(value);
   recalcTurnScore();
@@ -348,9 +329,14 @@ function currentRow() {
 }
 
 // ─── Turn score ───────────────────────────────────────────────────────────────
-
+//
+// turnScore = hotDiceBase + sum of scores from all rows in the current field.
+// hotDiceBase carries forward points earned before a hot-dice reset so they
+// aren't lost when game.field is cleared.
+//
 function recalcTurnScore() {
-  game.turnScore = game.field.reduce((sum, row) => sum + scoreForSelection(row.dice), 0);
+  const fieldScore  = game.field.reduce((sum, row) => sum + scoreForSelection(row.dice), 0);
+  game.turnScore    = game.hotDiceBase + fieldScore;
 }
 
 // ─── Roll button ──────────────────────────────────────────────────────────────
@@ -358,7 +344,6 @@ function recalcTurnScore() {
 function handleRoll() {
   if (game.gameOver) return;
 
-  // Not yet started a turn — begin one
   if (!game.turnActive) {
     startTurn();
     return;
@@ -368,34 +353,35 @@ function handleRoll() {
   const rowDice  = row ? row.dice : [];
   const rowScore = scoreForSelection(rowDice);
 
-  // Each roll must contain at least one die and score.
-  if (!rowDice.length || rowScore === 0) {
-    return;
-  }
+  if (!rowDice.length || rowScore === 0) return;
 
-  // Check hot-dice: if all 6 dice have been used (across all rows) and we're rolling again
-  const totalDiceUsed = game.field.reduce((s, r) => s + r.dice.length, 0);
+  // Count total dice committed across all rows
+  const lockedDice    = game.field.slice(0, -1).reduce((s, r) => s + r.dice.length, 0);
+  const totalDiceUsed = lockedDice + rowDice.length;
 
   if (totalDiceUsed === 6) {
-    // Hot dice! Clear the field and start fresh, but keep turnScore
-    const preservedScore = game.turnScore;
-    game.field = [{ dice: [], locked: false }];
-    game.turnScore = preservedScore;
+    // ── Hot dice! All 6 dice scored — bank the field score into hotDiceBase
+    //    and reset the field so the player can roll all 6 again.
+    const fieldScore    = game.field.reduce((sum, r) => sum + scoreForSelection(r.dice), 0);
+    game.hotDiceBase   += fieldScore;
+    game.turnScore      = game.hotDiceBase;   // keep display correct immediately
+    game.field          = [{ dice: [], locked: false }];
+    showToast('🔥 Hot dice! Roll all 6 again!');
     renderGame();
     return;
   }
 
-  // else: normal re-roll — just add a new empty row
+  // Normal re-roll: lock current row, open a new empty one
   game.field.push({ dice: [], locked: false });
   recalcTurnScore();
-
   renderGame();
 }
 
 function beginTurn() {
-  game.turnActive = true;
-  game.turnScore  = 0;
-  game.field      = [{ dice: [], locked: false }];
+  game.turnActive  = true;
+  game.turnScore   = 0;
+  game.hotDiceBase = 0;
+  game.field       = [{ dice: [], locked: false }];
 }
 
 function startTurn() {
@@ -411,19 +397,23 @@ function handleBank() {
   const row      = currentRow();
   const rowScore = row ? scoreForSelection(row.dice) : 0;
 
-  // Validate current row
   if (row && row.dice.length > 0 && rowScore === 0) return;
 
-  const finalScore = game.turnScore + rowScore;
-  const idx        = game.currentPlayerIndex;
+  const finalScore = game.turnScore + rowScore;  // turnScore already includes hotDiceBase + locked rows
+  // But wait: recalcTurnScore already adds rowScore via the field, so turnScore IS the final.
+  // Use game.turnScore directly (recalcTurnScore was called on every die add).
+  // However if the current row has dice we need to make sure it's included:
+  recalcTurnScore();
+  const totalToBank = game.turnScore;
 
-  // Opening threshold check
+  const idx = game.currentPlayerIndex;
+
   if (!game.playerOpened[idx]) {
-    if (finalScore < settings.openingThreshold) return; // button should be disabled, but guard anyway
+    if (totalToBank < settings.openingThreshold) return;
     game.playerOpened[idx] = true;
   }
 
-  game.scores[idx] = (game.scores[idx] || 0) + finalScore;
+  game.scores[idx] = (game.scores[idx] || 0) + totalToBank;
   completeTurn();
 }
 
@@ -431,44 +421,36 @@ function handleBank() {
 
 function handleFarkle() {
   if (!game.turnActive || game.gameOver) return;
-  // No points awarded — just end the turn
   completeTurn();
 }
 
 // ─── End of turn ─────────────────────────────────────────────────────────────
 
 function completeTurn() {
-  game.turnActive = false;
-  game.turnScore  = 0;
-  game.field      = [];
+  game.turnActive  = false;
+  game.turnScore   = 0;
+  game.hotDiceBase = 0;
+  game.field       = [];
 
   const prevIndex = game.currentPlayerIndex;
   game.currentPlayerIndex = (game.currentPlayerIndex + 1) % players.length;
 
-  // Check if someone has hit the winning score
   if (!game.lastRoundTriggered) {
     const winners = game.scores.map((s, i) => ({ score: s, index: i })).filter(e => e.score >= settings.winningScore);
     if (winners.length) {
       game.lastRoundTriggered  = true;
-      game.lastRoundStartIndex = game.currentPlayerIndex; // next player begins the last round
+      game.lastRoundStartIndex = game.currentPlayerIndex;
       showLastRoundBanner(players[prevIndex]);
     }
   } else {
-    // We're in the last round — check if we've cycled back to the trigger player
     if (game.currentPlayerIndex === game.lastRoundStartIndex) {
       game.gameOver = true;
       showGameOverSummary();
     }
   }
 
-  // Check if it's the end of a full round (back to player 0 or first player)
-  // Show round summary when wrapping back to the first player (and not game over)
   if (!game.gameOver && game.currentPlayerIndex === 0 && !game.lastRoundTriggered) {
     showRoundSummary();
-  } else if (!game.gameOver && game.currentPlayerIndex === 0 && game.lastRoundTriggered
-             && game.lastRoundStartIndex !== 0) {
-    // still in last round, wrapped to 0 but not the trigger player
-    // no summary yet
   }
 
   saveState();
@@ -478,9 +460,9 @@ function completeTurn() {
 // ─── Round / game-over summaries ─────────────────────────────────────────────
 
 function showRoundSummary() {
-  const overlay   = document.getElementById('summaryOverlay');
+  const overlay = document.getElementById('summaryOverlay');
   if (!overlay) return;
-  const rankings  = getRankings();
+  const rankings = getRankings();
 
   overlay.innerHTML = `
     <div class="summary-card">
@@ -683,10 +665,9 @@ function renderStandings() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Score a set of dice values.
- * Returns 0 if any dice are present but don't form a valid scoring combination.
- * Important: we must score ALL dice in the selection. If leftover dice exist
- * that score nothing, return 0.
+ * Score a set of dice values for a single roll row.
+ * Returns 0 if any dice present don't form a valid scoring combination
+ * (i.e. every die in the selection must contribute to a score).
  */
 function scoreForSelection(dice) {
   if (!dice || !dice.length) return 0;
@@ -700,14 +681,12 @@ function scoreForSelection(dice) {
     // Straight 1-2-3-4-5-6
     if (values.every((v, i) => v === i + 1)) return settings.straight;
 
-    // Three pairs
+    // Three pairs (3 distinct pairs, or two sets of 3)
     const countVals = Object.values(counts);
     if (countVals.length === 3 && countVals.every(c => c === 2)) return settings.threePairs;
-    if (countVals.length === 2 && countVals.every(c => c === 3)) return settings.threePairs; // two sets of 3 also counts as three pairs in some variants — keep for safety
+    if (countVals.length === 2 && countVals.every(c => c === 3)) return settings.threePairs;
   }
 
-  // ── Multi-of-a-kind (all dice of one face, possibly with extra scoring dice)
-  // We need to tally the score of ALL dice and ensure none are wasted.
   return scoreAllDice(values, counts);
 }
 
@@ -716,10 +695,10 @@ function scoreForSelection(dice) {
  * die cannot be scored.
  */
 function scoreAllDice(values, counts) {
-  let score         = 0;
-  const remaining   = { ...counts };
+  let score       = 0;
+  const remaining = { ...counts };
 
-  // Score three-or-more-of-a-kind first (greedily largest group first)
+  // Score three-or-more-of-a-kind first
   const faces = Object.keys(remaining).map(Number).sort((a, b) => b - a);
 
   for (const face of faces) {
@@ -733,15 +712,14 @@ function scoreAllDice(values, counts) {
     }
   }
 
-  // Now handle singles: only 1s and 5s score alone
+  // Singles: only 1s and 5s score alone
   for (const face of Object.keys(remaining).map(Number)) {
     const leftover = remaining[face] || 0;
     if (leftover === 0) continue;
-    if (face === 1) { score += leftover * settings.single1; remaining[face] = 0; }
+    if (face === 1)      { score += leftover * settings.single1; remaining[face] = 0; }
     else if (face === 5) { score += leftover * settings.single5; remaining[face] = 0; }
     else {
-      // Non-scoring die left over — whole selection is invalid
-      return 0;
+      return 0; // non-scoring die left — whole selection invalid
     }
   }
 
@@ -785,7 +763,7 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('toast-show'), 2500);
 }
 
-// ─── Pip SVG for dice buttons ─────────────────────────────────────────────────
+// ─── Pip SVG for dice ─────────────────────────────────────────────────────────
 
 function dieSVG(value) {
   const pipPositions = {
