@@ -304,6 +304,7 @@
         let logPauseResume = false;
         let logPeriodStartStop = true;
         let activeGameId = null;
+        let activeGameStarted = false;
 
         const STORAGE_KEY = 'timerStateV7';
         const ACTIVE_GAMES_KEY = 'scoreKeeperActiveGamesV1';
@@ -362,7 +363,7 @@
         }
 
         function updateActiveGameEntry() {
-            if (!activeGameId) return;
+            if (!activeGameId || !activeGameStarted) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             const games = pruneStaleActiveGames(getActiveGames());
@@ -404,7 +405,7 @@
         }
 
         async function publishActiveGameStateServer() {
-            if (!activeGameId) return;
+            if (!activeGameId || !activeGameStarted) return;
             const payload = {
                 id: activeGameId,
                 homeTeamName,
@@ -470,6 +471,7 @@
                 homeTeamColor, awayTeamColor, homeBackgroundImage, muted,
                 addPauseButton, pauseOnScore, isPaused,
                 logPauseResume, logPeriodStartStop,
+                activeGameId, activeGameStarted,
                 lastSavedAt: Date.now()
             };
             safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
@@ -734,6 +736,11 @@
 
         // Start the timer and optionally add a history note for the period start.
         function startTimer(logStart = true) {
+            if (!activeGameStarted && currentPeriod === 1) {
+                activeGameId = loadOrCreateActiveGameId();
+                activeGameStarted = true;
+                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
+            }
             if (!startTime) startTime = Date.now();
             if (logStart) {
                 if (isPaused) {
@@ -969,7 +976,6 @@
 
         // Initialize the page from saved state when the browser loads.
         window.onload = function () {
-            activeGameId = loadOrCreateActiveGameId();
             const saved = loadState();
             if (saved) {
                 homeScore = saved.homeScore || saved.redScore || 0;
@@ -985,7 +991,8 @@
                 isPaused = !!saved.isPaused;
                 logPauseResume = !!saved.logPauseResume;
                 logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
-                // restore team names and colors if present
+                activeGameStarted = !!saved.activeGameStarted;
+                activeGameId = activeGameStarted ? saved.activeGameId || null : null;
                 homeTeamName = saved.homeTeamName || saved.redTeamName || homeTeamName;
                 awayTeamName = saved.awayTeamName || saved.blueTeamName || awayTeamName;
                 homeTeamColor = saved.homeTeamColor || saved.redTeamColor || homeTeamColor;
@@ -997,7 +1004,6 @@
                 }));
                 homeNameEl.textContent = homeTeamName;
                 awayNameEl.textContent = awayTeamName;
-                
                 scoreHomeEl.textContent = homeScore;
                 scoreAwayEl.textContent = awayScore;
                 periodDisplay.textContent = `P${currentPeriod}`;
