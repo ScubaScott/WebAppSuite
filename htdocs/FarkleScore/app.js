@@ -150,6 +150,10 @@ function renderGame() {
     saveState();
   }
 
+  if (!game.turnActive && !game.gameOver) {
+    beginTurn();
+  }
+
   const idx           = game.currentPlayerIndex;
   const currentPlayer = players[idx] || players[0];
   const currentScore  = game.scores[idx] || 0;
@@ -193,7 +197,7 @@ function renderField() {
   if (!container) return;
 
   if (!game.field.length) {
-    container.innerHTML = '<p class="field-empty">No dice yet. Press Roll to start your turn, then tap dice to add them.</p>';
+    container.innerHTML = '<p class="field-empty">No dice yet. Tap a die to start the roll.</p>';
     return;
   }
 
@@ -256,8 +260,14 @@ function renderValidation() {
   if (!el) return;
 
   const row = currentRow();
-  if (!row || !row.dice.length) {
+  if (!row) {
     el.classList.add('hidden');
+    return;
+  }
+
+  if (!row.dice.length) {
+    el.textContent = '⚠ Add at least one die before saving this roll.';
+    el.classList.remove('hidden');
     return;
   }
 
@@ -291,10 +301,12 @@ function renderActionButtons() {
   const projectedTotal = game.turnScore + rowScore;
   const meetsOpening   = opened || projectedTotal >= settings.openingThreshold;
 
-  // Roll: allowed when turn is active, current row is valid (or empty), and not all 6 dice locked
-  const canRoll = game.turnActive && rowIsValid && (lockedDice < 6);
-  rollBtn.disabled = game.gameOver || (!game.turnActive ? false : !rowIsValid);
-  rollBtn.textContent = game.turnActive ? 'Re-roll' : 'Roll';
+  // Roll: allowed when turn is active, the current roll has at least one die,
+  // the current row is valid, and not all 6 dice are used
+  const hasRollDice = rowDice.length > 0;
+  const canRoll = game.turnActive && hasRollDice && rowIsValid && (lockedDice < 6);
+  rollBtn.disabled = game.gameOver || !canRoll;
+  rollBtn.textContent = game.turnActive ? 'Roll' : 'Roll';
 
   // Bank: turn must be active, there must be a score, and opening threshold must be met
   bankBtn.disabled = !game.turnActive || projectedTotal === 0 || !meetsOpening || !rowIsValid;
@@ -338,14 +350,7 @@ function currentRow() {
 // ─── Turn score ───────────────────────────────────────────────────────────────
 
 function recalcTurnScore() {
-  // Sum scores of all LOCKED rows (all except the current one)
-  const lockedScore = game.field
-    .slice(0, -1)
-    .reduce((sum, row) => sum + scoreForSelection(row.dice), 0);
-
-  // Current row score is shown live but NOT added to turnScore until Roll is pressed
-  // turnScore = locked rows only; we add current row score when displaying "projected"
-  game.turnScore = lockedScore;
+  game.turnScore = game.field.reduce((sum, row) => sum + scoreForSelection(row.dice), 0);
 }
 
 // ─── Roll button ──────────────────────────────────────────────────────────────
@@ -363,15 +368,9 @@ function handleRoll() {
   const rowDice  = row ? row.dice : [];
   const rowScore = scoreForSelection(rowDice);
 
-  // Current row must either be empty or score
-  if (rowDice.length > 0 && rowScore === 0) {
-    // invalid — do nothing (validation message is shown)
+  // Each roll must contain at least one die and score.
+  if (!rowDice.length || rowScore === 0) {
     return;
-  }
-
-  // Lock the current row — its score is now committed to turnScore
-  if (rowDice.length > 0) {
-    game.turnScore += rowScore;
   }
 
   // Check hot-dice: if all 6 dice have been used (across all rows) and we're rolling again
@@ -379,18 +378,28 @@ function handleRoll() {
 
   if (totalDiceUsed === 6) {
     // Hot dice! Clear the field and start fresh, but keep turnScore
-    game.field = [];
+    const preservedScore = game.turnScore;
+    game.field = [{ dice: [], locked: false }];
+    game.turnScore = preservedScore;
+    renderGame();
+    return;
   }
+
   // else: normal re-roll — just add a new empty row
   game.field.push({ dice: [], locked: false });
+  recalcTurnScore();
 
   renderGame();
 }
 
-function startTurn() {
+function beginTurn() {
   game.turnActive = true;
   game.turnScore  = 0;
   game.field      = [{ dice: [], locked: false }];
+}
+
+function startTurn() {
+  beginTurn();
   renderGame();
 }
 
