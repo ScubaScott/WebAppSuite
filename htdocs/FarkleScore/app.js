@@ -175,11 +175,24 @@ function renderGame() {
   else                       { statusEl.textContent = 'In turn';    statusEl.className = 'status-pill pill-active'; }
 
   const openMsg = document.getElementById('openingMessage');
-  if (!opened && game.turnActive) {
+  if (!opened && game.turnActive && !game.lastRoundTriggered) {
     openMsg.textContent = `Must score at least ${settings.openingThreshold.toLocaleString()} pts this turn to open.`;
     openMsg.classList.remove('hidden');
   } else {
     openMsg.classList.add('hidden');
+  }
+
+  const lastRoundMsg = document.getElementById('lastRoundMessage');
+  if (game.lastRoundTriggered && game.turnActive) {
+    const lastRoundText = getLastRoundTargetMessage(idx);
+    if (lastRoundText) {
+      lastRoundMsg.textContent = lastRoundText;
+      lastRoundMsg.classList.remove('hidden');
+    } else {
+      lastRoundMsg.classList.add('hidden');
+    }
+  } else {
+    lastRoundMsg.classList.add('hidden');
   }
 
   renderField();
@@ -489,6 +502,35 @@ function showLastRoundBanner(triggerName) {
   banner.textContent = `🎲 ${escHtml(triggerName)} hit ${settings.winningScore.toLocaleString()}! Last round — everyone gets one more turn.`;
   banner.classList.remove('hidden');
   setTimeout(() => banner.classList.add('hidden'), 6000);
+}
+
+function getLastRoundTargetMessage(playerIndex) {
+  if (!game.lastRoundTriggered) return '';
+
+  const leader = players.reduce((best, _, index) => {
+    const score = game.scores[index] || 0;
+    if (score > best.score || (score === best.score && index < best.index)) {
+      return { score, index };
+    }
+    return best;
+  }, { score: -Infinity, index: -1 });
+
+  if (leader.index < 0) return '';
+
+  const playerScore = game.scores[playerIndex] || 0;
+  const leaderScore = leader.score || 0;
+  const leaderName = players[leader.index] || 'the leader';
+
+  if (leader.index === playerIndex) {
+    return `Last round, you are already leading with ${leaderScore.toLocaleString()} pts.`;
+  }
+
+  const needed = Math.max(0, leaderScore - playerScore);
+  if (needed === 0) {
+    return `Last round, you are tied with ${escHtml(leaderName)}.`;
+  }
+
+  return `Last round, ${needed.toLocaleString()} pts needed to tie ${escHtml(leaderName)}.`;
 }
 
 function showGameOverSummary() {
