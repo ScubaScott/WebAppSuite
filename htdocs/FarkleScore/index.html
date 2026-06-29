@@ -9,9 +9,9 @@
   <body data-page="game">
     <div class="page-shell">
       <header class="topbar">
-        <div>
+        <div class="topbar-brand">
           <p class="eyebrow">Wooden table edition</p>
-          <h1>Farkle Scoreboard</h1>
+          <h1>Farkle</h1>
         </div>
         <nav class="topnav">
           <a href="index.html" class="active">Game</a>
@@ -22,6 +22,8 @@
       </header>
 
       <main class="game-layout">
+
+        <!-- Player info -->
         <section class="card player-card">
           <div class="card-heading">
             <h2>Current player</h2>
@@ -29,46 +31,72 @@
           </div>
           <div id="currentPlayerInfo" class="player-hero"></div>
           <div class="score-grid">
-            <div>
-              <p class="label">Current score</p>
-              <p id="playerScore" class="value">0</p>
+            <div class="score-cell">
+              <p class="score-label">Total score</p>
+              <p id="playerScore" class="score-value">0</p>
             </div>
-            <div>
-              <p class="label">Place</p>
-              <p id="playerPlace" class="value">--</p>
+            <div class="score-cell">
+              <p class="score-label">Place</p>
+              <p id="playerPlace" class="score-value">--</p>
             </div>
-            <div>
-              <p class="label">Turn score</p>
-              <p id="turnScore" class="value">0</p>
+            <div class="score-cell highlight">
+              <p class="score-label">Turn score</p>
+              <p id="turnScore" class="score-value">0</p>
             </div>
           </div>
+          <p id="openingMessage" class="opening-message hidden"></p>
         </section>
 
+        <!-- Field -->
         <section class="card field-card">
           <div class="card-heading">
             <h2>Field</h2>
-            <p class="subtle">Tap a die from the roll to add it to the field.</p>
+            <p class="subtle" id="fieldHint">Tap a die below to add it to the field.</p>
           </div>
           <div id="fieldArea" class="field-area"></div>
         </section>
 
+        <!-- Dice input + controls -->
         <section class="card controls-card">
           <div class="card-heading">
-            <h2>Roll dice</h2>
-            <p class="subtle">Tap a die to save it for the turn, then roll the remaining dice.</p>
+            <h2>Dice</h2>
+            <p class="subtle">Tap to add to the current roll.</p>
           </div>
-          <div id="rollArea" class="roll-area"></div>
-          <p id="rollHint" class="roll-hint">Press Roll to begin the turn.</p>
+          <div class="dice-input-area">
+            <button class="die-input-btn" data-value="1" aria-label="Add a 1">
+              <svg viewBox="0 0 40 40" class="pip-svg"><circle cx="20" cy="20" r="5"/></svg>
+            </button>
+            <button class="die-input-btn" data-value="2" aria-label="Add a 2">
+              <svg viewBox="0 0 40 40" class="pip-svg"><circle cx="11" cy="11" r="4"/><circle cx="29" cy="29" r="4"/></svg>
+            </button>
+            <button class="die-input-btn" data-value="3" aria-label="Add a 3">
+              <svg viewBox="0 0 40 40" class="pip-svg"><circle cx="11" cy="11" r="4"/><circle cx="20" cy="20" r="4"/><circle cx="29" cy="29" r="4"/></svg>
+            </button>
+            <button class="die-input-btn" data-value="4" aria-label="Add a 4">
+              <svg viewBox="0 0 40 40" class="pip-svg"><circle cx="11" cy="11" r="4"/><circle cx="29" cy="11" r="4"/><circle cx="11" cy="29" r="4"/><circle cx="29" cy="29" r="4"/></svg>
+            </button>
+            <button class="die-input-btn" data-value="5" aria-label="Add a 5">
+              <svg viewBox="0 0 40 40" class="pip-svg"><circle cx="11" cy="11" r="4"/><circle cx="29" cy="11" r="4"/><circle cx="20" cy="20" r="4"/><circle cx="11" cy="29" r="4"/><circle cx="29" cy="29" r="4"/></svg>
+            </button>
+            <button class="die-input-btn" data-value="6" aria-label="Add a 6">
+              <svg viewBox="0 0 40 40" class="pip-svg"><circle cx="11" cy="10" r="4"/><circle cx="29" cy="10" r="4"/><circle cx="11" cy="20" r="4"/><circle cx="29" cy="20" r="4"/><circle cx="11" cy="30" r="4"/><circle cx="29" cy="30" r="4"/></svg>
+            </button>
+          </div>
+
+          <div id="rollValidation" class="roll-validation hidden"></div>
+
           <div class="button-row">
             <button id="rollButton" class="btn btn-primary">Roll</button>
-            <button id="bankButton" class="btn">Bank</button>
+            <button id="bankButton" class="btn btn-success">Bank</button>
             <button id="farkleButton" class="btn btn-danger">Farkle</button>
           </div>
         </section>
+
       </main>
     </div>
 
     <div id="summaryOverlay" class="overlay hidden"></div>
+    <div id="lastRoundBanner" class="last-round-banner hidden"></div>
 
     <script src="app.js"></script>
   </body>

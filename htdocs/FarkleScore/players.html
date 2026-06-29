@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Farkle Players</title>
+    <title>Farkle – Players</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body data-page="players">
     <div class="page-shell">
       <header class="topbar">
-        <div>
+        <div class="topbar-brand">
           <p class="eyebrow">Wooden table edition</p>
-          <h1>Player setup</h1>
+          <h1>Farkle</h1>
         </div>
         <nav class="topnav">
           <a href="index.html">Game</a>
@@ -24,17 +24,17 @@
       <main class="page-content">
         <section class="card">
           <div class="card-heading">
-            <h2>Players</h2>
+            <h2>Player setup</h2>
             <div class="button-row compact">
-              <button id="addPlayerButton" class="btn btn-primary">Add player</button>
-              <button id="startNewGameButton" class="btn">Start new game</button>
+              <button id="addPlayerButton" class="btn btn-primary">+ Add player</button>
+              <button id="startNewGameButton" class="btn btn-success">Start new game</button>
             </div>
           </div>
+          <p class="subtle" style="margin-bottom:16px">Names can be edited inline. Reorder with arrows. Removing a player mid-game will reset their score.</p>
           <div id="playersList" class="players-list"></div>
         </section>
       </main>
     </div>
-
     <script src="app.js"></script>
   </body>
 </html>

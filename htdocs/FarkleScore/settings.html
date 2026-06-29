@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Farkle Settings</title>
+    <title>Farkle – Settings</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body data-page="settings">
     <div class="page-shell">
       <header class="topbar">
-        <div>
+        <div class="topbar-brand">
           <p class="eyebrow">Wooden table edition</p>
-          <h1>Scoring settings</h1>
+          <h1>Farkle</h1>
         </div>
         <nav class="topnav">
           <a href="index.html">Game</a>
@@ -24,29 +24,28 @@
       <main class="page-content">
         <section class="card">
           <div class="card-heading">
-            <h2>Adjust values</h2>
+            <h2>Scoring values</h2>
             <div class="button-row compact">
-              <button id="saveSettingsButton" class="btn btn-primary">Save settings</button>
+              <button id="saveSettingsButton" class="btn btn-primary">Save</button>
               <button id="resetSettingsButton" class="btn">Reset defaults</button>
             </div>
           </div>
           <form id="settingsForm" class="settings-grid">
-            <label>Single 1 <input type="number" name="single1" min="0" /></label>
-            <label>Single 5 <input type="number" name="single5" min="0" /></label>
-            <label>Three of a kind <input type="number" name="threeKind" min="0" /></label>
-            <label>Three 1s <input type="number" name="threeOnes" min="0" /></label>
-            <label>Four of a kind <input type="number" name="fourKind" min="0" /></label>
-            <label>Five of a kind <input type="number" name="fiveKind" min="0" /></label>
-            <label>Six of a kind <input type="number" name="sixKind" min="0" /></label>
-            <label>Straight <input type="number" name="straight" min="0" /></label>
-            <label>Three pairs <input type="number" name="threePairs" min="0" /></label>
-            <label>Winning score <input type="number" name="winningScore" min="0" /></label>
-            <label>Opening threshold <input type="number" name="openingThreshold" min="0" /></label>
+            <label>Single 1<input type="number" name="single1" min="0" /></label>
+            <label>Single 5<input type="number" name="single5" min="0" /></label>
+            <label>Three of a kind (×face)<input type="number" name="threeKind" min="0" /></label>
+            <label>Three 1s<input type="number" name="threeOnes" min="0" /></label>
+            <label>Four of a kind<input type="number" name="fourKind" min="0" /></label>
+            <label>Five of a kind<input type="number" name="fiveKind" min="0" /></label>
+            <label>Six of a kind<input type="number" name="sixKind" min="0" /></label>
+            <label>Straight (1–2–3–4–5–6)<input type="number" name="straight" min="0" /></label>
+            <label>Three pairs<input type="number" name="threePairs" min="0" /></label>
+            <label>Winning score<input type="number" name="winningScore" min="0" /></label>
+            <label>Opening threshold<input type="number" name="openingThreshold" min="0" /></label>
           </form>
         </section>
       </main>
     </div>
-
     <script src="app.js"></script>
   </body>
 </html>
