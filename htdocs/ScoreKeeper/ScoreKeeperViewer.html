@@ -17,7 +17,7 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            padding: 24px;
+            padding: 16px;
         }
         .scoreboard {
             width: min(100%, 980px);
@@ -31,7 +31,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 22px 24px 10px;
+            padding: 18px 18px 10px;
             gap: 16px;
         }
         .header-info {
@@ -59,58 +59,58 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
-            padding: 18px 24px;
+            gap: 16px;
+            padding: 14px 18px 20px;
         }
         .team-panel {
             flex: 1;
             text-align: center;
-            padding: 18px 16px;
-            border-radius: 24px;
+            padding: 16px 14px;
+            border-radius: 22px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(148,163,184,0.12);
         }
         .team-name {
-            font-size: 1rem;
-            letter-spacing: 0.18em;
+            font-size: 0.95rem;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
             color: #a5b4fc;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .team-score {
-            font-size: clamp(4.5rem, 7vw, 7rem);
+            font-size: clamp(3.6rem, 14vw, 5.5rem);
             font-weight: 900;
-            letter-spacing: -0.05em;
+            letter-spacing: -0.04em;
             margin: 0;
             color: #f8fafc;
         }
         .center-panel {
-            width: 280px;
+            width: 220px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 18px 14px;
-            border-radius: 26px;
+            gap: 8px;
+            padding: 16px 12px;
+            border-radius: 24px;
             background: radial-gradient(circle at top, rgba(59,130,246,0.18), rgba(15,23,42,0.92));
             border: 1px solid rgba(59,130,246,0.35);
         }
         .clock {
             font-family: 'Digital-7', monospace;
-            font-size: 4.2rem;
+            font-size: clamp(3rem, 12vw, 4rem);
             letter-spacing: 0.05em;
             color: #f8fafc;
-            text-shadow: 0 0 30px rgba(59,130,246,0.45);
+            text-shadow: 0 0 24px rgba(59,130,246,0.45);
         }
         .period {
-            font-size: 1.05rem;
+            font-size: 1rem;
             color: #c7d2fe;
             letter-spacing: 0.18em;
             text-transform: uppercase;
         }
         .history-section {
-            margin: 0 24px 24px;
+            margin: 0 18px 18px;
             background: rgba(15,23,42,0.95);
             border: 1px solid rgba(148,163,184,0.14);
             border-radius: 26px;
@@ -118,8 +118,8 @@
         }
         .history-title {
             margin: 0;
-            padding: 18px 20px;
-            font-size: 1rem;
+            padding: 16px 18px;
+            font-size: 0.98rem;
             letter-spacing: 0.15em;
             text-transform: uppercase;
             color: #e2e8f0;
@@ -127,22 +127,22 @@
             background: rgba(15,23,42,0.9);
         }
         .history-list {
-            max-height: 420px;
+            max-height: 360px;
             overflow-y: auto;
         }
         .history-item {
             display: grid;
             grid-template-columns: 1fr auto;
-            gap: 12px;
+            gap: 10px;
             align-items: start;
-            padding: 16px 20px;
+            padding: 14px 18px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .history-item:last-child { border-bottom: none; }
         .entry-label {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
         .entry-label strong {
             color: #f8fafc;
@@ -156,6 +156,61 @@
             color: #94a3b8;
             font-size: 0.82rem;
             white-space: nowrap;
+        }
+        @media (max-width: 720px) {
+            body {
+                padding: 12px;
+            }
+            .scoreboard {
+                width: 100%;
+                border-radius: 24px;
+                box-shadow: 0 18px 42px rgba(0,0,0,0.42);
+            }
+            .header-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 16px 16px 10px;
+            }
+            .back-link {
+                align-self: stretch;
+                text-align: left;
+            }
+            .court {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+                padding: 14px 16px 20px;
+            }
+            .team-panel,
+            .center-panel {
+                width: 100%;
+            }
+            .center-panel {
+                width: auto;
+                padding: 14px 12px;
+            }
+            .team-score {
+                font-size: clamp(3.8rem, 16vw, 5rem);
+            }
+            .clock {
+                font-size: clamp(2.6rem, 16vw, 3.6rem);
+            }
+            .history-section {
+                margin: 0 16px 16px;
+            }
+            .history-list {
+                max-height: 320px;
+            }
+            .history-item {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 12px 16px;
+            }
+            .entry-time {
+                white-space: normal;
+                text-align: left;
+            }
         }
     </style>
 </head>
@@ -306,114 +361,6 @@
     }
 
     setInterval(loadGame, 4000);
-    loadGame();
-</script>
-</body>
-</html>
-
-<script>
-    const SERVER = './active-games.php';
-    function qs(name) { return new URLSearchParams(location.search).get(name); }
-    const gameId = qs('id');
-
-    const homeNameEl = document.getElementById('homeName');
-    const awayNameEl = document.getElementById('awayName');
-    const homeScoreEl = document.getElementById('homeScore');
-    const awayScoreEl = document.getElementById('awayScore');
-    const timerEl = document.getElementById('timer');
-    const periodEl = document.getElementById('period');
-    const titleEl = document.getElementById('title');
-    const metaEl = document.getElementById('meta');
-    const historyList = document.getElementById('historyList');
-
-    let current = null;
-    let tickInterval = null;
-
-    function formatTimeMs(ms) {
-        const totalSeconds = Math.floor(Math.abs(ms) / 1000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        const tenths = Math.floor((Math.abs(ms) % 1000) / 100);
-        return `${minutes}:${String(seconds).padStart(2,'0')}.${tenths}`;
-    }
-
-    function formatAge(ts) {
-        if (!ts) return 'unknown';
-        const diff = Date.now() - ts;
-        const seconds = Math.round(diff / 1000);
-        if (seconds < 10) return 'just now';
-        if (seconds < 60) return `${seconds}s ago`;
-        const minutes = Math.round(seconds / 60);
-        return `${minutes}m ago`;
-    }
-
-    function render() {
-        if (!current) return;
-        homeNameEl.textContent = current.homeTeamName || 'Home';
-        awayNameEl.textContent = current.awayTeamName || 'Away';
-        homeScoreEl.textContent = current.homeScore || 0;
-        awayScoreEl.textContent = current.awayScore || 0;
-        periodEl.textContent = `P${current.currentPeriod || 1}`;
-        titleEl.textContent = current.gameTitle || `${homeNameEl.textContent} vs ${awayNameEl.textContent}`;
-        metaEl.textContent = `Last update: ${formatAge(current.lastUpdate)}`;
-
-        // Render history
-        historyList.innerHTML = '';
-        const hist = Array.isArray(current.scoreHistory) ? current.scoreHistory.slice().reverse() : [];
-        hist.forEach(entry => {
-            const div = document.createElement('div');
-            div.className = 'history-item';
-            if (entry.type === 'event') {
-                div.innerHTML = `<div>${entry.text || ''}</div><div class="meta">${entry.timestamp || entry.time || ''}</div>`;
-            } else {
-                const timeLabel = entry.timestamp || entry.time || '';
-                div.innerHTML = `<div><strong>${entry.teamName || (entry.teamId==='home' ? 'Home' : 'Away')}</strong> — ${entry.currentScore || ''}</div><div class="meta">${timeLabel}</div>`;
-            }
-            historyList.appendChild(div);
-        });
-    }
-
-    function startTicker() {
-        if (tickInterval) clearInterval(tickInterval);
-        tickInterval = setInterval(() => {
-            if (!current) return;
-            const now = Date.now();
-            let displayMs = (current.elapsedMs || 0);
-            if (current.timerRunning && current.lastUpdate) {
-                displayMs = (current.elapsedMs || 0) + (now - current.lastUpdate);
-            }
-            timerEl.textContent = formatTimeMs(displayMs);
-        }, 100);
-    }
-
-    async function loadGame() {
-        if (!gameId) {
-            document.body.innerHTML = '<div style="padding:20px">Missing game id</div>';
-            return;
-        }
-        try {
-            const resp = await fetch(`${SERVER}?id=${encodeURIComponent(gameId)}`);
-            if (!resp.ok) throw new Error('server');
-            const payload = await resp.json();
-            current = payload.game || null;
-            if (!current) {
-                document.body.innerHTML = '<div style="padding:20px">Game not found or expired.</div>';
-                return;
-            }
-            // Ensure numeric fields
-            current.homeScore = Number(current.homeScore) || 0;
-            current.awayScore = Number(current.awayScore) || 0;
-            current.elapsedMs = Number(current.elapsedMs) || 0;
-            current.lastUpdate = Number(current.lastUpdate) || Date.now();
-            render();
-            startTicker();
-        } catch (e) {
-            document.body.innerHTML = '<div style="padding:20px">Unable to fetch game.</div>';
-        }
-    }
-
-    // Poll for updates
-    setInterval(() => loadGame(), 4000);
     loadGame();
 </script>
 </body>
