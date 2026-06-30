@@ -1,8 +1,10 @@
 {
-  "name": "Scubas App Suite",
+  "name": "Scuba's App Suite",
   "short_name": "Scuba",
   "description": "Simple utilities",
+  "id": "./",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#2e1508",
   "theme_color": "#3d2210",
@@ -10,9 +12,21 @@
   "icons": [
     {
       "src": "./media/scuba.png",
-      "sizes": "180x180",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./media/scuba.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./media/scuba.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
