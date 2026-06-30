@@ -1,0 +1,18 @@
+{
+  "name": "Scubas App Suite",
+  "short_name": "Scuba",
+  "description": "Simple utilities",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#2e1508",
+  "theme_color": "#3d2210",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./media/scuba.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

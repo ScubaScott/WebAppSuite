@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My App Suite</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" href="./media/scuba.png">
-    <link rel="apple-touch-touch-icon" href="./media/scuba_apple.png">
+    <title>Scuba's App Suite</title>
 
+        <!-- Apple-specific home screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Farkle" />
+    <link rel="apple-touch-icon" href="./media/scuba_apple.png" />
+
+      <!-- PWA / Home screen -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#3d2210" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="./media/scuba_apple.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
