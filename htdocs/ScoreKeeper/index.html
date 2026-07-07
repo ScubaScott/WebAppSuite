@@ -16,6 +16,18 @@
             background-size: cover;
             /* background-blend-mode: overlay; */
         }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 12px;
+            color: #fef2f2;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+            color: #ffffff;
+        }
         .interactive-box { cursor: pointer; user-select: none; }
         .history-table::-webkit-scrollbar { width: 4px; }
         .history-table::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
@@ -23,6 +35,9 @@
     </style>
 </head>
 <body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md flex flex-col items-start">
+        <a href="../" class="back-link">← Back to Apps</a>
+    </div>
     <div class="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-md flex flex-col items-center space-y-6">
         
         <div class="flex justify-between items-center w-full px-2">

@@ -20,7 +20,7 @@ const defaultSettings = {
   openingThreshold: 500
 };
 
-const defaultPlayers = ['Player 1', 'Player 2', 'Player 3'];
+const defaultPlayers = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let players  = [];

@@ -59,6 +59,18 @@ body {
   letter-spacing: 0.04em;
   margin: 0;
 }
+.back-link {
+  display: inline-block;
+  color: rgba(253,243,220,0.85);
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-family: "Trebuchet MS", sans-serif;
+  margin-bottom: 6px;
+}
+.back-link:hover {
+  color: var(--cream);
+  text-decoration: underline;
+}
 .eyebrow {
   color: rgba(253,243,220,0.6);
   font-size: 0.7rem;
