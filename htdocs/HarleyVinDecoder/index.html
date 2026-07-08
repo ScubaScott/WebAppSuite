@@ -3,149 +3,494 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Harley VIN Decoder</title>
+    <title>Harley VIN Decoder & OCR Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Scan and decode Harley-Davidson 17-digit Vehicle Identification Numbers using your camera, with real-time specification breakdown and check digit checksum validation.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --harley-orange: #ff6600;
-            --harley-black: #111;
-            --harley-gray: #222;
-            --harley-white: #f5f5f5;
+            --harley-orange-hover: #ff8533;
+            --harley-black: #0c0c0e;
+            --harley-gray-dark: #121214;
+            --harley-gray-light: #1c1c1f;
+            --harley-border: rgba(255, 102, 0, 0.25);
+            --harley-text-primary: #f5f5f7;
+            --harley-text-secondary: #8a8a93;
+            --font-display: 'Montserrat', sans-serif;
+            --font-sans: 'Inter', sans-serif;
         }
 
         body {
             margin: 0;
             background: var(--harley-black);
-            color: var(--harley-white);
-            font-family: system-ui, sans-serif;
+            color: var(--harley-text-primary);
+            font-family: var(--font-sans);
             display: flex;
             justify-content: center;
-            padding: 1rem;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            box-sizing: border-box;
         }
 
         .app {
             width: 100%;
-            max-width: 520px;
-            background: var(--harley-gray);
-            border: 2px solid var(--harley-orange);
-            border-radius: 8px;
-            padding: 1rem;
+            max-width: 600px;
+            background: var(--harley-gray-dark);
+            border: 1px solid var(--harley-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            box-sizing: border-box;
         }
 
         h1 {
             text-align: center;
             color: var(--harley-orange);
+            font-family: var(--font-display);
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.08em;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 10px rgba(255, 102, 0, 0.2);
+            font-size: 1.75rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--harley-text-secondary);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         label {
             display: block;
-            margin-top: 1rem;
-            margin-bottom: 0.3rem;
+            margin-top: 1.2rem;
+            margin-bottom: 0.4rem;
+            color: var(--harley-orange);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.85rem;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
         }
 
         input[type="text"] {
-            width: 100%;
-            padding: 0.6rem;
+            flex: 1;
+            padding: 0.8rem;
             background: #000;
-            color: var(--harley-white);
-            border: 1px solid #444;
-            border-radius: 4px;
-            font-size: 1rem;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            font-size: 1.15rem;
+            font-family: monospace;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--harley-orange);
+            box-shadow: 0 0 8px rgba(255, 102, 0, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Buttons styling */
         button {
-            padding: 0.6rem;
-            border-radius: 4px;
+            padding: 0.7rem 1.2rem;
+            border-radius: 6px;
             border: none;
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.85rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             cursor: pointer;
-            margin-top: 0.4rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
         }
 
         .btn-primary {
-            background: var(--harley-orange);
-            color: var(--harley-black);
+            background: linear-gradient(135deg, var(--harley-orange) 0%, #e65c00 100%);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--harley-orange-hover) 0%, var(--harley-orange) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.25);
         }
 
         .btn-secondary {
-            background: #333;
-            color: var(--harley-white);
-            border: 1px solid #555;
+            background: var(--harley-gray-light);
+            color: var(--harley-text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 102, 0, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-active {
+            background: var(--harley-orange) !important;
+            color: #000 !important;
+            border-color: var(--harley-orange) !important;
+            box-shadow: 0 0 10px rgba(255, 102, 0, 0.3);
+        }
+
+        /* Layout grids */
+        .upload-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .adjust-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .adjust-buttons button {
+            flex: 1;
+            min-width: 110px;
+        }
+
+        .crop-confirm-row {
+            display: none;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            animation: slideDown 0.25s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .crop-confirm-row button {
+            flex: 1;
+        }
+
+        /* Canvas HUD wrapper */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            margin-top: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--harley-border);
+            background: #000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
         #vinCanvas {
+            display: block;
             width: 100%;
-            margin-top: 1rem;
-            border: 1px solid #555;
-            background: #000;
+            height: auto;
+            cursor: crosshair;
         }
 
-        #ocrList button {
-            width: 100%;
+        .canvas-overlay {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 102, 0, 0.4);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--harley-text-primary);
+            text-align: center;
+            pointer-events: none; /* Make click-through to allow dragging underneath */
+            transition: opacity 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .hint {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--harley-text-secondary);
+            line-height: 1.4;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.4rem;
+        }
+
+        /* Candidates list styling */
+        .candidates-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--harley-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.6rem;
+            margin-top: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .candidate-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .candidate-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
             text-align: left;
+            font-family: monospace;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            border-radius: 6px;
+            background: var(--harley-gray-light);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--harley-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .candidate-btn:hover {
+            background: rgba(255, 102, 0, 0.06);
+            border-color: rgba(255, 102, 0, 0.4);
+            transform: translateX(2px);
+        }
+
+        .no-candidates {
+            padding: 1.2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            color: var(--harley-text-secondary);
+            font-size: 0.85rem;
+            text-align: center;
+            line-height: 1.4;
         }
 
         .status {
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
-            color: #bbb;
-        }
-
-        .decode-result {
             margin-top: 1rem;
-            background: #000;
-            padding: 0.6rem;
-            border-radius: 4px;
-            border: 1px solid #444;
+            font-size: 0.9rem;
             color: var(--harley-orange);
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status:empty {
             display: none;
+        }
+
+        /* Decoder Specs Card styling */
+        .decode-result {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .decode-error {
+            background: rgba(255, 69, 58, 0.08);
+            border: 1px solid rgba(255, 69, 58, 0.25);
+            padding: 0.9rem 1.2rem;
+            border-radius: 6px;
+            color: #ff453a;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .spec-card {
+            background: var(--harley-gray-light);
+            border-radius: 8px;
+            border: 1px solid var(--harley-border);
+            overflow: hidden;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .spec-header {
+            background: rgba(255, 102, 0, 0.08);
+            padding: 0.9rem 1.2rem;
+            border-bottom: 1px solid var(--harley-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .spec-header h3 {
+            margin: 0;
+            color: var(--harley-orange);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        @media (max-width: 480px) {
+            .spec-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .spec-item {
+            background: var(--harley-gray-light);
+            padding: 0.9rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .spec-label {
+            font-size: 0.72rem;
+            color: var(--harley-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+
+        .spec-value {
+            font-size: 0.95rem;
+            color: var(--harley-text-primary);
+            font-weight: 700;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .badge-success {
+            background: rgba(52, 199, 89, 0.12);
+            color: #30d158;
+            border: 1px solid rgba(52, 199, 89, 0.25);
+        }
+
+        .badge-danger {
+            background: rgba(255, 69, 58, 0.12);
+            color: #ff453a;
+            border: 1px solid rgba(255, 69, 58, 0.25);
+        }
+
+        .badge-warning {
+            background: rgba(255, 159, 10, 0.12);
+            color: #ff9f0a;
+            border: 1px solid rgba(255, 159, 10, 0.25);
+        }
+
+        .badge-neutral {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--harley-text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
 
 <body>
     <div class="app">
-
         <h1>Harley VIN Decoder</h1>
+        <div class="subtitle">WMI, Spec Breakdown & OCR Analyzer</div>
 
-        <label for="vinInput">VIN</label>
-        <input id="vinInput" type="text" maxlength="40" placeholder="Type, paste, or select OCR result">
+        <label for="vinInput">Enter or Scan VIN</label>
+        <div class="input-group">
+            <input id="vinInput" type="text" maxlength="40" placeholder="TYPE 17-DIGIT VIN OR SCAN PHOTO">
+        </div>
 
-        <button id="cameraBtn" class="btn-primary">📷 Scan VIN with Camera</button>
-        <button id="galleryBtn" class="btn-secondary">🖼 Use Photo from Gallery</button>
+        <div class="upload-buttons">
+            <button id="cameraBtn" class="btn-primary">📷 Scan with Camera</button>
+            <button id="galleryBtn" class="btn-secondary">🖼 Choose from Gallery</button>
+        </div>
 
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
         <input type="file" id="galleryInput" accept="image/*" style="display:none">
 
-        <div style="margin-top:1rem;">
-            <button id="rotateLeftBtn" class="btn-secondary">⟲ Rotate Left</button>
-            <button id="rotateRightBtn" class="btn-secondary">⟳ Rotate Right</button>
+        <!-- Image Adjustments and States -->
+        <div class="adjust-buttons">
+            <button id="rotateLeftBtn" class="btn-secondary">⟲ Rotate L</button>
+            <button id="rotateRightBtn" class="btn-secondary">⟳ Rotate R</button>
             <button id="cropToggleBtn" class="btn-secondary">✂ Crop Mode</button>
+            <button id="resetImageBtn" class="btn-secondary" style="display:none;">⎌ Reset Photo</button>
         </div>
 
-        <canvas id="vinCanvas" width="400" height="300"></canvas>
+        <div id="cropConfirmRow" class="crop-confirm-row">
+            <button id="applyCropBtn" class="btn-primary">✔️ Apply Crop</button>
+            <button id="cancelCropBtn" class="btn-secondary">❌ Clear Selection</button>
+        </div>
 
-        <button id="processImageBtn" class="btn-primary">Process Image</button>
+        <div class="hint">
+            <span>Tight crops around the VIN line increase recognition speed and bypass visual noise.</span>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="vinCanvas" width="480" height="320"></canvas>
+            <div id="canvasOverlay" class="canvas-overlay">
+                <span id="canvasOverlayText">No image loaded. Capture or select a photo above.</span>
+            </div>
+        </div>
+
+        <button id="processImageBtn" class="btn-primary" style="width:100%; margin-top:1.2rem; padding:0.85rem; font-size:1rem;">⚡ Analyze Image with OCR</button>
 
         <div class="status" id="status"></div>
 
-        <div id="ocrList" style="margin-top:1rem;"></div>
-
-        <button id="decodeBtn" class="btn-primary">Decode</button>
+        <div id="ocrList"></div>
 
         <div id="decodeResult" class="decode-result"></div>
-
     </div>
 
+    <!-- Tesseract.js engine scripts -->
     <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js" onerror="window.tesseractLoadFailed = true;"></script>
 
     <script>
@@ -161,12 +506,36 @@
         const canvas = document.getElementById("vinCanvas");
         const ctx = canvas.getContext("2d");
 
-        let loadedImage = null;
+        const rotateLeftBtn = document.getElementById("rotateLeftBtn");
+        const rotateRightBtn = document.getElementById("rotateRightBtn");
+        const cropToggleBtn = document.getElementById("cropToggleBtn");
+        const resetImageBtn = document.getElementById("resetImageBtn");
+        const applyCropBtn = document.getElementById("applyCropBtn");
+        const cancelCropBtn = document.getElementById("cancelCropBtn");
+
+        let originalImageSrc = null; // Store original uploaded file
+        let loadedImage = null;      // Current working image element (may be cropped/rotated)
         let rotation = 0;
         let cropMode = false;
         let cropStart = null;
         let cropEnd = null;
 
+        // Persistent Tesseract worker context variables
+        let ocrWorker = null;
+        let currentLogger = null;
+
+        // Setup HUD canvas placeholder on load
+        window.addEventListener("DOMContentLoaded", () => {
+            drawCanvasPlaceholder();
+            updateCropButtons();
+            
+            // Listen for user input changes for real-time decoding
+            vinInput.addEventListener("input", (e) => {
+                decodeVin(e.target.value);
+            });
+        });
+
+        // Initialize file upload bindings
         cameraBtn.onclick = () => cameraInput.click();
         galleryBtn.onclick = () => galleryInput.click();
 
@@ -179,38 +548,31 @@
 
             const reader = new FileReader();
             reader.onload = e => {
-                loadedImage = new Image();
-                loadedImage.onload = () => {
-                    rotation = 0;
-                    cropStart = null;
-                    cropEnd = null;
-                    drawImage();
-                };
-                loadedImage.src = e.target.result;
+                originalImageSrc = e.target.result;
+                loadImage(originalImageSrc);
             };
             reader.readAsDataURL(file);
         }
 
-        function getCanvasPoint(event) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            return {
-                x: Math.max(0, Math.min(canvas.width, (event.clientX - rect.left) * scaleX)),
-                y: Math.max(0, Math.min(canvas.height, (event.clientY - rect.top) * scaleY))
+        function loadImage(src) {
+            loadedImage = new Image();
+            loadedImage.onload = () => {
+                rotation = 0;
+                cropStart = null;
+                cropEnd = null;
+                cropMode = false;
+                drawImage();
+                updateCropButtons();
             };
+            loadedImage.src = src;
         }
 
-        function getDisplaySize() {
-            if (!loadedImage) return { width: canvas.width, height: canvas.height };
-
-            const w = loadedImage.width;
-            const h = loadedImage.height;
-            return rotation % 180 !== 0 ? { width: h, height: w } : { width: w, height: h };
-        }
-
+        // Draw canvas utility that handles HUD grids or loaded photos
         function drawImage() {
-            if (!loadedImage) return;
+            if (!loadedImage) {
+                drawCanvasPlaceholder();
+                return;
+            }
 
             const { width, height } = getDisplaySize();
             canvas.width = width;
@@ -223,20 +585,98 @@
             ctx.drawImage(loadedImage, -loadedImage.width / 2, -loadedImage.height / 2);
             ctx.restore();
 
+            // Draw bounding crop selection box if cropMode is active
             if (cropMode && cropStart && cropEnd) {
                 const x = Math.min(cropStart.x, cropEnd.x);
                 const y = Math.min(cropStart.y, cropEnd.y);
                 const w = Math.max(2, Math.abs(cropEnd.x - cropStart.x));
                 const h = Math.max(2, Math.abs(cropEnd.y - cropStart.y));
 
-                ctx.strokeStyle = "red";
-                ctx.lineWidth = 2;
+                // Professional HUD cropping box
+                ctx.strokeStyle = "var(--harley-orange)";
+                ctx.lineWidth = 4;
+                ctx.setLineDash([6, 6]);
                 ctx.strokeRect(x, y, w, h);
+                ctx.setLineDash([]); // Reset line dash
+
+                // Semi-transparent shading outside selection
+                ctx.fillStyle = "rgba(255, 102, 0, 0.08)";
+                ctx.fillRect(x, y, w, h);
             }
         }
 
+        function drawCanvasPlaceholder() {
+            canvas.width = 480;
+            canvas.height = 320;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw dark background grid pattern
+            ctx.fillStyle = "#0c0c0e";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = "rgba(255, 102, 0, 0.04)";
+            ctx.lineWidth = 1;
+            const gridSize = 20;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw scanning target graphic
+            ctx.strokeStyle = "rgba(255, 102, 0, 0.2)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2 - 15, 30, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.fillStyle = "rgba(255, 102, 0, 0.1)";
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2 - 15, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Text prompts
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.font = "600 13px 'Inter', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("CAMERA / GALLERY SCANNED VIEW", canvas.width / 2, canvas.height / 2 + 40);
+            
+            ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+            ctx.font = "400 11px 'Inter', sans-serif";
+            ctx.fillText("Load a photo and orient/crop it for clean OCR recognition", canvas.width / 2, canvas.height / 2 + 60);
+        }
+
+        // Coordinates mapping
+        function getCanvasPoint(event) {
+            const rect = canvas.getBoundingClientRect();
+            // Fallback for touch inputs
+            const clientX = event.clientX !== undefined ? event.clientX : (event.touches ? event.touches[0].clientX : 0);
+            const clientY = event.clientY !== undefined ? event.clientY : (event.touches ? event.touches[0].clientY : 0);
+
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: Math.max(0, Math.min(canvas.width, (clientX - rect.left) * scaleX)),
+                y: Math.max(0, Math.min(canvas.height, (clientY - rect.top) * scaleY))
+            };
+        }
+
+        function getDisplaySize() {
+            if (!loadedImage) return { width: canvas.width, height: canvas.height };
+            const w = loadedImage.width;
+            const h = loadedImage.height;
+            return rotation % 180 !== 0 ? { width: h, height: w } : { width: w, height: h };
+        }
+
         function getCropRect() {
-            if (!cropMode || !cropStart || !cropEnd) return null;
+            if (!cropStart || !cropEnd) return null;
             const x = Math.min(cropStart.x, cropEnd.x);
             const y = Math.min(cropStart.y, cropEnd.y);
             const width = Math.max(2, Math.abs(cropEnd.x - cropStart.x));
@@ -247,6 +687,11 @@
         function createImageCanvas() {
             const tempCanvas = document.createElement("canvas");
             const region = getCropRect();
+
+            // We must extract from the drawn canvas without the red bounding box
+            const savedCropMode = cropMode;
+            cropMode = false;
+            drawImage();
 
             if (region) {
                 tempCanvas.width = region.width;
@@ -260,156 +705,1033 @@
                 tctx.drawImage(canvas, 0, 0);
             }
 
+            cropMode = savedCropMode;
+            drawImage(); // Restore drawing representation with crop box if active
             return tempCanvas;
         }
 
-        function preprocessCanvas(sourceCanvas) {
-            const tempCanvas = document.createElement("canvas");
-            tempCanvas.width = sourceCanvas.width;
-            tempCanvas.height = sourceCanvas.height;
-            const tctx = tempCanvas.getContext("2d");
-            tctx.drawImage(sourceCanvas, 0, 0);
-
-            const imageData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-            const data = imageData.data;
-
+        // --- Otsu's adaptive thresholding ---
+        function computeOtsuThreshold(data, width, height) {
+            const hist = new Array(256).fill(0);
             for (let i = 0; i < data.length; i += 4) {
-                const gray = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114) > 140 ? 255 : 0;
-                data[i] = gray;
-                data[i + 1] = gray;
-                data[i + 2] = gray;
+                const gray = Math.round(data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+                hist[gray]++;
             }
 
-            tctx.putImageData(imageData, 0, 0);
-            return tempCanvas;
+            const total = width * height;
+            let sum = 0;
+            for (let t = 0; t < 256; t++) sum += t * hist[t];
+
+            let sumB = 0, wB = 0, varMax = 0, threshold = 127;
+            for (let t = 0; t < 256; t++) {
+                wB += hist[t];
+                if (wB === 0) continue;
+                const wF = total - wB;
+                if (wF === 0) break;
+                sumB += t * hist[t];
+                const mB = sumB / wB;
+                const mF = (sum - sumB) / wF;
+                const varBetween = wB * wF * (mB - mF) * (mB - mF);
+                if (varBetween > varMax) {
+                    varMax = varBetween;
+                    threshold = t;
+                }
+            }
+            return threshold;
         }
 
-        document.getElementById("rotateLeftBtn").onclick = () => {
+        // Binarize + contrast enhancements
+        function preprocessCanvas(sourceCanvas) {
+            const scale = sourceCanvas.width < 900 ? 3 : (sourceCanvas.width < 1400 ? 2 : 1);
+
+            const upCanvas = document.createElement("canvas");
+            upCanvas.width = Math.round(sourceCanvas.width * scale);
+            upCanvas.height = Math.round(sourceCanvas.height * scale);
+            const uctx = upCanvas.getContext("2d");
+            uctx.imageSmoothingEnabled = true;
+            uctx.imageSmoothingQuality = "high";
+            uctx.drawImage(sourceCanvas, 0, 0, upCanvas.width, upCanvas.height);
+
+            const imageData = uctx.getImageData(0, 0, upCanvas.width, upCanvas.height);
+            const data = imageData.data;
+
+            const threshold = computeOtsuThreshold(data, upCanvas.width, upCanvas.height);
+
+            const pixelCount = upCanvas.width * upCanvas.height;
+            const grayVals = new Uint8ClampedArray(pixelCount);
+            let aboveCount = 0;
+            for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                grayVals[p] = gray;
+                if (gray > threshold) aboveCount++;
+            }
+            const belowCount = pixelCount - aboveCount;
+
+            const textIsAbove = aboveCount < belowCount;
+
+            for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+                const isTextPixel = textIsAbove ? grayVals[p] > threshold : grayVals[p] <= threshold;
+                const val = isTextPixel ? 0 : 255;
+                data[i] = val;
+                data[i + 1] = val;
+                data[i + 2] = val;
+            }
+
+            uctx.putImageData(imageData, 0, 0);
+            return { canvas: upCanvas, scale };
+        }
+
+        // Rotate functions
+        rotateLeftBtn.onclick = () => {
+            if (!loadedImage) return;
             rotation = (rotation - 90) % 360;
             drawImage();
+            updateCropButtons();
         };
 
-        document.getElementById("rotateRightBtn").onclick = () => {
+        rotateRightBtn.onclick = () => {
+            if (!loadedImage) return;
             rotation = (rotation + 90) % 360;
             drawImage();
+            updateCropButtons();
         };
 
-        document.getElementById("cropToggleBtn").onclick = () => {
+        // Crop Toggles & Drag Events
+        cropToggleBtn.onclick = () => {
+            if (!loadedImage) return;
             cropMode = !cropMode;
             cropStart = null;
             cropEnd = null;
             drawImage();
+            updateCropButtons();
         };
 
+        // Mouse inputs
         canvas.onmousedown = e => {
             if (!cropMode) return;
             const pos = getCanvasPoint(e);
             cropStart = pos;
             cropEnd = pos;
             drawImage();
+            updateCropButtons();
         };
 
         canvas.onmousemove = e => {
             if (!cropMode || !cropStart) return;
             cropEnd = getCanvasPoint(e);
             drawImage();
+            updateCropButtons();
         };
 
         canvas.onmouseup = e => {
             if (!cropMode || !cropStart) return;
             cropEnd = getCanvasPoint(e);
             drawImage();
+            updateCropButtons();
         };
 
+        // Mobile touch screen bindings mapped seamlessly to mouse event dispatchers
+        canvas.ontouchstart = e => {
+            if (!cropMode) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousedown", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        };
+
+        canvas.ontouchmove = e => {
+            if (!cropMode) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        };
+
+        canvas.ontouchend = e => {
+            if (!cropMode) return;
+            const mouseEvent = new MouseEvent("mouseup", {});
+            canvas.dispatchEvent(mouseEvent);
+        };
+
+        // Apply and reset buttons
+        applyCropBtn.onclick = () => {
+            const rect = getCropRect();
+            if (!rect) return;
+
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = rect.width;
+            tempCanvas.height = rect.height;
+            const tctx = tempCanvas.getContext("2d");
+
+            // Capture cleaned image region (no red selection rectangle borders)
+            const savedCropMode = cropMode;
+            cropMode = false;
+            drawImage();
+
+            tctx.drawImage(canvas, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+
+            // Transition clean crop segment
+            loadImage(tempCanvas.toDataURL());
+        };
+
+        cancelCropBtn.onclick = () => {
+            cropStart = null;
+            cropEnd = null;
+            drawImage();
+            updateCropButtons();
+        };
+
+        resetImageBtn.onclick = () => {
+            if (originalImageSrc) {
+                loadImage(originalImageSrc);
+            }
+        };
+
+        function updateCropButtons() {
+            // Adjust action triggers visibility states
+            if (cropMode) {
+                cropToggleBtn.classList.add("btn-active");
+            } else {
+                cropToggleBtn.classList.remove("btn-active");
+            }
+
+            const hasBox = getCropRect() !== null;
+            if (cropMode && hasBox) {
+                applyCropBtn.parentElement.style.display = "flex";
+            } else {
+                applyCropBtn.parentElement.style.display = "none";
+            }
+
+            const isAltered = (originalImageSrc && loadedImage && (loadedImage.src !== originalImageSrc || rotation !== 0));
+            if (isAltered) {
+                resetImageBtn.style.display = "inline-block";
+            } else {
+                resetImageBtn.style.display = "none";
+            }
+
+            // HUD message updates
+            const overlay = document.getElementById("canvasOverlay");
+            const overlayText = document.getElementById("canvasOverlayText");
+
+            if (!loadedImage) {
+                overlay.style.display = "block";
+                overlayText.textContent = "No image loaded. Capture or select a photo above.";
+            } else if (cropMode) {
+                overlay.style.display = "block";
+                if (hasBox) {
+                    overlayText.innerHTML = "✨ Selection active! Click <strong>Apply Crop</strong> below.";
+                } else {
+                    overlayText.textContent = "✂️ Crop Mode: Drag a bounding box tightly over the VIN.";
+                }
+            } else {
+                overlay.style.display = "none";
+            }
+        }
+
+        // Lazy initialize and reuse Tesseract worker
+        async function getWorker() {
+            if (!ocrWorker) {
+                statusEl.textContent = "Initializing OCR Engine...";
+                ocrWorker = await Tesseract.createWorker('eng', 1, {
+                    logger: m => {
+                        if (currentLogger) currentLogger(m);
+                    }
+                });
+            }
+            return ocrWorker;
+        }
+
+        // Trigger OCR parsing operations
         document.getElementById("processImageBtn").onclick = () => {
             if (!loadedImage) {
                 statusEl.textContent = "Load an image first.";
                 return;
             }
 
+            const hasCrop = getCropRect() !== null;
             const sourceCanvas = createImageCanvas();
-            runOcrWithHighlight(sourceCanvas);
+            runOcrWithHighlight(sourceCanvas, hasCrop);
         };
 
-        function runOcrWithHighlight(sourceCanvas) {
+        async function runOcrWithHighlight(sourceCanvas, hasCrop) {
             if (typeof Tesseract === "undefined" || window.tesseractLoadFailed) {
+                statusEl.textContent = "OCR engine failed to load. Check internet connection.";
                 return;
             }
 
-            const processedCanvas = preprocessCanvas(sourceCanvas);
-            const imageDataUrl = processedCanvas.toDataURL("image/png");
-            statusEl.textContent = "Running OCR...";
+            try {
+                const worker = await getWorker();
 
-            Tesseract.recognize(imageDataUrl, "eng", {
-                logger: m => {
-                    if (m.status === "recognizing text") {
-                        statusEl.textContent = `OCR: ${Math.round(m.progress * 100)}%`;
-                    }
-                },
-                psm: 7,
-                oem: 1,
-                tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-            })
-                .then(result => {
-                    statusEl.textContent = "OCR complete.";
-
-                    canvas.width = sourceCanvas.width;
-                    canvas.height = sourceCanvas.height;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(sourceCanvas, 0, 0);
-
-                    const words = result.data.words || [];
-                    const cleanedLines = [result.data.text || ""]
-                        .map(text => text.toUpperCase().replace(/[^A-Z0-9*]/g, ""))
-                        .filter(text => text.length >= 5);
-
-                    ctx.strokeStyle = "yellow";
-                    ctx.lineWidth = 2;
-
-                    words.forEach(word => {
-                        const clean = word.text.toUpperCase().replace(/[^A-Z0-9*]/g, "");
-                        if (clean.length >= 3) {
-                            const b = word.bbox;
-                            ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
-                        }
-                    });
-
-                    const listContainer = document.getElementById("ocrList");
-                    listContainer.innerHTML = "";
-
-                    if (cleanedLines.length === 0) {
-                        listContainer.innerHTML = "<div>No usable text found.</div>";
-                        return;
-                    }
-
-                    cleanedLines.forEach(line => {
-                        const btn = document.createElement("button");
-                        btn.textContent = line;
-                        btn.className = "btn-secondary";
-                        btn.onclick = () => vinInput.value = line;
-                        listContainer.appendChild(btn);
-                    });
-                })
-                .catch(error => {
-                    console.error(error);
-                    statusEl.textContent = "OCR failed. Please try a clearer image.";
+                // Setup specific Whitelist and PSM rules
+                await worker.setParameters({
+                    tessedit_char_whitelist: "*ABCDEFGHJKLMNPRSTUVWXYZ0123456789",
+                    tessedit_pageseg_mode: hasCrop ? '7' : '11' // 7 for single line, 11 for sparse page
                 });
+
+                const { canvas: processedCanvas, scale } = preprocessCanvas(sourceCanvas);
+                const imageDataUrl = processedCanvas.toDataURL("image/png");
+
+                statusEl.textContent = "Running OCR...";
+                currentLogger = m => {
+                    if (m.status === "recognizing text") {
+                        statusEl.textContent = `Analyzing Text: ${Math.round(m.progress * 100)}%`;
+                    }
+                };
+
+                const result = await worker.recognize(imageDataUrl);
+                statusEl.textContent = "Analysis complete.";
+                currentLogger = null;
+
+                // Re-draw original canvas contents
+                canvas.width = sourceCanvas.width;
+                canvas.height = sourceCanvas.height;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(sourceCanvas, 0, 0);
+
+                // Highlight recognized word nodes
+                const words = result.data.words || [];
+                ctx.strokeStyle = "rgba(255, 102, 0, 0.85)";
+                ctx.lineWidth = 3;
+
+                words.forEach(word => {
+                    if (typeof word.confidence === "number" && word.confidence < 30) return;
+                    const clean = word.text.toUpperCase().replace(/[^A-Z0-9*]/g, "");
+                    if (clean.length >= 3) {
+                        const b = word.bbox;
+                        ctx.strokeRect(b.x0 / scale, b.y0 / scale, (b.x1 - b.x0) / scale, (b.y1 - b.y0) / scale);
+                    }
+                });
+
+                // Extrapolate list of candidates
+                const candidates = extractVinCandidates(result.data.text || "");
+                renderCandidates(candidates);
+
+            } catch (error) {
+                console.error("OCR execution error", error);
+                statusEl.textContent = "OCR process failed. Adjust lighting/crop and try again.";
+                currentLogger = null;
+            }
         }
 
-        document.getElementById("decodeBtn").onclick = () => {
-            const text = vinInput.value.toUpperCase().replace(/\s+/g, "");
+        // Clean output strings, normalize I/O/Q letters, and detect VIN configurations
+        function extractVinCandidates(rawText) {
+            if (!rawText) return [];
+
+            // Replace common OCR letters mismatches (I -> 1, O -> 0, Q -> 0)
+            const normalizedText = rawText.toUpperCase()
+                .replace(/I/g, "1")
+                .replace(/O/g, "0")
+                .replace(/Q/g, "0");
+
+            const candidates = new Set();
+
+            // Method 1: Extract individual block tokens
+            const tokens = normalizedText.split(/[\s,;\-]+/);
+            tokens.forEach(token => {
+                const cleaned = token.replace(/[^A-Z0-9*]/g, "");
+                const stripped = cleaned.replace(/\*/g, "");
+                // Accept candidate lengths matching all three eras (8 to 21 chars)
+                if (stripped.length >= 8 && stripped.length <= 21) {
+                    candidates.add(stripped);
+                }
+            });
+
+            // Method 2: Extract from merged giant strings to tolerate spaces
+            const giantString = normalizedText.replace(/[^A-Z0-9]/g, "");
+            for (let i = 0; i <= giantString.length - 17; i++) {
+                const windowStr = giantString.substring(i, i + 17);
+                if (/^[A-HJ-NPR-Z0-9]{17}$/.test(windowStr)) {
+                    candidates.add(windowStr);
+                }
+            }
+
+            // AMF Shovelhead model lookup helper for scoring
+            const model70_80 = {
+                '1A': 1, '2A': 1, '3A': 1, '4A': 1, '5A': 1, '6A': 1, '7A': 1, '8A': 1,
+                '7B': 1, '8B': 1, '2C': 1, '3C': 1, '5C': 1, '6C': 1, '1D': 1, '2D': 1,
+                '3D': 1, '4D': 1, '5D': 1, '6D': 1, '7D': 1, '9D': 1, '4E': 1, '5E': 1,
+                '6E': 1, '7E': 1, '9E': 1, '2F': 1, '3F': 1, '4F': 1, '6F': 1, '7F': 1,
+                '2G': 1, '3G': 1, '5G': 1, '6G': 1, '7G': 1, '9G': 1, '1H': 1, '2H': 1,
+                '3H': 1, '5H': 1, '6H': 1, '7H': 1, '8H': 1, '9H': 1, '1K': 1
+            };
+
+            const results = Array.from(candidates).map(vin => {
+                const checkDigit = calculateVinCheckDigit(vin);
+                const hasValidChecksum = (vin.length === 17 && checkDigit !== null && checkDigit === vin[8]);
+                
+                // Scoring heuristic based on format and valid details
+                let score = 0;
+                let format = "";
+                if (vin.length === 17) {
+                    format = "1981-Present";
+                    score += 50;
+                    if (hasValidChecksum) score += 50;
+                    if (/^(1HD|5HD|932|MLY|MEG)/.test(vin)) {
+                        score += 30;
+                    }
+                } else if (vin.length === 9 && /^[A-Z0-9]{2}\d{5}(H\d|J0)$/i.test(vin)) {
+                    format = "1970-1980";
+                    score += 65;
+                    if (model70_80[vin.substring(0, 2)]) score += 20;
+                } else if (/^\d{2}[A-Z]{2,4}\d{4}$/i.test(vin) && vin.length >= 8 && vin.length <= 10) {
+                    format = "1930-1969";
+                    score += 55;
+                } else {
+                    score += (17 - Math.abs(17 - vin.length));
+                }
+
+                return {
+                    vin,
+                    length: vin.length,
+                    isValidChecksum: hasValidChecksum,
+                    format,
+                    score
+                };
+            });
+
+            // Sort candidates by heuristic score descending
+            results.sort((a, b) => b.score - a.score);
+            return results;
+        }
+
+        function renderCandidates(candidates) {
+            const listContainer = document.getElementById("ocrList");
+            listContainer.innerHTML = "";
+
+            if (candidates.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="no-candidates">
+                        <strong>No VIN candidates found.</strong><br>
+                        Tip: Make sure the text is fully horizontal, well-lit, and cropped closely.
+                    </div>`;
+                return;
+            }
+
+            const title = document.createElement("div");
+            title.className = "candidates-title";
+            title.innerHTML = "<span>🔍 Detected Candidates (Select to Decode)</span>";
+            listContainer.appendChild(title);
+
+            const group = document.createElement("div");
+            group.className = "candidate-group";
+
+            candidates.forEach(cand => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "candidate-btn";
+
+                let badgeText = "";
+                let badgeClass = "";
+
+                if (cand.format === "1981-Present") {
+                    if (cand.isValidChecksum) {
+                        badgeClass = "badge-success";
+                        badgeText = "Checksum Match";
+                    } else {
+                        badgeClass = "badge-warning";
+                        badgeText = "17 Chars";
+                    }
+                } else if (cand.format === "1970-1980") {
+                    badgeClass = "badge-warning";
+                    badgeText = "1970-1980 Era";
+                } else if (cand.format === "1930-1969") {
+                    badgeClass = "badge-warning";
+                    badgeText = "1930-1969 Era";
+                } else {
+                    badgeClass = "badge-neutral";
+                    badgeText = `${cand.length} Chars`;
+                }
+
+                btn.innerHTML = `
+                    <span>${cand.vin}</span>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                `;
+
+                btn.onclick = () => {
+                    vinInput.value = cand.vin;
+                    decodeVin(cand.vin);
+                    decodeResult.scrollIntoView({ behavior: "smooth" });
+                };
+
+                group.appendChild(btn);
+            });
+
+            listContainer.appendChild(group);
+        }
+
+        // --- Standard US DOT VIN Checksum (Title 49 CFR Part 565) ---
+        function calculateVinCheckDigit(vin) {
+            if (vin.length !== 17) return null;
+
+            const translit = {
+                'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8,
+                'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'P': 7, 'R': 9,
+                'S': 2, 'T': 3, 'U': 4, 'V': 5, 'W': 6, 'X': 7, 'Y': 8, 'Z': 9
+            };
+
+            const weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
+
+            let sum = 0;
+            for (let i = 0; i < 17; i++) {
+                const char = vin[i];
+                let val = 0;
+                if (char >= '0' && char <= '9') {
+                    val = parseInt(char, 10);
+                } else if (translit[char] !== undefined) {
+                    val = translit[char];
+                } else {
+                    return null; // Contains illegal letters (I, O, Q, etc.)
+                }
+                sum += val * weights[i];
+            }
+
+            const remainder = sum % 11;
+            return remainder === 10 ? 'X' : remainder.toString();
+        }
+
+        // --- Spec Sheet Decoder ---
+        function decodeVin(vin) {
+            // Sanitize input whitespace and convert to upper case
+            vin = vin.toUpperCase().replace(/\s+/g, "");
+            if (vin.length === 0) {
+                decodeResult.style.display = "none";
+                return;
+            }
+
             decodeResult.style.display = "block";
 
-            const harley1981Regex = /^[A-HJ-NPR-Z0-9]{17}$/;
+            // ERA 1: Modern 17-digit format (1981–Present)
+            if (vin.length === 17) {
+                const cleanCheck = vin.replace(/[^A-HJ-NPR-Z0-9]/g, "");
+                if (cleanCheck.length !== 17) {
+                    let illegalCharWarning = "";
+                    if (/[IOQ]/.test(vin)) {
+                        illegalCharWarning = " (Includes illegal characters: I, O, or Q)";
+                    }
+                    decodeResult.innerHTML = `
+                        <div class="decode-error">
+                            <span>⚠️ Format Error: 17-digit VIN contains invalid characters.${illegalCharWarning}</span>
+                        </div>`;
+                    return;
+                }
 
-            if (harley1981Regex.test(text)) {
-                decodeResult.textContent = "Matched Harley-Davidson 1981–Present 17-digit VIN format.";
-            } else {
-                decodeResult.textContent = "VIN does not match Harley 1981–Present format.";
+                // Calculate check digit and compare
+                const calculatedCheckDigit = calculateVinCheckDigit(vin);
+                const actualCheckDigit = vin[8];
+                const isCheckDigitValid = (calculatedCheckDigit !== null && calculatedCheckDigit === actualCheckDigit);
+
+                // Extract segment blocks
+                const wmi = vin.substring(0, 3);
+                const mClass = vin[3];
+                const modelCode = vin.substring(4, 6);
+                const engineCode = vin[6];
+                const introCode = vin[7];
+                const modelYearCode = vin[9];
+                const plantCode = vin[10];
+                const serialNumber = vin.substring(11);
+
+                // WMI lookup map
+                const wmiMap = {
+                    '1HD': 'Manufactured for sale within the United States',
+                    '5HD': 'Manufactured for sale outside of the United States',
+                    '932': 'Manufactured in and for sale only in Brazil',
+                    'MEG': 'Manufactured in and for sale only in India',
+                    'MLY': 'Manufactured in Thailand'
+                };
+                const decodedWmi = wmiMap[wmi] || `Unknown WMI (${wmi})`;
+
+                // Weight class map
+                const classMap = {
+                    '1': 'Heavyweight (≥ 901 cc)',
+                    '4': 'Lightweight (≤ 900 cc)',
+                    '8': 'Sidecar'
+                };
+                const decodedClass = classMap[mClass] || `Unknown Class (${mClass})`;
+
+                // Comprehensive Model Designation map
+                const modelMap = {
+                    // FL Touring Models
+                    'AA': 'FLH',
+                    'AB': 'FLHP',
+                    'AC': 'FLH',
+                    'AD': 'FLH - Classic',
+                    'AE': 'FLT',
+                    'AF': 'FLTC',
+                    'AH': 'FLHP - Deluxe',
+                    'AJ': 'FLH - Heritage',
+                    'AK': 'FLHS',
+                    'AL': 'FLH - Shrine',
+                    'DA': 'FLT, FLHTP',
+                    'DB': 'FLTC',
+                    'DC': 'FLHT',
+                    'DD': 'FLHT',
+                    'DE': 'FLHTC',
+                    'DF': 'FLHTP',
+                    'DG': 'FLHTC Shrine',
+                    'DH': 'FLTC',
+                    'DJ': 'FLHTC',
+                    'DK': 'FLTC Shrine',
+                    'DM': 'FLTCU - Ultra',
+                    'DN': 'FLTCU - Ultra',
+                    'DP': 'FLHTC',
+                    'DS': 'FLTCU - Ultra Shrine',
+                    'DT': 'FLHTCU - Ultra Shrine',
+                    'FA': 'FLHRS, FLHS',
+                    'FB': 'FLHRI, FLHR',
+                    'FC': 'FLHTCUI, FLHTCU',
+                    'FD': 'FLHR',
+                    'FE': 'FLTCUI',
+                    'FF': 'FLHTCI, FLHTC',
+                    'FG': 'FLHTCUI',
+                    'FH': 'FLHPI',
+                    'FL': 'FLHTCUI, FLHTCU',
+                    'FM': 'FLHTPI',
+                    'FP': 'FLTR',
+                    'FR': 'FLHRCI, FLHRC',
+                    'FS': 'FLTRI',
+                    'FT': 'FLHPEI',
+                    'FW': 'FLHR Shrine',
+                    'KA': 'FLHX',
+                    'KB': 'FLHX',
+                    'KE': 'FLHTK',
+                    'KG': 'FLTRU',
+                    'KH': 'FLTRX',
+                    'KX': 'SIDECAR TLE ULTRA',
+                    'MA': 'FLHTCUTG - Trike',
+                    'MB': 'Trike',
+                    'MC': 'FLRT',
+                    'PF': 'FLSTDSE',
+                    'PG': 'FLHRSEI2',
+                    'PR': 'FLHTCUSE7 - CVO',
+                    'PY': 'FLSTSE3 - CVO',
+                    'PZ': 'FLHXSE - CVO',
+
+                    // FX/FL Dyna Glide Models
+                    'BA': 'FXE',
+                    'BB': 'FXEF, FXSTDI',
+                    'BC': 'FXS',
+                    'BD': 'FXB',
+                    'BE': 'FXWG',
+                    'BF': 'FXSB',
+                    'BG': 'FXDG',
+                    'EA': 'FXR',
+                    'EB': 'FXRS',
+                    'EC': 'FXRT',
+                    'ED': 'FXRP - Windshield',
+                    'EE': 'FXRDG',
+                    'EF': 'FXRP - Fairing',
+                    'EG': 'FXRS-SP Sport Edition',
+                    'EH': 'FXRD',
+                    'EJ': 'FXRC',
+                    'EK': 'FXRP - C.H.P.',
+                    'EL': 'FXLR',
+                    'EM': 'FXRS – CON',
+                    'ES': 'FXR',
+                    'ET': 'FXR',
+                    'EV': 'FXR',
+                    'GA': 'FXDB-D Daytona',
+                    'GB': 'FXDB-S Sturgis',
+                    'GC': 'FXDC',
+                    'GD': 'FXDL',
+                    'GE': 'FXDWG',
+                    'GG': 'FXDS-CON',
+                    'GH': 'FXD',
+                    'GJ': 'FXDX',
+                    'GK': 'FXDP',
+                    'GL': 'FXDXT',
+                    'GM': 'FXDI',
+                    'GN': 'FXDL',
+                    'GP': 'FXDWG',
+                    'GR': 'FXDXI',
+                    'GT': 'FXDC',
+                    'GV': 'FXDC',
+                    'GX': 'TL',
+                    'GY': 'FXDF',
+                    'GZ': 'FLD',
+                    'PB': 'FXDWG',
+                    'PE': 'FXDWG3',
+                    'PS': 'FXDSE',
+                    'PX': 'FSDFSE',
+                    'VA': 'FXDBP',
+
+                    // FL/FX Softail Models
+                    'BH': 'FXST',
+                    'BJ': 'FLST, FLSTC',
+                    'BK': 'FXSTC',
+                    'BL': 'FXSTS',
+                    'BM': 'FLSTF',
+                    'BN': 'FLSTN',
+                    'BP': 'FXSTSB',
+                    'BR': 'FLSTS',
+                    'BS': 'FXSTD',
+                    'BT': 'FXSTB',
+                    'BV': 'FXST',
+                    'BW': 'FLSTC',
+                    'BX': 'FLSTF',
+                    'BY': 'FLSTC',
+                    'BZ': 'FXSTSI',
+                    'JA': 'FXSTB',
+                    'JB': 'FXSTDI',
+                    'JD': 'FLSTN',
+                    'JE': 'FLST',
+                    'JF': 'FLSTI',
+                    'JG': 'FLSTF',
+                    'JH': 'FLSTC',
+                    'JJ': 'FXCW',
+                    'JK': 'FXCWC',
+                    'JL': 'FXSTC',
+                    'JM': 'FLSTSB',
+                    'JN': 'FLSTFB',
+                    'JP': 'FXS',
+                    'JR': 'FLS',
+                    'JT': 'FLSTFBS',
+                    'PF': 'FXSTDSE',
+                    'PH': 'FXSTDSE',
+                    'PL': 'FLSTFSE',
+                    'PN': 'FLSTFSE',
+                    'PT': 'FXSTSSE',
+                    'PY': 'FLSTSE',
+
+                    // XL Sportster Models
+                    'CA': 'XLH',
+                    'CB': 'XLS',
+                    'CC': 'XLX',
+                    'CD': 'XR-1000',
+                    'CE': 'XL 883H',
+                    'CF': 'XL 883 Deluxe',
+                    'CG': 'XL 1200C',
+                    'CH': 'XL 1200S',
+                    'CJ': 'XL 883C',
+                    'CK': 'XL 883R',
+                    'CN': 'XL883',
+                    'CM': 'XL883L',
+                    'CP': 'XL883C',
+                    'CR': 'XL883L',
+                    'CS': 'XL883R',
+                    'CT': 'XL1200C',
+                    'CV': 'XL1200R',
+                    'CW': 'XL1200L',
+                    'CX': 'XL1200L',
+                    'CY': 'XL50',
+                    'CZ': 'XL1200N',
+                    'LA': 'XR1200',
+                    'LC': 'XL1200X',
+                    'LD': 'XR1200X',
+                    'LE': 'XL883N',
+                    'LF': 'XL1200V',
+                    'LH': 'XL1200CP',
+                    'LJ': 'XL1200CA',
+                    'LK': 'XL1200CB',
+
+                    // V-ROD Models
+                    'HA': 'VRSCA',
+                    'HC': 'VRSCR',
+                    'HD': 'VRSCD',
+                    'HF': 'VRSCA',
+                    'HH': 'VRSCDX',
+                    'HJ': 'VRSCX',
+                    'HP': 'VRSCF',
+
+                    // Street Models
+                    'NA': 'XG500',
+                    'NB': 'XG750'
+                };
+                const decodedModel = modelMap[modelCode] || `Model Code: ${modelCode}`;
+
+                // Engine details map
+                const engineMap = {
+                    'A': '1130 Revolution (100 CV) / Revolution Max 1250 / Evolution 883cc',
+                    'B': '1450 Fuel Injected Counter Balanced / Twin Cam 88 (EFI) / Evolution 1200cc',
+                    'C': '1550 / Twin Cam 96 / Revolution Max 1250 (1250cc)',
+                    'D': '1550 EFI / Twin Cam 103 / Revolution Max 975 (975cc)',
+                    'E': '1690 EFI / Twin Cam 110 (1800cc)',
+                    'F': '1690 Balanced-EFI / Twin Cam 103 (1690cc)',
+                    'G': '1246 Revolution EFI / Twin Cam 103 High Output (1690cc)',
+                    'H': '1246 (2001-2009) or 1000 Ironhead XL / Twin Cam 110 CVO (1800cc)',
+                    'J': '1246',
+                    'K': '1340 Shovelhead',
+                    'L': '1340 Evolution / Evolution (883cc)',
+                    'M': '883 Evolution XL or Twin Cam 103 / Milwaukee-Eight 107 (1746cc)',
+                    'N': '1100 Evolution XL / Milwaukee-Eight 114 (1868cc)',
+                    'P': '1200 Evolution XL / Milwaukee-Eight 117 (1923cc)',
+                    'R': '1340 Evolution Fuel Injected / Revolution Max 975 (975cc)',
+                    'S': '500 Single (Armstrong Military)',
+                    'V': 'Twin Cam 88 Carburetor, 130B / Evolution (1340cc / 80ci)',
+                    'W': 'Twin Cam 88 Fuel Injected',
+                    'Y': 'Twin Cam 88 Counter Balanced - Carb',
+                    'Z': '1130 Revolution / Revolution Max 1250 (1252cc)',
+                    '1': '1450 EFI',
+                    '2': '883 ESPFI',
+                    '3': '1200 ESPFI',
+                    '4': '1584 ESPFI',
+                    '5': '1584 ESPFI, Twin Cam 96B',
+                    '6': '1200',
+                    '8': '1800 ESPFI',
+                    '9': '1800 ESPFI / 1250 ESPFI'
+                };
+                const decodedEngine = engineMap[engineCode] || `Engine Code: ${engineCode}`;
+
+                // Introduction periods map
+                const introMap = {
+                    '1': 'Domestic (Normal / Regular intro)',
+                    '2': 'Domestic (Mid-Year intro)',
+                    '3': 'California (Normal / Regular intro)',
+                    '4': 'Domestic (Mid-Year intro)',
+                    '5': 'California (Mid-Year intro)',
+                    '6': 'California (Mid-Year intro)',
+                    'A': 'Canada (Normal intro)',
+                    'B': 'Canada (Mid-Year intro)',
+                    'C': 'International (Normal intro)',
+                    'D': 'International (Mid-Year intro)',
+                    'E': 'Japan (Normal intro)',
+                    'F': 'Japan (Mid-Year intro)',
+                    'G': 'Australia (Normal intro)',
+                    'H': 'Australia (Mid-Year intro)',
+                    'J': 'Brazil (Normal intro)',
+                    'K': 'Brazil (Mid-Year intro)',
+                    'L': 'Asia Pacific (Normal intro)',
+                    'M': 'Asia Pacific (Mid-Year intro)',
+                    'N': 'India (Normal intro)',
+                    'P': 'India (Mid-Year intro)'
+                };
+                const decodedIntro = introMap[introCode] || `Intro Code: ${introCode}`;
+
+                // Model year map
+                const yearMap = {
+                    'B': '1981 / 2011', 'C': '1982 / 2012', 'D': '1983 / 2013', 'E': '1984 / 2014',
+                    'F': '1985 / 2015', 'G': '1986 / 2016', 'H': '1987 / 2017', 'J': '1988 / 2018',
+                    'K': '1989 / 2019', 'L': '1990 / 2020', 'M': '1991 / 2021', 'N': '1992 / 2022',
+                    'P': '1993 / 2023', 'R': '1994 / 2024', 'S': '1995 / 2025', 'T': '1996 / 2026',
+                    'V': '1997 / 2027', 'W': '1998 / 2028', 'X': '1999 / 2029', 'Y': '2000 / 2030',
+                    '1': '2001 / 2031', '2': '2002 / 2032', '3': '2003 / 2033', '4': '2004 / 2034',
+                    '5': '2005 / 2035', '6': '2006 / 2036', '7': '2007 / 2037', '8': '2008 / 2038',
+                    '9': '2009 / 2039', 'A': '2010 / 2040'
+                };
+                const decodedYear = yearMap[modelYearCode] || `Unknown Year (${modelYearCode})`;
+
+                // Assembly plant map
+                const plantMap = {
+                    'Y': 'York, PA, USA',
+                    'B': 'York, PA, USA',
+                    'T': 'Tomahawk, WI, USA',
+                    'J': 'Milwaukee, WI, USA',
+                    'K': 'Kansas City, MO, USA (Closed 2019)',
+                    'D': 'Manaus, Brazil',
+                    'E': 'East Troy, WI, USA (Buell)',
+                    'N': 'Haryana, India (Bawal District Rewari)',
+                    'L': 'Rayong, Thailand'
+                };
+                const decodedPlant = plantMap[plantCode] || `Plant Code: ${plantCode}`;
+
+                // Build specifications HTML template
+                const checkDigitHtml = isCheckDigitValid
+                    ? `<span class="badge badge-success">✔️ Checksum OK</span>`
+                    : `<span class="badge badge-danger">⚠️ Checksum Error (Expected: ${calculatedCheckDigit})</span>`;
+
+                decodeResult.innerHTML = `
+                    <div class="spec-card">
+                        <div class="spec-header">
+                            <h3>Modern Era Details (1981-Present)</h3>
+                            ${checkDigitHtml}
+                        </div>
+                        <div class="spec-grid">
+                            <div class="spec-item">
+                                <span class="spec-label">Manufacturer (WMI)</span>
+                                <span class="spec-value">${decodedWmi}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Motorcycle Class</span>
+                                <span class="spec-value">${decodedClass}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Model (Series)</span>
+                                <span class="spec-value">${decodedModel}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Engine Family</span>
+                                <span class="spec-value">${decodedEngine}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Introduction Type</span>
+                                <span class="spec-value">${decodedIntro}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Model Year</span>
+                                <span class="spec-value">${decodedYear} <small style="opacity: 0.6; font-size: 0.72rem;">(30-yr repeat)</small></span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Assembly Plant</span>
+                                <span class="spec-value">${decodedPlant}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Serial Number</span>
+                                <span class="spec-value">${serialNumber}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
             }
-        };
-    </script>
 
+            // ERA 2: AMF / Shovelhead Era (9-digit format, 1970–1980)
+            if (vin.length === 9) {
+                const isAmfMatch = /^[A-Z0-9]{2}\d{5}[A-Z0-9]{2}$/i.test(vin);
+                if (!isAmfMatch) {
+                    decodeResult.innerHTML = `
+                        <div class="decode-error">
+                            <span>⚠️ Format Error: 9-digit AMF VIN must have format: 2-char Model, 5-digit Serial, 2-char Year.</span>
+                        </div>`;
+                    return;
+                }
+
+                const modelCode = vin.substring(0, 2);
+                const serialNum = parseInt(vin.substring(2, 7), 10);
+                const yearCode = vin.substring(7);
+
+                const model70_80 = {
+                    '1A': 'FL/FLP-1200', '2A': 'FLH-1200', '3A': 'XL/XLH-1000', '4A': 'XLCH-1000',
+                    '5A': 'GE-750', '6A': 'SS-350 Sprint', '7A': 'SX-125', '8A': 'M65-S',
+                    '7B': 'ERS', '8B': 'MSR-100', '2C': 'FX-1200', '3C': 'SX-350 Sprint',
+                    '5C': 'MC-65', '6C': 'SR-100', '1D': 'LE Sidecar', '2D': 'X-90',
+                    '3D': 'Z-90', '4D': 'XLA', '5D': 'SX-175', '6D': 'SX-250',
+                    '7D': 'MX-250', '9D': 'FXE-1200', '4E': 'XLS-1000', '5E': 'FXEF-1200',
+                    '6E': 'FXEF-80', '7E': 'FLHS-1200', '9E': 'SS-250', '2F': 'FXS-1200',
+                    '3F': 'SXT-125', '4F': 'SS-175', '6F': 'SS-125', '7F': 'XLCR-1000',
+                    '2G': 'XLT-1000', '3G': 'FLH-80', '5G': 'FLT-80', '6G': 'FXE-80',
+                    '7G': 'FXS-80', '9G': 'FXWG-80', '1H': 'FXB-80', '2H': 'CLE-80 Sidecar',
+                    '3H': 'FLH-80 Classic', '5H': 'FLHS-80', '6H': 'FL-80', '7H': 'FLH-1200 Police',
+                    '8H': 'FLH-1200 Shrine', '9H': 'FLH-80 Police', '1K': 'FLH-80 Shrine'
+                };
+
+                const year70_80 = {
+                    'H0': '1970', 'H1': '1971', 'H2': '1972', 'H3': '1973', 'H4': '1974',
+                    'H5': '1975', 'H6': '1976', 'H7': '1977', 'H8': '1978', 'H9': '1979',
+                    'J0': '1980'
+                };
+
+                const decodedModel = model70_80[modelCode] || `Model Code: ${modelCode}`;
+                const decodedYear = year70_80[yearCode] || `Year Code: ${yearCode}`;
+
+                // Factory mismatch alert for 1979
+                let alertHtml = "";
+                if (yearCode === 'H9' && serialNum >= 43000 && serialNum <= 48199) {
+                    alertHtml = `
+                        <div class="decode-error" style="background: rgba(255, 166, 0, 0.08); border-color: rgba(255, 166, 0, 0.3); color: #ffa600; margin-top: 1rem;">
+                            <span>⚠️ <strong>1979 Warning</strong>: VINs 43000H9 to 48199H9 (built 1/9/1979 to 2/7/1979) may have mismatched frame and engine numbers due to a brief factory variation.</span>
+                        </div>
+                    `;
+                }
+
+                decodeResult.innerHTML = `
+                    <div class="spec-card">
+                        <div class="spec-header">
+                            <h3>AMF / Shovelhead Era Details (1970-1980)</h3>
+                            <span class="badge badge-warning">AMF Era 9-Digit</span>
+                        </div>
+                        <div class="spec-grid">
+                            <div class="spec-item">
+                                <span class="spec-label">Model Series</span>
+                                <span class="spec-value">${decodedModel}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Production Number</span>
+                                <span class="spec-value">${serialNum}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Model Year</span>
+                                <span class="spec-value">${decodedYear}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Historical Period</span>
+                                <span class="spec-value">1970–1980 Shovelhead Era</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${alertHtml}
+                `;
+                return;
+            }
+
+            // ERA 3: Vintage Case Casing Era (8-10 digits, 1930–1969)
+            const isVintageMatch = /^\d{2}[A-Z]{2,4}\d{4}$/i.test(vin);
+            if (isVintageMatch) {
+                const yearPrefix = parseInt(vin.substring(0, 2), 10);
+                const fullYear = (yearPrefix >= 30) ? (1900 + yearPrefix) : (2000 + yearPrefix);
+
+                // Extract model letters
+                const modelPart = vin.match(/[A-Z]+/i)[0].toUpperCase();
+                // Extract serial
+                const serialPart = vin.substring(2 + modelPart.length);
+                const serialNum = parseInt(serialPart, 10);
+
+                // Parity check validation for 1962-1969
+                let parityBadge = "";
+                if (fullYear >= 1962 && fullYear <= 1969) {
+                    const isYearOdd = (fullYear % 2 !== 0);
+                    let isParityValid = false;
+
+                    if (serialPart.length === 4) {
+                        const firstDigitOdd = (parseInt(serialPart[0], 10) % 2 !== 0);
+                        isParityValid = (isYearOdd === firstDigitOdd);
+                    } else if (serialPart.length === 5) {
+                        const firstTwoDigits = parseInt(serialPart.substring(0, 2), 10);
+                        const firstTwoOdd = (firstTwoDigits % 2 !== 0);
+                        isParityValid = (isYearOdd === firstTwoOdd);
+                    }
+
+                    parityBadge = isParityValid
+                        ? `<span class="badge badge-success">✔️ Parity OK</span>`
+                        : `<span class="badge badge-danger">⚠️ Parity Mismatch (Parity should match Year)</span>`;
+                }
+
+                decodeResult.innerHTML = `
+                    <div class="spec-card">
+                        <div class="spec-header">
+                            <h3>Vintage Case Era Details (1930-1969)</h3>
+                            ${parityBadge || `<span class="badge badge-neutral">Vintage Engine Casing</span>`}
+                        </div>
+                        <div class="spec-grid">
+                            <div class="spec-item">
+                                <span class="spec-label">Model Year</span>
+                                <span class="spec-value">${fullYear}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Model Designation</span>
+                                <span class="spec-value">${modelPart}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Production Number</span>
+                                <span class="spec-value">${serialPart} (Numeric: ${serialNum})</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Historical Period</span>
+                                <span class="spec-value">1930–1969 Engine Case Era</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Fallback: invalid format
+            decodeResult.innerHTML = `
+                <div class="decode-error">
+                    <span>⚠️ Length / Format Error: Entered code is not a recognized Harley-Davidson format.</span>
+                    <ul style="margin: 0.5rem 0 0 1rem; padding: 0; font-size: 0.8rem; line-height: 1.4;">
+                        <li><strong>Modern Era</strong>: Exactly 17 legal characters (e.g. 1HD1AAK19BY158126)</li>
+                        <li><strong>AMF/Shovelhead Era (1970-1980)</strong>: 9 characters (e.g. 2A10859H4)</li>
+                        <li><strong>Vintage Casing Era (1930-1969)</strong>: 8-10 characters (e.g. 49FL0001)</li>
+                    </ul>
+                </div>
+            `;
+        }
+    </script>
 </body>
 
 </html>
