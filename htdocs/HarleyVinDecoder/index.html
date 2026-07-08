@@ -139,6 +139,7 @@
         <input type="file" id="galleryInput" accept="image/*" style="display:none">
 
         <div class="status" id="status"></div>
+        <div id="ocrList" style="margin-top:1rem;"></div>
 
         <div class="image-preview" id="imagePreview" style="display:none">
             <img id="previewImg" alt="VIN image preview">
@@ -199,29 +200,48 @@
 
                     const raw = result.data.text || "";
 
-                    // Split into lines, trim whitespace
+                    // Split into lines, trim whitespace, keep lines >= 5 chars
                     let lines = raw
                         .split(/\r?\n/)
                         .map(l => l.trim())
-                        .filter(l => l.length >= 5);   // keep only lines >= 5 chars
+                        .filter(l => l.length >= 5);
+
+                    const listContainer = document.getElementById("ocrList");
+                    listContainer.innerHTML = ""; // clear previous results
 
                     if (lines.length === 0) {
-                        vinInput.value = "";
-                        statusEl.textContent = "No usable text found.";
+                        listContainer.innerHTML = "<div>No usable text found.</div>";
                         return;
                     }
 
-                    // Choose the most prominent line:
-                    // For now: longest line (usually the VIN line)
-                    let bestLine = lines.sort((a, b) => b.length - a.length)[0];
+                    // Build selectable list
+                    lines.forEach(line => {
+                        const btn = document.createElement("button");
+                        btn.textContent = line;
+                        btn.style.display = "block";
+                        btn.style.width = "100%";
+                        btn.style.margin = "0.3rem 0";
+                        btn.style.padding = "0.6rem";
+                        btn.style.background = "#333";
+                        btn.style.color = "#fff";
+                        btn.style.border = "1px solid #555";
+                        btn.style.borderRadius = "4px";
+                        btn.style.cursor = "pointer";
+                        btn.style.textAlign = "left";
 
-                    vinInput.value = bestLine;
+                        btn.addEventListener("click", () => {
+                            vinInput.value = line;
+                        });
+
+                        listContainer.appendChild(btn);
+                    });
                 })
                 .catch(err => {
                     statusEl.textContent = "OCR error.";
                     console.error(err);
                 });
         }
+
 
 
         // -------------------------------
