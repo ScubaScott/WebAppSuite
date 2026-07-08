@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Harley VIN Decoder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- PWA basics -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ff6600" />
+
+  <style>
+    :root {
+      --harley-orange: #ff6600;
+      --harley-black: #111111;
+      --harley-gray: #222222;
+      --harley-white: #f5f5f5;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--harley-black);
+      color: var(--harley-white);
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      padding: 1.5rem;
+      box-sizing: border-box;
+      background: var(--harley-gray);
+      border: 2px solid var(--harley-orange);
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--harley-orange);
+    }
+
+    .app-header p {
+      margin: 0.4rem 0 0;
+      font-size: 0.9rem;
+      color: #cccccc;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #dddddd;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #000;
+      color: var(--harley-white);
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+
+    input[type="text"]::placeholder {
+      color: #777;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      padding: 0.6rem 0.8rem;
+      border-radius: 4px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .btn-primary {
+      background: var(--harley-orange);
+      color: var(--harley-black);
+    }
+
+    .btn-secondary {
+      background: #333;
+      color: var(--harley-white);
+      border: 1px solid #555;
+    }
+
+    .status {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #bbbbbb;
+      min-height: 1.2rem;
+    }
+
+    .image-preview {
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    .image-preview img {
+      max-width: 100%;
+      border-radius: 4px;
+      border: 1px solid #444;
+    }
+
+    .vin-output {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      background: #000;
+      border-radius: 4px;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #444;
+    }
+
+    .vin-output span {
+      color: var(--harley-orange);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>Harley VIN Decoder</h1>
+      <p>Step 1: Capture the VIN</p>
+    </header>
+
+    <main>
+      <section>
+        <label for="vinInput">VIN</label>
+        <input
+          id="vinInput"
+          type="text"
+          maxlength="20"
+          placeholder="Type or paste VIN here"
+          autocomplete="off"
+        />
+      </section>
+
+      <section class="btn-row">
+        <!-- Camera capture (environment) -->
+        <button class="btn-primary" id="cameraCaptureBtn">
+          📷 Scan VIN with Camera
+        </button>
+
+        <!-- Gallery / camera roll -->
+        <button class="btn-secondary" id="galleryBtn">
+          🖼 Use Photo from Camera Roll
+        </button>
+      </section>
+
+      <!-- Hidden file inputs to back the buttons -->
+      <input
+        type="file"
+        id="cameraInput"
+        accept="image/*"
+        capture="environment"
+        style="display:none"
+      />
+      <input
+        type="file"
+        id="galleryInput"
+        accept="image/*"
+        style="display:none"
+      />
+
+      <div class="status" id="status"></div>
+
+      <div class="image-preview" id="imagePreview" style="display:none">
+        <img id="previewImg" alt="VIN image preview" />
+      </div>
+
+      <div class="vin-output" id="vinOutput" style="display:none">
+        <div>Detected VIN:</div>
+        <div><span id="vinDetected"></span></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Tesseract.js for OCR (CDN) -->
+  <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+
+  <script>
+    // PWA: basic service worker registration
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("sw.js")
+          .catch(err => console.error("SW registration failed:", err));
+      });
+    }
+
+    const vinInput = document.getElementById("vinInput");
+    const statusEl = document.getElementById("status");
+    const imagePreview = document.getElementById("imagePreview");
+    const previewImg = document.getElementById("previewImg");
+    const vinOutput = document.getElementById("vinOutput");
+    const vinDetected = document.getElementById("vinDetected");
+
+    const cameraCaptureBtn = document.getElementById("cameraCaptureBtn");
+    const galleryBtn = document.getElementById("galleryBtn");
+    const cameraInput = document.getElementById("cameraInput");
+    const galleryInput = document.getElementById("galleryInput");
+
+    cameraCaptureBtn.addEventListener("click", () => {
+      cameraInput.click();
+    });
+
+    galleryBtn.addEventListener("click", () => {
+      galleryInput.click();
+    });
+
+    cameraInput.addEventListener("change", handleImageFile);
+    galleryInput.addEventListener("change", handleImageFile);
+
+    function handleImageFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      statusEl.textContent = "Processing image with OCR...";
+      vinOutput.style.display = "none";
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        previewImg.src = e.target.result;
+        imagePreview.style.display = "block";
+        runOcr(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function runOcr(imageDataUrl) {
+      Tesseract.recognize(imageDataUrl, "eng", {
+        logger: m => {
+          if (m.status === "recognizing text") {
+            statusEl.textContent = `OCR: ${Math.round(m.progress * 100)}%`;
+          }
+        }
+      })
+        .then(result => {
+          statusEl.textContent = "OCR complete.";
+          const text = result.data.text || "";
+          const vin = extractVin(text);
+          if (vin) {
+            vinInput.value = vin;
+            vinDetected.textContent = vin;
+            vinOutput.style.display = "block";
+          } else {
+            vinOutput.style.display = "none";
+            statusEl.textContent = "OCR complete, but no VIN-like text found.";
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          statusEl.textContent = "Error running OCR.";
+        });
+    }
+
+    // Simple VIN-like pattern finder (17-character alphanumeric, excluding I/O/Q)
+    function extractVin(text) {
+      const cleaned = text.replace(/\s+/g, " ").toUpperCase();
+      const vinRegex = /\b([A-HJ-NPR-Z0-9]{17})\b/g;
+      let match;
+      let candidates = [];
+      while ((match = vinRegex.exec(cleaned)) !== null) {
+        candidates.push(match[1]);
+      }
+      // For now, just return the first candidate
+      return candidates[0] || "";
+    }
+  </script>
+</body>
+</html>
