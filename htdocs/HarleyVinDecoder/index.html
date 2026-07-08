@@ -200,22 +200,29 @@
 
                     const raw = result.data.text || "";
 
-                    // Split into lines, trim whitespace, keep lines >= 5 chars
-                    let lines = raw
-                        .split(/\r?\n/)
-                        .map(l => l.trim())
-                        .filter(l => l.length >= 5);
+                    // Split into lines
+                    let lines = raw.split(/\r?\n/);
+
+                    // Clean each line:
+                    // - uppercase
+                    // - remove everything except A-Z, 0-9, *
+                    // - trim whitespace
+                    let cleaned = lines
+                        .map(line => line.toUpperCase())
+                        .map(line => line.replace(/[^A-Z0-9*]/g, ""))   // <-- THE KEY FILTER
+                        .map(line => line.trim())
+                        .filter(line => line.length >= 5);              // only meaningful lines
 
                     const listContainer = document.getElementById("ocrList");
                     listContainer.innerHTML = ""; // clear previous results
 
-                    if (lines.length === 0) {
+                    if (cleaned.length === 0) {
                         listContainer.innerHTML = "<div>No usable text found.</div>";
                         return;
                     }
 
                     // Build selectable list
-                    lines.forEach(line => {
+                    cleaned.forEach(line => {
                         const btn = document.createElement("button");
                         btn.textContent = line;
                         btn.style.display = "block";
@@ -241,6 +248,7 @@
                     console.error(err);
                 });
         }
+
 
 
 
