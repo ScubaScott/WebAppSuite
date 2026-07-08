@@ -146,7 +146,7 @@
 
     </div>
 
-    <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js" onerror="window.tesseractLoadFailed = true;"></script>
 
     <script>
         const vinInput = document.getElementById("vinInput");
@@ -182,6 +182,8 @@
                 loadedImage = new Image();
                 loadedImage.onload = () => {
                     rotation = 0;
+                    cropStart = null;
+                    cropEnd = null;
                     drawImage();
                 };
                 loadedImage.src = e.target.result;
@@ -189,39 +191,97 @@
             reader.readAsDataURL(file);
         }
 
-        function drawImage() {
-            if (!loadedImage) return;
+        function getCanvasPoint(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: Math.max(0, Math.min(canvas.width, (event.clientX - rect.left) * scaleX)),
+                y: Math.max(0, Math.min(canvas.height, (event.clientY - rect.top) * scaleY))
+            };
+        }
+
+        function getDisplaySize() {
+            if (!loadedImage) return { width: canvas.width, height: canvas.height };
 
             const w = loadedImage.width;
             const h = loadedImage.height;
+            return rotation % 180 !== 0 ? { width: h, height: w } : { width: w, height: h };
+        }
 
-            if (rotation % 180 !== 0) {
-                canvas.width = h;
-                canvas.height = w;
-            } else {
-                canvas.width = w;
-                canvas.height = h;
-            }
+        function drawImage() {
+            if (!loadedImage) return;
 
-            ctx.save();
+            const { width, height } = getDisplaySize();
+            canvas.width = width;
+            canvas.height = height;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+            ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.rotate(rotation * Math.PI / 180);
-            ctx.drawImage(loadedImage, -w / 2, -h / 2);
-
+            ctx.drawImage(loadedImage, -loadedImage.width / 2, -loadedImage.height / 2);
             ctx.restore();
 
             if (cropMode && cropStart && cropEnd) {
+                const x = Math.min(cropStart.x, cropEnd.x);
+                const y = Math.min(cropStart.y, cropEnd.y);
+                const w = Math.max(2, Math.abs(cropEnd.x - cropStart.x));
+                const h = Math.max(2, Math.abs(cropEnd.y - cropStart.y));
+
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 2;
-                ctx.strokeRect(
-                    cropStart.x,
-                    cropStart.y,
-                    cropEnd.x - cropStart.x,
-                    cropEnd.y - cropStart.y
-                );
+                ctx.strokeRect(x, y, w, h);
             }
+        }
+
+        function getCropRect() {
+            if (!cropMode || !cropStart || !cropEnd) return null;
+            const x = Math.min(cropStart.x, cropEnd.x);
+            const y = Math.min(cropStart.y, cropEnd.y);
+            const width = Math.max(2, Math.abs(cropEnd.x - cropStart.x));
+            const height = Math.max(2, Math.abs(cropEnd.y - cropStart.y));
+            return { x, y, width, height };
+        }
+
+        function createImageCanvas() {
+            const tempCanvas = document.createElement("canvas");
+            const region = getCropRect();
+
+            if (region) {
+                tempCanvas.width = region.width;
+                tempCanvas.height = region.height;
+                const tctx = tempCanvas.getContext("2d");
+                tctx.drawImage(canvas, region.x, region.y, region.width, region.height, 0, 0, region.width, region.height);
+            } else {
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tctx = tempCanvas.getContext("2d");
+                tctx.drawImage(canvas, 0, 0);
+            }
+
+            return tempCanvas;
+        }
+
+        function preprocessCanvas(sourceCanvas) {
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = sourceCanvas.width;
+            tempCanvas.height = sourceCanvas.height;
+            const tctx = tempCanvas.getContext("2d");
+            tctx.drawImage(sourceCanvas, 0, 0);
+
+            const imageData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114) > 140 ? 255 : 0;
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+
+            tctx.putImageData(imageData, 0, 0);
+            return tempCanvas;
         }
 
         document.getElementById("rotateLeftBtn").onclick = () => {
@@ -243,48 +303,41 @@
 
         canvas.onmousedown = e => {
             if (!cropMode) return;
-            cropStart = { x: e.offsetX, y: e.offsetY };
-            cropEnd = { x: e.offsetX, y: e.offsetY };
+            const pos = getCanvasPoint(e);
+            cropStart = pos;
+            cropEnd = pos;
+            drawImage();
         };
 
         canvas.onmousemove = e => {
             if (!cropMode || !cropStart) return;
-            cropEnd = { x: e.offsetX, y: e.offsetY };
+            cropEnd = getCanvasPoint(e);
             drawImage();
         };
 
         canvas.onmouseup = e => {
-            if (!cropMode) return;
-            cropEnd = { x: e.offsetX, y: e.offsetY };
+            if (!cropMode || !cropStart) return;
+            cropEnd = getCanvasPoint(e);
             drawImage();
         };
 
         document.getElementById("processImageBtn").onclick = () => {
-            if (!loadedImage) return;
-
-            let tempCanvas = document.createElement("canvas");
-            let tctx = tempCanvas.getContext("2d");
-
-            if (cropMode && cropStart && cropEnd) {
-                const x = cropStart.x;
-                const y = cropStart.y;
-                const w = cropEnd.x - cropStart.x;
-                const h = cropEnd.y - cropStart.y;
-
-                tempCanvas.width = w;
-                tempCanvas.height = h;
-                tctx.drawImage(canvas, x, y, w, h, 0, 0, w, h);
-            } else {
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-                tctx.drawImage(canvas, 0, 0);
+            if (!loadedImage) {
+                statusEl.textContent = "Load an image first.";
+                return;
             }
 
-            const dataUrl = tempCanvas.toDataURL();
-            runOcrWithHighlight(dataUrl);
+            const sourceCanvas = createImageCanvas();
+            runOcrWithHighlight(sourceCanvas);
         };
 
-        function runOcrWithHighlight(imageDataUrl) {
+        function runOcrWithHighlight(sourceCanvas) {
+            if (typeof Tesseract === "undefined" || window.tesseractLoadFailed) {
+                return;
+            }
+
+            const processedCanvas = preprocessCanvas(sourceCanvas);
+            const imageDataUrl = processedCanvas.toDataURL("image/png");
             statusEl.textContent = "Running OCR...";
 
             Tesseract.recognize(imageDataUrl, "eng", {
@@ -292,26 +345,31 @@
                     if (m.status === "recognizing text") {
                         statusEl.textContent = `OCR: ${Math.round(m.progress * 100)}%`;
                     }
-                }
+                },
+                psm: 7,
+                oem: 1,
+                tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
             })
                 .then(result => {
                     statusEl.textContent = "OCR complete.";
 
-                    const words = result.data.words;
+                    canvas.width = sourceCanvas.width;
+                    canvas.height = sourceCanvas.height;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(sourceCanvas, 0, 0);
 
-                    let cleanedLines = words
-                        .map(w => w.text.toUpperCase().replace(/[^A-Z0-9*]/g, ""))
-                        .filter(t => t.length >= 5);
-
-                    drawImage();
+                    const words = result.data.words || [];
+                    const cleanedLines = [result.data.text || ""]
+                        .map(text => text.toUpperCase().replace(/[^A-Z0-9*]/g, ""))
+                        .filter(text => text.length >= 5);
 
                     ctx.strokeStyle = "yellow";
                     ctx.lineWidth = 2;
 
-                    words.forEach(w => {
-                        const clean = w.text.toUpperCase().replace(/[^A-Z0-9*]/g, "");
-                        if (clean.length >= 5) {
-                            const b = w.bbox;
+                    words.forEach(word => {
+                        const clean = word.text.toUpperCase().replace(/[^A-Z0-9*]/g, "");
+                        if (clean.length >= 3) {
+                            const b = word.bbox;
                             ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
                         }
                     });
@@ -331,6 +389,10 @@
                         btn.onclick = () => vinInput.value = line;
                         listContainer.appendChild(btn);
                     });
+                })
+                .catch(error => {
+                    console.error(error);
+                    statusEl.textContent = "OCR failed. Please try a clearer image.";
                 });
         }
 
