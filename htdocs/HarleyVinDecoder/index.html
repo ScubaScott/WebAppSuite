@@ -2,12 +2,9 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <title>Harley VIN Decoder</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#ff6600" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
         :root {
@@ -19,23 +16,21 @@
 
         body {
             margin: 0;
-            font-family: system-ui, sans-serif;
             background: var(--harley-black);
             color: var(--harley-white);
+            font-family: system-ui, sans-serif;
             display: flex;
-            min-height: 100vh;
-            align-items: center;
             justify-content: center;
+            padding: 1rem;
         }
 
         .app {
             width: 100%;
-            max-width: 480px;
-            padding: 1.5rem;
+            max-width: 520px;
             background: var(--harley-gray);
             border: 2px solid var(--harley-orange);
             border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            padding: 1rem;
         }
 
         h1 {
@@ -47,7 +42,8 @@
 
         label {
             display: block;
-            margin-bottom: 0.4rem;
+            margin-top: 1rem;
+            margin-bottom: 0.3rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
@@ -62,22 +58,16 @@
             font-size: 1rem;
         }
 
-        .btn-row {
-            margin-top: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
         button {
             padding: 0.6rem;
             border-radius: 4px;
             border: none;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             cursor: pointer;
+            margin-top: 0.4rem;
         }
 
         .btn-primary {
@@ -91,22 +81,22 @@
             border: 1px solid #555;
         }
 
-        .status {
+        #vinCanvas {
+            width: 100%;
             margin-top: 1rem;
-            min-height: 1.2rem;
+            border: 1px solid #555;
+            background: #000;
+        }
+
+        #ocrList button {
+            width: 100%;
+            text-align: left;
+        }
+
+        .status {
+            margin-top: 0.5rem;
             font-size: 0.85rem;
             color: #bbb;
-        }
-
-        .image-preview {
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        .image-preview img {
-            max-width: 100%;
-            border: 1px solid #444;
-            border-radius: 4px;
         }
 
         .decode-result {
@@ -124,68 +114,177 @@
 
 <body>
     <div class="app">
+
         <h1>Harley VIN Decoder</h1>
 
         <label for="vinInput">VIN</label>
-        <input id="vinInput" type="text" maxlength="40" placeholder="Type, paste, or scan VIN">
+        <input id="vinInput" type="text" maxlength="40" placeholder="Type, paste, or select OCR result">
 
-        <div class="btn-row">
-            <button class="btn-primary" id="cameraCaptureBtn">📷 Scan VIN with Camera</button>
-            <button class="btn-secondary" id="galleryBtn">🖼 Use Photo from Camera Roll</button>
-            <button class="btn-primary" id="decodeBtn">Decode</button>
-        </div>
+        <button id="cameraBtn" class="btn-primary">📷 Scan VIN with Camera</button>
+        <button id="galleryBtn" class="btn-secondary">🖼 Use Photo from Gallery</button>
 
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
         <input type="file" id="galleryInput" accept="image/*" style="display:none">
 
-        <div class="status" id="status"></div>
-        <div id="ocrList" style="margin-top:1rem;"></div>
-
-        <div class="image-preview" id="imagePreview" style="display:none">
-            <img id="previewImg" alt="VIN image preview">
+        <div style="margin-top:1rem;">
+            <button id="rotateLeftBtn" class="btn-secondary">⟲ Rotate Left</button>
+            <button id="rotateRightBtn" class="btn-secondary">⟳ Rotate Right</button>
+            <button id="cropToggleBtn" class="btn-secondary">✂ Crop Mode</button>
         </div>
 
-        <div class="decode-result" id="decodeResult"></div>
+        <canvas id="vinCanvas" width="400" height="300"></canvas>
+
+        <button id="processImageBtn" class="btn-primary">Process Image</button>
+
+        <div class="status" id="status"></div>
+
+        <div id="ocrList" style="margin-top:1rem;"></div>
+
+        <button id="decodeBtn" class="btn-primary">Decode</button>
+
+        <div id="decodeResult" class="decode-result"></div>
+
     </div>
 
-    <!-- Tesseract.js -->
     <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
 
     <script>
-        // PWA service worker
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("sw.js");
-        }
-
         const vinInput = document.getElementById("vinInput");
         const statusEl = document.getElementById("status");
         const decodeResult = document.getElementById("decodeResult");
 
-        const cameraCaptureBtn = document.getElementById("cameraCaptureBtn");
+        const cameraBtn = document.getElementById("cameraBtn");
         const galleryBtn = document.getElementById("galleryBtn");
         const cameraInput = document.getElementById("cameraInput");
         const galleryInput = document.getElementById("galleryInput");
 
-        cameraCaptureBtn.addEventListener("click", () => cameraInput.click());
-        galleryBtn.addEventListener("click", () => galleryInput.click());
+        const canvas = document.getElementById("vinCanvas");
+        const ctx = canvas.getContext("2d");
 
-        cameraInput.addEventListener("change", handleImage);
-        galleryInput.addEventListener("change", handleImage);
+        let loadedImage = null;
+        let rotation = 0;
+        let cropMode = false;
+        let cropStart = null;
+        let cropEnd = null;
 
-        function handleImage(event) {
+        cameraBtn.onclick = () => cameraInput.click();
+        galleryBtn.onclick = () => galleryInput.click();
+
+        cameraInput.onchange = handleImageFile;
+        galleryInput.onchange = handleImageFile;
+
+        function handleImageFile(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = e => {
-                document.getElementById("previewImg").src = e.target.result;
-                document.getElementById("imagePreview").style.display = "block";
-                runOcr(e.target.result);
+                loadedImage = new Image();
+                loadedImage.onload = () => {
+                    rotation = 0;
+                    drawImage();
+                };
+                loadedImage.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        function runOcr(imageDataUrl) {
+        function drawImage() {
+            if (!loadedImage) return;
+
+            const w = loadedImage.width;
+            const h = loadedImage.height;
+
+            if (rotation % 180 !== 0) {
+                canvas.width = h;
+                canvas.height = w;
+            } else {
+                canvas.width = w;
+                canvas.height = h;
+            }
+
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(rotation * Math.PI / 180);
+            ctx.drawImage(loadedImage, -w / 2, -h / 2);
+
+            ctx.restore();
+
+            if (cropMode && cropStart && cropEnd) {
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(
+                    cropStart.x,
+                    cropStart.y,
+                    cropEnd.x - cropStart.x,
+                    cropEnd.y - cropStart.y
+                );
+            }
+        }
+
+        document.getElementById("rotateLeftBtn").onclick = () => {
+            rotation = (rotation - 90) % 360;
+            drawImage();
+        };
+
+        document.getElementById("rotateRightBtn").onclick = () => {
+            rotation = (rotation + 90) % 360;
+            drawImage();
+        };
+
+        document.getElementById("cropToggleBtn").onclick = () => {
+            cropMode = !cropMode;
+            cropStart = null;
+            cropEnd = null;
+            drawImage();
+        };
+
+        canvas.onmousedown = e => {
+            if (!cropMode) return;
+            cropStart = { x: e.offsetX, y: e.offsetY };
+            cropEnd = { x: e.offsetX, y: e.offsetY };
+        };
+
+        canvas.onmousemove = e => {
+            if (!cropMode || !cropStart) return;
+            cropEnd = { x: e.offsetX, y: e.offsetY };
+            drawImage();
+        };
+
+        canvas.onmouseup = e => {
+            if (!cropMode) return;
+            cropEnd = { x: e.offsetX, y: e.offsetY };
+            drawImage();
+        };
+
+        document.getElementById("processImageBtn").onclick = () => {
+            if (!loadedImage) return;
+
+            let tempCanvas = document.createElement("canvas");
+            let tctx = tempCanvas.getContext("2d");
+
+            if (cropMode && cropStart && cropEnd) {
+                const x = cropStart.x;
+                const y = cropStart.y;
+                const w = cropEnd.x - cropStart.x;
+                const h = cropEnd.y - cropStart.y;
+
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+                tctx.drawImage(canvas, x, y, w, h, 0, 0, w, h);
+            } else {
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                tctx.drawImage(canvas, 0, 0);
+            }
+
+            const dataUrl = tempCanvas.toDataURL();
+            runOcrWithHighlight(dataUrl);
+        };
+
+        function runOcrWithHighlight(imageDataUrl) {
             statusEl.textContent = "Running OCR...";
 
             Tesseract.recognize(imageDataUrl, "eng", {
@@ -198,68 +297,47 @@
                 .then(result => {
                     statusEl.textContent = "OCR complete.";
 
-                    const raw = result.data.text || "";
+                    const words = result.data.words;
 
-                    // Split into lines
-                    let lines = raw.split(/\r?\n/);
+                    let cleanedLines = words
+                        .map(w => w.text.toUpperCase().replace(/[^A-Z0-9*]/g, ""))
+                        .filter(t => t.length >= 5);
 
-                    // Clean each line:
-                    // - uppercase
-                    // - remove everything except A-Z, 0-9, *
-                    // - trim whitespace
-                    let cleaned = lines
-                        .map(line => line.toUpperCase())
-                        .map(line => line.replace(/[^A-Z0-9*]/g, ""))   // <-- THE KEY FILTER
-                        .map(line => line.trim())
-                        .filter(line => line.length >= 5);              // only meaningful lines
+                    drawImage();
+
+                    ctx.strokeStyle = "yellow";
+                    ctx.lineWidth = 2;
+
+                    words.forEach(w => {
+                        const clean = w.text.toUpperCase().replace(/[^A-Z0-9*]/g, "");
+                        if (clean.length >= 5) {
+                            const b = w.bbox;
+                            ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+                        }
+                    });
 
                     const listContainer = document.getElementById("ocrList");
-                    listContainer.innerHTML = ""; // clear previous results
+                    listContainer.innerHTML = "";
 
-                    if (cleaned.length === 0) {
+                    if (cleanedLines.length === 0) {
                         listContainer.innerHTML = "<div>No usable text found.</div>";
                         return;
                     }
 
-                    // Build selectable list
-                    cleaned.forEach(line => {
+                    cleanedLines.forEach(line => {
                         const btn = document.createElement("button");
                         btn.textContent = line;
-                        btn.style.display = "block";
-                        btn.style.width = "100%";
-                        btn.style.margin = "0.3rem 0";
-                        btn.style.padding = "0.6rem";
-                        btn.style.background = "#333";
-                        btn.style.color = "#fff";
-                        btn.style.border = "1px solid #555";
-                        btn.style.borderRadius = "4px";
-                        btn.style.cursor = "pointer";
-                        btn.style.textAlign = "left";
-
-                        btn.addEventListener("click", () => {
-                            vinInput.value = line;
-                        });
-
+                        btn.className = "btn-secondary";
+                        btn.onclick = () => vinInput.value = line;
                         listContainer.appendChild(btn);
                     });
-                })
-                .catch(err => {
-                    statusEl.textContent = "OCR error.";
-                    console.error(err);
                 });
         }
 
-
-
-
-        // -------------------------------
-        // Decode button: FIRST STEP ONLY
-        // -------------------------------
-        document.getElementById("decodeBtn").addEventListener("click", () => {
+        document.getElementById("decodeBtn").onclick = () => {
             const text = vinInput.value.toUpperCase().replace(/\s+/g, "");
             decodeResult.style.display = "block";
 
-            // Harley 1981+ VIN pattern (17 chars, no I/O/Q)
             const harley1981Regex = /^[A-HJ-NPR-Z0-9]{17}$/;
 
             if (harley1981Regex.test(text)) {
@@ -267,8 +345,9 @@
             } else {
                 decodeResult.textContent = "VIN does not match Harley 1981–Present format.";
             }
-        });
+        };
     </script>
+
 </body>
 
 </html>
