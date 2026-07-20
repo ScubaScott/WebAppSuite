@@ -5,7 +5,10 @@
     <title>Scan Bingo Card</title>
     <link rel="stylesheet" href="style.css">
 
+    <!-- OpenCV -->
     <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+    <!-- Tesseract.js -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <script src="utils.js"></script>
@@ -20,7 +23,8 @@
 
     <canvas id="previewCanvas"></canvas>
 
-    <button id="ocrBtn" style="display:none;">Run OCR</button>
+    <!-- Always visible, always triggers OCR -->
+    <button id="ocrBtn">Run OCR</button>
 
     <h3>OCR Tuning</h3>
 
@@ -41,8 +45,6 @@
 
         <label>Zoom Factor:</label>
         <input id="zoomFactor" type="number" value="2" min="1" max="5">
-
-        <button id="retryBtn">Retry OCR</button>
     </div>
 
     <h3>OCR Result</h3>
@@ -53,7 +55,6 @@ const video = document.getElementById("camera");
 const captureBtn = document.getElementById("captureBtn");
 const previewCanvas = document.getElementById("previewCanvas");
 const ocrBtn = document.getElementById("ocrBtn");
-const retryBtn = document.getElementById("retryBtn");
 
 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .then(stream => video.srcObject = stream);
@@ -68,7 +69,6 @@ captureBtn.onclick = () => {
         previewCanvas.width = croppedCanvas.width;
         previewCanvas.height = croppedCanvas.height;
         previewCanvas.getContext("2d").drawImage(croppedCanvas, 0, 0);
-        ocrBtn.style.display = "block";
     });
 };
 
@@ -78,7 +78,6 @@ async function doOCR() {
 }
 
 ocrBtn.onclick = doOCR;
-retryBtn.onclick = doOCR;
 </script>
 
 </body>

@@ -70,7 +70,6 @@ function preprocessCell(cellCanvas) {
                              cv.THRESH_BINARY, 11, 2);
     }
 
-    // Zoom
     let zoomed = new cv.Mat();
     cv.resize(thresh, zoomed, new cv.Size(thresh.cols * zoomFactor, thresh.rows * zoomFactor));
 
