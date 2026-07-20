@@ -241,24 +241,41 @@ function tightCropToInk(binaryMat, paddingRatio) {
     const inverted = new cv.Mat();
     cv.bitwise_not(binaryMat, inverted); // ink (originally dark) becomes non-zero
 
-    const points = new cv.Mat();
-    cv.findNonZero(inverted, points);
+    const data = inverted.data;
+    const rows = inverted.rows;
+    const cols = inverted.cols;
+    let minX = cols;
+    let maxX = -1;
+    let minY = rows;
+    let maxY = -1;
+
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            const idx = y * cols + x;
+            if (data[idx] > 0) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+
     inverted.delete();
 
-    if (points.rows === 0) {
-        points.delete();
+    if (maxX === -1) {
         return binaryMat.clone();
     }
 
-    const rect = cv.boundingRect(points);
-    points.delete();
+    const rectW = maxX - minX + 1;
+    const rectH = maxY - minY + 1;
 
-    const padX = Math.round(rect.width * paddingRatio);
-    const padY = Math.round(rect.height * paddingRatio);
-    const x = Math.max(0, rect.x - padX);
-    const y = Math.max(0, rect.y - padY);
-    const cropW = Math.min(binaryMat.cols - x, rect.width + padX * 2);
-    const cropH = Math.min(binaryMat.rows - y, rect.height + padY * 2);
+    const padX = Math.round(rectW * paddingRatio);
+    const padY = Math.round(rectH * paddingRatio);
+    const x = Math.max(0, minX - padX);
+    const y = Math.max(0, minY - padY);
+    const cropW = Math.min(cols - x, rectW + padX * 2);
+    const cropH = Math.min(rows - y, rectH + padY * 2);
 
     const roi = binaryMat.roi(new cv.Rect(x, y, Math.max(1, cropW), Math.max(1, cropH)));
     const result = roi.clone();
