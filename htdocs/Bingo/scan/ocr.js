@@ -21,7 +21,9 @@ async function getWorker(oem) {
         ocrWorker = null;
     }
     if (!ocrWorker) {
-        ocrWorker = await Tesseract.createWorker('eng', oem);
+        ocrWorker = await Tesseract.createWorker();
+        await ocrWorker.loadLanguage('eng');
+        await ocrWorker.initialize('eng', oem);
         ocrWorkerOem = oem;
     }
     return ocrWorker;

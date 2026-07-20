@@ -938,11 +938,13 @@
         async function getWorker() {
             if (!ocrWorker) {
                 statusEl.textContent = "Initializing OCR Engine...";
-                ocrWorker = await Tesseract.createWorker('eng', 1, {
+                ocrWorker = await Tesseract.createWorker({
                     logger: m => {
                         if (currentLogger) currentLogger(m);
                     }
                 });
+                await ocrWorker.loadLanguage('eng');
+                await ocrWorker.initialize('eng', 1);
             }
             return ocrWorker;
         }
