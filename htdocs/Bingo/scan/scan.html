@@ -60,7 +60,7 @@
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <select id="blurMode">
                             <option value="none">None</option>
-                            <option value="gaussian">Gaussian</option>
+                            <option value="gaussian" selected>Gaussian</option>
                             <option value="median">Median</option>
                         </select>
                     </td>
@@ -69,9 +69,9 @@
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="zoomFactor">Zoom Factor</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
-                        <input id="zoomFactor" type="number" value="2" min="1" max="5">
+                        <input id="zoomFactor" type="number" value="3" min="1" max="5">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Makes each number larger before OCR. Larger digits are often easier for Tesseract to read, but excessive zoom can also enlarge noise.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Makes each number larger before OCR. Since cells are now cropped tightly around the ink first, zooming enlarges just the digit rather than the whole cell, so a slightly higher value works well.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="ocrEngineMode">OCR Engine Mode</label></td>
@@ -79,7 +79,7 @@
                         <select id="ocrEngineMode">
                             <option value="default">Default</option>
                             <option value="legacy">Legacy</option>
-                            <option value="lstm">LSTM</option>
+                            <option value="lstm" selected>LSTM</option>
                         </select>
                     </td>
                     <td style="border: 1px solid #ccc; padding: 8px;">Selects the recognition engine. LSTM is usually better for clear digits, while Legacy can be useful with older or unusual setups.</td>
@@ -89,20 +89,20 @@
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <select id="pageSegMode">
                             <option value="auto">Auto</option>
-                            <option value="single_block">Single Block</option>
+                            <option value="single_block" selected>Single Block</option>
                             <option value="single_line">Single Line</option>
                             <option value="single_word">Single Word</option>
                             <option value="single_char">Single Char</option>
                         </select>
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Tells Tesseract how the image is structured. Single Char is often the best choice for isolated bingo numbers because each cell contains just one digit.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Tells Tesseract how the image is structured. Testing found Single Block most reliable for isolated 1-2 digit bingo numbers. This setting is only used as a last-resort fallback attempt now &mdash; the OCR pass tries a few proven combinations first. Avoid Single Char &mdash; it can only ever return one character, so any two-digit number gets truncated.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="invertColors">Invert Colors</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="invertColors" type="checkbox">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Reverses light and dark pixels. Use this if your card has dark numbers on a light background or if the thresholding is treating the image backwards.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Reverses light and dark pixels. Use this if your card has light numbers on a dark background or if the thresholding is treating the image backwards.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="morphMode">Morphology</label></td>
@@ -122,35 +122,42 @@
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="binaryThreshold" type="number" value="127" min="0" max="255">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Sets the cutoff for turning grayscale pixels into black or white. Lower values make more pixels white; higher values make more pixels black.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Sets the cutoff for turning grayscale pixels into black or white. Lower values make more pixels white; higher values make more pixels black. Only used when Threshold Mode is Binary.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="adaptiveBlockSize">Adaptive Block Size</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Controls the size of the neighborhood used for adaptive thresholding. Larger values smooth lighting changes more, which can help on uneven photos.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Controls the size of the neighborhood used for adaptive thresholding. Larger values smooth lighting changes more, which can help on uneven photos. Only used when Threshold Mode is Adaptive.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="adaptiveC">Adaptive C</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="adaptiveC" type="number" value="2" min="0" max="20">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Adjusts how aggressively adaptive thresholding separates foreground from background. Larger values make the threshold more conservative and can reduce false positives.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Adjusts how aggressively adaptive thresholding separates foreground from background. Larger values make the threshold more conservative and can reduce false positives. Only used when Threshold Mode is Adaptive.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="rowOffset">Row Shift</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="rowOffset" type="number" value="0" min="-2" max="2">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling up or down by one row. Use this if numbers are being read from the wrong row, such as a value appearing in the free-space position.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling up or down by one row. The grid is now auto-detected and cropped before slicing, so this should rarely be needed &mdash; only use it if the auto-detected grid boundary is slightly off.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="colOffset">Column Shift</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="colOffset" type="number" value="0" min="-2" max="2">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling left or right by one column. Use this if the recognized numbers are landing in the neighboring cell.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling left or right by one column. The grid is now auto-detected and cropped before slicing, so this should rarely be needed &mdash; only use it if the auto-detected grid boundary is slightly off.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="validateColumnRanges">Validate Column Ranges</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="validateColumnRanges" type="checkbox" checked>
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">On a standard 75-ball card, each column only contains numbers in a known range (B:1-15, I:16-30, N:31-45, G:46-60, O:61-75). When checked, a misread that falls outside its column's range is automatically retried with different crop/zoom/engine settings instead of being accepted as-is. Turn this off if your cards don't follow the standard B-I-N-G-O ranges.</td>
                 </tr>
             </tbody>
         </table>
@@ -174,7 +181,7 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .catch(() => {});
 
 // When the user presses Capture, copy the current camera frame into the preview canvas.
-// The image is then passed through the auto-crop logic so only the card area remains visible.
+// The image is then passed through the auto-crop logic so only the card's number grid remains visible.
 captureBtn.onclick = () => {
     const ctx = previewCanvas.getContext("2d");
     previewCanvas.width = video.videoWidth;
