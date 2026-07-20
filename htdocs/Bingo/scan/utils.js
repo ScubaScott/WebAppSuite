@@ -29,7 +29,7 @@ async function autoCrop(canvas) {
                     maxArea = area;
                     biggest = approx;
                 }
-            }
+            }   
         }
 
         if (!biggest) {
