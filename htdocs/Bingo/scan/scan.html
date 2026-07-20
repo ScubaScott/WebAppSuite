@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Scan Bingo Card</title>
@@ -17,7 +18,7 @@
 
 <body>
     <!-- Main heading shown to the user at the top of the page. -->
-    <h2>Scan Bingo Card</h2>
+    <h2>Scan Bingo Card v1</h2>
 
     <!-- This video element shows the live camera feed from the device camera. -->
     <video id="camera" autoplay playsinline></video>
@@ -45,7 +46,8 @@
             </thead>
             <tbody>
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="threshMode">Threshold Mode</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="threshMode">Threshold Mode</label>
+                    </td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <select id="threshMode">
                             <option value="otsu">OTSU</option>
@@ -53,7 +55,9 @@
                             <option value="adaptive">Adaptive</option>
                         </select>
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Chooses how the image is turned into black-and-white. OTSU is automatic, Binary uses a fixed cutoff, and Adaptive adapts to lighting across the cell.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Chooses how the image is turned into
+                        black-and-white. OTSU is automatic, Binary uses a fixed cutoff, and Adaptive adapts to lighting
+                        across the cell.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="blurMode">Blur</label></td>
@@ -64,17 +68,22 @@
                             <option value="median">Median</option>
                         </select>
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Softens small noise and texture before thresholding. Too much blur can make digits look fuzzy, while too little can leave specks that confuse OCR.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Softens small noise and texture before
+                        thresholding. Too much blur can make digits look fuzzy, while too little can leave specks that
+                        confuse OCR.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="zoomFactor">Zoom Factor</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="zoomFactor" type="number" value="3" min="1" max="5">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Makes each number larger before OCR. Since cells are now cropped tightly around the ink first, zooming enlarges just the digit rather than the whole cell, so a slightly higher value works well.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Makes each number larger before OCR. Since cells
+                        are now cropped tightly around the ink first, zooming enlarges just the digit rather than the
+                        whole cell, so a slightly higher value works well.</td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="ocrEngineMode">OCR Engine Mode</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="ocrEngineMode">OCR Engine Mode</label>
+                    </td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <select id="ocrEngineMode">
                             <option value="default">Default</option>
@@ -82,10 +91,12 @@
                             <option value="lstm" selected>LSTM</option>
                         </select>
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Selects the recognition engine. LSTM is usually better for clear digits, while Legacy can be useful with older or unusual setups.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Selects the recognition engine. LSTM is usually
+                        better for clear digits, while Legacy can be useful with older or unusual setups.</td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="pageSegMode">Page Segmentation</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="pageSegMode">Page Segmentation</label>
+                    </td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <select id="pageSegMode">
                             <option value="auto">Auto</option>
@@ -95,14 +106,21 @@
                             <option value="single_char">Single Char</option>
                         </select>
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Tells Tesseract how the image is structured. Testing found Single Block most reliable for isolated 1-2 digit bingo numbers. This setting is only used as a last-resort fallback attempt now &mdash; the OCR pass tries a few proven combinations first. Avoid Single Char &mdash; it can only ever return one character, so any two-digit number gets truncated.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Tells Tesseract how the image is structured.
+                        Testing found Single Block most reliable for isolated 1-2 digit bingo numbers. This setting is
+                        only used as a last-resort fallback attempt now &mdash; the OCR pass tries a few proven
+                        combinations first. Avoid Single Char &mdash; it can only ever return one character, so any
+                        two-digit number gets truncated.</td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="invertColors">Invert Colors</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="invertColors">Invert Colors</label>
+                    </td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="invertColors" type="checkbox">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Reverses light and dark pixels. Use this if your card has light numbers on a dark background or if the thresholding is treating the image backwards.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Reverses light and dark pixels. Use this if your
+                        card has light numbers on a dark background or if the thresholding is treating the image
+                        backwards.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="morphMode">Morphology</label></td>
@@ -115,49 +133,67 @@
                             <option value="close">Close</option>
                         </select>
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Adds a small cleanup step after thresholding. Dilate and Close can strengthen thin digits, while Erode can remove small specks and noise.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Adds a small cleanup step after thresholding.
+                        Dilate and Close can strengthen thin digits, while Erode can remove small specks and noise.</td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="binaryThreshold">Binary Threshold</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="binaryThreshold">Binary
+                            Threshold</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="binaryThreshold" type="number" value="127" min="0" max="255">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Sets the cutoff for turning grayscale pixels into black or white. Lower values make more pixels white; higher values make more pixels black. Only used when Threshold Mode is Binary.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Sets the cutoff for turning grayscale pixels into
+                        black or white. Lower values make more pixels white; higher values make more pixels black. Only
+                        used when Threshold Mode is Binary.</td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="adaptiveBlockSize">Adaptive Block Size</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="adaptiveBlockSize">Adaptive Block
+                            Size</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Controls the size of the neighborhood used for adaptive thresholding. Larger values smooth lighting changes more, which can help on uneven photos. Only used when Threshold Mode is Adaptive.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Controls the size of the neighborhood used for
+                        adaptive thresholding. Larger values smooth lighting changes more, which can help on uneven
+                        photos. Only used when Threshold Mode is Adaptive.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="adaptiveC">Adaptive C</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="adaptiveC" type="number" value="2" min="0" max="20">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Adjusts how aggressively adaptive thresholding separates foreground from background. Larger values make the threshold more conservative and can reduce false positives. Only used when Threshold Mode is Adaptive.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Adjusts how aggressively adaptive thresholding
+                        separates foreground from background. Larger values make the threshold more conservative and can
+                        reduce false positives. Only used when Threshold Mode is Adaptive.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="rowOffset">Row Shift</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="rowOffset" type="number" value="0" min="-2" max="2">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling up or down by one row. The grid is now auto-detected and cropped before slicing, so this should rarely be needed &mdash; only use it if the auto-detected grid boundary is slightly off.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling up or down by one row. The
+                        grid is now auto-detected and cropped before slicing, so this should rarely be needed &mdash;
+                        only use it if the auto-detected grid boundary is slightly off.</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 8px;"><label for="colOffset">Column Shift</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="colOffset" type="number" value="0" min="-2" max="2">
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling left or right by one column. The grid is now auto-detected and cropped before slicing, so this should rarely be needed &mdash; only use it if the auto-detected grid boundary is slightly off.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling left or right by one
+                        column. The grid is now auto-detected and cropped before slicing, so this should rarely be
+                        needed &mdash; only use it if the auto-detected grid boundary is slightly off.</td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="validateColumnRanges">Validate Column Ranges</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="validateColumnRanges">Validate Column
+                            Ranges</label></td>
                     <td style="border: 1px solid #ccc; padding: 8px;">
                         <input id="validateColumnRanges" type="checkbox" checked>
                     </td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">On a standard 75-ball card, each column only contains numbers in a known range (B:1-15, I:16-30, N:31-45, G:46-60, O:61-75). When checked, a misread that falls outside its column's range is automatically retried with different crop/zoom/engine settings instead of being accepted as-is. Turn this off if your cards don't follow the standard B-I-N-G-O ranges.</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">On a standard 75-ball card, each column only
+                        contains numbers in a known range (B:1-15, I:16-30, N:31-45, G:46-60, O:61-75). When checked, a
+                        misread that falls outside its column's range is automatically retried with different
+                        crop/zoom/engine settings instead of being accepted as-is. Turn this off if your cards don't
+                        follow the standard B-I-N-G-O ranges.</td>
                 </tr>
             </tbody>
         </table>
@@ -166,53 +202,54 @@
     <h3>OCR Result</h3>
     <div id="bingoOutput"></div>
 
-<script>
-// Get references to the main page elements so the script can interact with them.
-const video = document.getElementById("camera");
-const captureBtn = document.getElementById("captureBtn");
-const previewCanvas = document.getElementById("previewCanvas");
-const ocrBtn = document.getElementById("ocrBtn");
-const StatusDiv = document.getElementById("status");
+    <script>
+        // Get references to the main page elements so the script can interact with them.
+        const video = document.getElementById("camera");
+        const captureBtn = document.getElementById("captureBtn");
+        const previewCanvas = document.getElementById("previewCanvas");
+        const ocrBtn = document.getElementById("ocrBtn");
+        const StatusDiv = document.getElementById("status");
 
-// Ask the browser for access to the rear camera when it is available.
-// If access fails, the page should remain usable and simply skip the camera preview.
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(stream => video.srcObject = stream)
-    .catch(() => {});
+        // Ask the browser for access to the rear camera when it is available.
+        // If access fails, the page should remain usable and simply skip the camera preview.
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => video.srcObject = stream)
+            .catch(() => { });
 
-// When the user presses Capture, copy the current camera frame into the preview canvas.
-// The image is then passed through the auto-crop logic so only the card's number grid remains visible.
-captureBtn.onclick = () => {
-    const ctx = previewCanvas.getContext("2d");
-    previewCanvas.width = video.videoWidth;
-    previewCanvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
+        // When the user presses Capture, copy the current camera frame into the preview canvas.
+        // The image is then passed through the auto-crop logic so only the card's number grid remains visible.
+        captureBtn.onclick = () => {
+            const ctx = previewCanvas.getContext("2d");
+            previewCanvas.width = video.videoWidth;
+            previewCanvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
 
-    autoCrop(previewCanvas).then(croppedCanvas => {
-        previewCanvas.width = croppedCanvas.width;
-        previewCanvas.height = croppedCanvas.height;
-        previewCanvas.getContext("2d").drawImage(croppedCanvas, 0, 0);
-    }).catch(() => {});
-};
+            autoCrop(previewCanvas).then(croppedCanvas => {
+                previewCanvas.width = croppedCanvas.width;
+                previewCanvas.height = croppedCanvas.height;
+                previewCanvas.getContext("2d").drawImage(croppedCanvas, 0, 0);
+            }).catch(() => { });
+        };
 
-// Run OCR against the current preview image and draw the results into the output area.
-async function doOCR() {
-    StatusDiv.innerHTML = "Running OCR...";
+        // Run OCR against the current preview image and draw the results into the output area.
+        async function doOCR() {
+            StatusDiv.innerHTML = "Running OCR...";
 
-    try {
-        const grid = await runOCR(previewCanvas);
-        drawBingoGrid(grid);
-        StatusDiv.innerHTML = "Done.";
-    } catch (err) {
-        // Surface the failure in the console and show a simple status message.
-        console.error(err);
-        StatusDiv.innerHTML = "OCR failed.";
-    }
-}
+            try {
+                const grid = await runOCR(previewCanvas);
+                drawBingoGrid(grid);
+                StatusDiv.innerHTML = "Done.";
+            } catch (err) {
+                // Surface the failure in the console and show a simple status message.
+                console.error(err);
+                StatusDiv.innerHTML = "OCR failed.";
+            }
+        }
 
-// Hook the OCR button to our function so the user can run recognition at any time.
-ocrBtn.onclick = doOCR;
-</script>
+        // Hook the OCR button to our function so the user can run recognition at any time.
+        ocrBtn.onclick = doOCR;
+    </script>
 
 </body>
+
 </html>
