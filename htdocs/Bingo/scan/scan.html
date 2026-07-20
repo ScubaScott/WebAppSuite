@@ -16,18 +16,24 @@
 </head>
 
 <body>
+    <!-- Main heading shown to the user at the top of the page. -->
     <h2>Scan Bingo Card</h2>
 
+    <!-- This video element shows the live camera feed from the device camera. -->
     <video id="camera" autoplay playsinline></video>
+
+    <!-- Capture button grabs the current frame from the camera and draws it into the preview canvas. -->
     <button id="captureBtn">Capture</button>
 
+    <!-- The preview canvas is where the captured image is displayed after cropping and preprocessing. -->
     <canvas id="previewCanvas"></canvas>
 
-    <!-- Always visible, always triggers OCR -->
+    <!-- This button runs the OCR process against the currently displayed card image. -->
     <button id="ocrBtn">Run OCR</button>
 
     <h3>OCR Tuning</h3>
 
+    <!-- These controls let the user adjust the image-preprocessing and Tesseract settings. -->
     <div id="tuning">
         <label>Threshold Mode:</label>
         <select id="threshMode">
@@ -94,16 +100,21 @@
     <div id="bingoOutput"></div>
 
 <script>
+// Get references to the main page elements so the script can interact with them.
 const video = document.getElementById("camera");
 const captureBtn = document.getElementById("captureBtn");
 const previewCanvas = document.getElementById("previewCanvas");
 const ocrBtn = document.getElementById("ocrBtn");
 const StatusDiv = document.getElementById("status");
 
+// Ask the browser for access to the rear camera when it is available.
+// If access fails, the page should remain usable and simply skip the camera preview.
 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .then(stream => video.srcObject = stream)
     .catch(() => {});
 
+// When the user presses Capture, copy the current camera frame into the preview canvas.
+// The image is then passed through the auto-crop logic so only the card area remains visible.
 captureBtn.onclick = () => {
     const ctx = previewCanvas.getContext("2d");
     previewCanvas.width = video.videoWidth;
@@ -117,6 +128,7 @@ captureBtn.onclick = () => {
     }).catch(() => {});
 };
 
+// Run OCR against the current preview image and draw the results into the output area.
 async function doOCR() {
     StatusDiv.innerHTML = "Running OCR...";
 
@@ -125,11 +137,13 @@ async function doOCR() {
         drawBingoGrid(grid);
         StatusDiv.innerHTML = "Done.";
     } catch (err) {
+        // Surface the failure in the console and show a simple status message.
         console.error(err);
         StatusDiv.innerHTML = "OCR failed.";
     }
 }
 
+// Hook the OCR button to our function so the user can run recognition at any time.
 ocrBtn.onclick = doOCR;
 </script>
 

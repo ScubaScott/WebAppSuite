@@ -1,4 +1,6 @@
+// Run Tesseract over every bingo cell and return a 5x5 grid of detected numbers.
 async function runOCR(canvas) {
+    // Stop early if the browser does not have OpenCV or Tesseract loaded.
     if (typeof cv === "undefined" || typeof Tesseract === "undefined") {
         return [];
     }
@@ -12,10 +14,12 @@ async function runOCR(canvas) {
 
     const grid = [];
 
+    // Slice the cropped card into five rows and five columns.
     for (let row = 0; row < 5; row++) {
         const rowData = [];
 
         for (let col = 0; col < 5; col++) {
+            // Allow a small row/column shift to correct for a card that is slightly misaligned.
             const sourceRow = Math.max(0, Math.min(4, row + rowOffset));
             const sourceCol = Math.max(0, Math.min(4, col + colOffset));
 
@@ -25,19 +29,24 @@ async function runOCR(canvas) {
 
             const cellCtx = cellCanvas.getContext("2d");
 
+            // Copy the selected portion of the card into a small cell canvas.
             cellCtx.drawImage(
                 canvas,
                 sourceCol * cellW, sourceRow * cellH, cellW, cellH,
                 0, 0, cellW, cellH
             );
 
+            // Prepare the cell image for OCR by converting it into a clean binary image.
             const processed = preprocessCell(cellCanvas);
+
+            // Ask Tesseract to recognize only digits from the processed cell.
             const { data } = await Tesseract.recognize(processed, 'eng', {
                 tessedit_char_whitelist: '0123456789',
                 tessedit_pageseg_mode: getPageSegMode(),
                 tessedit_ocr_engine_mode: getOcrEngineMode()
             });
 
+            // Extract the first number found in the OCR text, if any.
             const num = extractNumber(data.text);
             rowData.push(num);
         }
@@ -48,7 +57,9 @@ async function runOCR(canvas) {
     return grid;
 }
 
+// Convert a single bingo cell into a black-and-white (binary) image that is easier for OCR to read.
 function preprocessCell(cellCanvas) {
+    // If OpenCV is missing, fall back to the original canvas so the page still works.
     if (typeof cv === "undefined") {
         return cellCanvas;
     }
@@ -65,15 +76,18 @@ function preprocessCell(cellCanvas) {
     let src = cv.imread(cellCanvas);
     let gray = new cv.Mat();
     let blur = new cv.Mat();
-    let thresh = new cv.Mat();
+    let binary = new cv.Mat();
     let morph = new cv.Mat();
 
+    // Convert the image to grayscale first, because thresholding works best on a single-channel image.
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
+    // If the user wants dark text on a light background, invert the grayscale image before thresholding.
     if (invertColors) {
         cv.bitwise_not(gray, gray);
     }
 
+    // Slightly blur the image to reduce noise before thresholding.
     if (blurMode === "gaussian") {
         cv.GaussianBlur(gray, blur, new cv.Size(3, 3), 0);
     } else if (blurMode === "median") {
@@ -82,61 +96,66 @@ function preprocessCell(cellCanvas) {
         blur = gray.clone();
     }
 
+    // Create a true black-and-white image from the grayscale input.
     if (threshMode === "otsu") {
-        cv.threshold(blur, thresh, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+        cv.threshold(blur, binary, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
     } else if (threshMode === "binary") {
-        cv.threshold(blur, thresh, binaryThreshold, 255, cv.THRESH_BINARY);
+        cv.threshold(blur, binary, binaryThreshold, 255, cv.THRESH_BINARY);
     } else if (threshMode === "adaptive") {
         const blockSize = Math.max(3, Math.min(31, adaptiveBlockSize + (adaptiveBlockSize % 2 === 0 ? 1 : 0)));
-        cv.adaptiveThreshold(blur, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, blockSize, adaptiveC);
+        cv.adaptiveThreshold(blur, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, blockSize, adaptiveC);
     }
 
+    // Optional morphology can help join broken digits or remove small specks.
     if (morphMode === "dilate") {
         const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
-        cv.dilate(thresh, morph, kernel);
-        thresh.delete();
-        thresh = morph;
+        cv.dilate(binary, morph, kernel);
+        binary.delete();
+        binary = morph;
         morph = new cv.Mat();
         kernel.delete();
     } else if (morphMode === "erode") {
         const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
-        cv.erode(thresh, morph, kernel);
-        thresh.delete();
-        thresh = morph;
+        cv.erode(binary, morph, kernel);
+        binary.delete();
+        binary = morph;
         morph = new cv.Mat();
         kernel.delete();
     } else if (morphMode === "open") {
         const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
-        cv.morphologyEx(thresh, morph, cv.MORPH_OPEN, kernel);
-        thresh.delete();
-        thresh = morph;
+        cv.morphologyEx(binary, morph, cv.MORPH_OPEN, kernel);
+        binary.delete();
+        binary = morph;
         morph = new cv.Mat();
         kernel.delete();
     } else if (morphMode === "close") {
         const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
-        cv.morphologyEx(thresh, morph, cv.MORPH_CLOSE, kernel);
-        thresh.delete();
-        thresh = morph;
+        cv.morphologyEx(binary, morph, cv.MORPH_CLOSE, kernel);
+        binary.delete();
+        binary = morph;
         morph = new cv.Mat();
         kernel.delete();
     }
 
+    // Zoom the binary image slightly so Tesseract has larger digits to read.
     let zoomed = new cv.Mat();
-    cv.resize(thresh, zoomed, new cv.Size(thresh.cols * zoomFactor, thresh.rows * zoomFactor));
+    cv.resize(binary, zoomed, new cv.Size(binary.cols * zoomFactor, binary.rows * zoomFactor));
 
     const outCanvas = document.createElement("canvas");
     cv.imshow(outCanvas, zoomed);
 
+    // Clean up OpenCV mats to avoid memory leaks.
     src.delete();
     gray.delete();
     blur.delete();
-    thresh.delete();
+    binary.delete();
     morph.delete();
     zoomed.delete();
 
     return outCanvas;
 }
 
+// Map the user-selected page segmentation mode to the corresponding Tesseract mode.
 function getPageSegMode() {
     const mode = document.getElementById("pageSegMode").value;
     switch (mode) {
@@ -148,6 +167,7 @@ function getPageSegMode() {
     }
 }
 
+// Map the user-selected OCR engine mode to the corresponding Tesseract mode.
 function getOcrEngineMode() {
     const mode = document.getElementById("ocrEngineMode").value;
     switch (mode) {
