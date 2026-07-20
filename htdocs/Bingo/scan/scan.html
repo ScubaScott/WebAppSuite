@@ -35,65 +35,125 @@
 
     <!-- These controls let the user adjust the image-preprocessing and Tesseract settings. -->
     <div id="tuning">
-        <label>Threshold Mode:</label>
-        <select id="threshMode">
-            <option value="otsu">OTSU</option>
-            <option value="binary">Binary</option>
-            <option value="adaptive">Adaptive</option>
-        </select>
-
-        <label>Blur:</label>
-        <select id="blurMode">
-            <option value="none">None</option>
-            <option value="gaussian">Gaussian</option>
-            <option value="median">Median</option>
-        </select>
-
-        <label>Zoom Factor:</label>
-        <input id="zoomFactor" type="number" value="2" min="1" max="5">
-
-        <label>OCR Engine Mode:</label>
-        <select id="ocrEngineMode">
-            <option value="default">Default</option>
-            <option value="legacy">Legacy</option>
-            <option value="lstm">LSTM</option>
-        </select>
-
-        <label>Page Segmentation:</label>
-        <select id="pageSegMode">
-            <option value="auto">Auto</option>
-            <option value="single_block">Single Block</option>
-            <option value="single_line">Single Line</option>
-            <option value="single_word">Single Word</option>
-            <option value="single_char">Single Char</option>
-        </select>
-
-        <label>Invert Colors:</label>
-        <input id="invertColors" type="checkbox">
-
-        <label>Morphology:</label>
-        <select id="morphMode">
-            <option value="none">None</option>
-            <option value="dilate">Dilate</option>
-            <option value="erode">Erode</option>
-            <option value="open">Open</option>
-            <option value="close">Close</option>
-        </select>
-
-        <label>Binary Threshold:</label>
-        <input id="binaryThreshold" type="number" value="127" min="0" max="255">
-
-        <label>Adaptive Block Size:</label>
-        <input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2">
-
-        <label>Adaptive C:</label>
-        <input id="adaptiveC" type="number" value="2" min="0" max="20">
-
-        <label>Row Shift:</label>
-        <input id="rowOffset" type="number" value="0" min="-2" max="2">
-
-        <label>Column Shift:</label>
-        <input id="colOffset" type="number" value="0" min="-2" max="2">
+        <table style="border-collapse: collapse; width: 100%; max-width: 900px;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; border: 1px solid #ccc; padding: 8px;">Name</th>
+                    <th style="text-align: left; border: 1px solid #ccc; padding: 8px;">Value</th>
+                    <th style="text-align: left; border: 1px solid #ccc; padding: 8px;">How it affects OCR</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="threshMode">Threshold Mode</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <select id="threshMode">
+                            <option value="otsu">OTSU</option>
+                            <option value="binary">Binary</option>
+                            <option value="adaptive">Adaptive</option>
+                        </select>
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Chooses how the image is turned into black-and-white. OTSU is automatic, Binary uses a fixed cutoff, and Adaptive adapts to lighting across the cell.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="blurMode">Blur</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <select id="blurMode">
+                            <option value="none">None</option>
+                            <option value="gaussian">Gaussian</option>
+                            <option value="median">Median</option>
+                        </select>
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Softens small noise and texture before thresholding. Too much blur can make digits look fuzzy, while too little can leave specks that confuse OCR.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="zoomFactor">Zoom Factor</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="zoomFactor" type="number" value="2" min="1" max="5">
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Makes each number larger before OCR. Larger digits are often easier for Tesseract to read, but excessive zoom can also enlarge noise.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="ocrEngineMode">OCR Engine Mode</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <select id="ocrEngineMode">
+                            <option value="default">Default</option>
+                            <option value="legacy">Legacy</option>
+                            <option value="lstm">LSTM</option>
+                        </select>
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Selects the recognition engine. LSTM is usually better for clear digits, while Legacy can be useful with older or unusual setups.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="pageSegMode">Page Segmentation</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <select id="pageSegMode">
+                            <option value="auto">Auto</option>
+                            <option value="single_block">Single Block</option>
+                            <option value="single_line">Single Line</option>
+                            <option value="single_word">Single Word</option>
+                            <option value="single_char">Single Char</option>
+                        </select>
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Tells Tesseract how the image is structured. Single Char is often the best choice for isolated bingo numbers because each cell contains just one digit.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="invertColors">Invert Colors</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="invertColors" type="checkbox">
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Reverses light and dark pixels. Use this if your card has dark numbers on a light background or if the thresholding is treating the image backwards.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="morphMode">Morphology</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <select id="morphMode">
+                            <option value="none">None</option>
+                            <option value="dilate">Dilate</option>
+                            <option value="erode">Erode</option>
+                            <option value="open">Open</option>
+                            <option value="close">Close</option>
+                        </select>
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Adds a small cleanup step after thresholding. Dilate and Close can strengthen thin digits, while Erode can remove small specks and noise.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="binaryThreshold">Binary Threshold</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="binaryThreshold" type="number" value="127" min="0" max="255">
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Sets the cutoff for turning grayscale pixels into black or white. Lower values make more pixels white; higher values make more pixels black.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="adaptiveBlockSize">Adaptive Block Size</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2">
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Controls the size of the neighborhood used for adaptive thresholding. Larger values smooth lighting changes more, which can help on uneven photos.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="adaptiveC">Adaptive C</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="adaptiveC" type="number" value="2" min="0" max="20">
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Adjusts how aggressively adaptive thresholding separates foreground from background. Larger values make the threshold more conservative and can reduce false positives.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="rowOffset">Row Shift</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="rowOffset" type="number" value="0" min="-2" max="2">
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling up or down by one row. Use this if numbers are being read from the wrong row, such as a value appearing in the free-space position.</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><label for="colOffset">Column Shift</label></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">
+                        <input id="colOffset" type="number" value="0" min="-2" max="2">
+                    </td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">Shifts the OCR sampling left or right by one column. Use this if the recognized numbers are landing in the neighboring cell.</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <div id="status"></div>
     <h3>OCR Result</h3>
