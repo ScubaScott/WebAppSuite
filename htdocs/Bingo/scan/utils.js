@@ -4,9 +4,14 @@ async function autoCrop(canvas) {
     return new Promise(resolve => {
         const src = cv.imread(canvas);
 
-        // Primary approach: Detect the 5x5 grid by looking directly for the 25 cell boxes/frames.
-        // This is ideal for bar bingo slider cards (shutter cards) which lack a prominent outer border.
-        const gridInfo = detectCellGrid(src);
+        // Primary approach: Detect the 5x5 grid directly, without relying on any drawn border.
+        // Slider (shutter) cards are tried first via their colored tabs - this is a far more
+        // reliable signal than looking for a box/frame around each window, because many slider
+        // cards (e.g. wood-grain ones) have no such border at all: just a plain light window
+        // against a busy/textured card body, which is easily confused with digit strokes or
+        // surface texture by edge/border-based detection. Cards with printed cell borders fall
+        // through to the box-detection approach below.
+        const gridInfo = detectSliderTabGrid(src) || detectCellGrid(src);
         if (gridInfo) {
             const { corners } = gridInfo;
             const width = 600;
@@ -122,6 +127,155 @@ async function autoCrop(canvas) {
         const gridCanvas = cropToGrid(warpedCanvas);
         resolve(gridCanvas || warpedCanvas);
     });
+}
+
+// Detect the 5x5 grid on "slider" bingo cards (bar bingo / shutter cards) by finding the small
+// colored tab on each of the 25 windows, rather than trying to find a border around the window
+// itself. Slider cards commonly have a brightly colored (often red) tab or arrow protruding from
+// one side of each number window, used to slide the shutter open. That tab is a small, consistent,
+// high-contrast shape - a much more reliable target than the window, whose background can blend
+// into a light or textured card body (wood grain, brushed metal, etc.) with no printed border at all.
+function detectSliderTabGrid(src) {
+    const rgb = new cv.Mat();
+    cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
+    const hsv = new cv.Mat();
+    cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
+    rgb.delete();
+
+    // Red wraps around both ends of OpenCV's 0-180 hue range, so two ranges are combined.
+    // The saturation/value minimums keep this from matching washed-out wood tones, shadows,
+    // or other faintly warm-toned pixels that aren't the actual tab.
+    const low1 = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), new cv.Scalar(0, 80, 80, 0));
+    const high1 = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), new cv.Scalar(12, 255, 255, 255));
+    const low2 = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), new cv.Scalar(168, 80, 80, 0));
+    const high2 = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), new cv.Scalar(180, 255, 255, 255));
+
+    const mask1 = new cv.Mat();
+    const mask2 = new cv.Mat();
+    cv.inRange(hsv, low1, high1, mask1);
+    cv.inRange(hsv, low2, high2, mask2);
+    const tabMask = new cv.Mat();
+    cv.bitwise_or(mask1, mask2, tabMask);
+
+    hsv.delete(); low1.delete(); high1.delete(); low2.delete(); high2.delete();
+    mask1.delete(); mask2.delete();
+
+    const contours = new cv.MatVector();
+    const hierarchy = new cv.Mat();
+    cv.findContours(tabMask, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+    tabMask.delete();
+    hierarchy.delete();
+
+    const totalArea = src.rows * src.cols;
+    const candidates = [];
+
+    for (let i = 0; i < contours.size(); i++) {
+        const cnt = contours.get(i);
+        const rect = cv.boundingRect(cnt);
+        cnt.delete();
+
+        const area = rect.width * rect.height;
+        const aspect = rect.width / rect.height;
+
+        // Tabs are small and narrow-tall (an arrow/flag shape), unlike header lettering, logo
+        // artwork, or "made in..." print, which tend to be a different size or shape entirely.
+        if (area >= totalArea * 0.0003 && area <= totalArea * 0.01 &&
+            aspect >= 0.1 && aspect <= 0.7 && rect.height >= 15) {
+            candidates.push({
+                x: rect.x, y: rect.y,
+                cx: rect.x + rect.width / 2, cy: rect.y + rect.height / 2
+            });
+        }
+    }
+    contours.delete();
+
+    // Need a reasonably complete set of tabs to trust this detection; a handful of red pixels
+    // elsewhere on the card isn't enough to build a grid from.
+    if (candidates.length < 15) {
+        return null;
+    }
+
+    // Group candidate centers along each axis into row/column clusters. A fixed pixel gap works
+    // because tabs within the same row or column line up closely, while the gap between rows or
+    // columns is roughly a full cell width/height - far larger than any jitter within a cluster.
+    const clusterAxis = (values) => {
+        const order = values.map((v, i) => i).sort((a, b) => values[a] - values[b]);
+        const groups = [];
+        let current = [order[0]];
+        for (let k = 1; k < order.length; k++) {
+            const idx = order[k];
+            if (values[idx] - values[current[current.length - 1]] > 20) {
+                groups.push(current);
+                current = [idx];
+            } else {
+                current.push(idx);
+            }
+        }
+        groups.push(current);
+        return groups;
+    };
+
+    const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const ys = candidates.map(c => c.cy);
+    const xs = candidates.map(c => c.cx);
+
+    let rowGroups = clusterAxis(ys);
+    let colGroups = clusterAxis(xs);
+
+    // Real rows/columns have one tab per cell (5 members) - far more than any stray red pixels
+    // from header text or logo artwork. Keeping only the 5 largest groups per axis reliably
+    // discards that noise without needing an exact tab count.
+    rowGroups.sort((a, b) => b.length - a.length);
+    colGroups.sort((a, b) => b.length - a.length);
+
+    if (rowGroups.length < 5 || colGroups.length < 5) {
+        return null;
+    }
+
+    let top5Rows = rowGroups.slice(0, 5);
+    let top5Cols = colGroups.slice(0, 5);
+    top5Rows.sort((a, b) => mean(a.map(i => ys[i])) - mean(b.map(i => ys[i])));
+    top5Cols.sort((a, b) => mean(a.map(i => xs[i])) - mean(b.map(i => xs[i])));
+
+    const rowCenters = top5Rows.map(g => mean(g.map(i => ys[i])));
+    const colCenters = top5Cols.map(g => mean(g.map(i => xs[i])));
+
+    const avgDiff = (arr) => {
+        let sum = 0;
+        for (let i = 1; i < arr.length; i++) sum += arr[i] - arr[i - 1];
+        return sum / (arr.length - 1);
+    };
+    const rowPitch = avgDiff(rowCenters);
+    const colPitch = avgDiff(colCenters);
+
+    // The leftmost/topmost tab's own edge (not its center) anchors the true left/top boundary
+    // of the first column/row. Since the pitch already measures a full cell's width/height,
+    // extending 5 pitches out from that edge reaches the far edge of the last column/row
+    // without needing to detect the last column/row's boundary directly.
+    let leftX = Infinity, topY = Infinity;
+    for (const i of top5Cols[0]) leftX = Math.min(leftX, candidates[i].x);
+    for (const i of top5Rows[0]) topY = Math.min(topY, candidates[i].y);
+
+    let rightX = leftX + colPitch * 5;
+    let bottomY = topY + rowPitch * 5;
+
+    // Small padding so numbers right at the outer edge of the grid aren't clipped, then clamp
+    // to the image bounds.
+    const padW = colPitch * 0.03;
+    const padH = rowPitch * 0.03;
+    leftX = Math.max(0, leftX - padW);
+    topY = Math.max(0, topY - padH);
+    rightX = Math.min(src.cols, rightX + padW);
+    bottomY = Math.min(src.rows, bottomY + padH);
+
+    return {
+        corners: {
+            tl: { x: leftX, y: topY },
+            tr: { x: rightX, y: topY },
+            br: { x: rightX, y: bottomY },
+            bl: { x: leftX, y: bottomY }
+        }
+    };
 }
 
 // Detect the 5x5 bingo grid by finding the 25 individual cell boxes (or a cluster of cell boxes)
