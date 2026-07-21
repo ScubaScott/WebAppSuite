@@ -1,21 +1,52 @@
-// Auto-crop the largest visible quadrilateral in the image so the bingo card fills the preview,
-// then crop again to isolate just the number grid (excluding any header, border, or footer text).
+// Auto-crop the 5x5 bingo grid (supporting slider cards without outer borders as well as paper cards),
+// then warp/crop to isolate the 25 number cells cleanly.
 async function autoCrop(canvas) {
     return new Promise(resolve => {
-        // Read the current canvas into an OpenCV matrix.
         const src = cv.imread(canvas);
+
+        // Primary approach: Detect the 5x5 grid by looking directly for the 25 cell boxes/frames.
+        // This is ideal for bar bingo slider cards (shutter cards) which lack a prominent outer border.
+        const gridInfo = detectCellGrid(src);
+        if (gridInfo) {
+            const { corners } = gridInfo;
+            const width = 600;
+            const height = 600;
+
+            const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                corners.tl.x, corners.tl.y,
+                corners.tr.x, corners.tr.y,
+                corners.br.x, corners.br.y,
+                corners.bl.x, corners.bl.y
+            ]);
+
+            const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                0, 0,
+                width, 0,
+                width, height,
+                0, height
+            ]);
+
+            const M = cv.getPerspectiveTransform(srcTri, dstTri);
+            const dst = new cv.Mat();
+            cv.warpPerspective(src, dst, M, new cv.Size(width, height));
+
+            const gridCanvas = document.createElement("canvas");
+            cv.imshow(gridCanvas, dst);
+
+            src.delete(); srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
+            resolve(gridCanvas);
+            return;
+        }
+
+        // Secondary approach: Fall back to detecting the largest outer 4-sided card contour.
         const gray = new cv.Mat();
         const blur = new cv.Mat();
         const edges = new cv.Mat();
 
-        // Convert the image to grayscale so edge detection can work reliably.
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
         cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
-
-        // Detect strong edges around the card border.
         cv.Canny(blur, edges, 75, 200);
 
-        // Find contours in the edge image and keep the largest quadrilateral.
         const contours = new cv.MatVector();
         const hierarchy = new cv.Mat();
         cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
@@ -29,7 +60,6 @@ async function autoCrop(canvas) {
             const approx = new cv.Mat();
             cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-            // Only keep contours that look like a rectangle or four-sided shape.
             if (approx.rows === 4) {
                 const area = cv.contourArea(cnt);
                 if (area > maxArea) {
@@ -45,21 +75,14 @@ async function autoCrop(canvas) {
             cnt.delete();
         }
 
-        // Clean up detection-stage Mats now that we're done with them.
-        gray.delete();
-        blur.delete();
-        edges.delete();
-        contours.delete();
-        hierarchy.delete();
+        gray.delete(); blur.delete(); edges.delete(); contours.delete(); hierarchy.delete();
 
-        // If no card-like contour is found, keep the original image.
         if (!biggest) {
             src.delete();
             resolve(canvas);
             return;
         }
 
-        // Convert the contour points into a simple list of corners.
         const pts = [];
         for (let i = 0; i < 4; i++) {
             pts.push({
@@ -69,13 +92,10 @@ async function autoCrop(canvas) {
         }
         biggest.delete();
 
-        // Sort the corners so the perspective transform is applied in a consistent order.
         const ordered = orderPoints(pts);
-
         const width = 600;
         const height = 800;
 
-        // Create the source and destination points for a perspective transform.
         const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
             ordered.tl.x, ordered.tl.y,
             ordered.tr.x, ordered.tr.y,
@@ -90,7 +110,6 @@ async function autoCrop(canvas) {
             0, height
         ]);
 
-        // Warp the card so it appears front-on and rectangular.
         const M = cv.getPerspectiveTransform(srcTri, dstTri);
         const dst = new cv.Mat();
         cv.warpPerspective(src, dst, M, new cv.Size(width, height));
@@ -98,19 +117,117 @@ async function autoCrop(canvas) {
         const warpedCanvas = document.createElement("canvas");
         cv.imshow(warpedCanvas, dst);
 
-        // Clean up the remaining temporary OpenCV objects.
-        src.delete();
-        srcTri.delete();
-        dstTri.delete();
-        M.delete();
-        dst.delete();
+        src.delete(); srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
 
-        // The warped card still includes any header/title text, the colored border, and
-        // any footer/credit text around the actual number grid. Crop again to isolate
-        // just the grid itself so cell slicing lines up with real cells.
         const gridCanvas = cropToGrid(warpedCanvas);
         resolve(gridCanvas || warpedCanvas);
     });
+}
+
+// Detect the 5x5 bingo grid by finding the 25 individual cell boxes (or a cluster of cell boxes)
+// directly in the image. Works on both standard paper cards and bar bingo slider cards
+// where there is no defined outer card border.
+function detectCellGrid(src) {
+    const gray = new cv.Mat();
+    const thresh = new cv.Mat();
+    const contours = new cv.MatVector();
+    const hierarchy = new cv.Mat();
+
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
+
+    // Adaptive thresholding brings out cell borders for both plastic slider frames and grid lines.
+    cv.adaptiveThreshold(gray, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2);
+
+    cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+
+    const totalArea = src.rows * src.cols;
+    const candidates = [];
+
+    for (let i = 0; i < contours.size(); i++) {
+        const cnt = contours.get(i);
+        const rect = cv.boundingRect(cnt);
+        cnt.delete();
+
+        const area = rect.width * rect.height;
+        const aspect = rect.width / rect.height;
+
+        // Filter for cell-like shapes: area between 0.15% and 15% of canvas, aspect ratio near 1.0.
+        if (area >= totalArea * 0.0015 && area <= totalArea * 0.15 &&
+            aspect >= 0.45 && aspect <= 2.2 &&
+            rect.width >= 15 && rect.height >= 15) {
+            candidates.push({
+                x: rect.x,
+                y: rect.y,
+                w: rect.width,
+                h: rect.height,
+                area: area,
+                cx: rect.x + rect.width / 2,
+                cy: rect.y + rect.height / 2
+            });
+        }
+    }
+
+    gray.delete();
+    thresh.delete();
+    contours.delete();
+    hierarchy.delete();
+
+    if (candidates.length < 8) {
+        return null;
+    }
+
+    // Sort candidate boxes by area to cluster boxes of similar size (the 25 cell frames).
+    candidates.sort((a, b) => a.area - b.area);
+    const medianArea = candidates[Math.floor(candidates.length / 2)].area;
+
+    // Keep candidates whose area is within 0.35x to 2.5x of the median cell area.
+    const gridBoxes = candidates.filter(b => b.area >= medianArea * 0.35 && b.area <= medianArea * 2.5);
+
+    if (gridBoxes.length < 8) {
+        return null;
+    }
+
+    // Find extreme corners from all detected grid cell boxes.
+    let minX = src.cols, minY = src.rows, maxX = 0, maxY = 0;
+    let tlBox = gridBoxes[0], brBox = gridBoxes[0], trBox = gridBoxes[0], blBox = gridBoxes[0];
+    let minSum = Infinity, maxSum = -Infinity, minDiff = Infinity, maxDiff = -Infinity;
+
+    for (const b of gridBoxes) {
+        if (b.x < minX) minX = b.x;
+        if (b.y < minY) minY = b.y;
+        if (b.x + b.w > maxX) maxX = b.x + b.w;
+        if (b.y + b.h > maxY) maxY = b.y + b.h;
+
+        const sum = b.cx + b.cy;
+        const diff = b.cx - b.cy;
+
+        if (sum < minSum) { minSum = sum; tlBox = b; }
+        if (sum > maxSum) { maxSum = sum; brBox = b; }
+        if (diff > maxDiff) { maxDiff = diff; trBox = b; }
+        if (diff < minDiff) { minDiff = diff; blBox = b; }
+    }
+
+    const gridW = maxX - minX;
+    const gridH = maxY - minY;
+
+    // Must span a reasonable portion of the canvas to be a real 5x5 bingo grid.
+    if (gridW < src.cols * 0.25 || gridH < src.rows * 0.25) {
+        return null;
+    }
+
+    // Add a slight margin (2% padding) around extreme cell box edges so edge numbers aren't clipped.
+    const padW = gridW * 0.02;
+    const padH = gridH * 0.02;
+
+    const corners = {
+        tl: { x: Math.max(0, tlBox.x - padW), y: Math.max(0, tlBox.y - padH) },
+        tr: { x: Math.min(src.cols, trBox.x + trBox.w + padW), y: Math.max(0, trBox.y - padH) },
+        br: { x: Math.min(src.cols, brBox.x + brBox.w + padW), y: Math.min(src.rows, brBox.y + brBox.h + padH) },
+        bl: { x: Math.max(0, blBox.x - padW), y: Math.min(src.rows, blBox.y + blBox.h + padH) }
+    };
+
+    return { corners };
 }
 
 // Crop a front-on card image down to just the number grid, excluding any surrounding
