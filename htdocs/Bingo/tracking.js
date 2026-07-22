@@ -255,10 +255,10 @@ function openCallLogWindow() {
 // ============================================================
 
 function updateUI() {
-    const lastFive = session.called.slice(-5);
+    const lastFive = session.called.slice(-6);
     lastFiveList.innerHTML = "";
 
-    for (let i = 4; i >= 0; i--) {
+    for (let i = 5; i >= 0; i--) {
         const item = document.createElement("div");
         item.className = "last-five-item" + (lastFive[i] === undefined ? " empty" : "");
         item.textContent = lastFive[i] ?? "—";
