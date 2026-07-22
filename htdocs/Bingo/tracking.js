@@ -513,7 +513,7 @@ function renderCard(card) {
             menu.appendChild(btn);
         }
 
-        wrapper.appendChild(menu);
+        header.appendChild(menu);
     }
 
     // ---- 5×5 card grid ----
