@@ -30,8 +30,38 @@
             </div>
         </section>
 
+        <!-- Input mode toggle -->
+        <div class="input-mode-toggle-wrap">
+            <div class="input-mode-toggle" role="group" aria-label="Input mode">
+                <button id="toggleByLetter" class="toggle-btn active" data-mode="letter">By Letter</button>
+                <button id="toggleByNumber" class="toggle-btn" data-mode="number">By Number</button>
+            </div>
+        </div>
+
+        <!-- Session word bar (game name) -->
         <section id="sessionWordBar" class="session-word-bar" aria-label="Bingo columns"></section>
-        <section id="trackingGrid" class="tracking-grid" aria-label="Bingo numbers"></section>
+
+        <!-- BY LETTER input panel -->
+        <section id="byLetterPanel" class="by-letter-panel" aria-label="By letter input">
+            <div id="numberPicker" class="number-picker hidden" aria-live="polite">
+                <!-- 3 rows × 5 numbers, populated by JS -->
+            </div>
+        </section>
+
+        <!-- BY NUMBER tracking grid (existing) -->
+        <section id="trackingGrid" class="tracking-grid hidden" aria-label="Bingo numbers"></section>
+
+        <!-- Bingo Cards -->
+        <section id="bingoCardsSection" class="bingo-cards-section" aria-label="Bingo cards">
+            <div class="bingo-cards-header">
+                <span class="stat-label">Bingo Cards</span>
+                <button id="addCardBtn" class="link-button" type="button">+ Add Card</button>
+            </div>
+            <div id="bingoCardsList" class="bingo-cards-list">
+                <!-- Cards will be rendered here -->
+                <p class="bingo-cards-placeholder">No bingo cards added yet.</p>
+            </div>
+        </section>
     </main>
 
 </body>

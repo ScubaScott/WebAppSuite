@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Number Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="tracking.js" defer></script>
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div class="topbar-brand">
+            <a href="../index.html" class="back-link">← Back to Apps</a>
+            <h1>Bingo Number Tracker</h1>
+        </div>
+        <button id="newSessionBtn" class="btn primary-btn">New Session</button>
+    </header>
+
+    <main class="page-content">
+        <section class="stats-card">
+            <div class="last-five-card">
+                <div class="stat-header">
+                    <span class="stat-label">Last 5</span>
+                    <button id="callLogLink" class="link-button" type="button">Call log</button>
+                </div>
+                <div id="lastFiveList" class="last-five-list" aria-live="polite"></div>
+                <span class="total-count" id="totalCalled">0 called</span>
+            </div>
+        </section>
+
+        <section id="sessionWordBar" class="session-word-bar" aria-label="Bingo columns"></section>
+        <section id="trackingGrid" class="tracking-grid" aria-label="Bingo numbers"></section>
+    </main>
+
+</body>
+</html>

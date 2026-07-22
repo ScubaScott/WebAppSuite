@@ -251,3 +251,366 @@ body {
         font-size: 13px;
     }
 }
+
+/* --------------------------------
+   INPUT MODE TOGGLE
+-------------------------------- */
+
+.input-mode-toggle-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.input-mode-toggle {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.toggle-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-subtle);
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.toggle-btn.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.28);
+}
+
+.toggle-btn:not(.active):hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* --------------------------------
+   BY LETTER PANEL
+-------------------------------- */
+
+/* Word bar is interactive in letter mode */
+
+.word-bar-selectable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+.word-bar-selectable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(26, 115, 232, 0.16);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.word-bar-selectable.active-letter {
+    background: var(--primary);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(26, 115, 232, 0.32);
+}
+
+/* Number picker (3 rows × 5) */
+
+.number-picker {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    animation: fadeSlideIn 0.18s ease;
+}
+
+.number-picker.hidden {
+    display: none;
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.pick-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 52px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.pick-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(26, 115, 232, 0.14);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.pick-btn.called {
+    border-color: transparent;
+    position: relative;
+}
+
+.pick-btn.called::after {
+    content: "";
+    position: absolute;
+    inset: 18%;
+    background: var(--primary-soft);
+    border-radius: 50%;
+}
+
+/* --------------------------------
+   UTILITY
+-------------------------------- */
+
+.hidden {
+    display: none !important;
+}
+
+/* --------------------------------
+   BINGO CARDS SECTION
+-------------------------------- */
+
+.bingo-cards-section {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+}
+
+.bingo-cards-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.bingo-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.bingo-cards-placeholder {
+    color: var(--text-subtle);
+    font-size: 14px;
+    margin: 0;
+    padding: 4px 0;
+}
+
+/* ---- Individual card ---- */
+
+.bingo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bingo-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bingo-card-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.delete-card-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-subtle);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    line-height: 1;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.delete-card-btn:hover {
+    background: rgba(200, 0, 0, 0.08);
+    color: #c00;
+}
+
+/* ---- 5×5 card grid ---- */
+
+.bingo-card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+}
+
+.bingo-col-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 30px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.1em;
+}
+
+.bingo-cell {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+}
+
+.bingo-cell:hover:not(.free) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.14);
+    border-color: var(--primary);
+}
+
+.bingo-cell.empty {
+    color: var(--text-subtle);
+    font-size: 18px;
+}
+
+.bingo-cell.empty::after {
+    content: "+";
+    font-weight: 300;
+    opacity: 0.4;
+}
+
+/* Daubed = number has been called */
+.bingo-cell.daubed {
+    border-color: transparent;
+}
+
+.bingo-cell.daubed::before {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    border-radius: 50%;
+    background: var(--primary-soft);
+    z-index: 0;
+}
+
+.bingo-cell.daubed span,
+.bingo-cell.daubed {
+    z-index: 1;
+    position: relative;
+}
+
+/* FREE center square */
+.bingo-cell.free {
+    cursor: default;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    border-color: transparent;
+}
+
+.bingo-cell.free::before {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    border-radius: 50%;
+    background: var(--primary-soft);
+    z-index: 0;
+}
+
+/* Cell being edited (picker open) */
+.bingo-cell.editing {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.28);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* ---- Inline column picker on a card ---- */
+
+.card-number-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    animation: fadeSlideIn 0.16s ease;
+}
+
+.card-picker-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-left: 2px;
+}
+
+.card-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+/* Numbers already placed on this card */
+.pick-btn.used-on-card {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .pick-btn {
+        min-height: 44px;
+        font-size: 13px;
+    }
+
+    .toggle-btn {
+        padding: 7px 14px;
+        font-size: 13px;
+    }
+
+    .bingo-cell {
+        font-size: 12px;
+    }
+
+    .bingo-col-header {
+        font-size: 13px;
+    }
+}
