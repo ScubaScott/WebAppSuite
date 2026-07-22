@@ -112,7 +112,7 @@ function openCallLogWindow() {
     }
 
     const listItems = session.called
-        .map((value, index) => `<li>${index + 1}. ${value}</li>`)
+        .map((value, index) => `<li>${value}</li>`)
         .join("");
 
     logWindow.document.write(`<!DOCTYPE html><html><head><title>Call Log</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:20px;color:#202124;background:#f8f9fa;}h1{font-size:20px;margin-bottom:12px;}ol{padding-left:18px;}li{margin-bottom:6px;}button{margin-top:18px;padding:10px 14px;border:none;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer;}</style></head><body><h1>Call Log</h1><ol>${listItems || '<li>No numbers called yet</li>'}</ol><button onclick="window.close()">Close</button></body></html>`);
@@ -127,7 +127,7 @@ function updateUI() {
     const lastFive = [...session.called].slice(-5);
     lastFiveList.innerHTML = "";
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 4; i >= 0; i--) {
         const item = document.createElement("div");
         item.className = "last-five-item" + (lastFive[i] === undefined ? " empty" : "");
         item.textContent = lastFive[i] ?? "—";
