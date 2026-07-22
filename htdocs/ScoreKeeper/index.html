@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,10 +13,11 @@
         body {
             font-family: 'Inter', sans-serif;
             background: #e0424244 url("./media/bgimages/saber.png") no-repeat center top/cover;
-            background-attachment:  fixed;
+            background-attachment: fixed;
             background-size: cover;
             /* background-blend-mode: overlay; */
         }
+
         .back-link {
             display: inline-block;
             margin-bottom: 12px;
@@ -24,47 +26,76 @@
             font-size: 0.95rem;
             font-weight: 600;
         }
+
         .back-link:hover {
             text-decoration: underline;
             color: #ffffff;
         }
-        .interactive-box { cursor: pointer; user-select: none; }
-        .history-table::-webkit-scrollbar { width: 4px; }
-        .history-table::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
-        .hidden { display: none; }
+
+        .interactive-box {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .history-table::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .history-table::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
-<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md flex flex-col items-start">
-        <a href="../" class="back-link">← Back to Apps</a>
-    </div>
-    <div class="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-md flex flex-col items-center space-y-6">
-        
-        <div class="flex justify-between items-center w-full px-2">
+
+<body class="bg-black text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md flex flex-col items-center space-y-4">
+        <a href="../" class="back-link self-start">← Back to Apps</a>
+        <div
+            class="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full flex flex-col items-center space-y-6">
+            <div class="flex justify-between items-center w-full px-2">
             <div class="flex flex-col items-center">
-                <div id="home-team-name" class="interactive-box bg-transparent text-red-500 text-center font-bold uppercase text-[10px] w-20 mb-1">Us</div>
-                <div id="score-home" class="interactive-box text-5xl font-bold text-red-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">0</div>
+                <div id="home-team-name"
+                    class="interactive-box bg-transparent text-red-500 text-center font-bold uppercase text-[10px] w-20 mb-1">
+                    Us</div>
+                <div id="score-home"
+                    class="interactive-box text-5xl font-bold text-red-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">
+                    0</div>
             </div>
 
             <div class="flex flex-col items-center">
                 <div class="text-[10px] text-gray-500 font-bold uppercase mb-1">Period</div>
-                <div id="period-display" class="interactive-box text-3xl font-black text-white bg-gray-700 rounded-lg px-4 py-2 border-2 border-gray-600 hover:bg-gray-600 transition">P1</div>
+                <div id="period-display"
+                    class="interactive-box text-3xl font-black text-white bg-gray-700 rounded-lg px-4 py-2 border-2 border-gray-600 hover:bg-gray-600 transition">
+                    P1</div>
             </div>
 
             <div class="flex flex-col items-center">
-                <div id="away-team-name" class="interactive-box bg-transparent text-blue-500 text-center font-bold uppercase text-[10px] w-20 mb-1">Them</div>
-                <div id="score-away" class="interactive-box text-5xl font-bold text-blue-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">0</div>
+                <div id="away-team-name"
+                    class="interactive-box bg-transparent text-blue-500 text-center font-bold uppercase text-[10px] w-20 mb-1">
+                    Them</div>
+                <div id="score-away"
+                    class="interactive-box text-5xl font-bold text-blue-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">
+                    0</div>
             </div>
         </div>
 
         <!-- Team edit panels (hidden until name clicked) - full width and responsive -->
-        <div id="team-edit-panels" class="w-full flex flex-col md:flex-row md:justify-between items-start px-2 space-y-3 md:space-y-0 md:space-x-4">
-            <div id="home-edit-panel" class="hidden bg-gray-800/80 p-3 rounded-xl border border-red-900/30 w-full md:w-1/2">
+        <div id="team-edit-panels"
+            class="w-full flex flex-col md:flex-row md:justify-between items-start px-2 space-y-3 md:space-y-0 md:space-x-4">
+            <div id="home-edit-panel"
+                class="hidden bg-gray-800/80 p-3 rounded-xl border border-red-900/30 w-full md:w-1/2">
                 <div class="flex items-center justify-between">
                     <div class="text-xs text-red-300 font-bold uppercase mb-2">Edit Home Team</div>
                     <div id="home-color-swatch" class="h-6 w-6 rounded border ml-2" style="background:#ef4444"></div>
                 </div>
-                <input id="home-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white" placeholder="Team name">
+                <input id="home-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white"
+                    placeholder="Team name">
                 <div class="flex items-center gap-2">
                     <select id="home-color-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
                         <option value="#ef4444">Red</option>
@@ -84,17 +115,21 @@
                     </select>
                 </div>
                 <div class="flex gap-2">
-                    <button id="home-save-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">Save</button>
-                    <button onclick="hideHomeEditPanel()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
+                    <button id="home-save-btn"
+                        class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">Save</button>
+                    <button onclick="hideHomeEditPanel()"
+                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
                 </div>
             </div>
 
-            <div id="away-edit-panel" class="hidden bg-gray-800/80 p-3 rounded-xl border border-blue-900/30 w-full md:w-1/2">
+            <div id="away-edit-panel"
+                class="hidden bg-gray-800/80 p-3 rounded-xl border border-blue-900/30 w-full md:w-1/2">
                 <div class="flex items-center justify-between">
                     <div class="text-xs text-blue-300 font-bold uppercase mb-2">Edit Away Team</div>
                     <div id="away-color-swatch" class="h-6 w-6 rounded border ml-2" style="background:#3b82f6"></div>
                 </div>
-                <input id="away-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white" placeholder="Team name">
+                <input id="away-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white"
+                    placeholder="Team name">
                 <div class="flex items-center gap-2">
                     <select id="away-color-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
                         <option value="#3b82f6">Blue</option>
@@ -108,8 +143,10 @@
                     </select>
                 </div>
                 <div class="flex gap-2">
-                    <button id="away-save-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Save</button>
-                    <button onclick="hideAwayEditPanel()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
+                    <button id="away-save-btn"
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Save</button>
+                    <button onclick="hideAwayEditPanel()"
+                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
                 </div>
             </div>
         </div>
@@ -117,46 +154,68 @@
         <div class="flex flex-col items-center w-full space-y-6">
             <div class="flex flex-col items-center w-full">
                 <div class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Remaining</div>
-                <div id="timer-display" class="interactive-box text-6xl font-mono text-center tracking-tight font-extrabold text-white" title="Tap while stopped to choose a time limit">00:40:00.0</div>
+                <div id="timer-display"
+                    class="interactive-box text-6xl font-mono text-center tracking-tight font-extrabold text-white"
+                    title="Tap while stopped to choose a time limit">00:40:00.0</div>
             </div>
-            
+
             <div class="flex flex-col items-center w-full group">
-                <div class="text-xs text-gray-600 uppercase tracking-widest font-bold mb-1 group-hover:text-red-400 transition">Elapsed</div>
-                <div id="elapsed-time-display" class="interactive-box text-3xl font-mono text-center text-gray-400 transition">00:00:00.0</div>
-            </div>
-        </div>
-        
-        <div id="adjustment-panel" class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-red-900/30 flex flex-col items-center space-y-3">
-            <div class="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Select Time Limit</div>
-            <div class="flex flex-wrap justify-center gap-2 w-full">
-                <button onclick="setTimeLimitOption(12 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">12 min</button>
-                <button onclick="setTimeLimitOption(20 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">20 min</button>
-                <button onclick="setTimeLimitOption(35 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">35 min</button>
-                <button onclick="setTimeLimitOption(40 * 60 * 1000)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">40 min</button>
-                <button onclick="chooseManualLimit()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">Manual</button>
+                <div
+                    class="text-xs text-gray-600 uppercase tracking-widest font-bold mb-1 group-hover:text-red-400 transition">
+                    Elapsed</div>
+                <div id="elapsed-time-display"
+                    class="interactive-box text-3xl font-mono text-center text-gray-400 transition">00:00:00.0</div>
             </div>
         </div>
 
-        <div id="elapsed-adjust-panel" class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-blue-900/30 flex flex-col items-center space-y-3">
+        <div id="adjustment-panel"
+            class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-red-900/30 flex flex-col items-center space-y-3">
+            <div class="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Select Time Limit</div>
+            <div class="flex flex-wrap justify-center gap-2 w-full">
+                <button onclick="setTimeLimitOption(12 * 60 * 1000)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">12 min</button>
+                <button onclick="setTimeLimitOption(20 * 60 * 1000)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">20 min</button>
+                <button onclick="setTimeLimitOption(35 * 60 * 1000)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">35 min</button>
+                <button onclick="setTimeLimitOption(40 * 60 * 1000)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">40 min</button>
+                <button onclick="chooseManualLimit()"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">Manual</button>
+            </div>
+        </div>
+
+        <div id="elapsed-adjust-panel"
+            class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-blue-900/30 flex flex-col items-center space-y-3">
             <div class="text-[10px] text-blue-300 font-bold uppercase tracking-tighter">Adjust elapsed time</div>
             <div class="flex flex-wrap justify-center gap-2 w-full">
-                <button onclick="adjustElapsedMinutes(1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+1 min</button>
-                <button onclick="adjustElapsedMinutes(-1)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-1 min</button>
-                <button onclick="adjustElapsedMinutes(5)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+5 min</button>
-                <button onclick="adjustElapsedMinutes(-5)" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-5 min</button>
-                <button onclick="hideElapsedAdjustPanel()" class="bg-red-700 hover:bg-red-600 px-3 py-2 rounded text-xs font-bold">Close</button>
+                <button onclick="adjustElapsedMinutes(1)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+1 min</button>
+                <button onclick="adjustElapsedMinutes(-1)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-1 min</button>
+                <button onclick="adjustElapsedMinutes(5)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+5 min</button>
+                <button onclick="adjustElapsedMinutes(-5)"
+                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-5 min</button>
+                <button onclick="hideElapsedAdjustPanel()"
+                    class="bg-red-700 hover:bg-red-600 px-3 py-2 rounded text-xs font-bold">Close</button>
             </div>
-            <div class="text-[10px] text-gray-400 text-center">Tap elapsed time during a running clock to correct early/late starts.</div>
+            <div class="text-[10px] text-gray-400 text-center">Tap elapsed time during a running clock to correct
+                early/late starts.</div>
         </div>
 
         <div class="w-full flex justify-center space-x-2">
-            <button id="start-stop-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">Start</button>
-            <button id="pause-btn" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hidden">Pause</button>
-            <button id="reset-btn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">Reset</button>
+            <button id="start-stop-btn"
+                class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">Start</button>
+            <button id="pause-btn"
+                class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hidden">Pause</button>
+            <button id="reset-btn"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">Reset</button>
         </div>
 
         <div class="w-full bg-gray-800 rounded-xl overflow-hidden shadow-xl border border-gray-700">
-            <div class="bg-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-300">Score History</div>
+            <div class="bg-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-300">Score History
+            </div>
             <div class="max-h-48 overflow-y-auto history-table">
                 <table class="w-full text-left text-sm">
                     <thead class="bg-gray-800 sticky top-0">
@@ -172,61 +231,81 @@
         </div>
 
         <div class="w-full text-center pt-4 space-y-2">
-            <a href="ScoreKeeperActiveGames.html" class="text-sm font-bold text-emerald-400 hover:text-emerald-200 underline">View Active Games</a>
-            <a href="ScoreKeeperHelp.html" class="text-sm font-bold text-blue-400 hover:text-blue-200 underline">help!</a>
+            <a href="ScoreKeeperActiveGames.html"
+                class="text-sm font-bold text-emerald-400 hover:text-emerald-200 underline">View Active Games</a>
+            <a href="ScoreKeeperHelp.html"
+                class="text-sm font-bold text-blue-400 hover:text-blue-200 underline">help!</a>
         </div>
 
     </div>
 
     <div class="fixed right-4 bottom-4">
-        <button id="mute-btn" class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition" title="Mute / unmute sound">
-            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor">
-                <path d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
+        <button id="mute-btn"
+            class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition"
+            title="Mute / unmute sound">
+            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6"
+                fill="currentColor">
+                <path
+                    d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
             </svg>
         </button>
     </div>
 
     <div class="fixed left-4 bottom-4">
-        <button id="settings-btn" class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition" title="Timer Settings">
+        <button id="settings-btn"
+            class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition"
+            title="Timer Settings">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor">
-                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                <path
+                    d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
             </svg>
         </button>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm flex flex-col space-y-4">
+    <div id="settings-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div
+            class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm flex flex-col space-y-4">
             <div class="flex items-center justify-between border-b border-gray-800 pb-3">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-gray-400" fill="currentColor">
-                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-gray-400"
+                        fill="currentColor">
+                        <path
+                            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
                     </svg>
                     Timer Settings
                 </h3>
-                <button id="close-settings-x" class="text-gray-400 hover:text-white text-2xl leading-none transition">&times;</button>
+                <button id="close-settings-x"
+                    class="text-gray-400 hover:text-white text-2xl leading-none transition">&times;</button>
             </div>
             <div class="flex flex-col space-y-4">
                 <!-- Add Pause Button Setting -->
                 <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
                     <div class="flex flex-col pr-2">
                         <span class="text-sm font-semibold text-white">Add Pause Button</span>
-                        <span class="text-xs text-gray-400">Shows a dedicated button to pause the timer without advancing the period.</span>
+                        <span class="text-xs text-gray-400">Shows a dedicated button to pause the timer without
+                            advancing the period.</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer shrink-0">
                         <input type="checkbox" id="setting-add-pause" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                        <div
+                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
+                        </div>
                     </label>
                 </div>
                 <!-- Pause on Score Setting -->
                 <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
                     <div class="flex flex-col pr-2">
                         <span class="text-sm font-semibold text-white">Pause on Score</span>
-                        <span class="text-xs text-gray-400">Automatically pauses the timer when a score is registered.</span>
+                        <span class="text-xs text-gray-400">Automatically pauses the timer when a score is
+                            registered.</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer shrink-0">
                         <input type="checkbox" id="setting-pause-on-score" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                        <div
+                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
+                        </div>
                     </label>
                 </div>
                 <!-- Log Pause/Resume Setting -->
@@ -237,7 +316,9 @@
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer shrink-0">
                         <input type="checkbox" id="setting-log-pause-resume" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                        <div
+                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
+                        </div>
                     </label>
                 </div>
                 <!-- Log Period Start/Stop Setting -->
@@ -248,12 +329,15 @@
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer shrink-0">
                         <input type="checkbox" id="setting-log-period-start-stop" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                        <div
+                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
+                        </div>
                     </label>
                 </div>
             </div>
             <div class="pt-2">
-                <button id="close-settings-btn" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition">Done</button>
+                <button id="close-settings-btn"
+                    class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition">Done</button>
             </div>
         </div>
     </div>
@@ -299,8 +383,8 @@
         // Timer state and game state variables persisted between reloads.
         let timerInterval = null;
         let startTime = null;
-        let timeLimit = 2400000; 
-        let isCountingUp = false; 
+        let timeLimit = 2400000;
+        let isCountingUp = false;
         let accumulatedTime = 0;
         let timerRunning = false;
         let homeScore = 0;
@@ -311,7 +395,7 @@
         let awayTeamColor = '#3b82f6';
         let homeBackgroundImage = 'saber.png';
         let currentPeriod = 1;
-        let scoreHistory = []; 
+        let scoreHistory = [];
         let muted = false;
         let addPauseButton = false;
         let pauseOnScore = false;
@@ -548,7 +632,7 @@
         function playWhistle() {
             if (muted || !whistleAudio) return;
             whistleAudio.currentTime = 0;
-            whistleAudio.play().catch(() => {});
+            whistleAudio.play().catch(() => { });
         }
 
         function addHistoryEvent(text) {
@@ -599,7 +683,7 @@
 
         // Adjust the internal elapsed time by a positive or negative number of minutes.
         // Works during a running timer to correct early / late start behavior.
-        window.adjustElapsedMinutes = function(minutes) {
+        window.adjustElapsedMinutes = function (minutes) {
             if (!timerRunning) return;
             const changeMs = minutes * 60 * 1000;
             accumulatedTime += changeMs;
@@ -658,7 +742,7 @@
             });
         }
 
-        window.deleteScore = function(index) {
+        window.deleteScore = function (index) {
             const entry = scoreHistory[index];
             if (!entry) return;
             if (entry.type === 'score') {
@@ -676,9 +760,9 @@
             scoreHomeEl.textContent = homeScore;
             scoreAwayEl.textContent = awayScore;
             const snapshot = `${homeScore}-${awayScore}`;
-            scoreHistory.push({ 
+            scoreHistory.push({
                 type: 'score',
-                teamId, 
+                teamId,
                 teamName: teamId === 'home' ? homeTeamName : awayTeamName,
                 currentScore: snapshot,
                 gameTime: getElapsedStamp(),
@@ -811,7 +895,7 @@
             isPaused = false;
             updateStartStopButton();
             if (pauseBtn) pauseBtn.disabled = true;
-            cyclePeriod(); 
+            cyclePeriod();
             if (resetToLimit) updateTimer();
             saveState();
         }
@@ -971,7 +1055,7 @@
         }
 
         resetBtn.addEventListener('click', () => {
-            if(confirm("Reset everything?")) {
+            if (confirm("Reset everything?")) {
                 clearInterval(timerInterval);
                 startTime = null; accumulatedTime = 0;
                 timerRunning = false;
@@ -984,7 +1068,7 @@
                 adjustmentPanel.classList.add('hidden');
                 if (pauseBtn) pauseBtn.disabled = true;
                 saveState();
-                try { publishActiveGameStateServer().catch(()=>{}); } catch(e){}
+                try { publishActiveGameStateServer().catch(() => { }); } catch (e) { }
             }
         });
 
@@ -1044,7 +1128,7 @@
                 updateMuteButton();
                 updatePauseButtonVisibility();
             } else {
-                updateTimer(); 
+                updateTimer();
                 updateMuteButton();
                 updatePauseButtonVisibility();
             }
@@ -1066,9 +1150,10 @@
         // Heartbeat: ensure server copy is refreshed while the page is open.
         try {
             setInterval(() => {
-                publishActiveGameStateServer().catch(() => {});
+                publishActiveGameStateServer().catch(() => { });
             }, 20 * 1000);
-        } catch (e) {}
+        } catch (e) { }
     </script>
 </body>
+
 </html>
