@@ -4,12 +4,10 @@ let session = {
     lastBall: null
 };
 
-const letterBar = document.getElementById("letterBar");
 const trackingGrid = document.getElementById("trackingGrid");
-const calledPanel = document.getElementById("calledPanel");
+const sessionWordBar = document.getElementById("sessionWordBar");
 const lastBallSpan = document.getElementById("lastBall");
 const totalCalledSpan = document.getElementById("totalCalled");
-const toggleCalled = document.getElementById("toggleCalled");
 const newSessionBtn = document.getElementById("newSessionBtn");
 
 // ---------------------------
@@ -37,20 +35,20 @@ function loadSession() {
 loadSession();
 
 // ---------------------------
-// BUILD LETTER BAR
+// DISPLAY SESSION WORD
 // ---------------------------
 
-function buildLetterBar() {
-    letterBar.innerHTML = "";
+function updateSessionWordBar() {
+    sessionWordBar.innerHTML = "";
+
     for (let i = 0; i < 5; i++) {
-        const btn = document.createElement("button");
-        btn.textContent = session.word[i];
-        btn.onclick = () => openNumberPicker(i);
-        letterBar.appendChild(btn);
+        const span = document.createElement("span");
+        span.textContent = session.word[i];
+        sessionWordBar.appendChild(span);
     }
 }
 
-buildLetterBar();
+updateSessionWordBar();
 
 // ---------------------------
 // BUILD NUMBER GRID
@@ -87,24 +85,7 @@ function buildTrackingGrid() {
 buildTrackingGrid();
 
 // ---------------------------
-// NUMBER PICKER (simple)
-// ---------------------------
-
-function openNumberPicker(colIndex) {
-    const start = colIndex * 15 + 1;
-    const end = start + 14;
-
-    const num = prompt(`Enter number (${start}-${end})`);
-    if (!num) return;
-
-    const n = parseInt(num);
-    if (n < start || n > end) return;
-
-    toggleNumber(n);
-}
-
-// ---------------------------
-// TOGGLE NUMBER (call/un-call)
+// TOGGLE NUMBER
 // ---------------------------
 
 function toggleNumber(n) {
@@ -130,44 +111,10 @@ function updateUI() {
     totalCalledSpan.textContent = "Total: " + session.called.size;
 
     buildTrackingGrid();
-    buildCalledPanel();
+    updateSessionWordBar();
 }
 
 updateUI();
-
-// ---------------------------
-// CALLED PANEL
-// ---------------------------
-
-function buildCalledPanel() {
-    calledPanel.innerHTML = "";
-
-    for (let col = 0; col < 5; col++) {
-        const columnDiv = document.createElement("div");
-        columnDiv.className = "column";
-
-        const start = col * 15 + 1;
-        const end = start + 14;
-
-        for (let n = start; n <= end; n++) {
-            const cell = document.createElement("div");
-            cell.className = "numberCell";
-            cell.textContent = n;
-
-            if (session.called.has(n)) {
-                cell.classList.add("called");
-            }
-
-            columnDiv.appendChild(cell);
-        }
-
-        calledPanel.appendChild(columnDiv);
-    }
-}
-
-toggleCalled.onclick = () => {
-    calledPanel.classList.toggle("hidden");
-};
 
 // ---------------------------
 // NEW SESSION
@@ -176,11 +123,17 @@ toggleCalled.onclick = () => {
 newSessionBtn.onclick = () => {
     if (!confirm("Start a new session? This will clear all numbers.")) return;
 
-    session.word = "BINGO";
+    const newWord = prompt("Enter a 5-letter session word:", "BINGO");
+    if (!newWord || newWord.length !== 5) {
+        alert("Invalid word. Using BINGO.");
+        session.word = "BINGO";
+    } else {
+        session.word = newWord.toUpperCase();
+    }
+
     session.called = new Set();
     session.lastBall = null;
 
     saveSession();
     updateUI();
-    buildLetterBar();
 };
