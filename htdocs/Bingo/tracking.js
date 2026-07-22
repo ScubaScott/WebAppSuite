@@ -1,13 +1,14 @@
 let session = {
     word: "BINGO",
-    called: new Set(),
+    called: [],
     lastBall: null
 };
 
 const trackingGrid = document.getElementById("trackingGrid");
 const sessionWordBar = document.getElementById("sessionWordBar");
-const lastBallSpan = document.getElementById("lastBall");
+const lastFiveList = document.getElementById("lastFiveList");
 const totalCalledSpan = document.getElementById("totalCalled");
+const callLogLink = document.getElementById("callLogLink");
 const newSessionBtn = document.getElementById("newSessionBtn");
 
 // ---------------------------
@@ -17,7 +18,7 @@ const newSessionBtn = document.getElementById("newSessionBtn");
 function saveSession() {
     localStorage.setItem("bingoSession", JSON.stringify({
         word: session.word,
-        called: [...session.called],
+        called: session.called,
         lastBall: session.lastBall
     }));
 }
@@ -28,7 +29,7 @@ function loadSession() {
 
     const obj = JSON.parse(data);
     session.word = obj.word;
-    session.called = new Set(obj.called);
+    session.called = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall;
 }
 
@@ -69,7 +70,7 @@ function buildTrackingGrid() {
             cell.className = "numberCell";
             cell.textContent = n;
 
-            if (session.called.has(n)) {
+            if ([...session.called].includes(n)) {
                 cell.classList.add("called");
             }
 
@@ -89,12 +90,13 @@ buildTrackingGrid();
 // ---------------------------
 
 function toggleNumber(n) {
-    if (session.called.has(n)) {
+    const existingIndex = [...session.called].indexOf(n);
+    if (existingIndex !== -1) {
         if (!confirm(`Remove ${n}?`)) return;
-        session.called.delete(n);
-        session.lastBall = null;
+        session.called.splice(existingIndex, 1);
+        session.lastBall = session.called.length ? session.called[session.called.length - 1] : null;
     } else {
-        session.called.add(n);
+        session.called.push(n);
         session.lastBall = n;
     }
 
@@ -102,17 +104,43 @@ function toggleNumber(n) {
     saveSession();
 }
 
+function openCallLogWindow() {
+    const logWindow = window.open("", "bingoCallLog", "width=320,height=420,top=100,left=100");
+    if (!logWindow) {
+        alert("Unable to open call log window. Please allow popups for this site.");
+        return;
+    }
+
+    const listItems = session.called
+        .map((value, index) => `<li>${index + 1}. ${value}</li>`)
+        .join("");
+
+    logWindow.document.write(`<!DOCTYPE html><html><head><title>Call Log</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:20px;color:#202124;background:#f8f9fa;}h1{font-size:20px;margin-bottom:12px;}ol{padding-left:18px;}li{margin-bottom:6px;}button{margin-top:18px;padding:10px 14px;border:none;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer;}</style></head><body><h1>Call Log</h1><ol>${listItems || '<li>No numbers called yet</li>'}</ol><button onclick="window.close()">Close</button></body></html>`);
+    logWindow.document.close();
+}
+
 // ---------------------------
 // UPDATE UI
 // ---------------------------
 
 function updateUI() {
-    lastBallSpan.textContent = "Last: " + (session.lastBall ?? "--");
-    totalCalledSpan.textContent = "Total: " + session.called.size;
+    const lastFive = [...session.called].slice(-5);
+    lastFiveList.innerHTML = "";
+
+    for (let i = 0; i < 5; i++) {
+        const item = document.createElement("div");
+        item.className = "last-five-item" + (lastFive[i] === undefined ? " empty" : "");
+        item.textContent = lastFive[i] ?? "—";
+        lastFiveList.appendChild(item);
+    }
+
+    totalCalledSpan.textContent = `${session.called.length} called`;
 
     buildTrackingGrid();
     updateSessionWordBar();
 }
+
+callLogLink.onclick = openCallLogWindow;
 
 updateUI();
 
@@ -121,8 +149,7 @@ updateUI();
 // ---------------------------
 
 newSessionBtn.onclick = () => {
-    if (!confirm("Start a new session? This will clear all numbers.")) return;
-
+    
     const newWord = prompt("Enter a 5-letter session word:", "BINGO");
     if (!newWord || newWord.length !== 5) {
         alert("Invalid word. Using BINGO.");
