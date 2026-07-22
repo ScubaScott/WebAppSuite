@@ -3,10 +3,10 @@
 // ============================================================
 
 let session = {
-    word: "BINGO",
-    called: [],
+    word:     "BINGO",
+    called:   [],
     lastBall: null,
-    cards: []
+    cards:    []
 };
 
 // ============================================================
@@ -34,9 +34,10 @@ const numberPicker    = document.getElementById("numberPicker");
 // CURRENT STATE
 // ============================================================
 
-let inputMode      = "letter"; // "letter" | "number"
-let activeLetterIdx = -1;      // BINGO column selected (-1 = none)
-let activeCardEdit  = null;    // { cardId, cellIdx } | null
+let inputMode       = "letter"; // "letter" | "number"
+let activeLetterIdx = -1;       // BINGO column selected (-1 = none)
+let activeCardEdit  = null;     // { cardId, cellIdx } | null
+let openMenuCardId  = null;     // card whose menu is currently open
 
 // ============================================================
 // SESSION LOAD / SAVE
@@ -55,11 +56,19 @@ function loadSession() {
     const data = localStorage.getItem("bingoSession");
     if (!data) return;
 
-    const obj = JSON.parse(data);
+    const obj    = JSON.parse(data);
     session.word     = obj.word    || "BINGO";
     session.called   = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall || null;
-    session.cards    = Array.isArray(obj.cards)  ? obj.cards  : [];
+
+    // Migrate cards: ensure editMode and active fields exist
+    session.cards = Array.isArray(obj.cards)
+        ? obj.cards.map(c => ({
+            editMode: false,
+            active:   true,
+            ...c
+          }))
+        : [];
 }
 
 loadSession();
@@ -152,7 +161,7 @@ function buildNumberPicker(colIdx) {
     const start = colIdx * 15 + 1;
 
     for (let i = 0; i < 15; i++) {
-        const n = start + i;
+        const n   = start + i;
         const btn = document.createElement("button");
         btn.className = "pick-btn" + (session.called.includes(n) ? " called" : "");
         btn.textContent = n;
@@ -188,17 +197,12 @@ function buildTrackingGrid() {
         columnDiv.className = "column";
 
         const start = col * 15 + 1;
-        const end = start + 14;
+        const end   = start + 14;
 
         for (let n = start; n <= end; n++) {
             const cell = document.createElement("div");
-            cell.className = "numberCell";
+            cell.className = "numberCell" + (session.called.includes(n) ? " called" : "");
             cell.textContent = n;
-
-            if (session.called.includes(n)) {
-                cell.classList.add("called");
-            }
-
             cell.onclick = () => toggleNumber(n);
             columnDiv.appendChild(cell);
         }
@@ -216,7 +220,8 @@ function toggleNumber(n) {
     if (existingIndex !== -1) {
         if (!confirm(`Remove ${n}?`)) return;
         session.called.splice(existingIndex, 1);
-        session.lastBall = session.called.length ? session.called[session.called.length - 1] : null;
+        session.lastBall = session.called.length
+            ? session.called[session.called.length - 1] : null;
     } else {
         session.called.push(n);
         session.lastBall = n;
@@ -248,7 +253,6 @@ function openCallLogWindow() {
 // ============================================================
 
 function updateUI() {
-    // Last five
     const lastFive = session.called.slice(-5);
     lastFiveList.innerHTML = "";
 
@@ -261,9 +265,7 @@ function updateUI() {
 
     totalCalledSpan.textContent = `${session.called.length} called`;
 
-    if (inputMode === "number") {
-        buildTrackingGrid();
-    }
+    if (inputMode === "number") buildTrackingGrid();
 
     updateSessionWordBar();
     renderAllCards();
@@ -296,51 +298,82 @@ newSessionBtn.onclick = () => {
 };
 
 // ============================================================
-// BINGO CARDS
+// BINGO CARDS — helpers
 // ============================================================
 
-const FREE_CELL = 12; // center square: row 2, col 2
+const FREE_CELL = 12; // row 2, col 2
 
-/**
- * Returns the column index (0–4) for a given flat cell index (0–24).
- * Layout is row-major: cellIdx = row * 5 + col
- */
-function colForCell(cellIdx) {
-    return cellIdx % 5;
-}
+function colForCell(cellIdx) { return cellIdx % 5; }
 
-/**
- * Returns the 15 valid numbers for a given column index.
- */
 function colNumbers(col) {
     const start = col * 15 + 1;
     return Array.from({ length: 15 }, (_, i) => start + i);
 }
 
+// ============================================================
+// BINGO CARDS — actions
+// ============================================================
+
 function addCard() {
     const squares = Array(25).fill(null);
     squares[FREE_CELL] = "FREE";
 
-    const card = {
-        id:      Date.now(),
-        label:   `Card ${session.cards.length + 1}`,
-        squares
-    };
+    session.cards.push({
+        id:       Date.now(),
+        label:    `Card ${session.cards.length + 1}`,
+        squares,
+        editMode: true,   // new cards start in edit mode
+        active:   true
+    });
 
-    session.cards.push(card);
     saveSession();
     renderAllCards();
 }
 
-function deleteCard(cardId) {
-    if (!confirm("Remove this card?")) return;
-    session.cards = session.cards.filter(c => c.id !== cardId);
-    if (activeCardEdit && activeCardEdit.cardId === cardId) activeCardEdit = null;
+function menuAction(cardId, action) {
+    const card = session.cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    openMenuCardId = null; // close menu regardless
+
+    switch (action) {
+        case "save":
+            card.editMode = false;
+            activeCardEdit = null;
+            break;
+
+        case "edit":
+            card.editMode = true;
+            break;
+
+        case "remove":
+            if (!confirm("Remove this card?")) { renderAllCards(); return; }
+            session.cards = session.cards.filter(c => c.id !== cardId);
+            if (activeCardEdit && activeCardEdit.cardId === cardId) activeCardEdit = null;
+            saveSession();
+            renderAllCards();
+            return;
+
+        case "use":
+            card.active = true;
+            break;
+
+        case "unuse":
+            card.active = false;
+            break;
+    }
+
     saveSession();
     renderAllCards();
 }
 
 function onCardCellClick(cardId, cellIdx) {
+    const card = session.cards.find(c => c.id === cardId);
+    if (!card || !card.editMode) return;
+
+    // Close any open menu
+    if (openMenuCardId !== null) { openMenuCardId = null; renderAllCards(); return; }
+
     // Tap same cell again → close picker
     if (activeCardEdit && activeCardEdit.cardId === cardId && activeCardEdit.cellIdx === cellIdx) {
         activeCardEdit = null;
@@ -362,6 +395,25 @@ function onCardNumberSelect(cardId, cellIdx, number) {
     renderAllCards();
 }
 
+function toggleMenu(cardId) {
+    openMenuCardId = openMenuCardId === cardId ? null : cardId;
+    // Close any cell picker when opening a menu
+    if (openMenuCardId !== null) activeCardEdit = null;
+    renderAllCards();
+}
+
+// Close any open menu when clicking outside a card
+document.addEventListener("click", (e) => {
+    if (openMenuCardId !== null && !e.target.closest(".bingo-card")) {
+        openMenuCardId = null;
+        renderAllCards();
+    }
+});
+
+// ============================================================
+// BINGO CARDS — render
+// ============================================================
+
 function renderAllCards() {
     bingoCardsList.innerHTML = "";
 
@@ -376,37 +428,99 @@ function renderAllCards() {
 }
 
 function renderCard(card) {
-    const isEditing  = activeCardEdit && activeCardEdit.cardId === card.id;
-    const editCellIdx = isEditing ? activeCardEdit.cellIdx : -1;
+    const isEditing   = card.editMode;
+    const isActive    = card.active !== false; // default true
+    const isMenuOpen  = openMenuCardId === card.id;
+    const editCellIdx = (activeCardEdit && activeCardEdit.cardId === card.id)
+        ? activeCardEdit.cellIdx : -1;
 
     // ---- Wrapper ----
     const wrapper = document.createElement("div");
-    wrapper.className = "bingo-card";
+    wrapper.className = [
+        "bingo-card",
+        isEditing ? "card-editing" : "",
+        !isActive ? "card-inactive" : ""
+    ].filter(Boolean).join(" ");
     wrapper.dataset.cardId = card.id;
 
     // ---- Card header ----
     const header = document.createElement("div");
     header.className = "bingo-card-header";
 
-    const label = document.createElement("span");
-    label.className = "bingo-card-label";
-    label.textContent = card.label;
+    // Hamburger menu button
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "card-menu-btn" + (isMenuOpen ? " open" : "");
+    menuBtn.setAttribute("aria-label", "Card menu");
+    menuBtn.setAttribute("aria-expanded", isMenuOpen ? "true" : "false");
+    menuBtn.innerHTML = `<span></span><span></span><span></span>`;
+    menuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(card.id); });
 
-    const delBtn = document.createElement("button");
-    delBtn.className = "delete-card-btn";
-    delBtn.title = "Remove card";
-    delBtn.textContent = "✕";
-    delBtn.addEventListener("click", () => deleteCard(card.id));
+    // Card name — editable when in edit mode
+    let labelEl;
+    if (isEditing) {
+        labelEl = document.createElement("input");
+        labelEl.type = "text";
+        labelEl.className = "bingo-card-label-input";
+        labelEl.value = card.label;
+        labelEl.addEventListener("change", (e) => {
+            card.label = e.target.value.trim() || card.label;
+            saveSession();
+        });
+        labelEl.addEventListener("click", (e) => e.stopPropagation());
+    } else {
+        labelEl = document.createElement("span");
+        labelEl.className = "bingo-card-label";
+        labelEl.textContent = card.label;
+    }
 
-    header.appendChild(label);
-    header.appendChild(delBtn);
+    // Status badge
+    const badge = document.createElement("span");
+    badge.className = "card-status-badge";
+    if (isEditing) {
+        badge.textContent = "editing";
+        badge.classList.add("badge-editing");
+    } else if (!isActive) {
+        badge.textContent = "inactive";
+        badge.classList.add("badge-inactive");
+    }
+
+    header.appendChild(menuBtn);
+    header.appendChild(labelEl);
+    if (badge.textContent) header.appendChild(badge);
     wrapper.appendChild(header);
 
-    // ---- 5-column card grid ----
+    // ---- Dropdown menu ----
+    if (isMenuOpen) {
+        const menu = document.createElement("div");
+        menu.className = "card-menu-dropdown";
+        menu.addEventListener("click", (e) => e.stopPropagation());
+
+        const menuItems = isEditing
+            ? [{ action: "save",  label: "💾  Save card" },
+               { action: "remove",label: "🗑  Remove card" }]
+            : [{ action: "edit",  label: "✏️  Edit card" },
+               { action: "remove",label: "🗑  Remove card" },
+               isActive
+                   ? { action: "unuse", label: "🚫  Don't use card" }
+                   : { action: "use",   label: "✅  Use card" }
+              ];
+
+        for (const item of menuItems) {
+            const btn = document.createElement("button");
+            btn.className = "card-menu-item";
+            btn.textContent = item.label;
+            btn.addEventListener("click", () => menuAction(card.id, item.action));
+            menu.appendChild(btn);
+        }
+
+        wrapper.appendChild(menu);
+    }
+
+    // ---- 5×5 card grid ----
     const grid = document.createElement("div");
     grid.className = "bingo-card-grid";
 
-    // Column headers (B I N G O from session word)
+    // Column headers
     for (let col = 0; col < 5; col++) {
         const hdr = document.createElement("div");
         hdr.className = "bingo-col-header";
@@ -414,26 +528,26 @@ function renderCard(card) {
         grid.appendChild(hdr);
     }
 
-    // 25 cells, row-major (row 0..4, col 0..4)
+    // 25 cells
     for (let idx = 0; idx < 25; idx++) {
-        const value   = card.squares[idx];
-        const isFree  = (idx === FREE_CELL);
-        const isDaubed = isFree || (value !== null && session.called.includes(value));
+        const value    = card.squares[idx];
+        const isFree   = (idx === FREE_CELL);
+        const isDaubed = isActive && (isFree || (value !== null && session.called.includes(value)));
         const isEmpty  = !isFree && value === null;
-        const isActive = (idx === editCellIdx);
+        const isCellActive = (idx === editCellIdx);
 
         const cell = document.createElement("div");
         cell.className = [
             "bingo-cell",
-            isFree   ? "free"    : "",
-            isDaubed ? "daubed"  : "",
-            isEmpty  ? "empty"   : "",
-            isActive ? "editing" : ""
+            isFree       ? "free"    : "",
+            isDaubed     ? "daubed"  : "",
+            isEmpty      ? "empty"   : "",
+            isCellActive ? "editing" : ""
         ].filter(Boolean).join(" ");
 
         cell.textContent = isFree ? "FREE" : (value ?? "");
 
-        if (!isFree) {
+        if (!isFree && isEditing) {
             cell.addEventListener("click", () => onCardCellClick(card.id, idx));
         }
 
@@ -442,18 +556,16 @@ function renderCard(card) {
 
     wrapper.appendChild(grid);
 
-    // ---- Inline column picker (shown when a cell is being edited) ----
-    if (isEditing) {
+    // ---- Inline column picker (edit mode only) ----
+    if (isEditing && editCellIdx !== -1) {
         const col      = colForCell(editCellIdx);
         const numbers  = colNumbers(col);
-        // Numbers already placed elsewhere on this card in the same column
         const usedInCol = card.squares
             .filter((v, i) => i !== editCellIdx && colForCell(i) === col && v !== null && v !== "FREE");
 
         const picker = document.createElement("div");
         picker.className = "card-number-picker";
 
-        // Column label inside picker
         const pickerLabel = document.createElement("div");
         pickerLabel.className = "card-picker-label";
         pickerLabel.textContent = `Select ${session.word[col]} number`;
@@ -463,7 +575,7 @@ function renderCard(card) {
         pickerGrid.className = "card-picker-grid";
 
         for (const n of numbers) {
-            const btn = document.createElement("button");
+            const btn         = document.createElement("button");
             const alreadyUsed = usedInCol.includes(n);
             const isCalled    = session.called.includes(n);
 

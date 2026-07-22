@@ -430,13 +430,28 @@ body {
     gap: 12px;
 }
 
+/* Card state variants */
+.bingo-card.card-editing {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.14);
+}
+
+.bingo-card.card-inactive {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+}
+
+/* ---- Card header ---- */
+
 .bingo-card-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    position: relative;
 }
 
 .bingo-card-label {
+    flex: 1;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-subtle);
@@ -444,21 +459,120 @@ body {
     letter-spacing: 0.07em;
 }
 
-.delete-card-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-subtle);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 4px 8px;
+.bingo-card-label-input {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: 0.05em;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    line-height: 1;
-    transition: background 0.15s ease, color 0.15s ease;
+    padding: 4px 8px;
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.delete-card-btn:hover {
-    background: rgba(200, 0, 0, 0.08);
-    color: #c00;
+.bingo-card-label-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.18);
+}
+
+/* Status badge */
+.card-status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 999px;
+}
+
+.badge-editing {
+    background: rgba(26, 115, 232, 0.12);
+    color: var(--primary);
+}
+
+.badge-inactive {
+    background: rgba(95, 99, 104, 0.12);
+    color: var(--text-subtle);
+}
+
+/* ---- Hamburger menu button ---- */
+
+.card-menu-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 4px;
+    transition: background 0.15s ease;
+}
+
+.card-menu-btn span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: var(--text-subtle);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.card-menu-btn:hover,
+.card-menu-btn.open {
+    background: var(--primary-soft);
+}
+
+.card-menu-btn:hover span,
+.card-menu-btn.open span {
+    background: var(--primary);
+}
+
+/* ---- Dropdown menu ---- */
+
+.card-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 100;
+    min-width: 180px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(60, 64, 67, 0.14);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: fadeSlideIn 0.14s ease;
+}
+
+.card-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-main);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+}
+
+.card-menu-item:hover {
+    background: var(--surface);
 }
 
 /* ---- 5×5 card grid ---- */
