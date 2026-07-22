@@ -149,7 +149,7 @@ updateUI();
 // ---------------------------
 
 newSessionBtn.onclick = () => {
-    
+
     const newWord = prompt("Enter a 5-letter session word:", "BINGO");
     if (!newWord || newWord.length !== 5) {
         alert("Invalid word. Using BINGO.");
@@ -158,7 +158,7 @@ newSessionBtn.onclick = () => {
         session.word = newWord.toUpperCase();
     }
 
-    session.called = new Set();
+    session.called = [];
     session.lastBall = null;
 
     saveSession();
