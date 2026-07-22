@@ -44,6 +44,7 @@ let activeCardEdit  = null;     // { cardId, cellIdx } | null
 let openMenuCardId  = null;     // card with open menu
 let availableGames  = [];       // loaded from server
 let gameMenuOpen    = false;
+let shouldScrollToWinner = false;
 
 // ============================================================
 // SESSION LOAD / SAVE
@@ -173,9 +174,12 @@ function buildNumberPicker(colIdx) {
 }
 
 function onNumberPick(n) {
+    const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
+
     if (!session.called.includes(n)) {
         session.called.push(n);
         session.lastBall = n;
+        if (!prevWinnerExists) shouldScrollToWinner = true;
         updateUI();
         saveSession();
     }
@@ -217,6 +221,7 @@ function buildTrackingGrid() {
 // ============================================================
 
 function toggleNumber(n) {
+    const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
     const idx = session.called.indexOf(n);
     if (idx !== -1) {
         if (!confirm(`Remove ${n}?`)) return;
@@ -226,6 +231,7 @@ function toggleNumber(n) {
     } else {
         session.called.push(n);
         session.lastBall = n;
+        if (!prevWinnerExists) shouldScrollToWinner = true;
     }
     updateUI();
     saveSession();
@@ -266,6 +272,14 @@ function updateUI() {
     updateSessionWordBar();
     renderGameSection();
     renderAllCards();
+
+    if (shouldScrollToWinner) {
+        const firstWinner = bingoCardsList.querySelector(".bingo-card.card-winner");
+        if (firstWinner) {
+            firstWinner.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        shouldScrollToWinner = false;
+    }
 }
 
 callLogLink.onclick = openCallLogWindow;
