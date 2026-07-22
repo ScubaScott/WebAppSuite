@@ -728,3 +728,234 @@ body {
         font-size: 13px;
     }
 }
+
+/* ================================================================
+   GAME SECTION
+================================================================ */
+
+.game-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+
+.game-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.game-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.selected-game-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.selected-game-name.game-selected {
+    color: var(--primary);
+}
+
+.game-menu-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* ================================================================
+   GAME PICKER MODAL (bottom-sheet style)
+================================================================ */
+
+.game-picker-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.38);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.game-picker-panel {
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 640px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0.5; }
+    to   { transform: translateY(0);    opacity: 1;   }
+}
+
+.game-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.game-picker-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.game-picker-list {
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.game-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.13s ease, border-color 0.13s ease;
+}
+
+.game-picker-item:hover { background: var(--primary-soft); border-color: var(--primary); }
+
+.game-picker-item.selected {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
+
+.game-picker-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.game-picker-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.game-picker-meta {
+    font-size: 12px;
+    color: var(--text-subtle);
+}
+
+.game-picker-check {
+    color: var(--primary);
+    font-size: 20px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Mini card preview */
+.mini-card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    width: 58px;
+    height: 58px;
+    flex-shrink: 0;
+}
+
+.mini-cell {
+    border-radius: 2px;
+    background: var(--border);
+}
+
+.mini-cell.mini-free    { border-radius: 50%; background: rgba(26,115,232,0.18); }
+.mini-cell.mini-pattern { background: var(--primary); }
+.mini-cell.mini-free.mini-pattern { background: var(--primary); border-radius: 50%; }
+
+/* ================================================================
+   WINNER CARD
+================================================================ */
+
+.card-winner {
+    border-color: #f9a825 !important;
+    box-shadow: 0 0 0 3px rgba(249, 168, 37, 0.4),
+                0 8px 30px rgba(249, 168, 37, 0.2) !important;
+}
+
+.bingo-cell.win-cell {
+    background: linear-gradient(135deg, #ffd600, #ffab00) !important;
+    border-color: transparent !important;
+    color: #1a1a1a !important;
+    box-shadow: inset 0 1px 3px rgba(255,255,255,0.4);
+    z-index: 2;
+    position: relative;
+}
+
+/* Override daub dot on win cells */
+.bingo-cell.win-cell::before { display: none !important; }
+
+.card-winner-overlay {
+    background: linear-gradient(135deg, #1565c0 0%, #1a73e8 100%);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    animation: winnerPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes winnerPop {
+    from { opacity: 0; transform: scale(0.82) translateY(-6px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+.winner-bingo-text {
+    font-size: 30px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.14em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    line-height: 1;
+}
+
+.winner-game-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    margin-top: 2px;
+}
+
+.winner-pattern-name {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 400;
+}

@@ -6,21 +6,25 @@ let session = {
     word:     "BINGO",
     called:   [],
     lastBall: null,
-    cards:    []
+    cards:    [],
+    gameId:   null
 };
 
 // ============================================================
 // DOM REFS
 // ============================================================
 
-const trackingGrid    = document.getElementById("trackingGrid");
-const sessionWordBar  = document.getElementById("sessionWordBar");
-const lastFiveList    = document.getElementById("lastFiveList");
-const totalCalledSpan = document.getElementById("totalCalled");
-const callLogLink     = document.getElementById("callLogLink");
-const newSessionBtn   = document.getElementById("newSessionBtn");
-const addCardBtn      = document.getElementById("addCardBtn");
-const bingoCardsList  = document.getElementById("bingoCardsList");
+const trackingGrid       = document.getElementById("trackingGrid");
+const sessionWordBar     = document.getElementById("sessionWordBar");
+const lastFiveList       = document.getElementById("lastFiveList");
+const totalCalledSpan    = document.getElementById("totalCalled");
+const callLogLink        = document.getElementById("callLogLink");
+const newSessionBtn      = document.getElementById("newSessionBtn");
+const addCardBtn         = document.getElementById("addCardBtn");
+const bingoCardsList     = document.getElementById("bingoCardsList");
+const selectedGameNameEl = document.getElementById("selectedGameName");
+const gameMenuBtn        = document.getElementById("gameMenuBtn");
+const gameMenuDropdown   = document.getElementById("gameMenuDropdown");
 
 // Toggle
 const toggleByLetter  = document.getElementById("toggleByLetter");
@@ -37,7 +41,9 @@ const numberPicker    = document.getElementById("numberPicker");
 let inputMode       = "letter"; // "letter" | "number"
 let activeLetterIdx = -1;       // BINGO column selected (-1 = none)
 let activeCardEdit  = null;     // { cardId, cellIdx } | null
-let openMenuCardId  = null;     // card whose menu is currently open
+let openMenuCardId  = null;     // card with open menu
+let availableGames  = [];       // loaded from server
+let gameMenuOpen    = false;
 
 // ============================================================
 // SESSION LOAD / SAVE
@@ -48,7 +54,8 @@ function saveSession() {
         word:     session.word,
         called:   session.called,
         lastBall: session.lastBall,
-        cards:    session.cards
+        cards:    session.cards,
+        gameId:   session.gameId
     }));
 }
 
@@ -56,18 +63,15 @@ function loadSession() {
     const data = localStorage.getItem("bingoSession");
     if (!data) return;
 
-    const obj    = JSON.parse(data);
-    session.word     = obj.word    || "BINGO";
+    const obj        = JSON.parse(data);
+    session.word     = obj.word     || "BINGO";
     session.called   = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall || null;
+    session.gameId   = obj.gameId   || null;
 
-    // Migrate cards: ensure editMode and active fields exist
+    // Migrate cards: ensure editMode / active fields exist
     session.cards = Array.isArray(obj.cards)
-        ? obj.cards.map(c => ({
-            editMode: false,
-            active:   true,
-            ...c
-          }))
+        ? obj.cards.map(c => ({ editMode: false, active: true, ...c }))
         : [];
 }
 
@@ -110,7 +114,6 @@ function setInputMode(mode) {
     if (mode === "letter") {
         toggleByLetter.classList.add("active");
         toggleByNumber.classList.remove("active");
-
         byLetterPanel.classList.remove("hidden");
         trackingGrid.classList.add("hidden");
 
@@ -121,10 +124,8 @@ function setInputMode(mode) {
     } else {
         toggleByNumber.classList.add("active");
         toggleByLetter.classList.remove("active");
-
         byLetterPanel.classList.add("hidden");
         trackingGrid.classList.remove("hidden");
-
         buildTrackingGrid();
     }
 }
@@ -216,17 +217,16 @@ function buildTrackingGrid() {
 // ============================================================
 
 function toggleNumber(n) {
-    const existingIndex = session.called.indexOf(n);
-    if (existingIndex !== -1) {
+    const idx = session.called.indexOf(n);
+    if (idx !== -1) {
         if (!confirm(`Remove ${n}?`)) return;
-        session.called.splice(existingIndex, 1);
+        session.called.splice(idx, 1);
         session.lastBall = session.called.length
             ? session.called[session.called.length - 1] : null;
     } else {
         session.called.push(n);
         session.lastBall = n;
     }
-
     updateUI();
     saveSession();
 }
@@ -236,16 +236,12 @@ function toggleNumber(n) {
 // ============================================================
 
 function openCallLogWindow() {
-    const logWindow = window.open("", "bingoCallLog", "width=320,height=420,top=100,left=100");
-    if (!logWindow) {
-        alert("Unable to open call log window. Please allow popups for this site.");
-        return;
-    }
+    const w = window.open("", "bingoCallLog", "width=320,height=420,top=100,left=100");
+    if (!w) { alert("Please allow popups for this site."); return; }
 
-    const listItems = session.called.map((v) => `<li>${v}</li>`).join("");
-
-    logWindow.document.write(`<!DOCTYPE html><html><head><title>Call Log</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:20px;color:#202124;background:#f8f9fa;}h1{font-size:20px;margin-bottom:12px;}ol{padding-left:18px;}li{margin-bottom:6px;}button{margin-top:18px;padding:10px 14px;border:none;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer;}</style></head><body><h1>Call Log</h1><ol>${listItems || '<li>No numbers called yet</li>'}</ol><button onclick="window.close()">Close</button></body></html>`);
-    logWindow.document.close();
+    const listItems = session.called.map(v => `<li>${v}</li>`).join("");
+    w.document.write(`<!DOCTYPE html><html><head><title>Call Log</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#202124;background:#f8f9fa;}h1{font-size:20px;margin-bottom:12px;}ol{padding-left:18px;}li{margin-bottom:6px;}button{margin-top:18px;padding:10px 14px;border:none;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer;}</style></head><body><h1>Call Log</h1><ol>${listItems || '<li>No numbers called yet</li>'}</ol><button onclick="window.close()">Close</button></body></html>`);
+    w.document.close();
 }
 
 // ============================================================
@@ -268,6 +264,7 @@ function updateUI() {
     if (inputMode === "number") buildTrackingGrid();
 
     updateSessionWordBar();
+    renderGameSection();
     renderAllCards();
 }
 
@@ -298,10 +295,246 @@ newSessionBtn.onclick = () => {
 };
 
 // ============================================================
+// GAME MODES — load
+// ============================================================
+
+const GAMES_API = "./php/games.php";
+
+async function loadGames() {
+    try {
+        const res = await fetch(GAMES_API);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        availableGames = await res.json();
+    } catch (e) {
+        console.warn("Could not load games:", e);
+        availableGames = [];
+    }
+    renderGameSection();
+    renderAllCards();
+}
+
+function getSelectedGame() {
+    if (!session.gameId) return null;
+    return availableGames.find(g => g.id === session.gameId) || null;
+}
+
+function selectGame(gameId) {
+    session.gameId = gameId;
+    saveSession();
+    closeGameMenu();
+    closeGamePicker();
+    renderGameSection();
+    renderAllCards();
+}
+
+// ============================================================
+// GAME MODES — section & menu
+// ============================================================
+
+function renderGameSection() {
+    const game = getSelectedGame();
+    selectedGameNameEl.textContent = game ? game.name : "— None selected —";
+    selectedGameNameEl.classList.toggle("game-selected", !!game);
+
+    if (gameMenuOpen) {
+        gameMenuDropdown.innerHTML = "";
+        gameMenuDropdown.classList.remove("hidden");
+
+        const items = [
+            { label: "🎮  Change Game", fn: openGamePicker  },
+            { label: "✏️  Create Game", fn: openGameCreator }
+        ];
+
+        for (const item of items) {
+            const btn = document.createElement("button");
+            btn.className = "card-menu-item";
+            btn.textContent = item.label;
+            btn.addEventListener("click", (e) => { e.stopPropagation(); item.fn(); });
+            gameMenuDropdown.appendChild(btn);
+        }
+    } else {
+        gameMenuDropdown.innerHTML = "";
+        gameMenuDropdown.classList.add("hidden");
+    }
+}
+
+function toggleGameMenu() {
+    gameMenuOpen = !gameMenuOpen;
+    gameMenuBtn.classList.toggle("open", gameMenuOpen);
+    gameMenuBtn.setAttribute("aria-expanded", gameMenuOpen ? "true" : "false");
+    renderGameSection();
+}
+
+function closeGameMenu() {
+    if (!gameMenuOpen) return;
+    gameMenuOpen = false;
+    gameMenuBtn.classList.remove("open");
+    gameMenuBtn.setAttribute("aria-expanded", "false");
+    renderGameSection();
+}
+
+gameMenuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleGameMenu(); });
+
+// Global click-outside handler (closes game menu AND card menus)
+document.addEventListener("click", (e) => {
+    if (gameMenuOpen && !e.target.closest("#gameSection")) closeGameMenu();
+    if (openMenuCardId !== null && !e.target.closest(".bingo-card")) {
+        openMenuCardId = null;
+        renderAllCards();
+    }
+});
+
+// ============================================================
+// GAME MODES — picker modal
+// ============================================================
+
+function openGamePicker() {
+    closeGameMenu();
+
+    const modal = document.createElement("div");
+    modal.id        = "gamePickerModal";
+    modal.className = "game-picker-modal";
+    modal.setAttribute("role",       "dialog");
+    modal.setAttribute("aria-label", "Select Game");
+
+    const panel = document.createElement("div");
+    panel.className = "game-picker-panel";
+
+    const hdr = document.createElement("div");
+    hdr.className = "game-picker-header";
+
+    const title = document.createElement("h2");
+    title.className   = "game-picker-title";
+    title.textContent = "Select a Game";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className   = "link-button";
+    closeBtn.textContent = "✕ Close";
+    closeBtn.addEventListener("click", closeGamePicker);
+
+    hdr.appendChild(title);
+    hdr.appendChild(closeBtn);
+    panel.appendChild(hdr);
+
+    const list = document.createElement("div");
+    list.className = "game-picker-list";
+
+    if (availableGames.length === 0) {
+        list.innerHTML = '<p class="bingo-cards-placeholder">No games yet. Use "Create Game" to make one.</p>';
+    } else {
+        for (const game of availableGames) {
+            list.appendChild(renderGamePickerItem(game));
+        }
+    }
+
+    panel.appendChild(list);
+    modal.appendChild(panel);
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeGamePicker(); });
+}
+
+function renderGamePickerItem(game) {
+    const isSelected     = session.gameId === game.id;
+    const firstPattern   = game.patterns[0];
+    const patternCells   = new Set(firstPattern ? firstPattern.cells : []);
+
+    const item = document.createElement("div");
+    item.className = "game-picker-item" + (isSelected ? " selected" : "");
+    item.setAttribute("role",     "button");
+    item.setAttribute("tabindex", "0");
+
+    // Mini 5×5 grid showing first pattern
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "mini-card-grid";
+
+    for (let i = 0; i < 25; i++) {
+        const mc = document.createElement("div");
+        mc.className = [
+            "mini-cell",
+            i === 12              ? "mini-free"    : "",
+            patternCells.has(i)   ? "mini-pattern" : ""
+        ].filter(Boolean).join(" ");
+        miniGrid.appendChild(mc);
+    }
+
+    const info = document.createElement("div");
+    info.className = "game-picker-info";
+
+    const name = document.createElement("span");
+    name.className   = "game-picker-name";
+    name.textContent = game.name;
+
+    const meta = document.createElement("span");
+    meta.className   = "game-picker-meta";
+    meta.textContent = `${game.patterns.length} pattern${game.patterns.length !== 1 ? "s" : ""}`;
+
+    info.appendChild(name);
+    info.appendChild(meta);
+
+    item.appendChild(miniGrid);
+    item.appendChild(info);
+
+    if (isSelected) {
+        const check = document.createElement("span");
+        check.className   = "game-picker-check";
+        check.textContent = "✓";
+        item.appendChild(check);
+    }
+
+    item.addEventListener("click",   () => selectGame(game.id));
+    item.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectGame(game.id); }
+    });
+
+    return item;
+}
+
+function closeGamePicker() {
+    const modal = document.getElementById("gamePickerModal");
+    if (modal) modal.remove();
+}
+
+// ============================================================
+// GAME MODES — creator (popup window)
+// ============================================================
+
+function openGameCreator() {
+    closeGameMenu();
+    const w = window.open("./game-creator.html", "bingoGameCreator",
+        "width=500,height=740,top=60,left=120,resizable=yes");
+    if (!w) alert("Please allow popups for this site to open the game creator.");
+}
+
+// When the creator window posts a message, reload the games list
+window.addEventListener("message", (e) => {
+    if (e.data === "games-updated") loadGames();
+});
+
+// ============================================================
+// GAME MODES — win detection
+// ============================================================
+
+function checkCardWin(card, game) {
+    if (!game || !card.active) return null;
+    const calledSet = new Set(session.called);
+
+    for (const pattern of game.patterns) {
+        const allDaubed = pattern.cells.every(cellIdx => {
+            if (cellIdx === FREE_CELL) return true;               // FREE always daubed
+            const val = card.squares[cellIdx];
+            return val !== null && val !== "FREE" && calledSet.has(val);
+        });
+        if (allDaubed) return pattern;
+    }
+    return null;
+}
+
+// ============================================================
 // BINGO CARDS — helpers
 // ============================================================
 
-const FREE_CELL = 12; // row 2, col 2
+const FREE_CELL = 12; // center square: row 2, col 2
 
 function colForCell(cellIdx) { return cellIdx % 5; }
 
@@ -322,7 +555,7 @@ function addCard() {
         id:       Date.now(),
         label:    `Card ${session.cards.length + 1}`,
         squares,
-        editMode: true,   // new cards start in edit mode
+        editMode: true,
         active:   true
     });
 
@@ -334,18 +567,16 @@ function menuAction(cardId, action) {
     const card = session.cards.find(c => c.id === cardId);
     if (!card) return;
 
-    openMenuCardId = null; // close menu regardless
+    openMenuCardId = null;
 
     switch (action) {
         case "save":
-            card.editMode = false;
+            card.editMode  = false;
             activeCardEdit = null;
             break;
-
         case "edit":
             card.editMode = true;
             break;
-
         case "remove":
             if (!confirm("Remove this card?")) { renderAllCards(); return; }
             session.cards = session.cards.filter(c => c.id !== cardId);
@@ -353,11 +584,9 @@ function menuAction(cardId, action) {
             saveSession();
             renderAllCards();
             return;
-
         case "use":
             card.active = true;
             break;
-
         case "unuse":
             card.active = false;
             break;
@@ -371,10 +600,8 @@ function onCardCellClick(cardId, cellIdx) {
     const card = session.cards.find(c => c.id === cardId);
     if (!card || !card.editMode) return;
 
-    // Close any open menu
     if (openMenuCardId !== null) { openMenuCardId = null; renderAllCards(); return; }
 
-    // Tap same cell again → close picker
     if (activeCardEdit && activeCardEdit.cardId === cardId && activeCardEdit.cellIdx === cellIdx) {
         activeCardEdit = null;
         renderAllCards();
@@ -388,7 +615,6 @@ function onCardCellClick(cardId, cellIdx) {
 function onCardNumberSelect(cardId, cellIdx, number) {
     const card = session.cards.find(c => c.id === cardId);
     if (!card) return;
-
     card.squares[cellIdx] = number;
     activeCardEdit = null;
     saveSession();
@@ -397,18 +623,9 @@ function onCardNumberSelect(cardId, cellIdx, number) {
 
 function toggleMenu(cardId) {
     openMenuCardId = openMenuCardId === cardId ? null : cardId;
-    // Close any cell picker when opening a menu
     if (openMenuCardId !== null) activeCardEdit = null;
     renderAllCards();
 }
-
-// Close any open menu when clicking outside a card
-document.addEventListener("click", (e) => {
-    if (openMenuCardId !== null && !e.target.closest(".bingo-card")) {
-        openMenuCardId = null;
-        renderAllCards();
-    }
-});
 
 // ============================================================
 // BINGO CARDS — render
@@ -429,17 +646,25 @@ function renderAllCards() {
 
 function renderCard(card) {
     const isEditing   = card.editMode;
-    const isActive    = card.active !== false; // default true
+    const isActive    = card.active !== false;
     const isMenuOpen  = openMenuCardId === card.id;
     const editCellIdx = (activeCardEdit && activeCardEdit.cardId === card.id)
         ? activeCardEdit.cellIdx : -1;
+
+    // Win detection
+    const game           = getSelectedGame();
+    const winningPattern = (isActive && game) ? checkCardWin(card, game) : null;
+    const winCells       = new Set(winningPattern ? winningPattern.cells : []);
+    // FREE is always part of a winning pattern that includes it
+    if (winningPattern && winningPattern.cells.includes(FREE_CELL)) winCells.add(FREE_CELL);
 
     // ---- Wrapper ----
     const wrapper = document.createElement("div");
     wrapper.className = [
         "bingo-card",
-        isEditing ? "card-editing" : "",
-        !isActive ? "card-inactive" : ""
+        isEditing       ? "card-editing"  : "",
+        !isActive       ? "card-inactive" : "",
+        winningPattern  ? "card-winner"   : ""
     ].filter(Boolean).join(" ");
     wrapper.dataset.cardId = card.id;
 
@@ -447,67 +672,55 @@ function renderCard(card) {
     const header = document.createElement("div");
     header.className = "bingo-card-header";
 
-    // Hamburger menu button
     const menuBtn = document.createElement("button");
     menuBtn.className = "card-menu-btn" + (isMenuOpen ? " open" : "");
-    menuBtn.setAttribute("aria-label", "Card menu");
+    menuBtn.setAttribute("aria-label",    "Card menu");
     menuBtn.setAttribute("aria-expanded", isMenuOpen ? "true" : "false");
     menuBtn.innerHTML = `<span></span><span></span><span></span>`;
     menuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(card.id); });
 
-    // Card name — editable when in edit mode
     let labelEl;
     if (isEditing) {
-        labelEl = document.createElement("input");
-        labelEl.type = "text";
+        labelEl          = document.createElement("input");
+        labelEl.type     = "text";
         labelEl.className = "bingo-card-label-input";
-        labelEl.value = card.label;
-        labelEl.addEventListener("change", (e) => {
-            card.label = e.target.value.trim() || card.label;
-            saveSession();
-        });
-        labelEl.addEventListener("click", (e) => e.stopPropagation());
+        labelEl.value    = card.label;
+        labelEl.addEventListener("change", (e) => { card.label = e.target.value.trim() || card.label; saveSession(); });
+        labelEl.addEventListener("click",  (e) => e.stopPropagation());
     } else {
-        labelEl = document.createElement("span");
+        labelEl           = document.createElement("span");
         labelEl.className = "bingo-card-label";
         labelEl.textContent = card.label;
     }
 
-    // Status badge
     const badge = document.createElement("span");
     badge.className = "card-status-badge";
-    if (isEditing) {
-        badge.textContent = "editing";
-        badge.classList.add("badge-editing");
-    } else if (!isActive) {
-        badge.textContent = "inactive";
-        badge.classList.add("badge-inactive");
-    }
+    if (isEditing)      { badge.textContent = "editing";  badge.classList.add("badge-editing");  }
+    else if (!isActive) { badge.textContent = "inactive"; badge.classList.add("badge-inactive"); }
 
     header.appendChild(menuBtn);
     header.appendChild(labelEl);
     if (badge.textContent) header.appendChild(badge);
-    wrapper.appendChild(header);
 
-    // ---- Dropdown menu ----
+    // ---- Dropdown menu (anchored inside header) ----
     if (isMenuOpen) {
         const menu = document.createElement("div");
         menu.className = "card-menu-dropdown";
         menu.addEventListener("click", (e) => e.stopPropagation());
 
         const menuItems = isEditing
-            ? [{ action: "save",  label: "💾  Save card" },
-               { action: "remove",label: "🗑  Remove card" }]
-            : [{ action: "edit",  label: "✏️  Edit card" },
-               { action: "remove",label: "🗑  Remove card" },
+            ? [{ action: "save",  label: "💾  Save card"    },
+               { action: "remove",label: "🗑  Remove card"  }]
+            : [{ action: "edit",  label: "✏️  Edit card"    },
+               { action: "remove",label: "🗑  Remove card"  },
                isActive
                    ? { action: "unuse", label: "🚫  Don't use card" }
-                   : { action: "use",   label: "✅  Use card" }
+                   : { action: "use",   label: "✅  Use card"        }
               ];
 
         for (const item of menuItems) {
             const btn = document.createElement("button");
-            btn.className = "card-menu-item";
+            btn.className   = "card-menu-item";
             btn.textContent = item.label;
             btn.addEventListener("click", () => menuAction(card.id, item.action));
             menu.appendChild(btn);
@@ -516,33 +729,35 @@ function renderCard(card) {
         header.appendChild(menu);
     }
 
+    wrapper.appendChild(header);
+
     // ---- 5×5 card grid ----
     const grid = document.createElement("div");
     grid.className = "bingo-card-grid";
 
-    // Column headers
     for (let col = 0; col < 5; col++) {
-        const hdr = document.createElement("div");
-        hdr.className = "bingo-col-header";
+        const hdr       = document.createElement("div");
+        hdr.className   = "bingo-col-header";
         hdr.textContent = session.word[col];
         grid.appendChild(hdr);
     }
 
-    // 25 cells
     for (let idx = 0; idx < 25; idx++) {
-        const value    = card.squares[idx];
-        const isFree   = (idx === FREE_CELL);
-        const isDaubed = isActive && (isFree || (value !== null && session.called.includes(value)));
-        const isEmpty  = !isFree && value === null;
+        const value       = card.squares[idx];
+        const isFree      = (idx === FREE_CELL);
+        const isDaubed    = isActive && (isFree || (value !== null && session.called.includes(value)));
+        const isEmpty     = !isFree && value === null;
         const isCellActive = (idx === editCellIdx);
+        const isWinCell   = !!winningPattern && (winCells.has(idx) || (isFree && winningPattern.cells.includes(FREE_CELL)));
 
         const cell = document.createElement("div");
         cell.className = [
             "bingo-cell",
-            isFree       ? "free"    : "",
-            isDaubed     ? "daubed"  : "",
-            isEmpty      ? "empty"   : "",
-            isCellActive ? "editing" : ""
+            isFree       ? "free"     : "",
+            isDaubed     ? "daubed"   : "",
+            isEmpty      ? "empty"    : "",
+            isCellActive ? "editing"  : "",
+            isWinCell    ? "win-cell" : ""
         ].filter(Boolean).join(" ");
 
         cell.textContent = isFree ? "FREE" : (value ?? "");
@@ -556,10 +771,22 @@ function renderCard(card) {
 
     wrapper.appendChild(grid);
 
+    // ---- Winner overlay ----
+    if (winningPattern) {
+        const overlay = document.createElement("div");
+        overlay.className = "card-winner-overlay";
+        overlay.innerHTML = `
+            <span class="winner-bingo-text">BINGO!</span>
+            <span class="winner-game-name">${game.name}</span>
+            <span class="winner-pattern-name">${winningPattern.name}</span>
+        `;
+        wrapper.appendChild(overlay);
+    }
+
     // ---- Inline column picker (edit mode only) ----
     if (isEditing && editCellIdx !== -1) {
-        const col      = colForCell(editCellIdx);
-        const numbers  = colNumbers(col);
+        const col       = colForCell(editCellIdx);
+        const numbers   = colNumbers(col);
         const usedInCol = card.squares
             .filter((v, i) => i !== editCellIdx && colForCell(i) === col && v !== null && v !== "FREE");
 
@@ -567,7 +794,7 @@ function renderCard(card) {
         picker.className = "card-number-picker";
 
         const pickerLabel = document.createElement("div");
-        pickerLabel.className = "card-picker-label";
+        pickerLabel.className   = "card-picker-label";
         pickerLabel.textContent = `Select ${session.word[col]} number`;
         picker.appendChild(pickerLabel);
 
@@ -612,3 +839,4 @@ addCardBtn.addEventListener("click", addCard);
 
 setInputMode("letter");
 updateUI();
+loadGames(); // async — updates game section & cards when done

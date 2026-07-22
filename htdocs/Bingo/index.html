@@ -51,6 +51,22 @@
         <!-- BY NUMBER tracking grid (existing) -->
         <section id="trackingGrid" class="tracking-grid hidden" aria-label="Bingo numbers"></section>
 
+        <!-- Game Selection -->
+        <section id="gameSection" class="game-section">
+            <div class="game-section-header">
+                <div class="game-info">
+                    <span class="stat-label">Game Mode</span>
+                    <span id="selectedGameName" class="selected-game-name">— None selected —</span>
+                </div>
+                <div class="game-menu-wrap">
+                    <button id="gameMenuBtn" class="card-menu-btn" aria-label="Game menu" aria-expanded="false">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <div id="gameMenuDropdown" class="card-menu-dropdown hidden"></div>
+                </div>
+            </div>
+        </section>
+
         <!-- Bingo Cards -->
         <section id="bingoCardsSection" class="bingo-cards-section" aria-label="Bingo cards">
             <div class="bingo-cards-header">

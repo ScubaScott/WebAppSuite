@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Game — Bingo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --surface: #f8f9fa;
+            --card: #ffffff;
+            --text-main: #202124;
+            --text-subtle: #5f6368;
+            --border: #dfe1e5;
+            --primary: #1a73e8;
+            --primary-soft: rgba(26, 115, 232, 0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--surface);
+            color: var(--text-main);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .field-group { margin-bottom: 16px; }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            color: var(--text-main);
+            background: var(--card);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(26,115,232,0.18);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 18px 0;
+        }
+
+        /* ---- Builder 5×5 grid ---- */
+        .builder-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .builder-col-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 26px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .builder-cell {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.12s, border-color 0.12s, transform 0.1s;
+        }
+
+        .builder-cell:hover:not(.free) {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            transform: scale(1.05);
+        }
+
+        .builder-cell.daubed {
+            background: var(--primary);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .builder-cell.free {
+            background: var(--primary-soft);
+            border-color: transparent;
+            color: var(--primary);
+            cursor: default;
+            font-size: 8px;
+            font-weight: 800;
+        }
+
+        /* ---- Added patterns list ---- */
+        .patterns-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .patterns-empty {
+            font-size: 13px;
+            color: var(--text-subtle);
+            padding: 4px 0;
+        }
+
+        .pattern-chip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .pattern-mini {
+            display: grid;
+            grid-template-columns: repeat(5, 8px);
+            gap: 1px;
+            flex-shrink: 0;
+        }
+
+        .pmini-cell {
+            width: 8px;
+            height: 8px;
+            border-radius: 1px;
+            background: var(--border);
+        }
+
+        .pmini-cell.in { background: var(--primary); }
+        .pmini-cell.free-cell { background: var(--primary-soft); border-radius: 50%; }
+        .pmini-cell.in.free-cell { background: var(--primary); border-radius: 50%; }
+
+        .pattern-chip-name {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        /* ---- Buttons ---- */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 11px 16px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            border-color: var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-soft);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 2px 10px rgba(26,115,232,0.35);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .status-msg {
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--text-subtle);
+            text-align: center;
+            min-height: 18px;
+        }
+
+        .status-msg.success { color: #137333; }
+        .status-msg.error   { color: #c5221f; }
+    </style>
+</head>
+<body>
+
+    <h1>✏️ Create New Game</h1>
+
+    <div class="field-group">
+        <label for="gameName">Game Name</label>
+        <input type="text" id="gameName" placeholder="e.g. Regular Bingo, Four Corners…" maxlength="60" />
+    </div>
+
+    <hr>
+
+    <div class="section-label">Patterns Added</div>
+    <div class="patterns-list" id="patternsList">
+        <p class="patterns-empty">No patterns yet — build one below.</p>
+    </div>
+
+    <hr>
+
+    <div class="section-label">Current Pattern</div>
+
+    <div class="field-group">
+        <label for="patternName">Pattern Name</label>
+        <input type="text" id="patternName" placeholder="e.g. Row 1, Diagonal, Four Corners…" maxlength="40" />
+    </div>
+
+    <div class="builder-grid" id="builderGrid"></div>
+
+    <div class="btn-row">
+        <button class="btn btn-secondary" id="addPatternBtn">+ Add Pattern</button>
+        <button class="btn btn-primary" id="saveGameBtn" disabled>Save Game</button>
+    </div>
+
+    <div class="status-msg" id="statusMsg"></div>
+
+    <script>
+        const GAMES_API  = '../php/games.php';
+        const WORD       = 'BINGO';
+        const FREE_CELL  = 12;
+
+        let patterns     = [];
+        let currentCells = new Set();
+
+        // ---- Build the 5×5 grid ----
+        const builderGrid = document.getElementById('builderGrid');
+
+        // Column headers
+        for (let col = 0; col < 5; col++) {
+            const hdr = document.createElement('div');
+            hdr.className = 'builder-col-header';
+            hdr.textContent = WORD[col];
+            builderGrid.appendChild(hdr);
+        }
+
+        // 25 cells (row-major)
+        for (let idx = 0; idx < 25; idx++) {
+            const cell   = document.createElement('div');
+            const isFree = idx === FREE_CELL;
+            cell.className = 'builder-cell' + (isFree ? ' free daubed' : '');
+            cell.textContent = isFree ? 'FREE' : '';
+            cell.dataset.idx = idx;
+
+            if (!isFree) {
+                cell.addEventListener('click', () => {
+                    if (currentCells.has(idx)) {
+                        currentCells.delete(idx);
+                        cell.classList.remove('daubed');
+                    } else {
+                        currentCells.add(idx);
+                        cell.classList.add('daubed');
+                    }
+                });
+            }
+
+            builderGrid.appendChild(cell);
+        }
+
+        // ---- Render patterns list ----
+        function renderPatternsList() {
+            const list = document.getElementById('patternsList');
+            list.innerHTML = '';
+
+            if (patterns.length === 0) {
+                list.innerHTML = '<p class="patterns-empty">No patterns yet — build one below.</p>';
+            } else {
+                for (const p of patterns) {
+                    const chip = document.createElement('div');
+                    chip.className = 'pattern-chip';
+
+                    let mini = '<div class="pattern-mini">';
+                    for (let i = 0; i < 25; i++) {
+                        const isIn   = p.cells.includes(i) || i === FREE_CELL;
+                        const isFr   = i === FREE_CELL;
+                        mini += `<div class="pmini-cell${isIn ? ' in' : ''}${isFr ? ' free-cell' : ''}"></div>`;
+                    }
+                    mini += '</div>';
+
+                    chip.innerHTML = `${mini}<span class="pattern-chip-name">${p.name}</span>`;
+                    list.appendChild(chip);
+                }
+            }
+
+            updateSaveBtn();
+        }
+
+        function updateSaveBtn() {
+            const hasName     = document.getElementById('gameName').value.trim().length > 0;
+            const hasPatterns = patterns.length > 0;
+            document.getElementById('saveGameBtn').disabled = !(hasName && hasPatterns);
+        }
+
+        document.getElementById('gameName').addEventListener('input', updateSaveBtn);
+
+        // ---- Add Pattern ----
+        document.getElementById('addPatternBtn').addEventListener('click', () => {
+            const nameInput = document.getElementById('patternName');
+            const statusEl  = document.getElementById('statusMsg');
+
+            if (currentCells.size === 0) {
+                statusEl.textContent = 'Select at least one cell to define the pattern.';
+                statusEl.className   = 'status-msg error';
+                return;
+            }
+
+            const name = nameInput.value.trim() || `Pattern ${patterns.length + 1}`;
+            patterns.push({ name, cells: [...currentCells] });
+
+            // Reset builder
+            currentCells.clear();
+            nameInput.value = '';
+            builderGrid.querySelectorAll('.builder-cell:not(.free)').forEach(c => c.classList.remove('daubed'));
+            statusEl.textContent = '';
+            statusEl.className   = 'status-msg';
+
+            renderPatternsList();
+        });
+
+        // ---- Save Game ----
+        document.getElementById('saveGameBtn').addEventListener('click', async () => {
+            const nameValue = document.getElementById('gameName').value.trim();
+            const statusEl  = document.getElementById('statusMsg');
+
+            if (!nameValue)        { statusEl.textContent = 'Enter a game name.';           statusEl.className = 'status-msg error'; return; }
+            if (!patterns.length)  { statusEl.textContent = 'Add at least one pattern.';    statusEl.className = 'status-msg error'; return; }
+
+            const btn = document.getElementById('saveGameBtn');
+            btn.disabled = true;
+            statusEl.textContent = 'Saving…';
+            statusEl.className   = 'status-msg';
+
+            try {
+                const res = await fetch(GAMES_API, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ name: nameValue, patterns })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || `Server error ${res.status}`);
+                }
+
+                statusEl.textContent = '✓ Game saved! You can close this window.';
+                statusEl.className   = 'status-msg success';
+
+                // Notify the opener to reload its games list
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage('games-updated', '*');
+                }
+
+                setTimeout(() => window.close(), 1800);
+
+            } catch (e) {
+                statusEl.textContent = `Error: ${e.message}`;
+                statusEl.className   = 'status-msg error';
+                btn.disabled = false;
+                updateSaveBtn();
+            }
+        });
+    </script>
+</body>
+</html>
