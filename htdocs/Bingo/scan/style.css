@@ -200,6 +200,10 @@ canvas {
     gap: 10px;
 }
 
+.button-group .btn {
+    flex: 1;
+}
+
 /* ---- Status Bar ---- */
 
 .status-box {

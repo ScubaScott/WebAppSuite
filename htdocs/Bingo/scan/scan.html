@@ -36,7 +36,7 @@
         <!-- Camera & Capture Section -->
         <section class="card">
             <div class="card-title">
-                <span>Camera Feed</span>
+                <span>Camera Feed & Photos</span>
                 <div class="crop-toggle-wrap">
                     <label class="toggle-switch">
                         <input type="checkbox" id="autoCropToggle" checked>
@@ -57,6 +57,13 @@
                     </svg>
                     Capture Photo
                 </button>
+                <button id="galleryBtn" class="btn btn-secondary" type="button">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-3.86 2.14 2.57 3-3.86L17 19H5z"/>
+                    </svg>
+                    Camera Roll
+                </button>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
             </div>
 
             <!-- Preview & Crop Controls -->
@@ -91,14 +98,14 @@
                 Run OCR Recognition
             </button>
 
-            <div id="status" class="status-box">Ready to capture photo</div>
+            <div id="status" class="status-box">Ready to capture photo or choose from Camera Roll</div>
         </section>
 
         <!-- OCR Scanned Output Card -->
         <section id="bingoOutputSection" class="card">
             <div id="bingoOutput">
                 <p style="text-align: center; color: var(--text-subtle); font-size: 14px; padding: 20px 0;">
-                    Capture a photo of your bingo card above to extract numbers automatically.
+                    Capture a photo or select an image from your camera roll above to extract numbers automatically.
                 </p>
             </div>
         </section>
@@ -258,6 +265,8 @@
     <script>
         const video = document.getElementById("camera");
         const captureBtn = document.getElementById("captureBtn");
+        const galleryBtn = document.getElementById("galleryBtn");
+        const fileInput = document.getElementById("fileInput");
         const previewWrap = document.getElementById("previewWrap");
         const previewCanvas = document.getElementById("previewCanvas");
         const ocrBtn = document.getElementById("ocrBtn");
@@ -309,10 +318,10 @@
             })
             .catch(err => {
                 console.warn("Camera access failed or unavailable:", err);
-                statusDiv.textContent = "Camera unavailable. You can still enter numbers manually below.";
+                statusDiv.textContent = "Camera unavailable. You can upload a photo from Camera Roll or enter numbers manually.";
             });
 
-        // Capture photo
+        // 1. Capture photo from camera
         captureBtn.onclick = () => {
             if (!video.videoWidth) {
                 statusDiv.textContent = "Waiting for camera feed...";
@@ -322,17 +331,62 @@
             statusDiv.className = "status-box active";
             statusDiv.textContent = "Capturing photo...";
 
-            // Create offscreen canvas for raw uncropped image
             rawCapturedCanvas = document.createElement("canvas");
             rawCapturedCanvas.width = video.videoWidth;
             rawCapturedCanvas.height = video.videoHeight;
             const rawCtx = rawCapturedCanvas.getContext("2d");
             rawCtx.drawImage(video, 0, 0);
 
-            // Reset corners
             currentCorners = null;
             previewWrap.classList.remove("hidden");
 
+            processCapturedImage("Live Photo");
+        };
+
+        // 2. Pick photo from Camera Roll
+        galleryBtn.onclick = () => {
+            fileInput.click();
+        };
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            statusDiv.className = "status-box active";
+            statusDiv.textContent = "Loading image from Camera Roll...";
+
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+
+                rawCapturedCanvas = document.createElement("canvas");
+                rawCapturedCanvas.width = img.naturalWidth;
+                rawCapturedCanvas.height = img.naturalHeight;
+                const rawCtx = rawCapturedCanvas.getContext("2d");
+                rawCtx.drawImage(img, 0, 0);
+
+                currentCorners = null;
+                previewWrap.classList.remove("hidden");
+
+                processCapturedImage("Camera Roll");
+            };
+
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                statusDiv.className = "status-box";
+                statusDiv.textContent = "Error loading photo from Camera Roll.";
+            };
+
+            img.src = objectUrl;
+
+            // Reset file input so user can pick same file again if desired
+            fileInput.value = "";
+        };
+
+        // Process image (Auto-crop or Raw Preview)
+        function processCapturedImage(sourceName) {
             const isAutoCropOn = autoCropToggle.checked;
 
             if (isAutoCropOn && typeof autoCrop === "function" && typeof cv !== "undefined") {
@@ -346,26 +400,26 @@
                         currentCorners = croppedCanvas.corners;
                     }
 
-                    cropStatusBadge.textContent = "Auto-Cropped";
+                    cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
                     statusDiv.className = "status-box success";
                     statusDiv.textContent = "Card isolated! Click Run OCR to recognize digits, or Manual Crop to adjust.";
                     ocrBtn.disabled = false;
                 }).catch(err => {
                     console.warn("Auto-crop failed:", err);
                     drawRawPhotoToPreview();
-                    cropStatusBadge.textContent = "Raw Photo";
+                    cropStatusBadge.textContent = `${sourceName}`;
                     statusDiv.className = "status-box";
                     statusDiv.textContent = "Auto-crop could not find grid. Click Manual Crop to frame card, or Run OCR.";
                     ocrBtn.disabled = false;
                 });
             } else {
                 drawRawPhotoToPreview();
-                cropStatusBadge.textContent = "Raw Photo (Auto-Crop OFF)";
+                cropStatusBadge.textContent = `${sourceName} (Auto-Crop OFF)`;
                 statusDiv.className = "status-box success";
-                statusDiv.textContent = "Photo captured! Click Manual Crop to frame 5×5 grid, or Run OCR.";
+                statusDiv.textContent = "Photo loaded! Click Manual Crop to frame 5×5 grid, or Run OCR.";
                 ocrBtn.disabled = false;
             }
-        };
+        }
 
         function drawRawPhotoToPreview() {
             if (!rawCapturedCanvas) return;
