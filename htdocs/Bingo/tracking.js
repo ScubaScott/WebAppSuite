@@ -26,6 +26,14 @@ const selectedGameNameEl = document.getElementById("selectedGameName");
 const gameMenuBtn        = document.getElementById("gameMenuBtn");
 const gameMenuDropdown   = document.getElementById("gameMenuDropdown");
 
+// Dauber selector
+const dauberColorBtn      = document.getElementById("dauberColorBtn");
+const dauberColorPreview  = document.getElementById("dauberColorPreview");
+const dauberMenuDropdown   = document.getElementById("dauberMenuDropdown");
+const dauberPalette       = document.getElementById("dauberPalette");
+const dauberOpacitySlider = document.getElementById("dauberOpacitySlider");
+const opacityValueText    = document.getElementById("opacityValueText");
+
 // Toggle
 const toggleByLetter  = document.getElementById("toggleByLetter");
 const toggleByNumber  = document.getElementById("toggleByNumber");
@@ -56,19 +64,24 @@ function saveSession() {
         called:   session.called,
         lastBall: session.lastBall,
         cards:    session.cards,
-        gameId:   session.gameId
+        gameId:   session.gameId,
+        dauber:   session.dauber
     }));
 }
 
 function loadSession() {
     const data = localStorage.getItem("bingoSession");
-    if (!data) return;
+    if (!data) {
+        session.dauber = { rgb: "26, 115, 232", opacity: 0.25 };
+        return;
+    }
 
     const obj        = JSON.parse(data);
     session.word     = obj.word     || "BINGO";
     session.called   = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall || null;
     session.gameId   = obj.gameId   || null;
+    session.dauber   = obj.dauber   || { rgb: "26, 115, 232", opacity: 0.25 };
 
     // Migrate cards: ensure editMode / active fields exist
     session.cards = Array.isArray(obj.cards)
@@ -389,9 +402,107 @@ function closeGameMenu() {
 
 gameMenuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleGameMenu(); });
 
-// Global click-outside handler (closes game menu AND card menus)
+// ============================================================
+// DAUBER COLOR & OPACITY SELECTOR
+// ============================================================
+
+const DAUBER_PALETTE = [
+    { name: "Blue",    rgb: "26, 115, 232",  hex: "#1a73e8" },
+    { name: "Red",     rgb: "229, 57, 53",   hex: "#e53935" },
+    { name: "Magenta", rgb: "216, 27, 96",   hex: "#d81b60" },
+    { name: "Purple",  rgb: "142, 36, 170",  hex: "#8e24aa" },
+    { name: "Green",   rgb: "43, 168, 74",   hex: "#2ba84a" },
+    { name: "Teal",    rgb: "0, 172, 193",   hex: "#00acc1" },
+    { name: "Orange",  rgb: "245, 124, 0",   hex: "#f57c00" },
+    { name: "Gold",    rgb: "249, 168, 37",  hex: "#f9a825" }
+];
+
+let dauberMenuOpen = false;
+
+function applyDauberSettings() {
+    if (!session.dauber) {
+        session.dauber = { rgb: "26, 115, 232", opacity: 0.25 };
+    }
+    const rgb = session.dauber.rgb || "26, 115, 232";
+    const opacity = (session.dauber.opacity !== undefined) ? session.dauber.opacity : 0.25;
+
+    document.documentElement.style.setProperty("--daub-rgb", rgb);
+    document.documentElement.style.setProperty("--daub-alpha", opacity);
+
+    if (opacityValueText) {
+        opacityValueText.textContent = `${Math.round(opacity * 100)}%`;
+    }
+    if (dauberOpacitySlider) {
+        dauberOpacitySlider.value = opacity;
+    }
+
+    renderDauberPalette();
+}
+
+function renderDauberPalette() {
+    if (!dauberPalette) return;
+    dauberPalette.innerHTML = "";
+
+    const currentRgb = (session.dauber && session.dauber.rgb) || "26, 115, 232";
+
+    for (const item of DAUBER_PALETTE) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const isActive = (item.rgb === currentRgb);
+        btn.className = "dauber-palette-item" + (isActive ? " active" : "");
+        btn.style.background = item.hex;
+        btn.title = item.name;
+        btn.setAttribute("aria-label", `Select dauber color ${item.name}`);
+
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (!session.dauber) session.dauber = {};
+            session.dauber.rgb = item.rgb;
+            applyDauberSettings();
+            saveSession();
+            closeDauberMenu();
+        });
+
+        dauberPalette.appendChild(btn);
+    }
+}
+
+function toggleDauberMenu() {
+    dauberMenuOpen = !dauberMenuOpen;
+    dauberColorBtn.classList.toggle("open", dauberMenuOpen);
+    dauberColorBtn.setAttribute("aria-expanded", dauberMenuOpen ? "true" : "false");
+    dauberMenuDropdown.classList.toggle("hidden", !dauberMenuOpen);
+}
+
+function closeDauberMenu() {
+    if (!dauberMenuOpen) return;
+    dauberMenuOpen = false;
+    dauberColorBtn.classList.remove("open");
+    dauberColorBtn.setAttribute("aria-expanded", "false");
+    dauberMenuDropdown.classList.add("hidden");
+}
+
+if (dauberColorBtn) {
+    dauberColorBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleDauberMenu();
+    });
+}
+
+if (dauberOpacitySlider) {
+    dauberOpacitySlider.addEventListener("input", (e) => {
+        const val = parseFloat(e.target.value);
+        if (!session.dauber) session.dauber = {};
+        session.dauber.opacity = val;
+        applyDauberSettings();
+        saveSession();
+    });
+}
+
+// Global click-outside handler (closes game menu, dauber menu, AND card menus)
 document.addEventListener("click", (e) => {
     if (gameMenuOpen && !e.target.closest("#gameSection")) closeGameMenu();
+    if (dauberMenuOpen && !e.target.closest(".dauber-selector-wrap")) closeDauberMenu();
     if (openMenuCardId !== null && !e.target.closest(".bingo-card")) {
         openMenuCardId = null;
         renderAllCards();
@@ -857,5 +968,6 @@ addCardBtn.addEventListener("click", addCard);
 // ============================================================
 
 setInputMode("letter");
+applyDauberSettings();
 updateUI();
 loadGames(); // async — updates game section & cards when done

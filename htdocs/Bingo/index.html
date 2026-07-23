@@ -30,11 +30,30 @@
             </div>
         </section>
 
-        <!-- Input mode toggle -->
+        <!-- Input mode toggle & Dauber color selector -->
         <div class="input-mode-toggle-wrap">
             <div class="input-mode-toggle" role="group" aria-label="Input mode">
                 <button id="toggleByLetter" class="toggle-btn active" data-mode="letter">By Letter</button>
                 <button id="toggleByNumber" class="toggle-btn" data-mode="number">By Number</button>
+            </div>
+
+            <div class="dauber-selector-wrap">
+                <button id="dauberColorBtn" class="dauber-color-btn" type="button" aria-label="Dauber Settings" title="Dauber Color & Opacity" aria-expanded="false">
+                    <span id="dauberColorPreview" class="dauber-color-preview"></span>
+                </button>
+
+                <div id="dauberMenuDropdown" class="dauber-menu-dropdown hidden">
+                    <div class="dauber-menu-title">Dauber Color</div>
+                    <div id="dauberPalette" class="dauber-palette"></div>
+                    <div class="dauber-menu-divider"></div>
+                    <div class="dauber-slider-section">
+                        <div class="dauber-slider-header">
+                            <span>Dauber Opacity</span>
+                            <span id="opacityValueText">25%</span>
+                        </div>
+                        <input type="range" id="dauberOpacitySlider" min="0.10" max="1.00" step="0.05" value="0.25">
+                    </div>
+                </div>
             </div>
         </div>
 

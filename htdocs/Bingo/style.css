@@ -7,6 +7,12 @@
     --primary: #1a73e8;
     --primary-soft: rgba(26, 115, 232, 0.14);
     --card: #ffffff;
+
+    /* Dynamic Dauber settings */
+    --daub-rgb: 26, 115, 232;
+    --daub-alpha: 0.25;
+    --daub-color: rgba(var(--daub-rgb), var(--daub-alpha));
+    --daub-color-solid: rgb(var(--daub-rgb));
 }
 
 body {
@@ -220,7 +226,7 @@ body {
 
 .called::after {
     inset: 20%;
-    background: var(--primary-soft);
+    background: var(--daub-color);
     border-radius: 50%;
 }
 
@@ -258,8 +264,11 @@ body {
 
 .input-mode-toggle-wrap {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 10px;
     margin-bottom: 14px;
+    position: relative;
 }
 
 .input-mode-toggle {
@@ -292,6 +301,141 @@ body {
 .toggle-btn:not(.active):hover {
     background: var(--primary-soft);
     color: var(--primary);
+}
+
+/* --------------------------------
+   DAUBER COLOR SELECTOR & SLIDER
+-------------------------------- */
+
+.dauber-selector-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.dauber-color-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
+}
+
+.dauber-color-btn:hover,
+.dauber-color-btn.open {
+    transform: scale(1.06);
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.18);
+}
+
+.dauber-color-preview {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--daub-color);
+    border: 2.5px solid var(--daub-color-solid);
+    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.15);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dauber-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 200;
+    width: 220px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(60, 64, 67, 0.16);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeSlideIn 0.14s ease;
+}
+
+.dauber-menu-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.dauber-palette {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.dauber-palette-item {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0;
+    outline: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.dauber-palette-item:hover {
+    transform: scale(1.15);
+}
+
+.dauber-palette-item.active {
+    border-color: var(--text-main);
+    box-shadow: 0 0 0 2px var(--card), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dauber-palette-item.active::after {
+    content: "✓";
+    font-size: 12px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.dauber-menu-divider {
+    height: 1px;
+    background: var(--border);
+}
+
+.dauber-slider-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dauber-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-subtle);
+}
+
+.dauber-slider-header span:last-child {
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+#dauberOpacitySlider {
+    width: 100%;
+    accent-color: var(--daub-color-solid);
+    cursor: pointer;
 }
 
 /* --------------------------------
@@ -374,7 +518,7 @@ body {
     content: "";
     position: absolute;
     inset: 18%;
-    background: var(--primary-soft);
+    background: var(--daub-color);
     border-radius: 50%;
 }
 
@@ -638,7 +782,7 @@ body {
     position: absolute;
     inset: 12%;
     border-radius: 50%;
-    background: var(--primary-soft);
+    background: var(--daub-color);
     z-index: 0;
 }
 
@@ -654,7 +798,7 @@ body {
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.05em;
-    color: var(--primary);
+    color: var(--daub-color-solid);
     border-color: transparent;
 }
 
@@ -663,7 +807,7 @@ body {
     position: absolute;
     inset: 12%;
     border-radius: 50%;
-    background: var(--primary-soft);
+    background: var(--daub-color);
     z-index: 0;
 }
 
