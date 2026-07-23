@@ -312,28 +312,133 @@ function extractNumber(text) {
 
 function drawBingoGrid(grid) {
     const container = document.getElementById("bingoOutput");
+    if (!container) return;
     container.innerHTML = "";
 
-    const table = document.createElement("table");
-    table.style.borderCollapse = "collapse";
+    const wrap = document.createElement("div");
+    wrap.className = "scanned-grid-wrap";
 
-    for (let r = 0; r < 5; r++) {
-        const tr = document.createElement("tr");
+    const titleEl = document.createElement("div");
+    titleEl.className = "card-title";
+    titleEl.innerHTML = "<span>Scanned Card Grid</span><span style='font-size:12px;font-weight:400;color:var(--text-subtle);'>Verify & tap any cell to edit</span>";
+    wrap.appendChild(titleEl);
 
-        for (let c = 0; c < 5; c++) {
-            const td = document.createElement("td");
-            td.style.border = "1px solid #333";
-            td.style.padding = "10px";
-            td.style.fontSize = "20px";
-            td.style.textAlign = "center";
+    const gridDiv = document.createElement("div");
+    gridDiv.className = "scanned-grid";
 
-            td.textContent = grid[r][c] ?? "?";
+    // Column headers (B I N G O)
+    const sessionData = localStorage.getItem("bingoSession");
+    const sessionObj = sessionData ? JSON.parse(sessionData) : null;
+    const word = (sessionObj && sessionObj.word && sessionObj.word.length === 5) ? sessionObj.word : "BINGO";
 
-            tr.appendChild(td);
-        }
-
-        table.appendChild(tr);
+    for (let c = 0; c < 5; c++) {
+        const hdr = document.createElement("div");
+        hdr.className = "scanned-col-header";
+        hdr.textContent = word[c];
+        gridDiv.appendChild(hdr);
     }
 
-    container.appendChild(table);
+    const cellInputs = [];
+
+    for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+            const isFree = (r === 2 && c === 2);
+            const val = isFree ? "FREE" : (grid && grid[r] && grid[r][c] !== null && grid[r][c] !== undefined ? grid[r][c] : "");
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.className = "scanned-cell-input" + (isFree ? " free-cell" : "");
+            input.value = val;
+            input.readOnly = isFree;
+
+            if (!isFree) {
+                input.maxLength = 2;
+                input.inputMode = "numeric";
+                input.pattern = "[0-9]*";
+            }
+
+            cellInputs.push(input);
+            gridDiv.appendChild(input);
+        }
+    }
+
+    wrap.appendChild(gridDiv);
+
+    // "Use" button
+    const useBtn = document.createElement("button");
+    useBtn.className = "btn btn-success";
+    useBtn.type = "button";
+    useBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+        Use These Numbers
+    `;
+    useBtn.addEventListener("click", () => saveScannedCard(cellInputs));
+
+    wrap.appendChild(useBtn);
+    container.appendChild(wrap);
+}
+
+function saveScannedCard(cellInputs) {
+    const scannedSquares = [];
+    for (let i = 0; i < 25; i++) {
+        if (i === 12) {
+            scannedSquares.push("FREE");
+        } else {
+            const raw = cellInputs[i].value.trim();
+            const val = parseInt(raw, 10);
+            scannedSquares.push(isNaN(val) ? null : val);
+        }
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetCardId = urlParams.get("cardId");
+
+    let sessionData = localStorage.getItem("bingoSession");
+    let sessionObj = sessionData ? JSON.parse(sessionData) : null;
+
+    if (!sessionObj) {
+        sessionObj = { word: "BINGO", called: [], lastBall: null, cards: [] };
+    }
+    if (!Array.isArray(sessionObj.cards)) sessionObj.cards = [];
+
+    if (targetCardId) {
+        const card = sessionObj.cards.find(c => String(c.id) === String(targetCardId));
+        if (card) {
+            card.squares = scannedSquares;
+        } else {
+            sessionObj.cards.push({
+                id: Date.now(),
+                label: `Card ${sessionObj.cards.length + 1}`,
+                squares: scannedSquares,
+                editMode: false,
+                active: true
+            });
+        }
+    } else {
+        if (sessionObj.cards.length > 0) {
+            sessionObj.cards[0].squares = scannedSquares;
+        } else {
+            sessionObj.cards.push({
+                id: Date.now(),
+                label: "Card 1",
+                squares: scannedSquares,
+                editMode: false,
+                active: true
+            });
+        }
+    }
+
+    localStorage.setItem("bingoSession", JSON.stringify(sessionObj));
+
+    const statusDiv = document.getElementById("status");
+    if (statusDiv) {
+        statusDiv.className = "status-box success";
+        statusDiv.textContent = "✓ Scanned numbers applied to card!";
+    }
+
+    setTimeout(() => {
+        window.location.href = "../index.html";
+    }, 500);
 }

@@ -591,6 +591,9 @@ function menuAction(cardId, action) {
         case "edit":
             card.editMode = true;
             break;
+        case "scan":
+            window.location.href = `./scan/scan.html?cardId=${cardId}`;
+            return;
         case "remove":
             if (!confirm("Remove this card?")) { renderAllCards(); return; }
             session.cards = session.cards.filter(c => c.id !== cardId);
@@ -724,8 +727,10 @@ function renderCard(card) {
 
         const menuItems = isEditing
             ? [{ action: "save",  label: "💾  Save card"    },
+               { action: "scan",  label: "📷  Scan card"    },
                { action: "remove",label: "🗑  Remove card"  }]
             : [{ action: "edit",  label: "✏️  Edit card"    },
+               { action: "scan",  label: "📷  Scan card"    },
                { action: "remove",label: "🗑  Remove card"  },
                isActive
                    ? { action: "unuse", label: "🚫  Don't use card" }
