@@ -332,3 +332,158 @@ details.tuning-details summary:hover {
     font-size: 13px;
     background: var(--card);
 }
+
+/* ---- Auto-Crop Toggle Switch ---- */
+.crop-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.crop-toggle-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-main);
+    user-select: none;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--border);
+    transition: .2s;
+    border-radius: 20px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .2s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--primary);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(16px);
+}
+
+/* Crop status badge */
+.crop-status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+/* Preview Wrap */
+.preview-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.preview-wrap.hidden {
+    display: none;
+}
+
+/* ---- Manual Crop Modal ---- */
+.crop-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+}
+
+.crop-modal.hidden {
+    display: none;
+}
+
+.crop-modal-content {
+    background: var(--card);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 620px;
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+}
+
+.crop-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.crop-modal-header h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.crop-canvas-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111;
+    padding: 10px;
+    overflow: hidden;
+    touch-action: none;
+}
+
+#cropCanvas {
+    max-width: 100%;
+    max-height: 55vh;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    cursor: crosshair;
+}
+
+.crop-modal-footer {
+    display: flex;
+    gap: 8px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.crop-modal-footer .btn {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 14px;
+}
+

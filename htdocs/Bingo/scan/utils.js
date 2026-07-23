@@ -1,19 +1,8 @@
-// Auto-crop the 5x5 bingo grid (supporting slider cards without outer borders as well as paper cards),
-// then warp/crop to isolate the 25 number cells cleanly.
-async function autoCrop(canvas) {
-    return new Promise(resolve => {
-        const src = cv.imread(canvas);
-
-        // Primary approach: Detect the 5x5 grid directly, without relying on any drawn border.
-        // Slider (shutter) cards are tried first via their colored tabs - this is a far more
-        // reliable signal than looking for a box/frame around each window, because many slider
-        // cards (e.g. wood-grain ones) have no such border at all: just a plain light window
-        // against a busy/textured card body, which is easily confused with digit strokes or
-        // surface texture by edge/border-based detection. Cards with printed cell borders fall
-        // through to the box-detection approach below.
-        const gridInfo = detectSliderTabGrid(src) || detectCellGrid(src);
-        if (gridInfo) {
-            const { corners } = gridInfo;
+// Warp 4 corner points into a 600x600 square canvas
+function warpCorners(canvas, corners) {
+    if (typeof cv !== "undefined" && canvas.width && canvas.height) {
+        try {
+            const src = cv.imread(canvas);
             const width = 600;
             const height = 600;
 
@@ -35,10 +24,44 @@ async function autoCrop(canvas) {
             const dst = new cv.Mat();
             cv.warpPerspective(src, dst, M, new cv.Size(width, height));
 
-            const gridCanvas = document.createElement("canvas");
-            cv.imshow(gridCanvas, dst);
+            const resultCanvas = document.createElement("canvas");
+            cv.imshow(resultCanvas, dst);
 
             src.delete(); srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
+            return resultCanvas;
+        } catch (err) {
+            console.warn("OpenCV warpCorners failed, using fallback:", err);
+        }
+    }
+
+    // 2D canvas bounding box fallback
+    const minX = Math.max(0, Math.min(corners.tl.x, corners.bl.x));
+    const minY = Math.max(0, Math.min(corners.tl.y, corners.tr.y));
+    const maxX = Math.min(canvas.width, Math.max(corners.tr.x, corners.br.x));
+    const maxY = Math.min(canvas.height, Math.max(corners.bl.y, corners.br.y));
+    const cropW = Math.max(1, maxX - minX);
+    const cropH = Math.max(1, maxY - minY);
+
+    const resultCanvas = document.createElement("canvas");
+    resultCanvas.width = 600;
+    resultCanvas.height = 600;
+    const ctx = resultCanvas.getContext("2d");
+    ctx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, 600, 600);
+    return resultCanvas;
+}
+
+// Auto-crop the 5x5 bingo grid (supporting slider cards without outer borders as well as paper cards),
+// then warp/crop to isolate the 25 number cells cleanly.
+async function autoCrop(canvas) {
+    return new Promise(resolve => {
+        const src = cv.imread(canvas);
+
+        const gridInfo = detectSliderTabGrid(src) || detectCellGrid(src);
+        if (gridInfo) {
+            const { corners } = gridInfo;
+            const gridCanvas = warpCorners(canvas, corners);
+            gridCanvas.corners = corners;
+            src.delete();
             resolve(gridCanvas);
             return;
         }
@@ -98,34 +121,11 @@ async function autoCrop(canvas) {
         biggest.delete();
 
         const ordered = orderPoints(pts);
-        const width = 600;
-        const height = 800;
-
-        const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            ordered.tl.x, ordered.tl.y,
-            ordered.tr.x, ordered.tr.y,
-            ordered.br.x, ordered.br.y,
-            ordered.bl.x, ordered.bl.y
-        ]);
-
-        const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            0, 0,
-            width, 0,
-            width, height,
-            0, height
-        ]);
-
-        const M = cv.getPerspectiveTransform(srcTri, dstTri);
-        const dst = new cv.Mat();
-        cv.warpPerspective(src, dst, M, new cv.Size(width, height));
-
-        const warpedCanvas = document.createElement("canvas");
-        cv.imshow(warpedCanvas, dst);
-
-        src.delete(); srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
-
-        const gridCanvas = cropToGrid(warpedCanvas);
-        resolve(gridCanvas || warpedCanvas);
+        const gridCanvas = warpCorners(canvas, ordered);
+        gridCanvas.corners = ordered;
+        src.delete();
+        resolve(gridCanvas);
+        return;
     });
 }
 

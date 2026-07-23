@@ -37,7 +37,13 @@
         <section class="card">
             <div class="card-title">
                 <span>Camera Feed</span>
-                <span style="font-size: 12px; font-weight: 400; color: var(--text-subtle);">Align card within view</span>
+                <div class="crop-toggle-wrap">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoCropToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="crop-toggle-label">Auto-Crop</span>
+                </div>
             </div>
 
             <div class="video-wrap">
@@ -53,9 +59,32 @@
                 </button>
             </div>
 
-            <canvas id="previewCanvas" class="hidden"></canvas>
+            <!-- Preview & Crop Controls -->
+            <div id="previewWrap" class="preview-wrap hidden">
+                <div class="card-title" style="margin-top: 6px;">
+                    <span>Captured Image Preview</span>
+                    <span id="cropStatusBadge" class="crop-status-badge">Raw Photo</span>
+                </div>
 
-            <button id="ocrBtn" class="btn btn-secondary" type="button" disabled>
+                <canvas id="previewCanvas"></canvas>
+
+                <div class="button-group">
+                    <button id="manualCropBtn" class="btn btn-secondary" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z"/>
+                        </svg>
+                        Manual Crop / Adjust
+                    </button>
+                    <button id="resetPhotoBtn" class="btn btn-secondary" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                        </svg>
+                        Reset Photo
+                    </button>
+                </div>
+            </div>
+
+            <button id="ocrBtn" class="btn btn-primary" type="button" disabled style="margin-top: 8px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                 </svg>
@@ -208,21 +237,59 @@
         </details>
     </div>
 
+    <!-- Manual Crop Modal -->
+    <div id="manualCropModal" class="crop-modal hidden">
+        <div class="crop-modal-content">
+            <div class="crop-modal-header">
+                <h3>Manual Crop — Drag Corners to Frame 5×5 Grid</h3>
+                <button id="closeCropModalBtn" class="link-button" type="button">✕ Close</button>
+            </div>
+            <div class="crop-canvas-wrap">
+                <canvas id="cropCanvas"></canvas>
+            </div>
+            <div class="crop-modal-footer">
+                <button id="applyCropBtn" class="btn btn-primary" type="button">✓ Apply Crop</button>
+                <button id="fullPhotoCropBtn" class="btn btn-secondary" type="button">Full Photo</button>
+                <button id="cancelCropBtn" class="btn btn-secondary" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const video = document.getElementById("camera");
         const captureBtn = document.getElementById("captureBtn");
+        const previewWrap = document.getElementById("previewWrap");
         const previewCanvas = document.getElementById("previewCanvas");
         const ocrBtn = document.getElementById("ocrBtn");
         const statusDiv = document.getElementById("status");
         const backBtn = document.getElementById("backBtn");
         const targetCardBadge = document.getElementById("targetCardBadge");
+        const autoCropToggle = document.getElementById("autoCropToggle");
+        const cropStatusBadge = document.getElementById("cropStatusBadge");
+        const manualCropBtn = document.getElementById("manualCropBtn");
+        const resetPhotoBtn = document.getElementById("resetPhotoBtn");
 
-        // Set up Back button
+        // Crop modal elements
+        const manualCropModal = document.getElementById("manualCropModal");
+        const cropCanvas = document.getElementById("cropCanvas");
+        const applyCropBtn = document.getElementById("applyCropBtn");
+        const fullPhotoCropBtn = document.getElementById("fullPhotoCropBtn");
+        const cancelCropBtn = document.getElementById("cancelCropBtn");
+        const closeCropModalBtn = document.getElementById("closeCropModalBtn");
+
+        // Raw captured image state & cropper handle state
+        let rawCapturedCanvas = null;
+        let currentCorners = null;
+        let activeHandle = null;
+        let cropScaleX = 1;
+        let cropScaleY = 1;
+
+        // Back button
         backBtn.onclick = () => {
             window.location.href = "../index.html";
         };
 
-        // Parse target card info from session & URL
+        // Target card badge
         const urlParams = new URLSearchParams(window.location.search);
         const targetCardId = urlParams.get("cardId");
         let sessionData = localStorage.getItem("bingoSession");
@@ -242,10 +309,10 @@
             })
             .catch(err => {
                 console.warn("Camera access failed or unavailable:", err);
-                statusDiv.textContent = "Camera unavailable. You can still enter numbers manually.";
+                statusDiv.textContent = "Camera unavailable. You can still enter numbers manually below.";
             });
 
-        // Capture button action
+        // Capture photo
         captureBtn.onclick = () => {
             if (!video.videoWidth) {
                 statusDiv.textContent = "Waiting for camera feed...";
@@ -253,30 +320,319 @@
             }
 
             statusDiv.className = "status-box active";
-            statusDiv.textContent = "Processing captured frame...";
+            statusDiv.textContent = "Capturing photo...";
 
-            previewCanvas.classList.remove("hidden");
-            const ctx = previewCanvas.getContext("2d");
-            previewCanvas.width = video.videoWidth;
-            previewCanvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
+            // Create offscreen canvas for raw uncropped image
+            rawCapturedCanvas = document.createElement("canvas");
+            rawCapturedCanvas.width = video.videoWidth;
+            rawCapturedCanvas.height = video.videoHeight;
+            const rawCtx = rawCapturedCanvas.getContext("2d");
+            rawCtx.drawImage(video, 0, 0);
 
-            if (typeof autoCrop === "function" && typeof cv !== "undefined") {
-                autoCrop(previewCanvas).then(croppedCanvas => {
+            // Reset corners
+            currentCorners = null;
+            previewWrap.classList.remove("hidden");
+
+            const isAutoCropOn = autoCropToggle.checked;
+
+            if (isAutoCropOn && typeof autoCrop === "function" && typeof cv !== "undefined") {
+                statusDiv.textContent = "Auto-cropping card grid...";
+                autoCrop(rawCapturedCanvas).then(croppedCanvas => {
                     previewCanvas.width = croppedCanvas.width;
                     previewCanvas.height = croppedCanvas.height;
                     previewCanvas.getContext("2d").drawImage(croppedCanvas, 0, 0);
-                    statusDiv.textContent = "Card isolated! Click Run OCR to recognize digits.";
+
+                    if (croppedCanvas.corners) {
+                        currentCorners = croppedCanvas.corners;
+                    }
+
+                    cropStatusBadge.textContent = "Auto-Cropped";
+                    statusDiv.className = "status-box success";
+                    statusDiv.textContent = "Card isolated! Click Run OCR to recognize digits, or Manual Crop to adjust.";
                     ocrBtn.disabled = false;
-                }).catch(() => {
-                    statusDiv.textContent = "Photo captured! Click Run OCR.";
+                }).catch(err => {
+                    console.warn("Auto-crop failed:", err);
+                    drawRawPhotoToPreview();
+                    cropStatusBadge.textContent = "Raw Photo";
+                    statusDiv.className = "status-box";
+                    statusDiv.textContent = "Auto-crop could not find grid. Click Manual Crop to frame card, or Run OCR.";
                     ocrBtn.disabled = false;
                 });
             } else {
-                statusDiv.textContent = "Photo captured! Click Run OCR.";
+                drawRawPhotoToPreview();
+                cropStatusBadge.textContent = "Raw Photo (Auto-Crop OFF)";
+                statusDiv.className = "status-box success";
+                statusDiv.textContent = "Photo captured! Click Manual Crop to frame 5×5 grid, or Run OCR.";
                 ocrBtn.disabled = false;
             }
         };
+
+        function drawRawPhotoToPreview() {
+            if (!rawCapturedCanvas) return;
+            previewCanvas.width = rawCapturedCanvas.width;
+            previewCanvas.height = rawCapturedCanvas.height;
+            previewCanvas.getContext("2d").drawImage(rawCapturedCanvas, 0, 0);
+        }
+
+        // Reset Photo Button
+        resetPhotoBtn.onclick = () => {
+            if (!rawCapturedCanvas) return;
+            drawRawPhotoToPreview();
+            currentCorners = null;
+            cropStatusBadge.textContent = "Full Photo";
+            statusDiv.className = "status-box";
+            statusDiv.textContent = "Reset to full photo. Click Manual Crop to frame card, or Run OCR.";
+        };
+
+        // Manual Crop Modal & Canvas Dragging Logic
+        manualCropBtn.onclick = openManualCropper;
+
+        function openManualCropper() {
+            if (!rawCapturedCanvas) return;
+
+            manualCropModal.classList.remove("hidden");
+
+            const origW = rawCapturedCanvas.width;
+            const origH = rawCapturedCanvas.height;
+
+            if (!currentCorners) {
+                currentCorners = {
+                    tl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.08) },
+                    tr: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.08) },
+                    br: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.92) },
+                    bl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.92) }
+                };
+            }
+
+            const maxW = Math.min(window.innerWidth - 44, 580);
+            const maxH = Math.min(window.innerHeight * 0.55, 460);
+            const aspect = origW / origH;
+
+            let dispW = maxW;
+            let dispH = maxW / aspect;
+            if (dispH > maxH) {
+                dispH = maxH;
+                dispW = maxH * aspect;
+            }
+
+            cropCanvas.width = dispW;
+            cropCanvas.height = dispH;
+
+            cropScaleX = dispW / origW;
+            cropScaleY = dispH / origH;
+
+            drawCropCanvas();
+        }
+
+        function drawCropCanvas() {
+            if (!cropCanvas || !rawCapturedCanvas || !currentCorners) return;
+            const ctx = cropCanvas.getContext("2d");
+            const w = cropCanvas.width;
+            const h = cropCanvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw scaled background photo
+            ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
+
+            const dispPts = {
+                tl: { x: currentCorners.tl.x * cropScaleX, y: currentCorners.tl.y * cropScaleY },
+                tr: { x: currentCorners.tr.x * cropScaleX, y: currentCorners.tr.y * cropScaleY },
+                br: { x: currentCorners.br.x * cropScaleX, y: currentCorners.br.y * cropScaleY },
+                bl: { x: currentCorners.bl.x * cropScaleX, y: currentCorners.bl.y * cropScaleY }
+            };
+
+            // Mask unselected areas
+            ctx.save();
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillRect(0, 0, w, h);
+
+            // Cut out inside quad
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.beginPath();
+            ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
+            ctx.lineTo(dispPts.tr.x, dispPts.tr.y);
+            ctx.lineTo(dispPts.br.x, dispPts.br.y);
+            ctx.lineTo(dispPts.bl.x, dispPts.bl.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Redraw inside quad cleanly
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
+            ctx.lineTo(dispPts.tr.x, dispPts.tr.y);
+            ctx.lineTo(dispPts.br.x, dispPts.br.y);
+            ctx.lineTo(dispPts.bl.x, dispPts.bl.y);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
+
+            // Draw 5x5 grid guide lines inside quad
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+            ctx.lineWidth = 1;
+            for (let i = 1; i < 5; i++) {
+                const t = i / 5;
+                const topX = dispPts.tl.x + t * (dispPts.tr.x - dispPts.tl.x);
+                const topY = dispPts.tl.y + t * (dispPts.tr.y - dispPts.tl.y);
+                const botX = dispPts.bl.x + t * (dispPts.br.x - dispPts.bl.x);
+                const botY = dispPts.bl.y + t * (dispPts.br.y - dispPts.bl.y);
+
+                ctx.beginPath();
+                ctx.moveTo(topX, topY);
+                ctx.lineTo(botX, botY);
+                ctx.stroke();
+
+                const leftX = dispPts.tl.x + t * (dispPts.bl.x - dispPts.tl.x);
+                const leftY = dispPts.tl.y + t * (dispPts.bl.y - dispPts.tl.y);
+                const rightX = dispPts.tr.x + t * (dispPts.br.x - dispPts.tr.x);
+                const rightY = dispPts.tr.y + t * (dispPts.br.y - dispPts.tr.y);
+
+                ctx.beginPath();
+                ctx.moveTo(leftX, leftY);
+                ctx.lineTo(rightX, rightY);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Draw quad border
+            ctx.save();
+            ctx.strokeStyle = "#1a73e8";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
+            ctx.lineTo(dispPts.tr.x, dispPts.tr.y);
+            ctx.lineTo(dispPts.br.x, dispPts.br.y);
+            ctx.lineTo(dispPts.bl.x, dispPts.bl.y);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw 4 corner handle circles
+            const handleRadius = 14;
+            for (const key of ["tl", "tr", "br", "bl"]) {
+                const pt = dispPts[key];
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, handleRadius, 0, Math.PI * 2);
+                ctx.fillStyle = "#ffffff";
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = (activeHandle === key) ? "#e53935" : "#1a73e8";
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = (activeHandle === key) ? "#e53935" : "#1a73e8";
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function getCanvasPos(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function handleStart(e) {
+            if (!currentCorners || !rawCapturedCanvas) return;
+            const pos = getCanvasPos(e, cropCanvas);
+            const threshold = 34; // Touch handle radius hit region
+
+            let closestKey = null;
+            let minDist = Infinity;
+
+            for (const key of ["tl", "tr", "br", "bl"]) {
+                const dispX = currentCorners[key].x * cropScaleX;
+                const dispY = currentCorners[key].y * cropScaleY;
+                const dist = Math.hypot(pos.x - dispX, pos.y - dispY);
+                if (dist < threshold && dist < minDist) {
+                    minDist = dist;
+                    closestKey = key;
+                }
+            }
+
+            if (closestKey) {
+                activeHandle = closestKey;
+                e.preventDefault();
+                drawCropCanvas();
+            }
+        }
+
+        function handleMove(e) {
+            if (!activeHandle || !rawCapturedCanvas || !currentCorners) return;
+            e.preventDefault();
+            const pos = getCanvasPos(e, cropCanvas);
+
+            const origW = rawCapturedCanvas.width;
+            const origH = rawCapturedCanvas.height;
+
+            let rawX = Math.max(0, Math.min(origW, Math.round(pos.x / cropScaleX)));
+            let rawY = Math.max(0, Math.min(origH, Math.round(pos.y / cropScaleY)));
+
+            currentCorners[activeHandle] = { x: rawX, y: rawY };
+            drawCropCanvas();
+        }
+
+        function handleEnd(e) {
+            if (activeHandle) {
+                activeHandle = null;
+                drawCropCanvas();
+            }
+        }
+
+        cropCanvas.addEventListener("mousedown", handleStart);
+        cropCanvas.addEventListener("mousemove", handleMove);
+        window.addEventListener("mouseup", handleEnd);
+
+        cropCanvas.addEventListener("touchstart", handleStart, { passive: false });
+        cropCanvas.addEventListener("touchmove", handleMove, { passive: false });
+        window.addEventListener("touchend", handleEnd);
+
+        // Apply crop button
+        applyCropBtn.onclick = () => {
+            if (!rawCapturedCanvas || !currentCorners) return;
+            const croppedCanvas = warpCorners(rawCapturedCanvas, currentCorners);
+
+            previewCanvas.width = croppedCanvas.width;
+            previewCanvas.height = croppedCanvas.height;
+            previewCanvas.getContext("2d").drawImage(croppedCanvas, 0, 0);
+
+            manualCropModal.classList.add("hidden");
+            cropStatusBadge.textContent = "Manual Cropped";
+
+            statusDiv.className = "status-box success";
+            statusDiv.textContent = "Card cropped! Click Run OCR to recognize digits.";
+            ocrBtn.disabled = false;
+        };
+
+        // Full photo selection button inside crop modal
+        fullPhotoCropBtn.onclick = () => {
+            if (!rawCapturedCanvas) return;
+            const origW = rawCapturedCanvas.width;
+            const origH = rawCapturedCanvas.height;
+            currentCorners = {
+                tl: { x: 0, y: 0 },
+                tr: { x: origW, y: 0 },
+                br: { x: origW, y: origH },
+                bl: { x: 0, y: origH }
+            };
+            drawCropCanvas();
+        };
+
+        // Cancel / close crop modal
+        cancelCropBtn.onclick = closeCropModal;
+        closeCropModalBtn.onclick = closeCropModal;
+
+        function closeCropModal() {
+            manualCropModal.classList.add("hidden");
+        }
 
         // Run OCR action
         async function doOCR() {
