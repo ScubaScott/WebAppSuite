@@ -75,18 +75,24 @@
 
                 <canvas id="previewCanvas"></canvas>
 
-                <div class="button-group">
+                <div class="button-group" style="flex-wrap: wrap;">
+                    <button id="rotateCwBtn" class="btn btn-secondary" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.55 5.55L11 1v3.07C7.06 4.56 4 7.92 4 12s3.06 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91s2.16-5.43 5-5.91V10l4.55-4.45z"/>
+                        </svg>
+                        Rotate 90° ↻
+                    </button>
                     <button id="manualCropBtn" class="btn btn-secondary" type="button">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z"/>
                         </svg>
-                        Manual Crop / Adjust
+                        Manual Crop
                     </button>
                     <button id="resetPhotoBtn" class="btn btn-secondary" type="button">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
                         </svg>
-                        Reset Photo
+                        Reset
                     </button>
                 </div>
             </div>
@@ -248,8 +254,11 @@
     <div id="manualCropModal" class="crop-modal hidden">
         <div class="crop-modal-content">
             <div class="crop-modal-header">
-                <h3>Manual Crop — Drag Corners to Frame 5×5 Grid</h3>
-                <button id="closeCropModalBtn" class="link-button" type="button">✕ Close</button>
+                <h3>Manual Crop — Drag Corners to Frame Grid</h3>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="modalRotateCwBtn" class="back-link" type="button" style="font-size: 12px; padding: 4px 8px;">Rotate 90° ↻</button>
+                    <button id="closeCropModalBtn" class="link-button" type="button">✕ Close</button>
+                </div>
             </div>
             <div class="crop-canvas-wrap">
                 <canvas id="cropCanvas"></canvas>
@@ -277,6 +286,7 @@
         const cropStatusBadge = document.getElementById("cropStatusBadge");
         const manualCropBtn = document.getElementById("manualCropBtn");
         const resetPhotoBtn = document.getElementById("resetPhotoBtn");
+        const rotateCwBtn = document.getElementById("rotateCwBtn");
 
         // Crop modal elements
         const manualCropModal = document.getElementById("manualCropModal");
@@ -285,6 +295,7 @@
         const fullPhotoCropBtn = document.getElementById("fullPhotoCropBtn");
         const cancelCropBtn = document.getElementById("cancelCropBtn");
         const closeCropModalBtn = document.getElementById("closeCropModalBtn");
+        const modalRotateCwBtn = document.getElementById("modalRotateCwBtn");
 
         // Raw captured image state & cropper handle state
         let rawCapturedCanvas = null;
@@ -380,9 +391,29 @@
             };
 
             img.src = objectUrl;
-
-            // Reset file input so user can pick same file again if desired
             fileInput.value = "";
+        };
+
+        // 3. Rotate 90° Clockwise
+        rotateCwBtn.onclick = () => {
+            if (!rawCapturedCanvas) return;
+            rawCapturedCanvas = rotateCanvas90(rawCapturedCanvas, true);
+            currentCorners = null;
+            processCapturedImage("Rotated Photo");
+        };
+
+        modalRotateCwBtn.onclick = () => {
+            if (!rawCapturedCanvas) return;
+            rawCapturedCanvas = rotateCanvas90(rawCapturedCanvas, true);
+            currentCorners = null;
+            openManualCropper();
+        };
+
+        // Global helper for ocr.js to update preview canvas after auto-rotation
+        window.drawCanvasToPreview = function(canvasSource) {
+            previewCanvas.width = canvasSource.width;
+            previewCanvas.height = canvasSource.height;
+            previewCanvas.getContext("2d").drawImage(canvasSource, 0, 0);
         };
 
         // Process image (Auto-crop or Raw Preview)
@@ -486,7 +517,6 @@
 
             ctx.clearRect(0, 0, w, h);
 
-            // Draw scaled background photo
             ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
 
             const dispPts = {
@@ -496,12 +526,10 @@
                 bl: { x: currentCorners.bl.x * cropScaleX, y: currentCorners.bl.y * cropScaleY }
             };
 
-            // Mask unselected areas
             ctx.save();
             ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
             ctx.fillRect(0, 0, w, h);
 
-            // Cut out inside quad
             ctx.globalCompositeOperation = "destination-out";
             ctx.beginPath();
             ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
@@ -512,7 +540,6 @@
             ctx.fill();
             ctx.restore();
 
-            // Redraw inside quad cleanly
             ctx.save();
             ctx.beginPath();
             ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
@@ -523,14 +550,13 @@
             ctx.clip();
             ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
 
-            // Draw 5x5 grid guide lines inside quad
             ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
             ctx.lineWidth = 1;
             for (let i = 1; i < 5; i++) {
                 const t = i / 5;
                 const topX = dispPts.tl.x + t * (dispPts.tr.x - dispPts.tl.x);
                 const topY = dispPts.tl.y + t * (dispPts.tr.y - dispPts.tl.y);
-                const botX = dispPts.bl.x + t * (dispPts.br.x - dispPts.bl.x);
+                const botX = dispPts.bl.x + t * (dispPts.br.x - dispPts.br.x);
                 const botY = dispPts.bl.y + t * (dispPts.br.y - dispPts.bl.y);
 
                 ctx.beginPath();
@@ -550,7 +576,6 @@
             }
             ctx.restore();
 
-            // Draw quad border
             ctx.save();
             ctx.strokeStyle = "#1a73e8";
             ctx.lineWidth = 2.5;
@@ -563,7 +588,6 @@
             ctx.stroke();
             ctx.restore();
 
-            // Draw 4 corner handle circles
             const handleRadius = 14;
             for (const key of ["tl", "tr", "br", "bl"]) {
                 const pt = dispPts[key];
@@ -597,7 +621,7 @@
         function handleStart(e) {
             if (!currentCorners || !rawCapturedCanvas) return;
             const pos = getCanvasPos(e, cropCanvas);
-            const threshold = 34; // Touch handle radius hit region
+            const threshold = 34;
 
             let closestKey = null;
             let minDist = Infinity;
