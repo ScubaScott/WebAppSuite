@@ -336,3 +336,108 @@ function extractNumber(text) {
     const num = parseInt(digits, 10);
     return isNaN(num) ? null : num;
 }
+
+// Render the scanned 5x5 bingo numbers into an interactive editable grid with headers and a "Use These Numbers" button
+function drawBingoGrid(grid) {
+    const container = document.getElementById("bingoOutput");
+    if (!container) return;
+
+    if (!grid || !Array.isArray(grid) || grid.length === 0) {
+        grid = Array(5).fill(null).map((_, r) =>
+            Array(5).fill(null).map((_, c) => (r === 2 && c === 2) ? "FREE" : "")
+        );
+    }
+
+    const colHeaders = ["B", "I", "N", "G", "O"];
+
+    let html = `
+        <div class="scanned-grid-wrap">
+            <div class="card-title">
+                <span>Scanned Grid Numbers (Editable)</span>
+                <span style="font-size: 12px; font-weight: 400; color: var(--text-subtle);">Verify & adjust any misreads</span>
+            </div>
+            <div class="scanned-grid">
+    `;
+
+    for (let c = 0; c < 5; c++) {
+        html += `<div class="scanned-col-header">${colHeaders[c]}</div>`;
+    }
+
+    for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+            const val = (grid[r] && grid[r][c] !== undefined && grid[r][c] !== null) ? grid[r][c] : "";
+            const isFree = (r === 2 && c === 2);
+
+            if (isFree) {
+                html += `<input type="text" class="scanned-cell-input free-cell" data-row="${r}" data-col="${c}" value="FREE" readonly>`;
+            } else {
+                const numVal = (val === "FREE") ? "" : val;
+                html += `<input type="number" class="scanned-cell-input" data-row="${r}" data-col="${c}" value="${numVal}" min="1" max="75">`;
+            }
+        }
+    }
+
+    html += `
+            </div>
+            <button id="saveScannedCardBtn" class="btn btn-success" type="button" style="margin-top: 10px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                Use These Numbers
+            </button>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    const saveBtn = document.getElementById("saveScannedCardBtn");
+    if (saveBtn) {
+        saveBtn.onclick = saveScannedCard;
+    }
+}
+
+// Save the edited scanned 5x5 grid numbers to localStorage and return to main bingo page
+function saveScannedCard() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetCardId = urlParams.get("cardId");
+
+    const inputs = document.querySelectorAll(".scanned-cell-input");
+    const squares = Array(25).fill("");
+
+    inputs.forEach(input => {
+        const r = parseInt(input.getAttribute("data-row"), 10);
+        const c = parseInt(input.getAttribute("data-col"), 10);
+        const index = r * 5 + c;
+
+        if (r === 2 && c === 2) {
+            squares[index] = "FREE";
+        } else {
+            const val = parseInt(input.value, 10);
+            squares[index] = isNaN(val) ? "" : val;
+        }
+    });
+
+    let sessionData = localStorage.getItem("bingoSession");
+    let sessionObj = sessionData ? JSON.parse(sessionData) : null;
+
+    if (!sessionObj || !Array.isArray(sessionObj.cards)) {
+        alert("No active session found. Returning to main page.");
+        window.location.href = "../index.html";
+        return;
+    }
+
+    let cardToUpdate = null;
+    if (targetCardId) {
+        cardToUpdate = sessionObj.cards.find(c => String(c.id) === String(targetCardId));
+    }
+    if (!cardToUpdate && sessionObj.cards.length > 0) {
+        cardToUpdate = sessionObj.cards[0];
+    }
+
+    if (cardToUpdate) {
+        cardToUpdate.squares = squares;
+        localStorage.setItem("bingoSession", JSON.stringify(sessionObj));
+    }
+
+    window.location.href = "../index.html";
+}
