@@ -48,6 +48,18 @@
 
             <div class="video-wrap">
                 <video id="camera" autoplay playsinline></video>
+                <div class="camera-grid-overlay">
+                    <div class="overlay-grid-inner">
+                        <div class="grid-line v v1"></div>
+                        <div class="grid-line v v2"></div>
+                        <div class="grid-line v v3"></div>
+                        <div class="grid-line v v4"></div>
+                        <div class="grid-line h h1"></div>
+                        <div class="grid-line h h2"></div>
+                        <div class="grid-line h h3"></div>
+                        <div class="grid-line h h4"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="button-group">
@@ -322,17 +334,22 @@
             }
         }
 
-        // Camera Initialization
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(err => {
-                console.warn("Camera access failed or unavailable:", err);
-                statusDiv.textContent = "Camera unavailable. You can upload a photo from Camera Roll or enter numbers manually.";
-            });
+        // Camera Initialization with square 1:1 aspect ratio constraint
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment",
+                aspectRatio: { ideal: 1.0 }
+            }
+        })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.warn("Camera access failed or unavailable:", err);
+            statusDiv.textContent = "Camera unavailable. You can upload a photo from Camera Roll or enter numbers manually.";
+        });
 
-        // 1. Capture photo from camera
+        // 1. Capture square photo from live camera feed
         captureBtn.onclick = () => {
             if (!video.videoWidth) {
                 statusDiv.textContent = "Waiting for camera feed...";
@@ -342,11 +359,16 @@
             statusDiv.className = "status-box active";
             statusDiv.textContent = "Capturing photo...";
 
+            // Crop video stream to exact centered 1:1 square
+            const minDim = Math.min(video.videoWidth, video.videoHeight);
+            const sx = (video.videoWidth - minDim) / 2;
+            const sy = (video.videoHeight - minDim) / 2;
+
             rawCapturedCanvas = document.createElement("canvas");
-            rawCapturedCanvas.width = video.videoWidth;
-            rawCapturedCanvas.height = video.videoHeight;
+            rawCapturedCanvas.width = minDim;
+            rawCapturedCanvas.height = minDim;
             const rawCtx = rawCapturedCanvas.getContext("2d");
-            rawCtx.drawImage(video, 0, 0);
+            rawCtx.drawImage(video, sx, sy, minDim, minDim, 0, 0, minDim, minDim);
 
             currentCorners = null;
             previewWrap.classList.remove("hidden");
@@ -550,13 +572,14 @@
             ctx.clip();
             ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
 
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+            // Draw 5x5 grid guide lines inside quad
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
             ctx.lineWidth = 1;
             for (let i = 1; i < 5; i++) {
                 const t = i / 5;
                 const topX = dispPts.tl.x + t * (dispPts.tr.x - dispPts.tl.x);
                 const topY = dispPts.tl.y + t * (dispPts.tr.y - dispPts.tl.y);
-                const botX = dispPts.bl.x + t * (dispPts.br.x - dispPts.br.x);
+                const botX = dispPts.bl.x + t * (dispPts.br.x - dispPts.bl.x);
                 const botY = dispPts.bl.y + t * (dispPts.br.y - dispPts.bl.y);
 
                 ctx.beginPath();

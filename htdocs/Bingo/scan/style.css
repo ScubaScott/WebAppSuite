@@ -116,7 +116,7 @@ body {
     border-radius: 12px;
     overflow: hidden;
     background: #000;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1 / 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -127,6 +127,38 @@ video {
     height: 100%;
     object-fit: cover;
 }
+
+/* ---- Live Camera Viewfinder Overlay ---- */
+.camera-grid-overlay {
+    position: absolute;
+    inset: 16px;
+    border: 2px dashed rgba(255, 255, 255, 0.75);
+    border-radius: 12px;
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
+}
+
+.overlay-grid-inner {
+    position: absolute;
+    inset: 0;
+}
+
+.grid-line {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.grid-line.v { width: 1px; top: 0; bottom: 0; }
+.grid-line.v.v1 { left: 20%; }
+.grid-line.v.v2 { left: 40%; }
+.grid-line.v.v3 { left: 60%; }
+.grid-line.v.v4 { left: 80%; }
+
+.grid-line.h { height: 1px; left: 0; right: 0; }
+.grid-line.h.h1 { top: 20%; }
+.grid-line.h.h2 { top: 40%; }
+.grid-line.h.h3 { top: 60%; }
+.grid-line.h.h4 { top: 80%; }
 
 canvas {
     width: 100%;
