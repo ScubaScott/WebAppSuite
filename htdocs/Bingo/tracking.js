@@ -3,56 +3,56 @@
 // ============================================================
 
 let session = {
-    word:     "BINGO",
-    called:   [],
+    word: "BINGO",
+    called: [],
     lastBall: null,
-    cards:    [],
-    gameId:   null
+    cards: [],
+    gameId: null
 };
 
 // ============================================================
 // DOM REFS
 // ============================================================
 
-const trackingGrid       = document.getElementById("trackingGrid");
-const sessionWordBar     = document.getElementById("sessionWordBar");
-const lastFiveList       = document.getElementById("lastFiveList");
-const totalCalledSpan    = document.getElementById("totalCalled");
-const callLogLink        = document.getElementById("callLogLink");
-const newSessionBtn      = document.getElementById("newSessionBtn");
-const addCardBtn         = document.getElementById("addCardBtn");
-const loadCardBtn        = document.getElementById("loadCardBtn");
-const bingoCardsList     = document.getElementById("bingoCardsList");
+const trackingGrid = document.getElementById("trackingGrid");
+const sessionWordBar = document.getElementById("sessionWordBar");
+const lastFiveList = document.getElementById("lastFiveList");
+const totalCalledSpan = document.getElementById("totalCalled");
+const callLogLink = document.getElementById("callLogLink");
+const newSessionBtn = document.getElementById("newSessionBtn");
+const addCardBtn = document.getElementById("addCardBtn");
+const loadCardBtn = document.getElementById("loadCardBtn");
+const bingoCardsList = document.getElementById("bingoCardsList");
 const selectedGameNameEl = document.getElementById("selectedGameName");
-const gameMenuBtn        = document.getElementById("gameMenuBtn");
-const gameMenuDropdown   = document.getElementById("gameMenuDropdown");
+const gameMenuBtn = document.getElementById("gameMenuBtn");
+const gameMenuDropdown = document.getElementById("gameMenuDropdown");
 
 // Dauber selector
-const dauberColorBtn      = document.getElementById("dauberColorBtn");
-const dauberColorPreview  = document.getElementById("dauberColorPreview");
-const dauberMenuDropdown   = document.getElementById("dauberMenuDropdown");
-const dauberPalette       = document.getElementById("dauberPalette");
+const dauberColorBtn = document.getElementById("dauberColorBtn");
+const dauberColorPreview = document.getElementById("dauberColorPreview");
+const dauberMenuDropdown = document.getElementById("dauberMenuDropdown");
+const dauberPalette = document.getElementById("dauberPalette");
 const dauberOpacitySlider = document.getElementById("dauberOpacitySlider");
-const opacityValueText    = document.getElementById("opacityValueText");
+const opacityValueText = document.getElementById("opacityValueText");
 
 // Toggle
-const toggleByLetter  = document.getElementById("toggleByLetter");
-const toggleByNumber  = document.getElementById("toggleByNumber");
+const toggleByLetter = document.getElementById("toggleByLetter");
+const toggleByNumber = document.getElementById("toggleByNumber");
 
 // By-letter panel
-const byLetterPanel   = document.getElementById("byLetterPanel");
-const numberPicker    = document.getElementById("numberPicker");
+const byLetterPanel = document.getElementById("byLetterPanel");
+const numberPicker = document.getElementById("numberPicker");
 
 // ============================================================
 // CURRENT STATE
 // ============================================================
 
-let inputMode       = "letter"; // "letter" | "number"
+let inputMode = "letter"; // "letter" | "number"
 let activeLetterIdx = -1;       // BINGO column selected (-1 = none)
-let activeCardEdit  = null;     // { cardId, cellIdx } | null
-let openMenuCardId  = null;     // card with open menu
-let availableGames  = [];       // loaded from server
-let gameMenuOpen    = false;
+let activeCardEdit = null;     // { cardId, cellIdx } | null
+let openMenuCardId = null;     // card with open menu
+let availableGames = [];       // loaded from server
+let gameMenuOpen = false;
 let shouldScrollToWinner = false;
 
 // ============================================================
@@ -61,12 +61,12 @@ let shouldScrollToWinner = false;
 
 function saveSession() {
     localStorage.setItem("bingoSession", JSON.stringify({
-        word:     session.word,
-        called:   session.called,
+        word: session.word,
+        called: session.called,
         lastBall: session.lastBall,
-        cards:    session.cards,
-        gameId:   session.gameId,
-        dauber:   session.dauber
+        cards: session.cards,
+        gameId: session.gameId,
+        dauber: session.dauber
     }));
 }
 
@@ -77,12 +77,12 @@ function loadSession() {
         return;
     }
 
-    const obj        = JSON.parse(data);
-    session.word     = obj.word     || "BINGO";
-    session.called   = Array.isArray(obj.called) ? obj.called : [];
+    const obj = JSON.parse(data);
+    session.word = obj.word || "BINGO";
+    session.called = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall || null;
-    session.gameId   = obj.gameId   || null;
-    session.dauber   = obj.dauber   || { rgb: "26, 115, 232", opacity: 0.25 };
+    session.gameId = obj.gameId || null;
+    session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
 
     // Migrate cards: ensure editMode, active, and serial fields exist
     session.cards = Array.isArray(obj.cards)
@@ -93,7 +93,59 @@ function loadSession() {
 loadSession();
 
 // ============================================================
-// SESSION WORD BAR  (also the letter selector in "by letter" mode)
+// MAIN UI REFRESH
+// ============================================================
+
+function updateUI() {
+    // 1. Total called count
+    if (totalCalledSpan) {
+        totalCalledSpan.textContent = session.called.length;
+    }
+
+    // 2. Last 5 called balls list
+    if (lastFiveList) {
+        lastFiveList.innerHTML = "";
+        const recent = session.called.slice(-5).reverse();
+        recent.forEach(n => {
+            const letter = session.word[Math.floor((n - 1) / 15)] || "";
+            const badge = document.createElement("span");
+            badge.className = "last-five-badge";
+            badge.textContent = `${letter}${n}`;
+            lastFiveList.appendChild(badge);
+        });
+    }
+
+    // 3. Word bar headers
+    updateSessionWordBar();
+
+    // 4. Rebuild active tracking mode view
+    if (inputMode === "number") {
+        buildTrackingGrid();
+    } else if (activeLetterIdx !== -1) {
+        buildNumberPicker(activeLetterIdx);
+    }
+
+    // 5. Game mode title
+    const selectedGame = getSelectedGame();
+    if (selectedGameNameEl) {
+        selectedGameNameEl.textContent = selectedGame ? selectedGame.name : "— None selected —";
+    }
+
+    // 6. Render all bingo cards
+    renderAllCards();
+
+    // 7. Scroll to winner if new win occurred
+    if (shouldScrollToWinner) {
+        shouldScrollToWinner = false;
+        const winnerCard = document.querySelector(".bingo-card.card-winner");
+        if (winnerCard) {
+            winnerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    }
+}
+
+// ============================================================
+// SESSION WORD BAR (Letter Selector in "By Letter" Mode)
 // ============================================================
 
 function updateSessionWordBar() {
@@ -167,7 +219,7 @@ function onLetterClick(idx) {
 }
 
 // ============================================================
-// BY-LETTER: NUMBER PICKER (for marking called numbers)
+// BY-LETTER: NUMBER PICKER (1-tap selection & toggle)
 // ============================================================
 
 function buildNumberPicker(colIdx) {
@@ -177,7 +229,7 @@ function buildNumberPicker(colIdx) {
     const start = colIdx * 15 + 1;
 
     for (let i = 0; i < 15; i++) {
-        const n   = start + i;
+        const n = start + i;
         const btn = document.createElement("button");
         btn.className = "pick-btn" + (session.called.includes(n) ? " called" : "");
         btn.textContent = n;
@@ -190,22 +242,26 @@ function buildNumberPicker(colIdx) {
 function onNumberPick(n) {
     const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
 
-    if (!session.called.includes(n)) {
+    if (session.called.includes(n)) {
+        // Toggle OFF (unselect ball)
+        session.called = session.called.filter(x => x !== n);
+        if (session.lastBall === n) {
+            session.lastBall = session.called[session.called.length - 1] || null;
+        }
+    } else {
+        // Toggle ON (select ball)
         session.called.push(n);
         session.lastBall = n;
         if (!prevWinnerExists) shouldScrollToWinner = true;
-        updateUI();
-        saveSession();
     }
 
-    activeLetterIdx = -1;
-    numberPicker.classList.add("hidden");
-    numberPicker.innerHTML = "";
-    updateSessionWordBar();
+    // Keep activeLetterIdx open so subsequent taps in this column require ONLY 1 TAP!
+    updateUI();
+    saveSession();
 }
 
 // ============================================================
-// BY-NUMBER: TRACKING GRID (for marking called numbers)
+// BY-NUMBER: TRACKING GRID (1-tap selection & toggle)
 // ============================================================
 
 function buildTrackingGrid() {
@@ -216,13 +272,13 @@ function buildTrackingGrid() {
         colDiv.className = "grid-column";
 
         const hdr = document.createElement("div");
-        hdr.className   = "grid-col-header";
+        hdr.className = "grid-col-header";
         hdr.textContent = session.word[col];
         colDiv.appendChild(hdr);
 
         const start = col * 15 + 1;
         for (let i = 0; i < 15; i++) {
-            const n   = start + i;
+            const n = start + i;
             const btn = document.createElement("button");
             btn.className = "grid-number-btn" + (session.called.includes(n) ? " called" : "");
             btn.textContent = n;
@@ -239,11 +295,13 @@ function onNumberGridClick(n) {
     const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
 
     if (session.called.includes(n)) {
+        // Toggle OFF (unselect ball)
         session.called = session.called.filter(x => x !== n);
         if (session.lastBall === n) {
             session.lastBall = session.called[session.called.length - 1] || null;
         }
     } else {
+        // Toggle ON (select ball)
         session.called.push(n);
         session.lastBall = n;
         if (!prevWinnerExists) shouldScrollToWinner = true;
@@ -273,11 +331,11 @@ function openCallLogModal() {
     hdr.className = "game-picker-header";
 
     const title = document.createElement("h2");
-    title.className   = "game-picker-title";
+    title.className = "game-picker-title";
     title.textContent = "Called Numbers History";
 
     const closeBtn = document.createElement("button");
-    closeBtn.className   = "link-button";
+    closeBtn.className = "link-button";
     closeBtn.textContent = "✕ Close";
     closeBtn.addEventListener("click", () => modal.remove());
 
@@ -319,10 +377,10 @@ function openCallLogModal() {
 newSessionBtn.addEventListener("click", () => {
     if (!confirm("Start a new game session? Called numbers will be reset.")) return;
 
-    session.called   = [];
+    session.called = [];
     session.lastBall = null;
-    activeLetterIdx  = -1;
-    activeCardEdit   = null;
+    activeLetterIdx = -1;
+    activeCardEdit = null;
 
     saveSession();
     updateUI();
@@ -333,14 +391,14 @@ newSessionBtn.addEventListener("click", () => {
 // ============================================================
 
 const DAUBER_PALETTE = [
-    { name: "Blue",    rgb: "26, 115, 232" },
-    { name: "Red",     rgb: "229, 57, 53" },
+    { name: "Blue", rgb: "26, 115, 232" },
+    { name: "Red", rgb: "229, 57, 53" },
     { name: "Magenta", rgb: "216, 27, 96" },
-    { name: "Purple",  rgb: "142, 36, 170" },
-    { name: "Green",   rgb: "67, 160, 71" },
-    { name: "Teal",    rgb: "0, 137, 123" },
-    { name: "Orange",  rgb: "251, 140, 0" },
-    { name: "Gold",    rgb: "245, 124, 0" }
+    { name: "Purple", rgb: "142, 36, 170" },
+    { name: "Green", rgb: "67, 160, 71" },
+    { name: "Teal", rgb: "0, 137, 123" },
+    { name: "Orange", rgb: "251, 140, 0" },
+    { name: "Gold", rgb: "245, 124, 0" }
 ];
 
 let dauberMenuOpen = false;
@@ -427,7 +485,7 @@ if (dauberOpacitySlider) {
 
 async function loadGames() {
     try {
-        const res  = await fetch("./php/games.php");
+        const res = await fetch("./php/games.php");
         const data = await res.json();
         if (Array.isArray(data)) {
             availableGames = data;
@@ -471,12 +529,12 @@ function renderGameMenuDropdown() {
     gameMenuDropdown.innerHTML = "";
 
     const changeBtn = document.createElement("button");
-    changeBtn.className   = "card-menu-item";
+    changeBtn.className = "card-menu-item";
     changeBtn.textContent = "🎯  Select game";
     changeBtn.addEventListener("click", openGamePicker);
 
     const createBtn = document.createElement("button");
-    createBtn.className   = "card-menu-item";
+    createBtn.className = "card-menu-item";
     createBtn.textContent = "➕  Create game";
     createBtn.addEventListener("click", openGameCreator);
 
@@ -507,9 +565,9 @@ function openGamePicker() {
     closeGameMenu();
 
     const modal = document.createElement("div");
-    modal.id        = "gamePickerModal";
+    modal.id = "gamePickerModal";
     modal.className = "game-picker-modal";
-    modal.setAttribute("role",       "dialog");
+    modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-label", "Select Game");
 
     const panel = document.createElement("div");
@@ -519,11 +577,11 @@ function openGamePicker() {
     hdr.className = "game-picker-header";
 
     const title = document.createElement("h2");
-    title.className   = "game-picker-title";
+    title.className = "game-picker-title";
     title.textContent = "Select a Game";
 
     const closeBtn = document.createElement("button");
-    closeBtn.className   = "link-button";
+    closeBtn.className = "link-button";
     closeBtn.textContent = "✕ Close";
     closeBtn.addEventListener("click", closeGamePicker);
 
@@ -550,13 +608,13 @@ function openGamePicker() {
 }
 
 function renderGamePickerItem(game) {
-    const isSelected     = session.gameId === game.id;
-    const firstPattern   = game.patterns[0];
-    const patternCells   = new Set(firstPattern ? firstPattern.cells : []);
+    const isSelected = session.gameId === game.id;
+    const firstPattern = game.patterns[0];
+    const patternCells = new Set(firstPattern ? firstPattern.cells : []);
 
     const item = document.createElement("div");
     item.className = "game-picker-item" + (isSelected ? " selected" : "");
-    item.setAttribute("role",     "button");
+    item.setAttribute("role", "button");
     item.setAttribute("tabindex", "0");
 
     const miniGrid = document.createElement("div");
@@ -566,8 +624,8 @@ function renderGamePickerItem(game) {
         const mc = document.createElement("div");
         mc.className = [
             "mini-cell",
-            i === 12              ? "mini-free"    : "",
-            patternCells.has(i)   ? "mini-pattern" : ""
+            i === 12 ? "mini-free" : "",
+            patternCells.has(i) ? "mini-pattern" : ""
         ].filter(Boolean).join(" ");
         miniGrid.appendChild(mc);
     }
@@ -576,11 +634,11 @@ function renderGamePickerItem(game) {
     info.className = "game-picker-info";
 
     const name = document.createElement("span");
-    name.className   = "game-picker-name";
+    name.className = "game-picker-name";
     name.textContent = game.name;
 
     const meta = document.createElement("span");
-    meta.className   = "game-picker-meta";
+    meta.className = "game-picker-meta";
     meta.textContent = `${game.patterns.length} pattern${game.patterns.length !== 1 ? "s" : ""}`;
 
     info.appendChild(name);
@@ -591,12 +649,12 @@ function renderGamePickerItem(game) {
 
     if (isSelected) {
         const check = document.createElement("span");
-        check.className   = "game-picker-check";
+        check.className = "game-picker-check";
         check.textContent = "✓";
         item.appendChild(check);
     }
 
-    item.addEventListener("click",   () => selectGame(game.id));
+    item.addEventListener("click", () => selectGame(game.id));
     item.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectGame(game.id); }
     });
@@ -666,12 +724,12 @@ function addCard() {
     const num = session.cards.length + 1;
 
     session.cards.push({
-        id:       Date.now(),
-        label:    `Card ${num}`,
-        serial:   `SN-${String(num).padStart(3, '0')}`,
+        id: Date.now(),
+        label: `Card ${num}`,
+        serial: `SN-${String(num).padStart(3, '0')}`,
         squares,
         editMode: true,
-        active:   true
+        active: true
     });
 
     saveSession();
@@ -765,7 +823,6 @@ function renderServerCardItem(savedCard, modal) {
     item.className = "game-picker-item";
     item.style.alignItems = "center";
 
-    // Mini grid preview
     const miniGrid = document.createElement("div");
     miniGrid.className = "mini-card-grid";
 
@@ -936,25 +993,25 @@ function renderAllCards() {
 }
 
 function renderCard(card) {
-    const isEditing   = card.editMode;
-    const isActive    = card.active !== false;
-    const isMenuOpen  = openMenuCardId === card.id;
+    const isEditing = card.editMode;
+    const isActive = card.active !== false;
+    const isMenuOpen = openMenuCardId === card.id;
     const editCellIdx = (activeCardEdit && activeCardEdit.cardId === card.id)
         ? activeCardEdit.cellIdx : -1;
 
     // Win detection
-    const game           = getSelectedGame();
+    const game = getSelectedGame();
     const winningPattern = (isActive && game) ? checkCardWin(card, game) : null;
-    const winCells       = new Set(winningPattern ? winningPattern.cells : []);
+    const winCells = new Set(winningPattern ? winningPattern.cells : []);
     if (winningPattern && winningPattern.cells.includes(FREE_CELL)) winCells.add(FREE_CELL);
 
     // ---- Wrapper ----
     const wrapper = document.createElement("div");
     wrapper.className = [
         "bingo-card",
-        isEditing       ? "card-editing"  : "",
-        !isActive       ? "card-inactive" : "",
-        winningPattern  ? "card-winner"   : ""
+        isEditing ? "card-editing" : "",
+        !isActive ? "card-inactive" : "",
+        winningPattern ? "card-winner" : ""
     ].filter(Boolean).join(" ");
     wrapper.dataset.cardId = card.id;
 
@@ -964,7 +1021,7 @@ function renderCard(card) {
 
     const menuBtn = document.createElement("button");
     menuBtn.className = "card-menu-btn" + (isMenuOpen ? " open" : "");
-    menuBtn.setAttribute("aria-label",    "Card menu");
+    menuBtn.setAttribute("aria-label", "Card menu");
     menuBtn.setAttribute("aria-expanded", isMenuOpen ? "true" : "false");
     menuBtn.innerHTML = `<span></span><span></span><span></span>`;
     menuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(card.id); });
@@ -1013,7 +1070,7 @@ function renderCard(card) {
 
     const badge = document.createElement("span");
     badge.className = "card-status-badge";
-    if (isEditing)      { badge.textContent = "editing";  badge.classList.add("badge-editing");  }
+    if (isEditing) { badge.textContent = "editing"; badge.classList.add("badge-editing"); }
     else if (!isActive) { badge.textContent = "inactive"; badge.classList.add("badge-inactive"); }
 
     header.appendChild(menuBtn);
@@ -1032,16 +1089,16 @@ function renderCard(card) {
                 : { action: "toggleEdit", label: "✏️  Edit card" },
             { action: "saveServer", label: "💾  Save card to server" },
             { action: "loadServer", label: "📥  Load card from server" },
-            { action: "scan",       label: "📷  Scan card" },
-            { action: "remove",     label: "🗑  Remove card" },
+            { action: "scan", label: "📷  Scan card" },
+            { action: "remove", label: "🗑  Remove card" },
             isActive
                 ? { action: "unuse", label: "🚫  Don't use card" }
-                : { action: "use",   label: "✅  Use card" }
+                : { action: "use", label: "✅  Use card" }
         ];
 
         for (const item of menuItems) {
             const btn = document.createElement("button");
-            btn.className   = "card-menu-item";
+            btn.className = "card-menu-item";
             btn.textContent = item.label;
             btn.addEventListener("click", () => menuAction(card.id, item.action));
             menu.appendChild(btn);
@@ -1057,28 +1114,28 @@ function renderCard(card) {
     grid.className = "bingo-card-grid";
 
     for (let col = 0; col < 5; col++) {
-        const hdr       = document.createElement("div");
-        hdr.className   = "bingo-col-header";
+        const hdr = document.createElement("div");
+        hdr.className = "bingo-col-header";
         hdr.textContent = session.word[col];
         grid.appendChild(hdr);
     }
 
     for (let idx = 0; idx < 25; idx++) {
-        const value       = card.squares[idx];
-        const isFree      = (idx === FREE_CELL);
-        const isDaubed    = isActive && (isFree || (value !== null && session.called.includes(value)));
-        const isEmpty     = !isFree && value === null;
+        const value = card.squares[idx];
+        const isFree = (idx === FREE_CELL);
+        const isDaubed = isActive && (isFree || (value !== null && session.called.includes(value)));
+        const isEmpty = !isFree && value === null;
         const isCellActive = (idx === editCellIdx);
-        const isWinCell   = !!winningPattern && (winCells.has(idx) || (isFree && winningPattern.cells.includes(FREE_CELL)));
+        const isWinCell = !!winningPattern && (winCells.has(idx) || (isFree && winningPattern.cells.includes(FREE_CELL)));
 
         const cell = document.createElement("div");
         cell.className = [
             "bingo-cell",
-            isFree       ? "free"     : "",
-            isDaubed     ? "daubed"   : "",
-            isEmpty      ? "empty"    : "",
-            isCellActive ? "editing"  : "",
-            isWinCell    ? "win-cell" : ""
+            isFree ? "free" : "",
+            isDaubed ? "daubed" : "",
+            isEmpty ? "empty" : "",
+            isCellActive ? "editing" : "",
+            isWinCell ? "win-cell" : ""
         ].filter(Boolean).join(" ");
 
         cell.textContent = isFree ? "FREE" : (value ?? "");
@@ -1106,8 +1163,8 @@ function renderCard(card) {
 
     // ---- Inline column picker (edit mode only) ----
     if (isEditing && editCellIdx !== -1) {
-        const col       = colForCell(editCellIdx);
-        const numbers   = colNumbers(col);
+        const col = colForCell(editCellIdx);
+        const numbers = colNumbers(col);
         const usedInCol = card.squares
             .filter((v, i) => i !== editCellIdx && colForCell(i) === col && v !== null && v !== "FREE");
 
@@ -1115,7 +1172,7 @@ function renderCard(card) {
         picker.className = "card-number-picker";
 
         const pickerLabel = document.createElement("div");
-        pickerLabel.className   = "card-picker-label";
+        pickerLabel.className = "card-picker-label";
         pickerLabel.textContent = `Select ${session.word[col]} number`;
         picker.appendChild(pickerLabel);
 
@@ -1123,19 +1180,19 @@ function renderCard(card) {
         pickerGrid.className = "card-picker-grid";
 
         for (const n of numbers) {
-            const btn         = document.createElement("button");
+            const btn = document.createElement("button");
             const alreadyUsed = usedInCol.includes(n);
-            const isCalled    = session.called.includes(n);
+            const isCalled = session.called.includes(n);
 
             btn.className = [
                 "pick-btn",
                 alreadyUsed ? "used-on-card" : "",
-                isCalled    ? "called"        : ""
+                isCalled ? "called" : ""
             ].filter(Boolean).join(" ");
 
             btn.textContent = n;
-            btn.disabled    = alreadyUsed;
-            btn.title       = alreadyUsed ? "Already on this card" : "";
+            btn.disabled = alreadyUsed;
+            btn.title = alreadyUsed ? "Already on this card" : "";
             btn.setAttribute("aria-label", `${session.word[col]}${n}`);
 
             if (!alreadyUsed) {
