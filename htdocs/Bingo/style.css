@@ -549,6 +549,12 @@ body {
     margin-bottom: 16px;
 }
 
+.cards-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .bingo-cards-list {
     display: flex;
     flex-direction: column;
@@ -592,10 +598,19 @@ body {
     align-items: center;
     gap: 8px;
     position: relative;
+    flex-wrap: wrap;
+}
+
+.bingo-card-title-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .bingo-card-label {
-    flex: 1;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-subtle);
@@ -603,8 +618,18 @@ body {
     letter-spacing: 0.07em;
 }
 
-.bingo-card-label-input {
-    flex: 1;
+.bingo-card-serial-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: monospace;
+}
+
+.bingo-card-label-input,
+.bingo-card-serial-input {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-main);
@@ -617,7 +642,19 @@ body {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.bingo-card-label-input:focus {
+.bingo-card-label-input {
+    flex: 2;
+    min-width: 100px;
+}
+
+.bingo-card-serial-input {
+    flex: 1;
+    min-width: 80px;
+    font-family: monospace;
+}
+
+.bingo-card-label-input:focus,
+.bingo-card-serial-input:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.18);
 }

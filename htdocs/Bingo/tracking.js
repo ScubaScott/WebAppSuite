@@ -21,6 +21,7 @@ const totalCalledSpan    = document.getElementById("totalCalled");
 const callLogLink        = document.getElementById("callLogLink");
 const newSessionBtn      = document.getElementById("newSessionBtn");
 const addCardBtn         = document.getElementById("addCardBtn");
+const loadCardBtn        = document.getElementById("loadCardBtn");
 const bingoCardsList     = document.getElementById("bingoCardsList");
 const selectedGameNameEl = document.getElementById("selectedGameName");
 const gameMenuBtn        = document.getElementById("gameMenuBtn");
@@ -83,9 +84,9 @@ function loadSession() {
     session.gameId   = obj.gameId   || null;
     session.dauber   = obj.dauber   || { rgb: "26, 115, 232", opacity: 0.25 };
 
-    // Migrate cards: ensure editMode / active fields exist
+    // Migrate cards: ensure editMode, active, and serial fields exist
     session.cards = Array.isArray(obj.cards)
-        ? obj.cards.map(c => ({ editMode: false, active: true, ...c }))
+        ? obj.cards.map(c => ({ editMode: false, active: true, serial: "", ...c }))
         : [];
 }
 
@@ -204,282 +205,202 @@ function onNumberPick(n) {
 }
 
 // ============================================================
-// BY-NUMBER: TRACKING GRID
+// BY-NUMBER: TRACKING GRID (for marking called numbers)
 // ============================================================
 
 function buildTrackingGrid() {
     trackingGrid.innerHTML = "";
 
     for (let col = 0; col < 5; col++) {
-        const columnDiv = document.createElement("div");
-        columnDiv.className = "column";
+        const colDiv = document.createElement("div");
+        colDiv.className = "grid-column";
+
+        const hdr = document.createElement("div");
+        hdr.className   = "grid-col-header";
+        hdr.textContent = session.word[col];
+        colDiv.appendChild(hdr);
 
         const start = col * 15 + 1;
-        const end   = start + 14;
-
-        for (let n = start; n <= end; n++) {
-            const cell = document.createElement("div");
-            cell.className = "numberCell" + (session.called.includes(n) ? " called" : "");
-            cell.textContent = n;
-            cell.onclick = () => toggleNumber(n);
-            columnDiv.appendChild(cell);
+        for (let i = 0; i < 15; i++) {
+            const n   = start + i;
+            const btn = document.createElement("button");
+            btn.className = "grid-number-btn" + (session.called.includes(n) ? " called" : "");
+            btn.textContent = n;
+            btn.setAttribute("aria-label", `${session.word[col]}${n}`);
+            btn.addEventListener("click", () => onNumberGridClick(n));
+            colDiv.appendChild(btn);
         }
 
-        trackingGrid.appendChild(columnDiv);
+        trackingGrid.appendChild(colDiv);
     }
 }
 
-// ============================================================
-// TOGGLE NUMBER (by-number mode)
-// ============================================================
-
-function toggleNumber(n) {
+function onNumberGridClick(n) {
     const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
-    const idx = session.called.indexOf(n);
-    if (idx !== -1) {
-        if (!confirm(`Remove ${n}?`)) return;
-        session.called.splice(idx, 1);
-        session.lastBall = session.called.length
-            ? session.called[session.called.length - 1] : null;
+
+    if (session.called.includes(n)) {
+        session.called = session.called.filter(x => x !== n);
+        if (session.lastBall === n) {
+            session.lastBall = session.called[session.called.length - 1] || null;
+        }
     } else {
         session.called.push(n);
         session.lastBall = n;
         if (!prevWinnerExists) shouldScrollToWinner = true;
     }
+
     updateUI();
     saveSession();
 }
 
 // ============================================================
-// CALL LOG
+// CALL LOG MODAL & NEW SESSION
 // ============================================================
 
-function openCallLogWindow() {
-    const w = window.open("", "bingoCallLog", "width=320,height=420,top=100,left=100");
-    if (!w) { alert("Please allow popups for this site."); return; }
+callLogLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    openCallLogModal();
+});
 
-    const listItems = session.called.map(v => `<li>${v}</li>`).join("");
-    w.document.write(`<!DOCTYPE html><html><head><title>Call Log</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#202124;background:#f8f9fa;}h1{font-size:20px;margin-bottom:12px;}ol{padding-left:18px;}li{margin-bottom:6px;}button{margin-top:18px;padding:10px 14px;border:none;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer;}</style></head><body><h1>Call Log</h1><ol>${listItems || '<li>No numbers called yet</li>'}</ol><button onclick="window.close()">Close</button></body></html>`);
-    w.document.close();
-}
+function openCallLogModal() {
+    const modal = document.createElement("div");
+    modal.className = "game-picker-modal";
 
-// ============================================================
-// UPDATE UI
-// ============================================================
+    const panel = document.createElement("div");
+    panel.className = "game-picker-panel";
 
-function updateUI() {
-    const lastFive = session.called.slice(-6);
-    lastFiveList.innerHTML = "";
+    const hdr = document.createElement("div");
+    hdr.className = "game-picker-header";
 
-    for (let i = 5; i >= 0; i--) {
-        const item = document.createElement("div");
-        item.className = "last-five-item" + (lastFive[i] === undefined ? " empty" : "");
-        item.textContent = lastFive[i] ?? "—";
-        lastFiveList.appendChild(item);
-    }
+    const title = document.createElement("h2");
+    title.className   = "game-picker-title";
+    title.textContent = "Called Numbers History";
 
-    totalCalledSpan.textContent = `${session.called.length} called`;
+    const closeBtn = document.createElement("button");
+    closeBtn.className   = "link-button";
+    closeBtn.textContent = "✕ Close";
+    closeBtn.addEventListener("click", () => modal.remove());
 
-    if (inputMode === "number") buildTrackingGrid();
+    hdr.appendChild(title);
+    hdr.appendChild(closeBtn);
+    panel.appendChild(hdr);
 
-    updateSessionWordBar();
-    renderGameSection();
-    renderAllCards();
+    const content = document.createElement("div");
+    content.style.padding = "10px 0";
 
-    if (shouldScrollToWinner) {
-        const firstWinner = bingoCardsList.querySelector(".bingo-card.card-winner");
-        if (firstWinner) {
-            firstWinner.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        shouldScrollToWinner = false;
-    }
-}
-
-callLogLink.onclick = openCallLogWindow;
-
-// ============================================================
-// NEW SESSION
-// ============================================================
-
-newSessionBtn.onclick = () => {
-    const newWord = prompt("Enter a 5-letter session word:", "BINGO");
-    if (!newWord || newWord.length !== 5) {
-        alert("Invalid word. Using BINGO.");
-        session.word = "BINGO";
+    if (session.called.length === 0) {
+        content.innerHTML = '<p class="bingo-cards-placeholder">No numbers called yet in this session.</p>';
     } else {
-        session.word = newWord.toUpperCase();
+        const list = document.createElement("div");
+        list.style.display = "flex";
+        list.style.flexWrap = "wrap";
+        list.style.gap = "8px";
+
+        session.called.forEach((num, idx) => {
+            const chip = document.createElement("span");
+            chip.style.background = "var(--primary-soft)";
+            chip.style.color = "var(--primary)";
+            chip.style.padding = "6px 12px";
+            chip.style.borderRadius = "999px";
+            chip.style.fontSize = "14px";
+            chip.style.fontWeight = "600";
+            chip.textContent = `#${idx + 1}: ${num}`;
+            list.appendChild(chip);
+        });
+        content.appendChild(list);
     }
+
+    panel.appendChild(content);
+    modal.appendChild(panel);
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+}
+
+newSessionBtn.addEventListener("click", () => {
+    if (!confirm("Start a new game session? Called numbers will be reset.")) return;
 
     session.called   = [];
     session.lastBall = null;
-
-    activeLetterIdx = -1;
-    numberPicker.classList.add("hidden");
-    numberPicker.innerHTML = "";
+    activeLetterIdx  = -1;
+    activeCardEdit   = null;
 
     saveSession();
     updateUI();
-};
+});
 
 // ============================================================
-// GAME MODES — load
-// ============================================================
-
-const GAMES_API = "./php/games.php";
-
-async function loadGames() {
-    try {
-        const res = await fetch(GAMES_API);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        availableGames = await res.json();
-    } catch (e) {
-        console.warn("Could not load games:", e);
-        availableGames = [];
-    }
-    renderGameSection();
-    renderAllCards();
-}
-
-function getSelectedGame() {
-    if (!session.gameId) return null;
-    return availableGames.find(g => g.id === session.gameId) || null;
-}
-
-function selectGame(gameId) {
-    session.gameId = gameId;
-    saveSession();
-    closeGameMenu();
-    closeGamePicker();
-    renderGameSection();
-    renderAllCards();
-}
-
-// ============================================================
-// GAME MODES — section & menu
-// ============================================================
-
-function renderGameSection() {
-    const game = getSelectedGame();
-    selectedGameNameEl.textContent = game ? game.name : "— None selected —";
-    selectedGameNameEl.classList.toggle("game-selected", !!game);
-
-    if (gameMenuOpen) {
-        gameMenuDropdown.innerHTML = "";
-        gameMenuDropdown.classList.remove("hidden");
-
-        const items = [
-            { label: "🎮  Change Game", fn: openGamePicker  },
-            { label: "✏️  Create Game", fn: openGameCreator }
-        ];
-
-        for (const item of items) {
-            const btn = document.createElement("button");
-            btn.className = "card-menu-item";
-            btn.textContent = item.label;
-            btn.addEventListener("click", (e) => { e.stopPropagation(); item.fn(); });
-            gameMenuDropdown.appendChild(btn);
-        }
-    } else {
-        gameMenuDropdown.innerHTML = "";
-        gameMenuDropdown.classList.add("hidden");
-    }
-}
-
-function toggleGameMenu() {
-    gameMenuOpen = !gameMenuOpen;
-    gameMenuBtn.classList.toggle("open", gameMenuOpen);
-    gameMenuBtn.setAttribute("aria-expanded", gameMenuOpen ? "true" : "false");
-    renderGameSection();
-}
-
-function closeGameMenu() {
-    if (!gameMenuOpen) return;
-    gameMenuOpen = false;
-    gameMenuBtn.classList.remove("open");
-    gameMenuBtn.setAttribute("aria-expanded", "false");
-    renderGameSection();
-}
-
-gameMenuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleGameMenu(); });
-
-// ============================================================
-// DAUBER COLOR & OPACITY SELECTOR
+// DAUBER COLOR & OPACITY CONTROLS
 // ============================================================
 
 const DAUBER_PALETTE = [
-    { name: "Blue",    rgb: "26, 115, 232",  hex: "#1a73e8" },
-    { name: "Red",     rgb: "229, 57, 53",   hex: "#e53935" },
-    { name: "Magenta", rgb: "216, 27, 96",   hex: "#d81b60" },
-    { name: "Purple",  rgb: "142, 36, 170",  hex: "#8e24aa" },
-    { name: "Green",   rgb: "43, 168, 74",   hex: "#2ba84a" },
-    { name: "Teal",    rgb: "0, 172, 193",   hex: "#00acc1" },
-    { name: "Orange",  rgb: "245, 124, 0",   hex: "#f57c00" },
-    { name: "Gold",    rgb: "249, 168, 37",  hex: "#f9a825" }
+    { name: "Blue",    rgb: "26, 115, 232" },
+    { name: "Red",     rgb: "229, 57, 53" },
+    { name: "Magenta", rgb: "216, 27, 96" },
+    { name: "Purple",  rgb: "142, 36, 170" },
+    { name: "Green",   rgb: "67, 160, 71" },
+    { name: "Teal",    rgb: "0, 137, 123" },
+    { name: "Orange",  rgb: "251, 140, 0" },
+    { name: "Gold",    rgb: "245, 124, 0" }
 ];
 
 let dauberMenuOpen = false;
 
 function applyDauberSettings() {
-    if (!session.dauber) {
-        session.dauber = { rgb: "26, 115, 232", opacity: 0.25 };
+    const daub = session.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
+    document.documentElement.style.setProperty("--daub-rgb", daub.rgb);
+    document.documentElement.style.setProperty("--daub-alpha", daub.opacity);
+    if (dauberColorPreview) {
+        dauberColorPreview.style.background = `rgb(${daub.rgb})`;
     }
-    const rgb = session.dauber.rgb || "26, 115, 232";
-    const opacity = (session.dauber.opacity !== undefined) ? session.dauber.opacity : 0.25;
-
-    document.documentElement.style.setProperty("--daub-rgb", rgb);
-    document.documentElement.style.setProperty("--daub-alpha", opacity);
-
     if (opacityValueText) {
-        opacityValueText.textContent = `${Math.round(opacity * 100)}%`;
+        opacityValueText.textContent = `${Math.round(daub.opacity * 100)}%`;
     }
     if (dauberOpacitySlider) {
-        dauberOpacitySlider.value = opacity;
+        dauberOpacitySlider.value = daub.opacity;
     }
-
-    renderDauberPalette();
 }
 
 function renderDauberPalette() {
     if (!dauberPalette) return;
     dauberPalette.innerHTML = "";
 
-    const currentRgb = (session.dauber && session.dauber.rgb) || "26, 115, 232";
+    const currentRgb = session.dauber ? session.dauber.rgb : "26, 115, 232";
 
-    for (const item of DAUBER_PALETTE) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        const isActive = (item.rgb === currentRgb);
-        btn.className = "dauber-palette-item" + (isActive ? " active" : "");
-        btn.style.background = item.hex;
-        btn.title = item.name;
-        btn.setAttribute("aria-label", `Select dauber color ${item.name}`);
-
-        btn.addEventListener("click", (e) => {
+    DAUBER_PALETTE.forEach(c => {
+        const swatch = document.createElement("button");
+        swatch.className = "dauber-palette-swatch" + (c.rgb === currentRgb ? " selected" : "");
+        swatch.style.background = `rgb(${c.rgb})`;
+        swatch.title = c.name;
+        swatch.type = "button";
+        swatch.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (!session.dauber) session.dauber = {};
-            session.dauber.rgb = item.rgb;
+            if (!session.dauber) session.dauber = { rgb: "26, 115, 232", opacity: 0.25 };
+            session.dauber.rgb = c.rgb;
             applyDauberSettings();
             saveSession();
+            renderAllCards();
+            renderDauberPalette();
             closeDauberMenu();
         });
-
-        dauberPalette.appendChild(btn);
-    }
+        dauberPalette.appendChild(swatch);
+    });
 }
 
 function toggleDauberMenu() {
     dauberMenuOpen = !dauberMenuOpen;
-    dauberColorBtn.classList.toggle("open", dauberMenuOpen);
-    dauberColorBtn.setAttribute("aria-expanded", dauberMenuOpen ? "true" : "false");
-    dauberMenuDropdown.classList.toggle("hidden", !dauberMenuOpen);
+    if (dauberMenuDropdown) {
+        dauberMenuDropdown.classList.toggle("hidden", !dauberMenuOpen);
+    }
+    if (dauberMenuOpen) {
+        renderDauberPalette();
+    }
 }
 
 function closeDauberMenu() {
-    if (!dauberMenuOpen) return;
     dauberMenuOpen = false;
-    dauberColorBtn.classList.remove("open");
-    dauberColorBtn.setAttribute("aria-expanded", "false");
-    dauberMenuDropdown.classList.add("hidden");
+    if (dauberMenuDropdown) {
+        dauberMenuDropdown.classList.add("hidden");
+    }
 }
 
 if (dauberColorBtn) {
@@ -492,14 +413,83 @@ if (dauberColorBtn) {
 if (dauberOpacitySlider) {
     dauberOpacitySlider.addEventListener("input", (e) => {
         const val = parseFloat(e.target.value);
-        if (!session.dauber) session.dauber = {};
+        if (!session.dauber) session.dauber = { rgb: "26, 115, 232", opacity: 0.25 };
         session.dauber.opacity = val;
         applyDauberSettings();
         saveSession();
+        renderAllCards();
     });
 }
 
-// Global click-outside handler (closes game menu, dauber menu, AND card menus)
+// ============================================================
+// GAME MODES — server sync & menu
+// ============================================================
+
+async function loadGames() {
+    try {
+        const res  = await fetch("./php/games.php");
+        const data = await res.json();
+        if (Array.isArray(data)) {
+            availableGames = data;
+            if (!session.gameId && availableGames.length > 0) {
+                session.gameId = availableGames[0].id;
+                saveSession();
+            }
+        }
+    } catch (err) {
+        console.warn("Could not load games from server:", err);
+    }
+    updateUI();
+}
+
+function getSelectedGame() {
+    return availableGames.find(g => g.id === session.gameId) || null;
+}
+
+function selectGame(gameId) {
+    session.gameId = gameId;
+    saveSession();
+    closeGamePicker();
+    shouldScrollToWinner = true;
+    updateUI();
+}
+
+function toggleGameMenu() {
+    gameMenuOpen = !gameMenuOpen;
+    gameMenuDropdown.classList.toggle("hidden", !gameMenuOpen);
+    gameMenuBtn.setAttribute("aria-expanded", gameMenuOpen ? "true" : "false");
+    if (gameMenuOpen) renderGameMenuDropdown();
+}
+
+function closeGameMenu() {
+    gameMenuOpen = false;
+    gameMenuDropdown.classList.add("hidden");
+    gameMenuBtn.setAttribute("aria-expanded", "false");
+}
+
+function renderGameMenuDropdown() {
+    gameMenuDropdown.innerHTML = "";
+
+    const changeBtn = document.createElement("button");
+    changeBtn.className   = "card-menu-item";
+    changeBtn.textContent = "🎯  Select game";
+    changeBtn.addEventListener("click", openGamePicker);
+
+    const createBtn = document.createElement("button");
+    createBtn.className   = "card-menu-item";
+    createBtn.textContent = "➕  Create game";
+    createBtn.addEventListener("click", openGameCreator);
+
+    gameMenuDropdown.appendChild(changeBtn);
+    gameMenuDropdown.appendChild(createBtn);
+}
+
+gameMenuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleGameMenu();
+});
+
+// Global click-outside handler
 document.addEventListener("click", (e) => {
     if (gameMenuOpen && !e.target.closest("#gameSection")) closeGameMenu();
     if (dauberMenuOpen && !e.target.closest(".dauber-selector-wrap")) closeDauberMenu();
@@ -569,7 +559,6 @@ function renderGamePickerItem(game) {
     item.setAttribute("role",     "button");
     item.setAttribute("tabindex", "0");
 
-    // Mini 5×5 grid showing first pattern
     const miniGrid = document.createElement("div");
     miniGrid.className = "mini-card-grid";
 
@@ -621,7 +610,7 @@ function closeGamePicker() {
 }
 
 // ============================================================
-// GAME MODES — creator (popup window)
+// GAME MODES — creator
 // ============================================================
 
 function openGameCreator() {
@@ -631,7 +620,6 @@ function openGameCreator() {
     if (!w) alert("Please allow popups for this site to open the game creator.");
 }
 
-// When the creator window posts a message, reload the games list
 window.addEventListener("message", (e) => {
     if (e.data === "games-updated") loadGames();
 });
@@ -646,7 +634,7 @@ function checkCardWin(card, game) {
 
     for (const pattern of game.patterns) {
         const allDaubed = pattern.cells.every(cellIdx => {
-            if (cellIdx === FREE_CELL) return true;               // FREE always daubed
+            if (cellIdx === FREE_CELL) return true;
             const val = card.squares[cellIdx];
             return val !== null && val !== "FREE" && calledSet.has(val);
         });
@@ -659,7 +647,7 @@ function checkCardWin(card, game) {
 // BINGO CARDS — helpers
 // ============================================================
 
-const FREE_CELL = 12; // center square: row 2, col 2
+const FREE_CELL = 12;
 
 function colForCell(cellIdx) { return cellIdx % 5; }
 
@@ -669,16 +657,18 @@ function colNumbers(col) {
 }
 
 // ============================================================
-// BINGO CARDS — actions
+// BINGO CARDS — actions & server persistence
 // ============================================================
 
 function addCard() {
     const squares = Array(25).fill(null);
     squares[FREE_CELL] = "FREE";
+    const num = session.cards.length + 1;
 
     session.cards.push({
         id:       Date.now(),
-        label:    `Card ${session.cards.length + 1}`,
+        label:    `Card ${num}`,
+        serial:   `SN-${String(num).padStart(3, '0')}`,
         squares,
         editMode: true,
         active:   true
@@ -688,6 +678,176 @@ function addCard() {
     renderAllCards();
 }
 
+// Save card to server API (htdocs/Bingo/php/cards.php)
+async function saveCardToServer(card) {
+    try {
+        const res = await fetch("./php/cards.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id: card.id,
+                name: card.label,
+                serial: card.serial || "",
+                squares: card.squares
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            card.editMode = false;
+            saveSession();
+            renderAllCards();
+            alert(`✓ Saved "${card.label}" ${card.serial ? '(S/N: ' + card.serial + ')' : ''} to server!`);
+        } else {
+            alert("Error saving card to server: " + (data.error || "Unknown error"));
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Server error. Ensure PHP backend is available.");
+    }
+}
+
+// Load Card Modal — fetches saved cards from server
+async function openCardPicker() {
+    let savedCards = [];
+    try {
+        const res = await fetch("./php/cards.php");
+        savedCards = await res.json();
+    } catch (err) {
+        console.warn("Could not fetch cards from server:", err);
+    }
+
+    const modal = document.createElement("div");
+    modal.id = "cardPickerModal";
+    modal.className = "game-picker-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-label", "Load Card from Server");
+
+    const panel = document.createElement("div");
+    panel.className = "game-picker-panel";
+
+    const hdr = document.createElement("div");
+    hdr.className = "game-picker-header";
+
+    const title = document.createElement("h2");
+    title.className = "game-picker-title";
+    title.textContent = "Saved Server Cards";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "link-button";
+    closeBtn.textContent = "✕ Close";
+    closeBtn.addEventListener("click", () => modal.remove());
+
+    hdr.appendChild(title);
+    hdr.appendChild(closeBtn);
+    panel.appendChild(hdr);
+
+    const list = document.createElement("div");
+    list.className = "game-picker-list";
+
+    if (!Array.isArray(savedCards) || savedCards.length === 0) {
+        list.innerHTML = '<p class="bingo-cards-placeholder">No cards saved on server yet. Use "Save card" from card menu to store cards.</p>';
+    } else {
+        savedCards.forEach(savedCard => {
+            list.appendChild(renderServerCardItem(savedCard, modal));
+        });
+    }
+
+    panel.appendChild(list);
+    modal.appendChild(panel);
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+}
+
+// Render single server card item in load modal
+function renderServerCardItem(savedCard, modal) {
+    const item = document.createElement("div");
+    item.className = "game-picker-item";
+    item.style.alignItems = "center";
+
+    // Mini grid preview
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "mini-card-grid";
+
+    const squares = Array.isArray(savedCard.squares) ? savedCard.squares : Array(25).fill(null);
+    for (let i = 0; i < 25; i++) {
+        const mc = document.createElement("div");
+        const val = squares[i];
+        const isFree = (i === 12 || val === "FREE");
+        const hasVal = !isFree && val !== null && val !== "";
+        mc.className = [
+            "mini-cell",
+            isFree ? "mini-free" : "",
+            hasVal ? "mini-pattern" : ""
+        ].filter(Boolean).join(" ");
+        miniGrid.appendChild(mc);
+    }
+
+    const info = document.createElement("div");
+    info.className = "game-picker-info";
+
+    const name = document.createElement("span");
+    name.className = "game-picker-name";
+    name.textContent = savedCard.name || "Card";
+
+    const serialMeta = document.createElement("span");
+    serialMeta.className = "game-picker-meta";
+    serialMeta.textContent = savedCard.serial ? `S/N: ${savedCard.serial}` : `No Serial #`;
+
+    info.appendChild(name);
+    info.appendChild(serialMeta);
+
+    const actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.gap = "6px";
+
+    const loadBtn = document.createElement("button");
+    loadBtn.className = "btn btn-primary";
+    loadBtn.style.padding = "6px 12px";
+    loadBtn.style.fontSize = "13px";
+    loadBtn.textContent = "Load";
+    loadBtn.onclick = (e) => {
+        e.stopPropagation();
+        session.cards.push({
+            id: Date.now(),
+            label: savedCard.name || "Loaded Card",
+            serial: savedCard.serial || "",
+            squares: [...squares],
+            editMode: false,
+            active: true
+        });
+        saveSession();
+        renderAllCards();
+        modal.remove();
+    };
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn btn-secondary";
+    deleteBtn.style.padding = "6px 10px";
+    deleteBtn.style.fontSize = "13px";
+    deleteBtn.textContent = "🗑";
+    deleteBtn.title = "Delete card from server";
+    deleteBtn.onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete "${savedCard.name}" from server?`)) return;
+        try {
+            await fetch(`./php/cards.php?id=${savedCard.id}`, { method: "DELETE" });
+            item.remove();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    actions.appendChild(loadBtn);
+    actions.appendChild(deleteBtn);
+
+    item.appendChild(miniGrid);
+    item.appendChild(info);
+    item.appendChild(actions);
+
+    return item;
+}
+
 function menuAction(cardId, action) {
     const card = session.cards.find(c => c.id === cardId);
     if (!card) return;
@@ -695,18 +855,21 @@ function menuAction(cardId, action) {
     openMenuCardId = null;
 
     switch (action) {
-        case "save":
-            card.editMode  = false;
-            activeCardEdit = null;
+        case "toggleEdit":
+            card.editMode = !card.editMode;
+            if (!card.editMode) activeCardEdit = null;
             break;
-        case "edit":
-            card.editMode = true;
-            break;
+        case "saveServer":
+            saveCardToServer(card);
+            return;
+        case "loadServer":
+            openCardPicker();
+            return;
         case "scan":
             window.location.href = `./scan/scan.html?cardId=${cardId}`;
             return;
         case "remove":
-            if (!confirm("Remove this card?")) { renderAllCards(); return; }
+            if (!confirm("Remove this card from session?")) { renderAllCards(); return; }
             session.cards = session.cards.filter(c => c.id !== cardId);
             if (activeCardEdit && activeCardEdit.cardId === cardId) activeCardEdit = null;
             saveSession();
@@ -763,7 +926,7 @@ function renderAllCards() {
     bingoCardsList.innerHTML = "";
 
     if (session.cards.length === 0) {
-        bingoCardsList.innerHTML = '<p class="bingo-cards-placeholder">No bingo cards yet. Tap + Add Card to get started.</p>';
+        bingoCardsList.innerHTML = '<p class="bingo-cards-placeholder">No bingo cards yet. Tap + Add Card or 📥 Load Card to get started.</p>';
         return;
     }
 
@@ -783,7 +946,6 @@ function renderCard(card) {
     const game           = getSelectedGame();
     const winningPattern = (isActive && game) ? checkCardWin(card, game) : null;
     const winCells       = new Set(winningPattern ? winningPattern.cells : []);
-    // FREE is always part of a winning pattern that includes it
     if (winningPattern && winningPattern.cells.includes(FREE_CELL)) winCells.add(FREE_CELL);
 
     // ---- Wrapper ----
@@ -807,18 +969,46 @@ function renderCard(card) {
     menuBtn.innerHTML = `<span></span><span></span><span></span>`;
     menuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(card.id); });
 
-    let labelEl;
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "bingo-card-title-wrap";
+
     if (isEditing) {
-        labelEl          = document.createElement("input");
-        labelEl.type     = "text";
-        labelEl.className = "bingo-card-label-input";
-        labelEl.value    = card.label;
-        labelEl.addEventListener("change", (e) => { card.label = e.target.value.trim() || card.label; saveSession(); });
-        labelEl.addEventListener("click",  (e) => e.stopPropagation());
+        const labelInput = document.createElement("input");
+        labelInput.type = "text";
+        labelInput.className = "bingo-card-label-input";
+        labelInput.value = card.label || "";
+        labelInput.placeholder = "Card Name";
+        labelInput.addEventListener("change", (e) => {
+            card.label = e.target.value.trim() || card.label;
+            saveSession();
+        });
+        labelInput.addEventListener("click", (e) => e.stopPropagation());
+
+        const serialInput = document.createElement("input");
+        serialInput.type = "text";
+        serialInput.className = "bingo-card-serial-input";
+        serialInput.value = card.serial || "";
+        serialInput.placeholder = "Serial #";
+        serialInput.addEventListener("change", (e) => {
+            card.serial = e.target.value.trim();
+            saveSession();
+        });
+        serialInput.addEventListener("click", (e) => e.stopPropagation());
+
+        titleWrap.appendChild(labelInput);
+        titleWrap.appendChild(serialInput);
     } else {
-        labelEl           = document.createElement("span");
+        const labelEl = document.createElement("span");
         labelEl.className = "bingo-card-label";
         labelEl.textContent = card.label;
+        titleWrap.appendChild(labelEl);
+
+        if (card.serial) {
+            const serialTag = document.createElement("span");
+            serialTag.className = "bingo-card-serial-tag";
+            serialTag.textContent = `S/N: ${card.serial}`;
+            titleWrap.appendChild(serialTag);
+        }
     }
 
     const badge = document.createElement("span");
@@ -827,7 +1017,7 @@ function renderCard(card) {
     else if (!isActive) { badge.textContent = "inactive"; badge.classList.add("badge-inactive"); }
 
     header.appendChild(menuBtn);
-    header.appendChild(labelEl);
+    header.appendChild(titleWrap);
     if (badge.textContent) header.appendChild(badge);
 
     // ---- Dropdown menu (anchored inside header) ----
@@ -836,17 +1026,18 @@ function renderCard(card) {
         menu.className = "card-menu-dropdown";
         menu.addEventListener("click", (e) => e.stopPropagation());
 
-        const menuItems = isEditing
-            ? [{ action: "save",  label: "💾  Save card"    },
-               { action: "scan",  label: "📷  Scan card"    },
-               { action: "remove",label: "🗑  Remove card"  }]
-            : [{ action: "edit",  label: "✏️  Edit card"    },
-               { action: "scan",  label: "📷  Scan card"    },
-               { action: "remove",label: "🗑  Remove card"  },
-               isActive
-                   ? { action: "unuse", label: "🚫  Don't use card" }
-                   : { action: "use",   label: "✅  Use card"        }
-              ];
+        const menuItems = [
+            isEditing
+                ? { action: "toggleEdit", label: "✓  Done editing" }
+                : { action: "toggleEdit", label: "✏️  Edit card" },
+            { action: "saveServer", label: "💾  Save card to server" },
+            { action: "loadServer", label: "📥  Load card from server" },
+            { action: "scan",       label: "📷  Scan card" },
+            { action: "remove",     label: "🗑  Remove card" },
+            isActive
+                ? { action: "unuse", label: "🚫  Don't use card" }
+                : { action: "use",   label: "✅  Use card" }
+        ];
 
         for (const item of menuItems) {
             const btn = document.createElement("button");
@@ -961,7 +1152,8 @@ function renderCard(card) {
     return wrapper;
 }
 
-addCardBtn.addEventListener("click", addCard);
+if (addCardBtn) addCardBtn.addEventListener("click", addCard);
+if (loadCardBtn) loadCardBtn.addEventListener("click", openCardPicker);
 
 // ============================================================
 // INIT
@@ -970,4 +1162,4 @@ addCardBtn.addEventListener("click", addCard);
 setInputMode("letter");
 applyDauberSettings();
 updateUI();
-loadGames(); // async — updates game section & cards when done
+loadGames();
