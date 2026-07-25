@@ -1,3 +1,4 @@
+/* Version 1.1 */
 :root {
     --surface: #f8f9fa;
     --surface-strong: #ffffff;
@@ -153,6 +154,90 @@ body {
     color: var(--text-subtle);
 }
 
+/* ================================
+   LAST 6 — bingo-square-badge tiles
+   Each badge mirrors a bingo card cell in layout
+================================ */
+
+.last-five-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+}
+
+.bingo-square-badge {
+    /* Square tile — flex column with letter on top, number below */
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* Fixed size that matches a bingo cell roughly */
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-main);
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease,
+                border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+    gap: 1px;
+}
+
+.bingo-square-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(229, 57, 53, 0.22);
+    border-color: #e53935;
+    background: rgba(229, 57, 53, 0.07);
+}
+
+/* Most recently called ball — solid primary highlight */
+.bingo-square-badge.newest {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.22);
+}
+
+.bingo-square-badge .sq-letter {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.bingo-square-badge .sq-num {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.bingo-square-badge.newest .sq-letter,
+.bingo-square-badge.newest .sq-num {
+    color: var(--primary);
+}
+
+@media (max-width: 480px) {
+    .bingo-square-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+    }
+
+    .bingo-square-badge .sq-num {
+        font-size: 14px;
+    }
+}
+
 .session-word-bar {
     display: flex;
     justify-content: space-between;
@@ -178,85 +263,64 @@ body {
     letter-spacing: 0.16em;
 }
 
+/* ================================
+   BY-NUMBER TRACKING GRID
+   Mobile-first: squares match bingo card cells
+================================ */
+
 .tracking-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(56px, 1fr));
-    gap: 8px;
+    /* 5 equal columns, minimum 0 so they compress on tiny screens */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 14px;
 }
 
-.column {
-    display: grid;
-    grid-auto-rows: minmax(56px, 1fr);
-    gap: 8px;
-}
-
-.numberCell {
-    position: relative;
+.grid-column {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 56px;
-    padding: 0;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--text-main);
-    font-size: 14px;
-    font-weight: 700;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Override cursor for grid cells — they are always clickable */
+.bingo-cell.grid-num-cell {
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    /* Force square aspect-ratio for the 15-row grid */
+    aspect-ratio: 1;
+    min-height: 0;
+    font-size: clamp(11px, 2.8vw, 15px);
+    /* Smooth daub transition */
+    transition: transform 0.12s ease, box-shadow 0.12s ease,
+                background 0.15s ease, border-color 0.15s ease;
 }
 
-.numberCell:hover {
+.bingo-cell.grid-num-cell:hover:not(.daubed) {
     transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(60, 64, 67, 0.08);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.16);
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--primary);
 }
 
-.numberCell::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 14px;
-    transition: background 0.15s ease;
-}
-
-.called {
+/* Called (daubed) state for grid cells — matches bingo card daub dot */
+.bingo-cell.grid-num-cell.daubed {
     border-color: transparent;
 }
 
-.called::after {
-    inset: 20%;
-    background: var(--daub-color);
-    border-radius: 50%;
-}
-
-.called:hover {
-    box-shadow: 0 8px 18px rgba(26, 115, 232, 0.22);
-}
-
 @media (max-width: 640px) {
-    .stats-card {
-        grid-template-columns: 1fr;
-    }
-
-    .session-word-bar {
-        flex-wrap: wrap;
-    }
-
     .tracking-grid {
-        grid-template-columns: repeat(5, minmax(44px, 1fr));
-        gap: 6px;
+        gap: 4px;
     }
 
-    .column {
-        gap: 6px;
+    .grid-column {
+        gap: 3px;
     }
 
-    .numberCell {
-        min-height: 48px;
-        font-size: 13px;
+    .bingo-cell.grid-num-cell {
+        font-size: clamp(10px, 3vw, 13px);
     }
 }
+
 
 /* --------------------------------
    INPUT MODE TOGGLE

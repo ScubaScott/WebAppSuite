@@ -1,3 +1,4 @@
+// Version 1.1
 // ============================================================
 // SESSION STATE
 // ============================================================
@@ -102,15 +103,28 @@ function updateUI() {
         totalCalledSpan.textContent = session.called.length;
     }
 
-    // 2. Last 5 called balls list
+    // 2. Last 6 called balls list — displayed as bingo-square-badge tiles
     if (lastFiveList) {
         lastFiveList.innerHTML = "";
-        const recent = session.called.slice(-5).reverse();
-        recent.forEach(n => {
+        const recent = session.called.slice(-6).reverse();
+        recent.forEach((n, pos) => {
             const letter = session.word[Math.floor((n - 1) / 15)] || "";
             const badge = document.createElement("span");
-            badge.className = "last-five-badge";
-            badge.textContent = `${letter}${n}`;
+            // Most-recent ball gets the 'newest' highlight
+            badge.className = "bingo-square-badge" + (pos === 0 ? " newest" : "");
+            badge.dataset.number = n;
+            // Letter label above the number
+            badge.innerHTML = `<span class="sq-letter">${letter}</span><span class="sq-num">${n}</span>`;
+            // Clicking a badge in the Last 6 prompts to un-call it
+            badge.addEventListener("click", () => {
+                if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
+                session.called = session.called.filter(x => x !== n);
+                if (session.lastBall === n) {
+                    session.lastBall = session.called[session.called.length - 1] || null;
+                }
+                saveSession();
+                updateUI();
+            });
             lastFiveList.appendChild(badge);
         });
     }
@@ -241,15 +255,17 @@ function buildNumberPicker(colIdx) {
 
 function onNumberPick(n) {
     const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
+    const letter = session.word[Math.floor((n - 1) / 15)] || "";
 
     if (session.called.includes(n)) {
-        // Toggle OFF (unselect ball)
+        // Prompt before un-calling a number
+        if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
         session.called = session.called.filter(x => x !== n);
         if (session.lastBall === n) {
             session.lastBall = session.called[session.called.length - 1] || null;
         }
     } else {
-        // Toggle ON (select ball)
+        // Toggle ON — call the number (single tap, no prompt)
         session.called.push(n);
         session.lastBall = n;
         if (!prevWinnerExists) shouldScrollToWinner = true;
@@ -271,8 +287,9 @@ function buildTrackingGrid() {
         const colDiv = document.createElement("div");
         colDiv.className = "grid-column";
 
+        // Column letter header — matches bingo card header style
         const hdr = document.createElement("div");
-        hdr.className = "grid-col-header";
+        hdr.className = "bingo-col-header";
         hdr.textContent = session.word[col];
         colDiv.appendChild(hdr);
 
@@ -280,10 +297,13 @@ function buildTrackingGrid() {
         for (let i = 0; i < 15; i++) {
             const n = start + i;
             const btn = document.createElement("button");
-            btn.className = "grid-number-btn" + (session.called.includes(n) ? " called" : "");
+            // Use bingo-cell styling so buttons match the card squares
+            const isCalled = session.called.includes(n);
+            btn.className = "bingo-cell grid-num-cell" + (isCalled ? " daubed" : "");
             btn.textContent = n;
             btn.setAttribute("aria-label", `${session.word[col]}${n}`);
-            btn.addEventListener("click", () => onNumberGridClick(n));
+            // Prevent double-tap zoom on mobile — use touchend for instant response
+            btn.addEventListener("click", (e) => { e.preventDefault(); onNumberGridClick(n); });
             colDiv.appendChild(btn);
         }
 
@@ -293,15 +313,17 @@ function buildTrackingGrid() {
 
 function onNumberGridClick(n) {
     const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
+    const letter = session.word[Math.floor((n - 1) / 15)] || "";
 
     if (session.called.includes(n)) {
-        // Toggle OFF (unselect ball)
+        // Prompt before un-calling a number
+        if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
         session.called = session.called.filter(x => x !== n);
         if (session.lastBall === n) {
             session.lastBall = session.called[session.called.length - 1] || null;
         }
     } else {
-        // Toggle ON (select ball)
+        // Toggle ON — call the number (single tap, no prompt)
         session.called.push(n);
         session.lastBall = n;
         if (!prevWinnerExists) shouldScrollToWinner = true;
