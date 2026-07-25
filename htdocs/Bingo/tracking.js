@@ -1,4 +1,4 @@
-// Version 1.1
+// Version 1.2
 // ============================================================
 // SESSION STATE
 // ============================================================
@@ -8,7 +8,8 @@ let session = {
     called: [],
     lastBall: null,
     cards: [],
-    gameId: null
+    gameId: null,
+    doubleMode: false  // double bingo: requires 2 matching patterns on one card to win
 };
 
 // ============================================================
@@ -44,6 +45,9 @@ const toggleByNumber = document.getElementById("toggleByNumber");
 const byLetterPanel = document.getElementById("byLetterPanel");
 const numberPicker = document.getElementById("numberPicker");
 
+// Double mode badge in the game section
+const doubleModeBadge = document.getElementById("doubleModeBadge");
+
 // ============================================================
 // CURRENT STATE
 // ============================================================
@@ -67,7 +71,8 @@ function saveSession() {
         lastBall: session.lastBall,
         cards: session.cards,
         gameId: session.gameId,
-        dauber: session.dauber
+        dauber: session.dauber,
+        doubleMode: session.doubleMode || false
     }));
 }
 
@@ -84,6 +89,7 @@ function loadSession() {
     session.lastBall = obj.lastBall || null;
     session.gameId = obj.gameId || null;
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
+    session.doubleMode = obj.doubleMode || false;
 
     // Migrate cards: ensure editMode, active, and serial fields exist
     session.cards = Array.isArray(obj.cards)
@@ -139,10 +145,14 @@ function updateUI() {
         buildNumberPicker(activeLetterIdx);
     }
 
-    // 5. Game mode title
+    // 5. Game mode title and double mode badge
     const selectedGame = getSelectedGame();
     if (selectedGameNameEl) {
         selectedGameNameEl.textContent = selectedGame ? selectedGame.name : "— None selected —";
+    }
+    // Show the Double badge only when double mode is active
+    if (doubleModeBadge) {
+        doubleModeBadge.classList.toggle("hidden", !session.doubleMode);
     }
 
     // 6. Render all bingo cards
@@ -254,7 +264,8 @@ function buildNumberPicker(colIdx) {
 }
 
 function onNumberPick(n) {
-    const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
+    // Use isTrueWin so double mode is respected for scroll-to-winner tracking
+    const prevWinnerExists = session.cards.some(card => isTrueWin(card, getSelectedGame()));
     const letter = session.word[Math.floor((n - 1) / 15)] || "";
 
     if (session.called.includes(n)) {
@@ -312,7 +323,8 @@ function buildTrackingGrid() {
 }
 
 function onNumberGridClick(n) {
-    const prevWinnerExists = session.cards.some(card => checkCardWin(card, getSelectedGame()));
+    // Use isTrueWin so double mode is respected for scroll-to-winner tracking
+    const prevWinnerExists = session.cards.some(card => isTrueWin(card, getSelectedGame()));
     const letter = session.word[Math.floor((n - 1) / 15)] || "";
 
     if (session.called.includes(n)) {
@@ -527,6 +539,10 @@ function getSelectedGame() {
 }
 
 function selectGame(gameId) {
+    // Reset double mode whenever a DIFFERENT game is selected
+    if (session.gameId !== gameId) {
+        session.doubleMode = false;
+    }
     session.gameId = gameId;
     saveSession();
     closeGamePicker();
@@ -676,6 +692,43 @@ function renderGamePickerItem(game) {
         item.appendChild(check);
     }
 
+    // ---- Double mode checkbox (shown for games with >1 pattern) ----
+    if (game.patterns.length > 1) {
+        const doubleWrap = document.createElement("div");
+        doubleWrap.className = "double-cb-wrap";
+        // Prevent item-level click from also firing when the checkbox area is tapped
+        doubleWrap.addEventListener("click", e => e.stopPropagation());
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.id = `double-cb-${game.id}`;
+        cb.className = "double-cb-input";
+        // Checked state reflects current session doubleMode for THIS game
+        cb.checked = (session.gameId === game.id && session.doubleMode);
+
+        const lbl = document.createElement("label");
+        lbl.htmlFor = `double-cb-${game.id}`;
+        lbl.className = "double-cb-label";
+        lbl.textContent = "Double";
+
+        cb.addEventListener("change", e => {
+            e.stopPropagation();
+            // Select this game if it isn’t already the active one
+            if (session.gameId !== game.id) {
+                session.gameId = game.id;
+            }
+            session.doubleMode = cb.checked;
+            saveSession();
+            closeGamePicker();
+            shouldScrollToWinner = true;
+            updateUI();
+        });
+
+        doubleWrap.appendChild(cb);
+        doubleWrap.appendChild(lbl);
+        item.appendChild(doubleWrap);
+    }
+
     item.addEventListener("click", () => selectGame(game.id));
     item.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectGame(game.id); }
@@ -708,19 +761,30 @@ window.addEventListener("message", (e) => {
 // GAME MODES — win detection
 // ============================================================
 
-function checkCardWin(card, game) {
-    if (!game || !card.active) return null;
+// Returns an array of every pattern that is currently completed on this card
+function getWinningPatterns(card, game) {
+    if (!game || !card.active) return [];
     const calledSet = new Set(session.called);
-
-    for (const pattern of game.patterns) {
-        const allDaubed = pattern.cells.every(cellIdx => {
+    return game.patterns.filter(pattern =>
+        pattern.cells.every(cellIdx => {
             if (cellIdx === FREE_CELL) return true;
             const val = card.squares[cellIdx];
             return val !== null && val !== "FREE" && calledSet.has(val);
-        });
-        if (allDaubed) return pattern;
-    }
-    return null;
+        })
+    );
+}
+
+// Returns true if the card satisfies the win condition for the current mode.
+// Normal mode: 1 pattern. Double mode: 2 or more patterns.
+function isTrueWin(card, game) {
+    const patterns = getWinningPatterns(card, game);
+    return session.doubleMode ? patterns.length >= 2 : patterns.length >= 1;
+}
+
+// Legacy wrapper — kept for any external callers; returns first matching pattern or null
+function checkCardWin(card, game) {
+    const patterns = getWinningPatterns(card, game);
+    return patterns.length > 0 ? patterns[0] : null;
 }
 
 // ============================================================
@@ -1021,11 +1085,14 @@ function renderCard(card) {
     const editCellIdx = (activeCardEdit && activeCardEdit.cardId === card.id)
         ? activeCardEdit.cellIdx : -1;
 
-    // Win detection
+    // Win detection — collect ALL currently-completed patterns
     const game = getSelectedGame();
-    const winningPattern = (isActive && game) ? checkCardWin(card, game) : null;
-    const winCells = new Set(winningPattern ? winningPattern.cells : []);
-    if (winningPattern && winningPattern.cells.includes(FREE_CELL)) winCells.add(FREE_CELL);
+    const winningPatterns = (isActive && game) ? getWinningPatterns(card, game) : [];
+    // isTrueWinner: normal=1 pattern, double mode=2+ patterns on this single card
+    const isTrueWinner = session.doubleMode ? winningPatterns.length >= 2 : winningPatterns.length >= 1;
+    // winCells: union of all matched-pattern cells (used for highlighting even partial matches)
+    const winCells = new Set();
+    winningPatterns.forEach(p => p.cells.forEach(c => winCells.add(c)));
 
     // ---- Wrapper ----
     const wrapper = document.createElement("div");
@@ -1033,7 +1100,7 @@ function renderCard(card) {
         "bingo-card",
         isEditing ? "card-editing" : "",
         !isActive ? "card-inactive" : "",
-        winningPattern ? "card-winner" : ""
+        isTrueWinner ? "card-winner" : ""  // card-winner only on true win (2 patterns in double mode)
     ].filter(Boolean).join(" ");
     wrapper.dataset.cardId = card.id;
 
@@ -1148,7 +1215,9 @@ function renderCard(card) {
         const isDaubed = isActive && (isFree || (value !== null && session.called.includes(value)));
         const isEmpty = !isFree && value === null;
         const isCellActive = (idx === editCellIdx);
-        const isWinCell = !!winningPattern && (winCells.has(idx) || (isFree && winningPattern.cells.includes(FREE_CELL)));
+        // True win: cell highlighted gold. Partial win (double mode, 1 of 2 needed): blue highlight.
+        const isWinCell = isTrueWinner && winCells.has(idx);
+        const isPartialCell = !isTrueWinner && session.doubleMode && winCells.has(idx);
 
         const cell = document.createElement("div");
         cell.className = [
@@ -1157,7 +1226,8 @@ function renderCard(card) {
             isDaubed ? "daubed" : "",
             isEmpty ? "empty" : "",
             isCellActive ? "editing" : "",
-            isWinCell ? "win-cell" : ""
+            isWinCell ? "win-cell" : "",
+            isPartialCell ? "partial-win-cell" : ""
         ].filter(Boolean).join(" ");
 
         cell.textContent = isFree ? "FREE" : (value ?? "");
@@ -1171,14 +1241,16 @@ function renderCard(card) {
 
     wrapper.appendChild(grid);
 
-    // ---- Winner overlay ----
-    if (winningPattern) {
+    // ---- Winner overlay — only shown on a TRUE win ----
+    if (isTrueWinner) {
         const overlay = document.createElement("div");
         overlay.className = "card-winner-overlay";
+        // In double mode show both pattern names joined with "+"
+        const patternNames = winningPatterns.map(p => p.name).join(" + ");
         overlay.innerHTML = `
             <span class="winner-bingo-text">BINGO!</span>
             <span class="winner-game-name">${game.name}</span>
-            <span class="winner-pattern-name">${winningPattern.name}</span>
+            <span class="winner-pattern-name">${patternNames}</span>
         `;
         wrapper.appendChild(overlay);
     }

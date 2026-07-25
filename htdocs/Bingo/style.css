@@ -1,4 +1,4 @@
-/* Version 1.1 */
+/* Version 1.2 */
 :root {
     --surface: #f8f9fa;
     --surface-strong: #ffffff;
@@ -1000,6 +1000,14 @@ body {
     min-width: 0;
 }
 
+/* Row containing the game name + Double badge side-by-side */
+.game-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .selected-game-name {
     font-size: 16px;
     font-weight: 600;
@@ -1013,9 +1021,62 @@ body {
     color: var(--primary);
 }
 
+/* Double mode badge — green pill shown next to the game name */
+.double-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    background: rgba(67, 160, 71, 0.14);
+    color: #2e7d32;
+    border: 1px solid rgba(67, 160, 71, 0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .game-menu-wrap {
     position: relative;
     flex-shrink: 0;
+}
+
+/* ================================================================
+   DOUBLE MODE CHECKBOX — inside the game picker items
+================================================================ */
+
+/* Container row at the bottom of each game-picker-item */
+.double-cb-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(67, 160, 71, 0.08);
+    border: 1px solid rgba(67, 160, 71, 0.2);
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Let the checkbox be a normal size but touch-friendly */
+.double-cb-input {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    accent-color: #43a047;
+    cursor: pointer;
+}
+
+.double-cb-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2e7d32;
+    cursor: pointer;
+    user-select: none;
 }
 
 /* ================================================================
@@ -1163,6 +1224,20 @@ body {
     z-index: 2;
     position: relative;
 }
+
+/* Partial win cell — shown in double mode when only 1 of 2 required patterns is matched.
+   Blue highlight instead of gold so the user knows more is needed. */
+.bingo-cell.partial-win-cell {
+    background: var(--primary-soft) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    box-shadow: inset 0 1px 3px rgba(26, 115, 232, 0.18);
+    z-index: 2;
+    position: relative;
+}
+
+/* Suppress the daub dot on partial-win cells so the number stays readable */
+.bingo-cell.partial-win-cell::before { display: none !important; }
 
 /* Override daub dot on win cells */
 .bingo-cell.win-cell::before { display: none !important; }
