@@ -1,4 +1,4 @@
-// Version 1.3
+// Version 1.4
 // ============================================================
 // SESSION STATE
 // ============================================================
@@ -650,14 +650,15 @@ function renderGamePickerItem(game) {
     const firstPattern = game.patterns[0];
     const patternCells = new Set(firstPattern ? firstPattern.cells : []);
 
+    // Outer wrapper — flex row containing everything
     const item = document.createElement("div");
     item.className = "game-picker-item" + (isSelected ? " selected" : "");
     item.setAttribute("role", "button");
     item.setAttribute("tabindex", "0");
 
+    // Mini 5×5 card preview
     const miniGrid = document.createElement("div");
     miniGrid.className = "mini-card-grid";
-
     for (let i = 0; i < 25; i++) {
         const mc = document.createElement("div");
         mc.className = [
@@ -668,6 +669,7 @@ function renderGamePickerItem(game) {
         miniGrid.appendChild(mc);
     }
 
+    // Game name + pattern count
     const info = document.createElement("div");
     info.className = "game-picker-info";
 
@@ -685,6 +687,7 @@ function renderGamePickerItem(game) {
     item.appendChild(miniGrid);
     item.appendChild(info);
 
+    // Selected checkmark — spacer so it doesn't collide with double toggle
     if (isSelected) {
         const check = document.createElement("span");
         check.className = "game-picker-check";
@@ -692,34 +695,45 @@ function renderGamePickerItem(game) {
         item.appendChild(check);
     }
 
-    // ---- Double mode checkbox (shown for games with >1 pattern) ----
+    // ---- Double mode toggle (shown only for games with >1 pattern) ----
+    // Lives on the far right of the row; stopping propagation here keeps
+    // clicks on the toggle from also triggering game selection.
     if (game.patterns.length > 1) {
         const doubleWrap = document.createElement("div");
         doubleWrap.className = "double-cb-wrap";
-        // Prevent item-level click from also firing when the checkbox area is tapped
-        doubleWrap.addEventListener("click", e => e.stopPropagation());
+        // Stop all pointer events from bubbling up to the item row
+        doubleWrap.addEventListener("click",  e => e.stopPropagation());
+        doubleWrap.addEventListener("pointerdown", e => e.stopPropagation());
 
         const cb = document.createElement("input");
         cb.type = "checkbox";
         cb.id = `double-cb-${game.id}`;
         cb.className = "double-cb-input";
-        // Checked state reflects current session doubleMode for THIS game
+        // Reflect doubleMode state only when this game is active
         cb.checked = (session.gameId === game.id && session.doubleMode);
+        cb.setAttribute("aria-label", "Double bingo mode");
 
         const lbl = document.createElement("label");
         lbl.htmlFor = `double-cb-${game.id}`;
         lbl.className = "double-cb-label";
         lbl.textContent = "Double";
 
+        // Toggling the checkbox switches doubleMode on/off WITHOUT selecting the
+        // game or closing the picker — the user may want to review other games.
         cb.addEventListener("change", e => {
             e.stopPropagation();
-            // Select this game if it isn’t already the active one
-            if (session.gameId !== game.id) {
+            // If this game isn't selected yet, select it silently when enabling double
+            if (cb.checked && session.gameId !== game.id) {
                 session.gameId = game.id;
             }
             session.doubleMode = cb.checked;
             saveSession();
-            closeGamePicker();
+            // Refresh items in place so other checkboxes reset
+            const list = document.getElementById("gamePickerModal")?.querySelector(".game-picker-list");
+            if (list) {
+                list.innerHTML = "";
+                for (const g of availableGames) list.appendChild(renderGamePickerItem(g));
+            }
             shouldScrollToWinner = true;
             updateUI();
         });
@@ -729,6 +743,7 @@ function renderGamePickerItem(game) {
         item.appendChild(doubleWrap);
     }
 
+    // Clicking anywhere on the item row (outside the double wrap) selects the game
     item.addEventListener("click", () => selectGame(game.id));
     item.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectGame(game.id); }

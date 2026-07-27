@@ -1,4 +1,4 @@
-/* Version 1.3 */
+/* Version 1.4 */
 
 /* ================================================================
    THEME: BASIC (default)
@@ -1626,32 +1626,39 @@ body {
    DOUBLE MODE CHECKBOX — inside the game picker items
 ================================================================ */
 
-/* Container row at the bottom of each game-picker-item */
+/* Compact pill on the far right of the item row */
 .double-cb-wrap {
     display: flex;
     align-items: center;
-    gap: 7px;
-    margin-top: 6px;
-    padding: 6px 10px;
+    gap: 5px;
+    flex-shrink: 0;               /* never squished by the game name */
+    margin-left: auto;            /* push hard to the right */
+    padding: 5px 9px;
     border-radius: 8px;
     background: rgba(67, 160, 71, 0.08);
     border: 1px solid rgba(67, 160, 71, 0.2);
-    cursor: pointer;
-    width: 100%;
-    box-sizing: border-box;
+    cursor: default;              /* cursor handled by child elements */
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.double-cb-wrap:hover {
+    background: rgba(67, 160, 71, 0.14);
+    border-color: rgba(67, 160, 71, 0.35);
 }
 
 /* Let the checkbox be a normal size but touch-friendly */
 .double-cb-input {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
     accent-color: #43a047;
     cursor: pointer;
+    margin: 0;
 }
 
 .double-cb-label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #2e7d32;
     cursor: pointer;
