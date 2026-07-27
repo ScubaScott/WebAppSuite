@@ -1,4 +1,4 @@
-/* Version 1.4 */
+/* Version 1.5 */
 
 /* ================================================================
    THEME: BASIC (default)
@@ -728,9 +728,46 @@ body {
 }
 
 .total-count {
-    justify-self: end;
     font-size: 13px;
     color: var(--text-subtle);
+}
+
+/* ---- Footer row inside .last-five-card ---- */
+/* Flex row: last-man status pinned left, called count pinned right */
+.stat-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Last Man status label */
+.lastman-status {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: color 0.3s ease;
+}
+
+/* Standing = at least one card has no daubed numbers — green/encouraging */
+.lastman-status.standing {
+    color: #2e7d32;
+}
+
+/* Sitting = every active card has at least 1 daubed number — muted amber */
+.lastman-status.sitting {
+    color: #b45309;
+}
+
+/* Dive Bar theme overrides for lastman and footer */
+[data-theme="divebar"] .lastman-status.standing {
+    color: #66bb6a;
+    text-shadow: 0 0 6px rgba(102, 187, 106, 0.4);
+}
+
+[data-theme="divebar"] .lastman-status.sitting {
+    color: #ffa726;
+    text-shadow: 0 0 6px rgba(255, 167, 38, 0.35);
 }
 
 /* ================================

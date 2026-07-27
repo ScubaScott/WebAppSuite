@@ -1,4 +1,4 @@
-// Version 1.4
+// Version 1.5
 // ============================================================
 // SESSION STATE
 // ============================================================
@@ -20,6 +20,7 @@ const trackingGrid = document.getElementById("trackingGrid");
 const sessionWordBar = document.getElementById("sessionWordBar");
 const lastFiveList = document.getElementById("lastFiveList");
 const totalCalledSpan = document.getElementById("totalCalled");
+const lastManStatus   = document.getElementById("lastManStatus");
 const callLogLink = document.getElementById("callLogLink");
 const newSessionBtn = document.getElementById("newSessionBtn");
 const addCardBtn = document.getElementById("addCardBtn");
@@ -104,9 +105,30 @@ loadSession();
 // ============================================================
 
 function updateUI() {
-    // 1. Total called count
+    // 1. Total called count and Last Man status
     if (totalCalledSpan) {
-        totalCalledSpan.textContent = session.called.length;
+        totalCalledSpan.textContent = `Called: ${session.called.length}`;
+    }
+
+    // Last Man: Standing = at least one active card has no daubed squares.
+    // Sitting = every active card has at least 1 daubed non-FREE square called.
+    if (lastManStatus) {
+        const calledSet = new Set(session.called);
+        const activeCards = session.cards.filter(c => c.active);
+
+        // A card is "standing" if none of its non-FREE squares are in the called set
+        const anyStanding = activeCards.length === 0
+            ? false   // no cards = nothing to stand
+            : activeCards.some(c =>
+                c.squares.every((val, idx) =>
+                    idx === 12 || val === null || val === "FREE" || !calledSet.has(val)
+                )
+            );
+
+        const isStanding = anyStanding;
+        lastManStatus.textContent = `Last man: ${isStanding ? "Standing" : "Sitting"}`;
+        lastManStatus.classList.toggle("standing", isStanding);
+        lastManStatus.classList.toggle("sitting",  !isStanding);
     }
 
     // 2. Last 6 called balls list — displayed as bingo-square-badge tiles
