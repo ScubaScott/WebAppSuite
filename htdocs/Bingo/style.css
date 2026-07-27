@@ -1,5 +1,11 @@
-/* Version 1.2 */
-:root {
+/* Version 1.3 */
+
+/* ================================================================
+   THEME: BASIC (default)
+   Clean, light, modern — all the original colors
+================================================================ */
+:root,
+[data-theme="basic"] {
     --surface: #f8f9fa;
     --surface-strong: #ffffff;
     --text-main: #202124;
@@ -14,7 +20,580 @@
     --daub-alpha: 0.25;
     --daub-color: rgba(var(--daub-rgb), var(--daub-alpha));
     --daub-color-solid: rgb(var(--daub-rgb));
+
+    /* Theme-specific extras (unused in basic, defined for override) */
+    --theme-bg-image: none;
+    --theme-topbar-extra: none;
+    --theme-noise: none;
 }
+
+/* ================================================================
+   THEME: DIVE BAR
+   Dingy dark interior, cheap neon-lit bingo, beer-stained bar top.
+   Subdued — atmosphere only, no interference with readability.
+================================================================ */
+[data-theme="divebar"] {
+    /* Dark, tobacco-stained surface */
+    --surface: #1a1510;
+    --surface-strong: #221d16;
+    --text-main: #e8dcc8;
+    --text-subtle: #9a8b76;
+    --border: #3d3328;
+    --primary: #d4a017;          /* dim amber neon — cheap bulb yellow */
+    --primary-soft: rgba(212, 160, 23, 0.15);
+    --card: #211a12;             /* worn dark wood card face */
+
+    /* Dauber: red neon dauber for the bar vibe */
+    --daub-rgb: 200, 40, 30;
+    --daub-alpha: 0.30;
+    --daub-color: rgba(var(--daub-rgb), var(--daub-alpha));
+    --daub-color-solid: rgb(var(--daub-rgb));
+
+    /* Bar-top texture hint via CSS */
+    --theme-bg-image: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(255,255,255,0.018) 3px,
+        rgba(255,255,255,0.018) 4px
+    );
+}
+
+/* ---- Dive Bar body background — worn wood with subtle grain ---- */
+[data-theme="divebar"] body {
+    /* Layered: wood-grain stripes + dark base */
+    background:
+        repeating-linear-gradient(
+            170deg,
+            rgba(255,255,255,0.012) 0px,
+            rgba(255,255,255,0.012) 1px,
+            transparent 1px,
+            transparent 28px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(0,0,0,0.08) 0px,
+            rgba(0,0,0,0.08) 1px,
+            transparent 1px,
+            transparent 48px
+        ),
+        #1a1510;
+}
+
+/* ---- Dive Bar topbar — darker wood trim ---- */
+[data-theme="divebar"] .topbar {
+    background: #0f0c08;
+    border-bottom: 2px solid #3d3328;
+    box-shadow: 0 2px 18px rgba(0,0,0,0.55);
+}
+
+/* ---- Neon glow on the H1 title in dive bar mode ---- */
+[data-theme="divebar"] .topbar h1 {
+    color: #e8dcc8;
+    text-shadow:
+        0 0 8px rgba(212, 160, 23, 0.4),
+        0 0 20px rgba(212, 160, 23, 0.18);
+    letter-spacing: 0.04em;
+}
+
+/* ---- Back link ---- */
+[data-theme="divebar"] .back-link {
+    color: var(--primary);
+}
+
+/* ---- New Session button in dive bar ---- */
+[data-theme="divebar"] .primary-btn {
+    background: #8b0e0e;
+    color: #f5d9c8;
+    border-color: #a01515;
+    box-shadow: 0 0 10px rgba(180, 20, 20, 0.35);
+}
+
+[data-theme="divebar"] .primary-btn:hover {
+    background: #a01515;
+    box-shadow: 0 0 18px rgba(200, 30, 30, 0.5);
+}
+
+/* ---- Cards / panels — beat-up dark wood surface ---- */
+[data-theme="divebar"] .last-five-card,
+[data-theme="divebar"] .number-picker,
+[data-theme="divebar"] .bingo-cards-section,
+[data-theme="divebar"] .bingo-card,
+[data-theme="divebar"] .game-section,
+[data-theme="divebar"] .card-number-picker {
+    background: var(--card);
+    border-color: var(--border);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ---- Cup ring stains on .last-five-card ---- */
+[data-theme="divebar"] .last-five-card::after {
+    content: "";
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid rgba(180, 140, 60, 0.11);
+    top: 8px;
+    right: 28px;
+    pointer-events: none;
+}
+[data-theme="divebar"] .last-five-card::before {
+    content: "";
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(160, 120, 50, 0.09);
+    top: 18px;
+    right: 50px;
+    pointer-events: none;
+}
+
+/* Make .last-five-card relative so the ring pseudo-elements work */
+[data-theme="divebar"] .last-five-card {
+    position: relative;
+    overflow: hidden;
+}
+
+/* ---- Session word bar (BINGO letters) — neon sign feel ---- */
+[data-theme="divebar"] .session-word-bar {
+    background: #0f0c08;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .session-word-bar span {
+    background: #0f0c08;
+    color: #d4a017;
+    text-shadow:
+        0 0 6px rgba(212, 160, 23, 0.7),
+        0 0 20px rgba(212, 160, 23, 0.3);
+}
+
+/* ---- Bingo cells in dive bar — worn card paper ---- */
+[data-theme="divebar"] .bingo-cell {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .bingo-cell:hover:not(.free) {
+    border-color: var(--primary);
+    background: rgba(212, 160, 23, 0.1);
+    color: var(--primary);
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.25);
+}
+
+/* ---- Toggle buttons ---- */
+[data-theme="divebar"] .input-mode-toggle {
+    background: #0f0c08;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .toggle-btn {
+    color: #9a8b76;
+}
+
+[data-theme="divebar"] .toggle-btn.active {
+    background: #8b0e0e;
+    color: #f5d9c8;
+    box-shadow: 0 0 12px rgba(180, 20, 20, 0.4);
+}
+
+[data-theme="divebar"] .toggle-btn:not(.active):hover {
+    background: rgba(212, 160, 23, 0.12);
+    color: var(--primary);
+}
+
+/* ---- Pick buttons (number grid) ---- */
+[data-theme="divebar"] .pick-btn {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .pick-btn:hover {
+    background: rgba(212, 160, 23, 0.12);
+    color: var(--primary);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.2);
+}
+
+/* ---- Last-five badges ---- */
+[data-theme="divebar"] .bingo-square-badge {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .bingo-square-badge .sq-letter {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .bingo-square-badge.newest {
+    border-color: #d4a017;
+    background: rgba(212, 160, 23, 0.14);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.3);
+}
+
+[data-theme="divebar"] .bingo-square-badge.newest .sq-letter,
+[data-theme="divebar"] .bingo-square-badge.newest .sq-num {
+    color: #d4a017;
+}
+
+/* ---- Dropdowns ---- */
+[data-theme="divebar"] .dauber-menu-dropdown,
+[data-theme="divebar"] .card-menu-dropdown {
+    background: #221d16;
+    border-color: #3d3328;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+}
+
+[data-theme="divebar"] .card-menu-item {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .card-menu-item:hover {
+    background: rgba(212, 160, 23, 0.1);
+}
+
+/* ---- Game picker modal ---- */
+[data-theme="divebar"] .game-picker-panel {
+    background: #221d16;
+}
+
+[data-theme="divebar"] .game-picker-header {
+    border-bottom-color: #3d3328;
+}
+
+[data-theme="divebar"] .game-picker-title {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .game-picker-item {
+    background: #2a2118;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .game-picker-item:hover {
+    background: rgba(212, 160, 23, 0.1);
+    border-color: #d4a017;
+}
+
+[data-theme="divebar"] .game-picker-item.selected {
+    background: rgba(212, 160, 23, 0.12);
+    border-color: #d4a017;
+}
+
+[data-theme="divebar"] .game-picker-name {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .mini-cell { background: #3d3328; }
+[data-theme="divebar"] .mini-cell.mini-pattern { background: #d4a017; }
+[data-theme="divebar"] .mini-cell.mini-free { background: rgba(200, 40, 30, 0.3); }
+
+/* ---- Link buttons ---- */
+[data-theme="divebar"] .link-button {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .link-button:hover {
+    background: rgba(212, 160, 23, 0.1);
+}
+
+/* ---- Card menu hamburger ---- */
+[data-theme="divebar"] .card-menu-btn:hover,
+[data-theme="divebar"] .card-menu-btn.open {
+    background: rgba(212, 160, 23, 0.12);
+}
+
+[data-theme="divebar"] .card-menu-btn:hover span,
+[data-theme="divebar"] .card-menu-btn.open span {
+    background: #d4a017;
+}
+
+/* ---- Serial/label tags ---- */
+[data-theme="divebar"] .bingo-card-serial-tag {
+    background: rgba(212, 160, 23, 0.15);
+    color: #d4a017;
+}
+
+/* ---- Inputs in dive bar ---- */
+[data-theme="divebar"] .bingo-card-label-input,
+[data-theme="divebar"] .bingo-card-serial-input {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .bingo-card-label-input:focus,
+[data-theme="divebar"] .bingo-card-serial-input:focus {
+    border-color: #d4a017;
+    box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.2);
+}
+
+/* ---- Winner overlay in dive bar — warm gold ---- */
+[data-theme="divebar"] .card-winner-overlay {
+    background: linear-gradient(135deg, #5a3a00 0%, #8b5e00 100%);
+}
+
+/* ---- Gear button in dive bar ---- */
+[data-theme="divebar"] #settingsGearBtn {
+    background: #221d16 !important;
+    border-color: #3d3328 !important;
+    color: #d4a017 !important;
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.2) !important;
+}
+
+/* ================================================================
+   FLOATING GEAR BUTTON — hover spin animation
+================================================================ */
+#settingsGearBtn:hover {
+    transform: rotate(35deg) scale(1.08);
+    box-shadow: 0 4px 18px rgba(60, 64, 67, 0.2);
+}
+
+/* ================================================================
+   SETTINGS MODAL
+================================================================ */
+
+/* Backdrop overlay */
+.settings-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: flex-end;          /* slide up from bottom */
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.16s ease;
+}
+
+/* Panel — bottom sheet */
+.settings-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+}
+
+/* Header row: title + close button */
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--text-subtle);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.settings-close-btn:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* Section with a label */
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+}
+
+/* ---- Theme picker grid ---- */
+.theme-grid {
+    display: flex;
+    gap: 12px;
+}
+
+.theme-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 8px 12px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    position: relative;
+}
+
+.theme-card[aria-pressed="true"] {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.theme-card:hover:not([aria-pressed="true"]) {
+    border-color: var(--text-subtle);
+}
+
+/* Checkmark badge (top-right) */
+.theme-card-check {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--primary);
+}
+
+/* Theme name label */
+.theme-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Mini preview box */
+.theme-preview {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top "header" stripe */
+.tp-header {
+    height: 20%;
+    background: inherit;
+    flex-shrink: 0;
+}
+
+/* Grid of mini cells */
+.tp-cells {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding: 3px;
+}
+
+.tp-cell {
+    border-radius: 2px;
+}
+
+/* ---- Basic preview colors ---- */
+.theme-preview-basic {
+    background: #f8f9fa;
+    border-color: #dfe1e5;
+}
+
+.theme-preview-basic .tp-header {
+    background: #ffffff;
+    border-bottom: 1px solid #dfe1e5;
+}
+
+.theme-preview-basic .tp-cell {
+    background: #ffffff;
+    border: 1px solid #dfe1e5;
+}
+
+.theme-preview-basic .tp-daubed {
+    background: rgba(26, 115, 232, 0.3);
+    border-color: transparent;
+    border-radius: 50%;
+}
+
+/* ---- Dive Bar preview colors ---- */
+.theme-preview-divebar {
+    background: #1a1510;
+    border-color: #3d3328;
+}
+
+.theme-preview-divebar .tp-header {
+    background: #0f0c08;
+    border-bottom: 1px solid #3d3328;
+}
+
+.theme-preview-divebar .tp-cell {
+    background: #2a2118;
+    border: 1px solid #3d3328;
+}
+
+.theme-preview-divebar .tp-daubed {
+    background: rgba(200, 40, 30, 0.55);
+    border-color: transparent;
+    border-radius: 50%;
+}
+
+/* ---- Dive Bar settings panel coloring ---- */
+[data-theme="divebar"] .settings-panel {
+    background: #221d16;
+    border-color: #3d3328;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.65);
+}
+
+[data-theme="divebar"] .settings-header {
+    border-bottom-color: #3d3328;
+}
+
+[data-theme="divebar"] .theme-card {
+    background: #2a2118;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .theme-card[aria-pressed="true"] {
+    border-color: #d4a017;
+    box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.18);
+}
+
+[data-theme="divebar"] .theme-card-name {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .theme-card-check {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .settings-close-btn:hover {
+    background: rgba(212, 160, 23, 0.12);
+    color: #d4a017;
+}
+
+
 
 body {
     margin: 0;

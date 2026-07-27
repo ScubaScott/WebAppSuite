@@ -1,4 +1,4 @@
-// Version 1.2
+// Version 1.3
 // ============================================================
 // SESSION STATE
 // ============================================================
@@ -1307,6 +1307,93 @@ if (addCardBtn) addCardBtn.addEventListener("click", addCard);
 if (loadCardBtn) loadCardBtn.addEventListener("click", openCardPicker);
 
 // ============================================================
+// THEME MANAGEMENT
+// ============================================================
+
+// Valid theme identifiers
+const THEMES = ["basic", "divebar"];
+
+// DOM refs for settings modal
+const settingsGearBtn  = document.getElementById("settingsGearBtn");
+const settingsModal    = document.getElementById("settingsModal");
+const settingsCloseBtn = document.getElementById("settingsCloseBtn");
+const themeBasicBtn    = document.getElementById("themeBasic");
+const themeDiveBarBtn  = document.getElementById("themeDiveBar");
+const checkBasic       = document.getElementById("checkBasic");
+const checkDiveBar     = document.getElementById("checkDiveBar");
+
+// Apply the named theme to the <html> element and persist it
+function applyTheme(name) {
+    if (!THEMES.includes(name)) name = "basic";
+    document.documentElement.setAttribute("data-theme", name);
+    localStorage.setItem("bingoTheme", name);
+    updateThemeCards(name);
+}
+
+// Update the aria-pressed state and checkmark visibility on theme picker cards
+function updateThemeCards(active) {
+    if (!themeBasicBtn || !themeDiveBarBtn) return;
+
+    // Basic card
+    themeBasicBtn.setAttribute("aria-pressed", active === "basic" ? "true" : "false");
+    if (checkBasic)  checkBasic.classList.toggle("hidden",  active !== "basic");
+
+    // Dive Bar card
+    themeDiveBarBtn.setAttribute("aria-pressed", active === "divebar" ? "true" : "false");
+    if (checkDiveBar) checkDiveBar.classList.toggle("hidden", active !== "divebar");
+}
+
+// Load saved theme (or default to basic) on page load
+function initTheme() {
+    const saved = localStorage.getItem("bingoTheme") || "basic";
+    applyTheme(saved);
+}
+
+// Open the settings modal
+function openSettings() {
+    if (!settingsModal) return;
+    settingsModal.classList.remove("hidden");
+    document.body.style.overflow = "hidden"; // prevent background scroll
+}
+
+// Close the settings modal
+function closeSettings() {
+    if (!settingsModal) return;
+    settingsModal.classList.add("hidden");
+    document.body.style.overflow = "";
+}
+
+// Gear button opens the modal
+if (settingsGearBtn) {
+    settingsGearBtn.addEventListener("click", openSettings);
+}
+
+// Close button in modal header
+if (settingsCloseBtn) {
+    settingsCloseBtn.addEventListener("click", closeSettings);
+}
+
+// Clicking the backdrop (outside the panel) closes the modal
+if (settingsModal) {
+    settingsModal.addEventListener("click", (e) => {
+        if (e.target === settingsModal) closeSettings();
+    });
+}
+
+// Theme card click handlers
+if (themeBasicBtn) {
+    themeBasicBtn.addEventListener("click", () => {
+        applyTheme("basic");
+    });
+}
+
+if (themeDiveBarBtn) {
+    themeDiveBarBtn.addEventListener("click", () => {
+        applyTheme("divebar");
+    });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 
@@ -1314,3 +1401,4 @@ setInputMode("letter");
 applyDauberSettings();
 updateUI();
 loadGames();
+initTheme();
