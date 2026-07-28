@@ -34,14 +34,16 @@
 ================================================================ */
 [data-theme="divebar"] {
     /* Dark, tobacco-stained surface */
-    --surface: #1a1510;
-    --surface-strong: #221d16;
+    --surface: #8a5f37;
+    --surface-strong: #61461f;
     --text-main: #e8dcc8;
     --text-subtle: #9a8b76;
-    --border: #3d3328;
-    --primary: #d4a017;          /* dim amber neon — cheap bulb yellow */
+    --border: #53381b;
+    --primary: #d4a017;
+    /* dim amber neon — cheap bulb yellow */
     --primary-soft: rgba(212, 160, 23, 0.15);
-    --card: #211a12;             /* worn dark wood card face */
+    --card: #61472a;
+    /* worn dark wood card face */
 
     /* Dauber: red neon dauber for the bar vibe */
     --daub-rgb: 200, 40, 30;
@@ -50,33 +52,27 @@
     --daub-color-solid: rgb(var(--daub-rgb));
 
     /* Bar-top texture hint via CSS */
-    --theme-bg-image: repeating-linear-gradient(
-        90deg,
-        transparent 0px,
-        transparent 3px,
-        rgba(255,255,255,0.018) 3px,
-        rgba(255,255,255,0.018) 4px
-    );
+    --theme-bg-image: repeating-linear-gradient(90deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(255, 255, 255, 0.018) 3px,
+            rgba(255, 255, 255, 0.018) 4px);
 }
 
 /* ---- Dive Bar body background — worn wood with subtle grain ---- */
 [data-theme="divebar"] body {
     /* Layered: wood-grain stripes + dark base */
     background:
-        repeating-linear-gradient(
-            170deg,
-            rgba(255,255,255,0.012) 0px,
-            rgba(255,255,255,0.012) 1px,
+        repeating-linear-gradient(170deg,
+            rgba(255, 255, 255, 0.012) 0px,
+            rgba(255, 255, 255, 0.012) 1px,
             transparent 1px,
-            transparent 28px
-        ),
-        repeating-linear-gradient(
-            90deg,
-            rgba(0,0,0,0.08) 0px,
-            rgba(0,0,0,0.08) 1px,
+            transparent 28px),
+        repeating-linear-gradient(90deg,
+            rgba(0, 0, 0, 0.08) 0px,
+            rgba(0, 0, 0, 0.08) 1px,
             transparent 1px,
-            transparent 48px
-        ),
+            transparent 48px),
         #1a1510;
 }
 
@@ -84,7 +80,7 @@
 [data-theme="divebar"] .topbar {
     background: #0f0c08;
     border-bottom: 2px solid #3d3328;
-    box-shadow: 0 2px 18px rgba(0,0,0,0.55);
+    box-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
 /* ---- Neon glow on the H1 title in dive bar mode ---- */
@@ -123,7 +119,7 @@
 [data-theme="divebar"] .card-number-picker {
     background: var(--card);
     border-color: var(--border);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* ---- Cup ring stains on .last-five-card ---- */
@@ -138,6 +134,7 @@
     right: 28px;
     pointer-events: none;
 }
+
 [data-theme="divebar"] .last-five-card::before {
     content: "";
     position: absolute;
@@ -245,7 +242,7 @@
 [data-theme="divebar"] .card-menu-dropdown {
     background: #221d16;
     border-color: #3d3328;
-    box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
 }
 
 [data-theme="divebar"] .card-menu-item {
@@ -288,9 +285,17 @@
     color: #e8dcc8;
 }
 
-[data-theme="divebar"] .mini-cell { background: #3d3328; }
-[data-theme="divebar"] .mini-cell.mini-pattern { background: #d4a017; }
-[data-theme="divebar"] .mini-cell.mini-free { background: rgba(200, 40, 30, 0.3); }
+[data-theme="divebar"] .mini-cell {
+    background: #3d3328;
+}
+
+[data-theme="divebar"] .mini-cell.mini-pattern {
+    background: #d4a017;
+}
+
+[data-theme="divebar"] .mini-cell.mini-free {
+    background: rgba(200, 40, 30, 0.3);
+}
 
 /* ---- Link buttons ---- */
 [data-theme="divebar"] .link-button {
@@ -365,7 +370,8 @@
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
     display: flex;
-    align-items: flex-end;          /* slide up from bottom */
+    align-items: flex-end;
+    /* slide up from bottom */
     justify-content: center;
     z-index: 1000;
     animation: fadeIn 0.16s ease;
@@ -563,7 +569,7 @@
 [data-theme="divebar"] .settings-panel {
     background: #221d16;
     border-color: #3d3328;
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.65);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.65);
 }
 
 [data-theme="divebar"] .settings-header {
@@ -802,7 +808,7 @@ body {
     cursor: pointer;
     user-select: none;
     transition: transform 0.12s ease, box-shadow 0.12s ease,
-                border-color 0.15s ease, background 0.15s ease;
+        border-color 0.15s ease, background 0.15s ease;
     position: relative;
     gap: 1px;
 }
@@ -907,7 +913,7 @@ body {
     font-size: clamp(11px, 2.8vw, 15px);
     /* Smooth daub transition */
     transition: transform 0.12s ease, box-shadow 0.12s ease,
-                background 0.15s ease, border-color 0.15s ease;
+        background 0.15s ease, border-color 0.15s ease;
 }
 
 .bingo-cell.grid-num-cell:hover:not(.daubed) {
@@ -1084,7 +1090,7 @@ body {
     font-size: 12px;
     font-weight: 900;
     color: #ffffff;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .dauber-menu-divider {
@@ -1163,8 +1169,15 @@ body {
 }
 
 @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .pick-btn {
@@ -1668,13 +1681,16 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    flex-shrink: 0;               /* never squished by the game name */
-    margin-left: auto;            /* push hard to the right */
+    flex-shrink: 0;
+    /* never squished by the game name */
+    margin-left: auto;
+    /* push hard to the right */
     padding: 5px 9px;
     border-radius: 8px;
     background: rgba(67, 160, 71, 0.08);
     border: 1px solid rgba(67, 160, 71, 0.2);
-    cursor: default;              /* cursor handled by child elements */
+    cursor: default;
+    /* cursor handled by child elements */
     white-space: nowrap;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -1718,8 +1734,13 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .game-picker-panel {
@@ -1735,8 +1756,15 @@ body {
 }
 
 @keyframes slideUp {
-    from { transform: translateY(50px); opacity: 0.5; }
-    to   { transform: translateY(0);    opacity: 1;   }
+    from {
+        transform: translateY(50px);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .game-picker-header {
@@ -1777,7 +1805,10 @@ body {
     transition: background 0.13s ease, border-color 0.13s ease;
 }
 
-.game-picker-item:hover { background: var(--primary-soft); border-color: var(--primary); }
+.game-picker-item:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
 
 .game-picker-item.selected {
     background: var(--primary-soft);
@@ -1825,9 +1856,19 @@ body {
     background: var(--border);
 }
 
-.mini-cell.mini-free    { border-radius: 50%; background: rgba(26,115,232,0.18); }
-.mini-cell.mini-pattern { background: var(--primary); }
-.mini-cell.mini-free.mini-pattern { background: var(--primary); border-radius: 50%; }
+.mini-cell.mini-free {
+    border-radius: 50%;
+    background: rgba(26, 115, 232, 0.18);
+}
+
+.mini-cell.mini-pattern {
+    background: var(--primary);
+}
+
+.mini-cell.mini-free.mini-pattern {
+    background: var(--primary);
+    border-radius: 50%;
+}
 
 /* ================================================================
    WINNER CARD
@@ -1836,14 +1877,14 @@ body {
 .card-winner {
     border-color: #f9a825 !important;
     box-shadow: 0 0 0 3px rgba(249, 168, 37, 0.4),
-                0 8px 30px rgba(249, 168, 37, 0.2) !important;
+        0 8px 30px rgba(249, 168, 37, 0.2) !important;
 }
 
 .bingo-cell.win-cell {
     background: linear-gradient(135deg, #ffd600, #ffab00) !important;
     border-color: transparent !important;
     color: #1a1a1a !important;
-    box-shadow: inset 0 1px 3px rgba(255,255,255,0.4);
+    box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.4);
     z-index: 2;
     position: relative;
 }
@@ -1860,10 +1901,14 @@ body {
 }
 
 /* Suppress the daub dot on partial-win cells so the number stays readable */
-.bingo-cell.partial-win-cell::before { display: none !important; }
+.bingo-cell.partial-win-cell::before {
+    display: none !important;
+}
 
 /* Override daub dot on win cells */
-.bingo-cell.win-cell::before { display: none !important; }
+.bingo-cell.win-cell::before {
+    display: none !important;
+}
 
 .card-winner-overlay {
     background: linear-gradient(135deg, #1565c0 0%, #1a73e8 100%);
@@ -1877,8 +1922,15 @@ body {
 }
 
 @keyframes winnerPop {
-    from { opacity: 0; transform: scale(0.82) translateY(-6px); }
-    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+    from {
+        opacity: 0;
+        transform: scale(0.82) translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .winner-bingo-text {
