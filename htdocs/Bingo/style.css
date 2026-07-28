@@ -1,4 +1,4 @@
-/* Version 1.5 */
+/* Version 1.6 */
 
 /* ================================================================
    THEME: BASIC (default)
@@ -155,7 +155,7 @@
 
 /* ---- Session word bar (BINGO letters) — neon sign feel ---- */
 [data-theme="divebar"] .session-word-bar {
-    background: #0f0c08;
+    background: #382c1a;
     border-color: #3d3328;
 }
 
@@ -904,12 +904,13 @@ body {
     gap: 4px;
 }
 
-/* Override cursor for grid cells — they are always clickable */
+/* Override cursor for grid cells — circular bingo balls for input grid */
 .bingo-cell.grid-num-cell {
     cursor: pointer;
-    /* Force square aspect-ratio for the 15-row grid */
+    /* Circular aspect ratio for number input grid */
     aspect-ratio: 1;
     min-height: 0;
+    border-radius: 50%;
     font-size: clamp(11px, 2.8vw, 15px);
     /* Smooth daub transition */
     transition: transform 0.12s ease, box-shadow 0.12s ease,
@@ -1180,12 +1181,17 @@ body {
     }
 }
 
+/* Circular bingo ball number input buttons */
 .pick-btn {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 52px;
-    border-radius: 12px;
+    aspect-ratio: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 54px;
+    margin: 0 auto;
+    border-radius: 50%;
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text-main);
@@ -1210,7 +1216,7 @@ body {
 .pick-btn.called::after {
     content: "";
     position: absolute;
-    inset: 18%;
+    inset: 12%;
     background: var(--daub-color);
     border-radius: 50%;
 }
@@ -1585,7 +1591,8 @@ body {
 
 @media (max-width: 640px) {
     .pick-btn {
-        min-height: 44px;
+        aspect-ratio: 1;
+        min-height: 0;
         font-size: 13px;
     }
 

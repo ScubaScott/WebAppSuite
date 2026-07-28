@@ -1,4 +1,4 @@
-// Version 1.5
+// Version 1.6
 // ============================================================
 // SESSION STATE
 // ============================================================
@@ -165,6 +165,11 @@ function updateUI() {
         buildTrackingGrid();
     } else if (activeLetterIdx !== -1) {
         buildNumberPicker(activeLetterIdx);
+    } else {
+        if (numberPicker) {
+            numberPicker.classList.add("hidden");
+            numberPicker.innerHTML = "";
+        }
     }
 
     // 5. Game mode title and double mode badge
@@ -304,9 +309,10 @@ function onNumberPick(n) {
         if (!prevWinnerExists) shouldScrollToWinner = true;
     }
 
-    // Keep activeLetterIdx open so subsequent taps in this column require ONLY 1 TAP!
-    updateUI();
+    // Close the input section after selecting a number
+    activeLetterIdx = -1;
     saveSession();
+    updateUI();
 }
 
 // ============================================================
