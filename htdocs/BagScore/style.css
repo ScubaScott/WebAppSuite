@@ -1,0 +1,637 @@
+/* Version 1.0 */
+
+/* CSS Theme Definitions & Custom Properties */
+body[data-theme="dark"] {
+    --bg-main: #0f172a;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text-main: #f8fafc;
+    --text-subtle: #94a3b8;
+    --red-team: #ef4444;
+    --blue-team: #3b82f6;
+    --team-box-bg: rgba(15, 23, 42, 0.4);
+    --team-box-hover: rgba(51, 65, 85, 0.6);
+    --tally-bg: rgba(15, 23, 42, 0.7);
+    --tally-border: rgba(255, 255, 255, 0.08);
+    --tally-text: #e2e8f0;
+    --badge-bg: rgba(0, 0, 0, 0.3);
+    --badge-text: #94a3b8;
+    --turn-bg: #1e293b;
+    --turn-border: #334155;
+    --input-bg: #0f172a;
+    --input-field-bg: #1e293b;
+    --input-border: #334155;
+    --back-link-color: #cbd5e1;
+    --back-link-hover: #ffffff;
+    --modal-bg: #1e293b;
+    --modal-overlay: rgba(0, 0, 0, 0.65);
+    --modal-text: #f8fafc;
+    --modal-subtle: #94a3b8;
+    --header-subtitle: #94a3b8;
+
+    background-color: var(--bg-main);
+    background-image: none;
+}
+
+body[data-theme="grass"] {
+    --bg-main: #256d2b;
+    --card-bg: #ffffff;
+    --card-border: #a7f3d0;
+    --text-main: #064e3b;
+    --text-subtle: #166534;
+    --red-team: #dc2626;
+    --blue-team: #2563eb;
+    --team-box-bg: rgba(255, 255, 255, 0.95);
+    --team-box-hover: #f0fdf4;
+    --tally-bg: #f0fdf4;
+    --tally-border: #bbf7d0;
+    --tally-text: #064e3b;
+    --badge-bg: #dcfce7;
+    --badge-text: #15803d;
+    --turn-bg: #ffffff;
+    --turn-border: #a7f3d0;
+    --input-bg: #f0fdf4;
+    --input-field-bg: #ffffff;
+    --input-border: #86efac;
+    --back-link-color: #ffffff;
+    --back-link-hover: #fef08a;
+    --modal-bg: #ffffff;
+    --modal-overlay: rgba(4, 47, 23, 0.65);
+    --modal-text: #064e3b;
+    --modal-subtle: #15803d;
+    --header-subtitle: #fef9c3;
+
+    background-color: #256d2b;
+    background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(254, 240, 138, 0.35) 0%, transparent 60%),
+        repeating-linear-gradient(90deg, #1b5e20 0px, #1b5e20 45px, #2e7d32 45px, #2e7d32 90px);
+}
+
+/* Base resets and page layout */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text-main);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Top header navigation bar */
+.topbar {
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+/* Navigation link back to suite homepage */
+.back-link {
+    color: var(--back-link-color);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease;
+    margin-bottom: 10px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.back-link:hover {
+    color: var(--back-link-hover);
+    text-decoration: underline;
+}
+
+/* Application Title Header */
+.header-title-wrap {
+    text-align: center;
+    width: 100%;
+}
+
+h1 {
+    margin: 0 0 4px 0;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.subtitle {
+    color: var(--header-subtitle);
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Scoreboard container displaying team details and active turn states */
+.scoreboard {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 450px;
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    gap: 12px;
+    border: 1px solid var(--card-border);
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Individual team card styling */
+.team-box {
+    text-align: center;
+    flex: 1;
+    padding: 12px 10px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--team-box-bg);
+    border: 2px solid transparent;
+}
+
+.team-box.clickable {
+    cursor: pointer;
+}
+
+.team-box.clickable:hover {
+    background: var(--team-box-hover);
+}
+
+.team-box.red { border-top: 4px solid var(--red-team); }
+.team-box.blue { border-top: 4px solid var(--blue-team); }
+
+.team-box.active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.team-box.red.active { background: rgba(239, 68, 68, 0.15); border-color: var(--red-team); }
+.team-box.blue.active { background: rgba(59, 130, 246, 0.15); border-color: var(--blue-team); }
+
+.team-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+.red .team-name { color: var(--red-team); }
+.blue .team-name { color: var(--blue-team); }
+
+.total-score {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text-main);
+}
+
+.bag-count-badge {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--badge-text);
+    margin-top: 4px;
+    background: var(--badge-bg);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.round-pending {
+    font-size: 0.85rem;
+    color: var(--text-subtle);
+    margin-top: 6px;
+    font-weight: 700;
+}
+
+/* Container for bag tallies recorded during current round */
+.tally-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.tally-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--tally-bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--tally-text);
+    border: 1px solid var(--tally-border);
+    font-weight: 600;
+}
+
+.btn-remove {
+    color: #ef4444;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 6px;
+    padding: 0 4px;
+    user-select: none;
+    border-radius: 2px;
+    transition: background 0.15s;
+}
+.btn-remove:hover {
+    color: #dc2626;
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Indicator showing active throwing turn */
+.turn-indicator {
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 20px;
+    background: var(--turn-bg);
+    margin-bottom: 15px;
+    width: fit-content;
+    border: 1px solid var(--turn-border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+.turn-indicator.red-turn { color: var(--red-team); background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); }
+.turn-indicator.blue-turn { color: var(--blue-team); background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.4); }
+
+/* Notification alert banner for limit feedback */
+.limit-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #ef4444;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+    z-index: 1100;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.limit-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* Interactive Cornhole Board target */
+.cornhole-board {
+    width: 100%;
+    max-width: 320px;
+    height: 420px;
+    
+    background: linear-gradient(135deg, #875a36 25%, transparent 25%) -50px 0,
+                linear-gradient(225deg, #875a36 25%, transparent 25%) -50px 0,
+                linear-gradient(45deg, transparent 75%, #875a36 75%),
+                linear-gradient(315deg, transparent 75%, #875a36 75%);
+    background-size: 4px 4px;
+    background-color: #a67246;
+    
+    border: 14px solid #5c3a21;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(0,0,0,0.4);
+    
+    margin-bottom: 20px;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cornhole-board::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent 49%, rgba(0,0,0,0.08) 50%, transparent 51%);
+    background-size: 40px 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.board-text-label {
+    position: absolute;
+    bottom: 40px;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #45260d;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.3);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Hole target area inside board */
+.circle-target {
+    width: 120px;
+    height: 120px;
+    background-color: #111827;
+    border: 8px solid #f97316;
+    border-radius: 50%;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #f97316;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    box-shadow: inset 0 10px 10px rgba(0,0,0,0.9), 0 4px 6px rgba(0,0,0,0.3);
+    
+    margin-top: 45px;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    position: relative;
+    z-index: 10;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.circle-target:active {
+    transform: scale(0.93);
+}
+
+.cornhole-board:active:not(:has(.circle-target:active)) {
+    transform: scale(0.98);
+    box-shadow: 0 10px 15px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Action control button group */
+.btn-group {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+    max-width: 450px;
+    margin-bottom: 25px;
+    box-sizing: border-box;
+}
+
+button.action-btn {
+    flex: 1;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+button.action-btn:active {
+    transform: scale(0.98);
+}
+
+.btn-end {
+    background-color: #10b981;
+    color: white;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+.btn-end:hover { background-color: #059669; }
+
+.btn-reset {
+    background-color: #475569;
+    color: #f8fafc;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.btn-reset:hover { background-color: #334155; }
+
+/* Floating Gear Button (Fixed at Bottom-Left, styled like Bingo) */
+.settings-gear-wrap {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    z-index: 900;
+}
+
+.settings-gear-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    transition: transform 0.25s ease, box-shadow 0.2s ease, background 0.2s, color 0.2s;
+}
+
+.settings-gear-btn:hover {
+    color: var(--text-main);
+    transform: rotate(45deg);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+/* Settings Modal Overlay Dialog */
+.settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--modal-overlay);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.settings-modal.hidden {
+    display: none !important;
+}
+
+.settings-dialog {
+    background: var(--modal-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.settings-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--modal-text);
+}
+
+.settings-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--modal-subtle);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.settings-close-btn:hover {
+    color: var(--modal-text);
+    background: rgba(0,0,0,0.08);
+}
+
+.settings-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.setting-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--modal-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.setting-desc {
+    font-size: 0.8rem;
+    color: var(--modal-subtle);
+    margin: -4px 0 4px 0;
+}
+
+/* Custom Segmented Control for Options */
+.segmented-control {
+    display: flex;
+    background: var(--input-bg);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    gap: 4px;
+}
+
+.segmented-option {
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--modal-subtle);
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.segmented-option.active {
+    background: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+}
+
+/* Number Inputs styling */
+.setting-input-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--input-bg);
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+}
+
+.setting-input-wrap label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--modal-text);
+}
+
+.setting-number-input {
+    width: 70px;
+    background: var(--input-field-bg);
+    border: 1px solid var(--input-border);
+    color: var(--modal-text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.setting-number-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.settings-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    justify-content: flex-end;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.btn-save-settings {
+    background: #3b82f6;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-save-settings:hover {
+    background: #2563eb;
+}

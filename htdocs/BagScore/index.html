@@ -1,391 +1,320 @@
+<!-- Version 1.3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bean Bag Scorekeeper</title>
-    <style>
-        :root {
-            --red-team: #ef4444;
-            --blue-team: #3b82f6;
-            --board-wood: #875a36;
-            --board-wood-light: #a67246;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        h1 {
-            margin-bottom: 5px;
-        }
-
-        .back-link {
-            color: #cbd5e1;
-            text-decoration: none;
-            font-size: 0.95rem;
-            margin-bottom: 12px;
-            align-self: flex-start;
-        }
-
-        .back-link:hover {
-            color: #ffffff;
-            text-decoration: underline;
-        }
-
-        /* Settings Style */
-        .settings-panel {
-            margin-bottom: 15px;
-            background: #1e293b;
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.95rem;
-            border: 1px solid #334155;
-        }
-
-        .settings-panel input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        /* Scoreboard Styling */
-        .scoreboard {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 450px;
-            background: #1e293b;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            box-sizing: border-box;
-        }
-
-        .team-box {
-            text-align: center;
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            user-select: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .team-box.clickable {
-            cursor: pointer;
-        }
-        .team-box.clickable:hover {
-            background: #334155;
-        }
-
-        .team-box.red { border-left: 6px solid var(--red-team); }
-        .team-box.blue { border-right: 6px solid var(--blue-team); }
-
-        .team-box.active {
-            box-shadow: inset 0 0 0 2px #ffffff30;
-            transform: scale(1.02);
-        }
-        .team-box.red.active { background: rgba(239, 68, 68, 0.25); }
-        .team-box.blue.active { background: rgba(59, 130, 246, 0.25); }
-
-        .team-name {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .red .team-name { color: var(--red-team); }
-        .blue .team-name { color: var(--blue-team); }
-
-        .total-score {
-            font-size: 2.5rem;
-            font-weight: 800;
-        }
-
-        .round-pending {
-            font-size: 0.9rem;
-            color: #94a3b8;
-            margin-top: 5px;
-            font-weight: bold;
-        }
-
-        /* Bag Tally Lists */
-        .tally-list {
-            margin-top: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            width: 90%;
-        }
-
-        .tally-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(15, 23, 42, 0.6);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            color: #e2e8f0;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .btn-remove {
-            color: #ef4444;
-            cursor: pointer;
-            font-weight: bold;
-            margin-left: 8px;
-            padding: 0 4px;
-            user-select: none;
-        }
-        .btn-remove:hover {
-            color: #f87171;
-            background: rgba(239, 68, 68, 0.2);
-            border-radius: 2px;
-        }
-
-        .turn-indicator {
-            font-size: 1.1rem;
-            font-weight: 600;
-            padding: 6px 16px;
-            border-radius: 20px;
-            background: #334155;
-            margin-bottom: 15px;
-            width: fit-content;
-        }
-        .turn-indicator.red-turn { color: var(--red-team); background: rgba(239, 68, 68, 0.1); }
-        .turn-indicator.blue-turn { color: var(--blue-team); background: rgba(59, 130, 246, 0.1); }
-
-        /* THE CORNHOLE BOARD (+1 Target) */
-        .cornhole-board {
-            width: 100%;
-            max-width: 320px;
-            height: 440px;
-            
-            background: linear-gradient(135deg, var(--board-wood) 25%, transparent 25%) -50px 0,
-                        linear-gradient(225deg, var(--board-wood) 25%, transparent 25%) -50px 0,
-                        linear-gradient(45deg, transparent 75%, var(--board-wood) 75%),
-                        linear-gradient(315deg, transparent 75%, var(--board-wood) 75%);
-            background-size: 4px 4px;
-            background-color: var(--board-wood-light);
-            
-            border: 14px solid #5c3a21;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(0,0,0,0.4);
-            
-            margin-bottom: 25px;
-            position: relative;
-            cursor: pointer;
-            user-select: none;
-            box-sizing: border-box;
-            
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .cornhole-board::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, transparent 49%, rgba(0,0,0,0.08) 50%, transparent 51%);
-            background-size: 40px 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .board-text-label {
-            position: absolute;
-            bottom: 40px;
-            font-size: 1.4rem;
-            font-weight: 900;
-            color: #45260d;
-            text-shadow: 0 1px 1px rgba(255,255,255,0.2);
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        /* THE HOLE (+3 Target) */
-        .circle-target {
-            width: 120px;
-            height: 120px;
-            background-color: #111827;
-            border: 8px solid #f97316;
-            border-radius: 50%;
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: #f97316;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-            box-shadow: inset 0 10px 10px rgba(0,0,0,0.9), 0 4px 6px rgba(0,0,0,0.3);
-            
-            margin-top: 45px;
-            
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            
-            position: relative;
-            z-index: 10;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        .circle-target:active {
-            transform: scale(0.93);
-        }
-
-        .cornhole-board:active:not(:has(.circle-target:active)) {
-            transform: scale(0.98);
-            box-shadow: 0 10px 15px -5px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Controls styling */
-        .btn-group {
-            display: flex;
-            gap: 15px;
-            width: 100%;
-            max-width: 450px;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-        }
-
-        button {
-            flex: 1;
-            padding: 15px;
-            font-size: 1rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-end {
-            background-color: #10b981;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
-        .btn-end:hover { background-color: #059669; }
-
-        .btn-reset {
-            background-color: #475569;
-            color: #cbd5e1;
-        }
-        .btn-reset:hover { background-color: #334155; }
-    </style>
+    <title>Cornhole Scorekeeper</title>
+    <!-- Application Stylesheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>Cornhole Keeper</h1>
-    <p style="color: #64748b; margin-top: 0; margin-bottom: 15px;">Subtractive Scoring Mode</p>
+    <!-- Notification Toast for Limit Reached Alert -->
+    <div id="limitToast" class="limit-toast">Max bags reached for this team!</div>
 
-    <div class="settings-panel">
-        <input type="checkbox" id="alternate-mode-checkbox" onchange="toggleMode()">
-        <label for="alternate-mode-checkbox">Score by whole team series (Tap team header to swap turns)</label>
-    </div>
+    <!-- Header Navigation Section -->
+    <header class="topbar">
+        <a href="../index.html" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Apps
+        </a>
+        <div class="header-title-wrap">
+            <h1>Cornhole Scorekeeper</h1>
+            <p class="subtitle">Subtractive Scoring Mode</p>
+        </div>
+    </header>
 
-    <div class="scoreboard">
-        <div id="red-box" class="team-box red active" onclick="teamHeaderClick('red', event)">
+    <!-- Scoreboard showing overall scores and active round bag tallies -->
+    <section class="scoreboard" aria-label="Scoreboard">
+        <div id="red-box" class="team-box red active" onclick="teamHeaderClick('red', event)" role="button" tabindex="0" aria-label="Red Team Header">
             <div class="team-name">TEAM RED</div>
             <div id="red-total" class="total-score">0</div>
+            <div id="red-bag-count" class="bag-count-badge">Bags: 0 / 4</div>
             <div id="red-round" class="round-pending">Round: +0</div>
             <div id="red-tally" class="tally-list"></div>
         </div>
-        <div id="blue-box" class="team-box blue" onclick="teamHeaderClick('blue', event)">
+        <div id="blue-box" class="team-box blue" onclick="teamHeaderClick('blue', event)" role="button" tabindex="0" aria-label="Blue Team Header">
             <div class="team-name">TEAM BLUE</div>
             <div id="blue-total" class="total-score">0</div>
+            <div id="blue-bag-count" class="bag-count-badge">Bags: 0 / 4</div>
             <div id="blue-round" class="round-pending">Round: +0</div>
             <div id="blue-tally" class="tally-list"></div>
         </div>
-    </div>
+    </section>
 
-    <div id="turn-banner" class="turn-indicator red-turn">Red Team's Throw</div>
+    <!-- Turn Indicator Banner -->
+    <div id="turn-banner" class="turn-indicator red-turn">Red Team's Turn</div>
 
-    <div class="cornhole-board" id="board-element" onclick="registerScore(1, 'Board', event)">
-        <div class="circle-target" onclick="registerScore(3, 'Hole', event)">
-            HOLE (+3)
+    <!-- Interactive Cornhole Board Target -->
+    <main class="cornhole-board" id="board-element" onclick="registerScore('board', event)" aria-label="Cornhole Board (+1 Point)">
+        <div class="circle-target" id="hole-element" onclick="registerScore('hole', event)" aria-label="Hole Target (+3 Points)">
+            <span id="hole-target-label">HOLE (+3)</span>
         </div>
-        <div class="board-text-label">BOARD (+1)</div>
-    </div>
+        <div class="board-text-label" id="board-target-label">BOARD (+1)</div>
+    </main>
 
+    <!-- Primary Action Buttons -->
     <div class="btn-group">
-        <button class="btn-reset" onclick="resetGame()">Reset Game</button>
-        <button class="btn-end" onclick="endRound()">End Round</button>
+        <button class="action-btn btn-reset" onclick="resetGame()">Reset Game</button>
+        <button class="action-btn btn-end" onclick="endRound()">End Round</button>
     </div>
 
+    <!-- Floating Settings Gear Button -->
+    <div class="settings-gear-wrap">
+        <button id="settingsGearBtn" class="settings-gear-btn" title="Settings" aria-label="Open settings">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Settings Modal Dialog -->
+    <div id="settingsModal" class="settings-modal hidden" role="dialog" aria-modal="true" aria-label="Settings">
+        <div class="settings-dialog">
+            <div class="settings-header">
+                <h2 class="settings-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="opacity:0.7;">
+                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                    </svg>
+                    Game Settings
+                </h2>
+                <button id="settingsCloseBtn" class="settings-close-btn" aria-label="Close settings">&times;</button>
+            </div>
+
+            <div class="settings-body">
+                <!-- Visual Theme Selector -->
+                <div class="setting-group">
+                    <span class="setting-label">Theme</span>
+                    <p class="setting-desc">Select visual interface appearance.</p>
+                    <div class="segmented-control">
+                        <div id="themeGrass" class="segmented-option active" onclick="selectTheme('grass')">🌱 Grass</div>
+                        <div id="themeDark" class="segmented-option" onclick="selectTheme('dark')">🌙 Dark</div>
+                    </div>
+                </div>
+
+                <!-- Scoring Method Selector -->
+                <div class="setting-group">
+                    <span class="setting-label">Scoring Method</span>
+                    <p class="setting-desc">Choose how turns transition between teams during a round.</p>
+                    <div class="segmented-control">
+                        <div id="methodBatch" class="segmented-option active" onclick="selectScoringMethod('batch')">Batch</div>
+                        <div id="methodByBag" class="segmented-option" onclick="selectScoringMethod('by_bag')">By Bag</div>
+                    </div>
+                </div>
+
+                <!-- Bags Per Team Limit -->
+                <div class="setting-group">
+                    <span class="setting-label">Bag Limit</span>
+                    <p class="setting-desc">Maximum bags allowed per round per team.</p>
+                    <div class="setting-input-wrap">
+                        <label for="bagsPerTeamInput">Bags per team:</label>
+                        <input type="number" id="bagsPerTeamInput" class="setting-number-input" min="1" max="20" value="4" onchange="updateSettingsFromModal()">
+                    </div>
+                </div>
+
+                <!-- Point Values Configuration -->
+                <div class="setting-group">
+                    <span class="setting-label">Custom Scores</span>
+                    <p class="setting-desc">Customize points awarded for board landings and hole ins.</p>
+                    <div class="setting-input-wrap" style="margin-bottom: 8px;">
+                        <label for="holePointsInput">Hole Points:</label>
+                        <input type="number" id="holePointsInput" class="setting-number-input" min="0" max="100" value="3" onchange="updateSettingsFromModal()">
+                    </div>
+                    <div class="setting-input-wrap">
+                        <label for="boardPointsInput">Board Points:</label>
+                        <input type="number" id="boardPointsInput" class="setting-number-input" min="0" max="100" value="1" onchange="updateSettingsFromModal()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button class="btn-save-settings" onclick="closeSettingsModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
     <script>
-        // Game State Object
+        // Centralized Application Game State
         let gameState = {
             redTotal: 0,
             blueTotal: 0,
-            redBags: [],   // Array of objects: { type: 'Board'|'Hole', points: 1|3 }
-            blueBags: [],  // Array of objects
+            redBags: [],      // Array of bag objects: { type: 'hole'|'board', points: number, label: string }
+            blueBags: [],     // Array of bag objects
             currentTurn: 'red',
-            seriesMode: false
+            scoringMethod: 'batch', // 'batch' (default) or 'by_bag'
+            bagsPerTeam: 4,         // Allowed bags per round per team (default 4)
+            holePoints: 3,          // Points awarded for hole target (default 3)
+            boardPoints: 1,         // Points awarded for board target (default 1)
+            theme: 'grass'          // Active theme: 'grass' (default) or 'dark'
         };
 
-        // Load data from LocalStorage
+        // Load saved state from browser localStorage on startup
         function loadGame() {
             const savedState = localStorage.getItem('beanBagScoreState');
             if (savedState) {
-                gameState = JSON.parse(savedState);
-                // Ensure array layers exist for backward compatibility
-                if (!gameState.redBags) gameState.redBags = [];
-                if (!gameState.blueBags) gameState.blueBags = [];
+                try {
+                    const parsed = JSON.parse(savedState);
+                    // Merge parsed properties with defaults for backward compatibility
+                    gameState = {
+                        redTotal: parsed.redTotal || 0,
+                        blueTotal: parsed.blueTotal || 0,
+                        redBags: Array.isArray(parsed.redBags) ? parsed.redBags : [],
+                        blueBags: Array.isArray(parsed.blueBags) ? parsed.blueBags : [],
+                        currentTurn: parsed.currentTurn || 'red',
+                        scoringMethod: parsed.scoringMethod || (parsed.seriesMode ? 'batch' : 'batch'),
+                        bagsPerTeam: typeof parsed.bagsPerTeam === 'number' ? parsed.bagsPerTeam : 4,
+                        holePoints: typeof parsed.holePoints === 'number' ? parsed.holePoints : 3,
+                        boardPoints: typeof parsed.boardPoints === 'number' ? parsed.boardPoints : 1,
+                        theme: parsed.theme || 'grass'
+                    };
+                } catch (e) {
+                    console.error("Error loading saved game state", e);
+                }
             }
-            document.getElementById('alternate-mode-checkbox').checked = gameState.seriesMode;
+            applyTheme();
+            syncModalFields();
             updateUI();
         }
 
+        // Apply active theme attribute to HTML document body
+        function applyTheme() {
+            document.body.setAttribute('data-theme', gameState.theme || 'grass');
+        }
+
+        // Save current game state to browser localStorage
         function saveGame() {
             localStorage.setItem('beanBagScoreState', JSON.stringify(gameState));
         }
 
-        function toggleMode() {
-            gameState.seriesMode = document.getElementById('alternate-mode-checkbox').checked;
+        // Change active theme option from modal control
+        function selectTheme(themeName) {
+            gameState.theme = themeName;
+            applyTheme();
+            syncModalFields();
+            saveGame();
+        }
+
+        // Synchronize modal input values with active game state
+        function syncModalFields() {
+            document.getElementById('bagsPerTeamInput').value = gameState.bagsPerTeam;
+            document.getElementById('holePointsInput').value = gameState.holePoints;
+            document.getElementById('boardPointsInput').value = gameState.boardPoints;
+            
+            // Sync scoring method selector
+            const methodBatch = document.getElementById('methodBatch');
+            const methodByBag = document.getElementById('methodByBag');
+            if (gameState.scoringMethod === 'by_bag') {
+                methodByBag.classList.add('active');
+                methodBatch.classList.remove('active');
+            } else {
+                methodBatch.classList.add('active');
+                methodByBag.classList.remove('active');
+            }
+
+            // Sync theme selector
+            const themeGrass = document.getElementById('themeGrass');
+            const themeDark = document.getElementById('themeDark');
+            if (gameState.theme === 'dark') {
+                themeDark.classList.add('active');
+                themeGrass.classList.remove('active');
+            } else {
+                themeGrass.classList.add('active');
+                themeDark.classList.remove('active');
+            }
+        }
+
+        // Change scoring method option from modal segmented control
+        function selectScoringMethod(method) {
+            gameState.scoringMethod = method;
+            syncModalFields();
             saveGame();
             updateUI();
         }
 
-        // Handle target taps
-        function registerScore(points, label, event) {
+        // Update settings values whenever user changes numeric inputs in settings modal
+        function updateSettingsFromModal() {
+            const bagsVal = parseInt(document.getElementById('bagsPerTeamInput').value, 10);
+            const holeVal = parseInt(document.getElementById('holePointsInput').value, 10);
+            const boardVal = parseInt(document.getElementById('boardPointsInput').value, 10);
+
+            if (!isNaN(bagsVal) && bagsVal >= 1) gameState.bagsPerTeam = bagsVal;
+            if (!isNaN(holeVal) && holeVal >= 0) gameState.holePoints = holeVal;
+            if (!isNaN(boardVal) && boardVal >= 0) gameState.boardPoints = boardVal;
+
+            saveGame();
+            updateUI();
+        }
+
+        // Show temporary toast message for feedback when limit is reached
+        let toastTimeout = null;
+        function showLimitToast(message) {
+            const toast = document.getElementById('limitToast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Register a throw on board or hole target
+        function registerScore(targetType, event) {
             if (event) event.stopPropagation();
 
-            const bagEntry = { points: points, label: label };
+            const isRed = (gameState.currentTurn === 'red');
+            const currentBags = isRed ? gameState.redBags : gameState.blueBags;
+            const teamName = isRed ? "Team Red" : "Team Blue";
 
-            if (gameState.currentTurn === 'red') {
+            // Check bags per team threshold limit
+            if (currentBags.length >= gameState.bagsPerTeam) {
+                showLimitToast(`${teamName} has reached the limit of ${gameState.bagsPerTeam} bags!`);
+                return;
+            }
+
+            const points = (targetType === 'hole') ? gameState.holePoints : gameState.boardPoints;
+            const label = (targetType === 'hole') ? 'Hole' : 'Board';
+
+            const bagEntry = { type: targetType, points: points, label: label };
+
+            if (isRed) {
                 gameState.redBags.push(bagEntry);
-                if (!gameState.seriesMode) {
-                    gameState.currentTurn = 'blue';
+                // Turn transition based on scoring method
+                if (gameState.scoringMethod === 'by_bag') {
+                    // Check if blue team can throw, otherwise remain on red if blue is full
+                    if (gameState.blueBags.length < gameState.bagsPerTeam) {
+                        gameState.currentTurn = 'blue';
+                    }
+                } else if (gameState.scoringMethod === 'batch') {
+                    // If red team just threw their last bag in batch mode, auto switch turn to blue if blue has bags left
+                    if (gameState.redBags.length >= gameState.bagsPerTeam && gameState.blueBags.length < gameState.bagsPerTeam) {
+                        gameState.currentTurn = 'blue';
+                    }
                 }
             } else {
                 gameState.blueBags.push(bagEntry);
-                if (!gameState.seriesMode) {
-                    gameState.currentTurn = 'red';
+                if (gameState.scoringMethod === 'by_bag') {
+                    if (gameState.redBags.length < gameState.bagsPerTeam) {
+                        gameState.currentTurn = 'red';
+                    }
+                } else if (gameState.scoringMethod === 'batch') {
+                    if (gameState.blueBags.length >= gameState.bagsPerTeam && gameState.redBags.length < gameState.bagsPerTeam) {
+                        gameState.currentTurn = 'red';
+                    }
                 }
             }
+
             saveGame();
             updateUI();
         }
 
-        // Remove accidental point log entry
+        // Remove a recorded bag entry from a team
         function removeBag(team, index, event) {
-            if (event) event.stopPropagation(); // Avoid triggering header turn swaps
+            if (event) event.stopPropagation();
 
             if (team === 'red') {
                 gameState.redBags.splice(index, 1);
@@ -396,110 +325,144 @@
             updateUI();
         }
 
+        // Allow manual turn swapping by clicking team box in header
         function teamHeaderClick(team, event) {
-            if (gameState.seriesMode) {
-                gameState.currentTurn = team;
-                saveGame();
-                updateUI();
-            }
+            gameState.currentTurn = team;
+            saveGame();
+            updateUI();
         }
 
-        // End round, calculate subtractive score from arrays, and reset round bags
+        // End current round, apply subtractive scoring difference, and reset bags
         function endRound() {
-            // Sum up arrays
             const redRoundTotal = gameState.redBags.reduce((sum, bag) => sum + bag.points, 0);
             const blueRoundTotal = gameState.blueBags.reduce((sum, bag) => sum + bag.points, 0);
 
             if (redRoundTotal > blueRoundTotal) {
                 gameState.redTotal += (redRoundTotal - blueRoundTotal);
+                gameState.currentTurn = 'red';
             } else if (blueRoundTotal > redRoundTotal) {
                 gameState.blueTotal += (blueRoundTotal - redRoundTotal);
+                gameState.currentTurn = 'blue';
             }
 
-            // Clear arrays for next round
+            // Clear active bags for next round
             gameState.redBags = [];
             gameState.blueBags = [];
-            
-            if (redRoundTotal > blueRoundTotal) gameState.currentTurn = 'red';
-            else if (blueRoundTotal > redRoundTotal) gameState.currentTurn = 'blue';
 
             saveGame();
             updateUI();
         }
 
+        // Reset entire game session back to zero scores
         function resetGame() {
             if (confirm("Are you sure you want to reset the entire game?")) {
-                gameState = {
-                    redTotal: 0,
-                    blueTotal: 0,
-                    redBags: [],
-                    blueBags: [],
-                    currentTurn: 'red',
-                    seriesMode: document.getElementById('alternate-mode-checkbox').checked
-                };
+                gameState.redTotal = 0;
+                gameState.blueTotal = 0;
+                gameState.redBags = [];
+                gameState.blueBags = [];
+                gameState.currentTurn = 'red';
                 saveGame();
                 updateUI();
             }
         }
 
-        // Refresh the HTML visual display
+        // Update DOM visual components to reflect active state
         function updateUI() {
-            // Calculate current round dynamic sums
+            // Update Board Target text labels with customized score values
+            document.getElementById('hole-target-label').innerText = `HOLE (+${gameState.holePoints})`;
+            document.getElementById('board-target-label').innerText = `BOARD (+${gameState.boardPoints})`;
+
+            // Calculate current round sums
             const redRoundSum = gameState.redBags.reduce((sum, bag) => sum + bag.points, 0);
             const blueRoundSum = gameState.blueBags.reduce((sum, bag) => sum + bag.points, 0);
 
             document.getElementById('red-total').innerText = gameState.redTotal;
             document.getElementById('blue-total').innerText = gameState.blueTotal;
 
+            document.getElementById('red-bag-count').innerText = `Bags: ${gameState.redBags.length} / ${gameState.bagsPerTeam}`;
+            document.getElementById('blue-bag-count').innerText = `Bags: ${gameState.blueBags.length} / ${gameState.bagsPerTeam}`;
+
             document.getElementById('red-round').innerText = `Round: +${redRoundSum}`;
             document.getElementById('blue-round').innerText = `Round: +${blueRoundSum}`;
 
-            // Render Tally Lists
+            // Render Red Team Bag Tally List
             const redTallyContainer = document.getElementById('red-tally');
             redTallyContainer.innerHTML = '';
             gameState.redBags.forEach((bag, index) => {
                 redTallyContainer.innerHTML += `
                     <div class="tally-item">
                         <span>${bag.label} (+${bag.points})</span>
-                        <span class="btn-remove" onclick="removeBag('red', ${index}, event)">✕</span>
+                        <span class="btn-remove" onclick="removeBag('red', ${index}, event)" title="Remove bag">✕</span>
                     </div>`;
             });
 
+            // Render Blue Team Bag Tally List
             const blueTallyContainer = document.getElementById('blue-tally');
             blueTallyContainer.innerHTML = '';
             gameState.blueBags.forEach((bag, index) => {
                 blueTallyContainer.innerHTML += `
                     <div class="tally-item">
                         <span>${bag.label} (+${bag.points})</span>
-                        <span class="btn-remove" onclick="removeBag('blue', ${index}, event)">✕</span>
+                        <span class="btn-remove" onclick="removeBag('blue', ${index}, event)" title="Remove bag">✕</span>
                     </div>`;
             });
 
+            // Update active team boxes and turn banner
             const redBox = document.getElementById('red-box');
             const blueBox = document.getElementById('blue-box');
             const turnBanner = document.getElementById('turn-banner');
 
-            if (gameState.seriesMode) {
-                redBox.classList.add('clickable');
-                blueBox.classList.add('clickable');
-            } else {
-                redBox.classList.remove('clickable');
-                blueBox.classList.remove('clickable');
-            }
+            redBox.classList.add('clickable');
+            blueBox.classList.add('clickable');
+
+            const modeLabel = (gameState.scoringMethod === 'batch') ? "Batch" : "By Bag";
 
             if (gameState.currentTurn === 'red') {
                 redBox.classList.add('active');
                 blueBox.classList.remove('active');
-                turnBanner.innerText = gameState.seriesMode ? "Red Team's Turn (Batch)" : "Red Team's Throw";
+                turnBanner.innerText = `Red Team's Turn (${modeLabel})`;
                 turnBanner.className = "turn-indicator red-turn";
             } else {
                 blueBox.classList.add('active');
                 redBox.classList.remove('active');
-                turnBanner.innerText = gameState.seriesMode ? "Blue Team's Turn (Batch)" : "Blue Team's Throw";
+                turnBanner.innerText = `Blue Team's Turn (${modeLabel})`;
                 turnBanner.className = "turn-indicator blue-turn";
             }
         }
 
+        // Settings Modal Controls
+        const settingsModal = document.getElementById('settingsModal');
+        const settingsGearBtn = document.getElementById('settingsGearBtn');
+        const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+
+        function openSettingsModal() {
+            syncModalFields();
+            settingsModal.classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            updateSettingsFromModal();
+            settingsModal.classList.add('hidden');
+        }
+
+        settingsGearBtn.addEventListener('click', openSettingsModal);
+        settingsCloseBtn.addEventListener('click', closeSettingsModal);
+
+        // Close settings modal when clicking outside dialog content
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeSettingsModal();
+            }
+        });
+
+        // Close modal on Escape key press
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !settingsModal.classList.contains('hidden')) {
+                closeSettingsModal();
+            }
+        });
+
+        // Initialize application state on page load
         loadGame();
     </script>
 </body>
