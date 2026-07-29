@@ -1,4 +1,4 @@
-// Version 1.6
+// Version 1.7
 // ============================================================
 // SESSION STATE
 // ============================================================
@@ -837,6 +837,36 @@ function checkCardWin(card, game) {
     return patterns.length > 0 ? patterns[0] : null;
 }
 
+// Returns a Set of cell indices that are the single missing (uncalled, non-FREE) square
+// needed to complete at least one pattern. Used to trigger the "one away" pulse effect.
+// Returns an empty Set if the card is already a winner or has no near-complete patterns.
+function getOneAwayNeededCells(card, game) {
+    const needed = new Set();
+    if (!game || !card.active) return needed;
+
+    // Do not show one-away when the card already satisfies the win condition
+    if (isTrueWin(card, game)) return needed;
+
+    const calledSet = new Set(session.called);
+
+    for (const pattern of game.patterns) {
+        // Collect the cell indices in this pattern that are NOT yet satisfied
+        const missing = pattern.cells.filter(cellIdx => {
+            if (cellIdx === FREE_CELL) return false;          // FREE always counts
+            const val = card.squares[cellIdx];
+            if (val === null || val === "FREE") return false; // empty slot — not fillable
+            return !calledSet.has(val);                        // uncalled number
+        });
+
+        // Exactly one square away — mark that cell
+        if (missing.length === 1) {
+            needed.add(missing[0]);
+        }
+    }
+
+    return needed;
+}
+
 // ============================================================
 // BINGO CARDS — helpers
 // ============================================================
@@ -1259,6 +1289,11 @@ function renderCard(card) {
         grid.appendChild(hdr);
     }
 
+    // Detect cells that are exactly one number away from completing a pattern
+    const oneAwayCells = (isActive && game && !isTrueWinner)
+        ? getOneAwayNeededCells(card, game)
+        : new Set();
+
     for (let idx = 0; idx < 25; idx++) {
         const value = card.squares[idx];
         const isFree = (idx === FREE_CELL);
@@ -1268,6 +1303,8 @@ function renderCard(card) {
         // True win: cell highlighted gold. Partial win (double mode, 1 of 2 needed): blue highlight.
         const isWinCell = isTrueWinner && winCells.has(idx);
         const isPartialCell = !isTrueWinner && session.doubleMode && winCells.has(idx);
+        // One away: this uncalled cell is the last needed square for at least one pattern
+        const isOneAway = !isTrueWinner && !isDaubed && oneAwayCells.has(idx);
 
         const cell = document.createElement("div");
         cell.className = [
@@ -1277,7 +1314,8 @@ function renderCard(card) {
             isEmpty ? "empty" : "",
             isCellActive ? "editing" : "",
             isWinCell ? "win-cell" : "",
-            isPartialCell ? "partial-win-cell" : ""
+            isPartialCell ? "partial-win-cell" : "",
+            isOneAway ? "one-away-cell" : ""
         ].filter(Boolean).join(" ");
 
         cell.textContent = isFree ? "FREE" : (value ?? "");

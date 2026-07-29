@@ -1,4 +1,4 @@
-/* Version 1.6 */
+/* Version 1.7 */
 
 /* ================================================================
    THEME: BASIC (default)
@@ -1915,6 +1915,63 @@ body {
 /* Override daub dot on win cells */
 .bingo-cell.win-cell::before {
     display: none !important;
+}
+
+/* ---- One Away — pulsating cell when exactly 1 square away from a BINGO ---- */
+
+/* Pulse animation: cycles border glow + slight text-size pop */
+@keyframes oneAwayPulse {
+    0%,
+    100% {
+        background: var(--card);
+        border-color: #ff8f00;
+        box-shadow: 0 0 0 2px rgba(255, 143, 0, 0.25);
+        font-size: 14px;
+        color: #e65100;
+    }
+
+    50% {
+        background: rgba(255, 143, 0, 0.14);
+        border-color: #ff6d00;
+        box-shadow: 0 0 0 4px rgba(255, 109, 0, 0.28),
+            0 0 14px rgba(255, 109, 0, 0.18);
+        font-size: 17px;
+        color: #bf360c;
+    }
+}
+
+.bingo-cell.one-away-cell {
+    animation: oneAwayPulse 1.4s ease-in-out infinite;
+    z-index: 2;
+    position: relative;
+    /* Prevent the daub dot from rendering over the pulse effect */
+}
+
+.bingo-cell.one-away-cell::before {
+    display: none !important;
+}
+
+/* Slightly larger pulse on bigger screens where cells have more room */
+@media (min-width: 480px) {
+    @keyframes oneAwayPulse {
+        0%,
+        100% {
+            background: var(--card);
+            border-color: #ff8f00;
+            box-shadow: 0 0 0 2px rgba(255, 143, 0, 0.25);
+            font-size: 14px;
+            color: #e65100;
+        }
+
+        50% {
+            background: rgba(255, 143, 0, 0.14);
+            border-color: #ff6d00;
+            box-shadow: 0 0 0 5px rgba(255, 109, 0, 0.28),
+                0 0 18px rgba(255, 109, 0, 0.2);
+            font-size: 18px;
+            color: #bf360c;
+        }
+    }
 }
 
 .card-winner-overlay {
