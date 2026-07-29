@@ -1,201 +1,23 @@
+<!-- Version 1.2 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveScore Pro - Telematics Tracker</title>
-    <style>
-        :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #ffffff;
-            --primary: #2196f3;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 450px;
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-
-        h1 { margin-top: 0; font-weight: 600; font-size: 1.8rem; margin-bottom: 5px; }
-
-        .back-link {
-            display: inline-block;
-            margin-bottom: 16px;
-            color: #90caf9;
-            text-decoration: none;
-            font-size: 0.95rem;
-        }
-
-        .back-link:hover {
-            text-decoration: underline;
-            color: #bbdefb;
-        }
-
-        .settings-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: var(--primary);
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        .settings-link:hover { text-decoration: underline; }
-
-        .selector-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-            text-align: left;
-        }
-
-        label {
-            font-size: 0.85rem;
-            color: #aaa;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        select {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #444;
-            font-size: 0.95rem;
-            outline: none;
-        }
-
-        .toggle-row {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 10px;
-            margin-bottom: 20px;
-            text-align: left;
-            font-size: 0.9rem;
-            color: #ccc;
-        }
-
-        .toggle-row input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .score-display {
-            position: relative;
-            width: 180px;
-            height: 180px;
-            margin: 10px auto 20px auto;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.5s ease;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
-        }
-
-        .score-value {
-            font-size: 3.5rem;
-            font-weight: bold;
-            line-height: 1;
-        }
-
-        .score-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.8;
-            margin-top: 5px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 25px 0;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,0.05);
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-        }
-
-        .stat-value {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-top: 5px;
-            color: var(--primary);
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        button {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
-        }
-
-        button:active { transform: scale(0.98); }
-
-        #btnStart { background-color: #4caf50; color: white; }
-        #btnStart.recording { background-color: #f44336; }
-        #btnReset { background-color: #555; color: white; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .log {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 15px;
-            max-height: 130px;
-            overflow-y: auto;
-            text-align: left;
-            background: rgba(0,0,0,0.2);
-            padding: 8px;
-            border-radius: 6px;
-        }
-    </style>
+    <!-- External stylesheet reference for UI components and theme styling -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- Navigation link returning to root application dashboard -->
 <a href="../" class="back-link">← Back to Apps</a>
 <div class="container">
     <h1>DriveScore</h1>
+    <!-- Link to navigate to garage settings page -->
     <a href="VehicleSettings.html" class="settings-link">Manage Vehicles Garage →</a>
 
+    <!-- Driver and vehicle profile drop-down selector controls -->
     <div class="selector-row">
         <div>
             <label for="ddlDriver">Driver</label>
@@ -207,16 +29,19 @@
         </div>
     </div>
 
+    <!-- Checkbox control to request device screen wake lock -->
     <div class="toggle-row">
         <input type="checkbox" id="chkWakeLock" checked>
         <label for="chkWakeLock" style="display:inline; margin:0; cursor:pointer;">Keep Screen Awake During Trip</label>
     </div>
     
+    <!-- Circular score gauge displaying current trip score with dynamic color gradient -->
     <div class="score-display" id="scoreCircle">
         <div class="score-value" id="lblScore">100</div>
         <div class="score-label" id="lblScoreType">Trip Score</div>
     </div>
 
+    <!-- Live telematics data grid displaying filtered G-force, duration, speed, and locked phone position -->
     <div class="stats-grid">
         <div class="stat-card">
             <div>Filtered G-Force</div>
@@ -231,21 +56,28 @@
             <div class="stat-value" id="lblSpeed">0.0 mph</div>
         </div>
         <div class="stat-card">
-            <div>Active Profile</div>
-            <div class="stat-value" id="lblConfig">T:0.32 A:0.20</div>
+            <div>Phone Position</div>
+            <div class="stat-value" id="lblPhonePosition">
+                <span class="phone-position-badge" id="lblPhonePosBadge">
+                    <span id="lblPhonePosIcon" class="phone-pos-icon">📱</span>
+                    <span id="lblPhonePosText">Not Started</span>
+                </span>
+            </div>
         </div>
     </div>
 
+    <!-- Control buttons for starting/stopping drive tracking and clearing metrics -->
     <div class="controls">
         <button id="btnStart">Start Trip</button>
         <button id="btnReset" disabled>Reset</button>
     </div>
 
+    <!-- Real-time operational console log window -->
     <div class="log" id="txtLog">System ready. Select profiles to begin.</div>
 </div>
 
 <script>
-    // System Configurations & Core Variables
+    // Primary tracking flag and telemetry state variables
     let isTracking = false;
     let score = 100.0;
     let maxG = 0.0;
@@ -255,31 +87,44 @@
     let wakeLock = null;
     let currentSpeedMph = 0.0;
 
-    // Filter Running States
+    // Locked phone orientation state set at start of drive
+    let phoneOrientationLocked = false;
+
+    // Accelerometer signal filter running vectors and calibration offsets
     let filteredX = 0, filteredY = 0, filteredZ = 0;
     let calX = 0, calY = 0, calZ = 0;
     
-    // Default Fallback Vehicle Configuration Baselines
+    // Default vehicle sensitivity thresholds and score calculation parameters
     let activeThreshold = 0.32;
     let activeAlpha = 0.20;
-    const REWARD_PER_SECOND = 0.02; 
+    const REWARD_PER_SECOND = 0.03;  // Points per second credited during qualifying active-clean driving
     const PENALTY_MULTIPLIER = 5.0;
 
-    // Cooldown window configuration (in milliseconds)
-    const INCIDENT_COOLDOWN_MS = 2000; 
-    let lastPenaltyTime = 0; 
+    // Penalty incident cooldown — 500ms so sustained hard events penalize every 0.5s
+    const INCIDENT_COOLDOWN_MS = 500;
+    let lastPenaltyTime = 0;
 
-    // Clean driving counters
-    let cleanStreakSeconds = 0;
+    // Bump (vertical) detection — logged for road condition awareness, not penalized
+    const BUMP_THRESHOLD = 0.45;       // Minimum vertical G to count as a bump
+    const BUMP_COOLDOWN_MS = 1000;     // Minimum interval between bump log entries
+    let lastBumpTime = 0;
+
+    // Active-clean driving reward tracking
+    // Credit is only given when lateral/longitudinal movement is detected (active maneuvering)
+    // but stays below the penalty threshold — not for flat straight-line driving
+    const LATERAL_ACTIVE_MIN = 0.05;   // Minimum lateral G to consider maneuvering active
+    const REWARD_WINDOW_SECONDS = 20;  // Accumulate this many qualifying seconds before awarding
+    let activeCleanSeconds = 0;        // Seconds of below-threshold active maneuvering
     let hadPenaltyThisSecond = false;
+    let wasActiveThisSecond = false;   // True if lateral/longitudinal G was above minimum this second
 
-    // Persistent Local Profiles Arrays
+    // Persistent storage profile collections loaded from localStorage
     let driverProfiles = JSON.parse(localStorage.getItem('driver_profiles')) || {};
     let vehicleProfiles = JSON.parse(localStorage.getItem('vehicle_profiles')) || {};
     let currentDriverSelection = ""; 
     let currentVehicleSelection = "";
 
-    // DOM Wireframes
+    // DOM element references
     const ddlDriver = document.getElementById('ddlDriver');
     const ddlVehicle = document.getElementById('ddlVehicle');
     const chkWakeLock = document.getElementById('chkWakeLock');
@@ -290,10 +135,12 @@
     const lblCurrentG = document.getElementById('lblCurrentG');
     const lblDuration = document.getElementById('lblDuration');
     const lblSpeed = document.getElementById('lblSpeed');
-    const lblConfig = document.getElementById('lblConfig');
+    const lblPhonePosIcon = document.getElementById('lblPhonePosIcon');
+    const lblPhonePosText = document.getElementById('lblPhonePosText');
     const scoreCircle = document.getElementById('scoreCircle');
     const txtLog = document.getElementById('txtLog');
 
+    // Populates driver selection dropdown from stored profiles
     function renderDriverDropdown() {
         ddlDriver.innerHTML = '';
         if (Object.keys(driverProfiles).length === 0) {
@@ -305,6 +152,7 @@
         ddlDriver.appendChild(new Option("add new...", "__ADD_NEW__"));
     }
 
+    // Populates vehicle selection dropdown from stored profiles
     function renderVehicleDropdown() {
         ddlVehicle.innerHTML = '';
         if (Object.keys(vehicleProfiles).length === 0) {
@@ -316,15 +164,16 @@
         ddlVehicle.appendChild(new Option("add/modify vehicle...", "__MANAGE_VEHICLES__"));
     }
 
+    // Synchronizes active sensitivity thresholds when vehicle selection changes
     function updateActiveConfigurationUI() {
         if(ddlVehicle.value && vehicleProfiles[ddlVehicle.value]) {
             const current = vehicleProfiles[ddlVehicle.value];
             activeThreshold = current.threshold;
             activeAlpha = current.alpha;
-            lblConfig.innerHTML = `T:${activeThreshold.toFixed(2)} A:${activeAlpha.toFixed(2)}`;
         }
     }
 
+    // Driver selection handler to add new driver profiles on demand
     ddlDriver.addEventListener('change', () => {
         if (ddlDriver.value === "__ADD_NEW__") {
             setTimeout(() => {
@@ -345,6 +194,7 @@
         }
     });
 
+    // Vehicle selection handler to trigger configuration updates or open garage settings
     ddlVehicle.addEventListener('change', () => {
         if (ddlVehicle.value === "__MANAGE_VEHICLES__") {
             window.location.href = "VehicleSettings.html";
@@ -354,6 +204,7 @@
         }
     });
 
+    // Updates circular score display text, border, and dynamic HSL gradient fill
     function updateScoreUI() {
         const roundedScore = Math.max(0, Math.min(100, Math.round(score)));
         lblScore.textContent = roundedScore;
@@ -362,10 +213,69 @@
         scoreCircle.style.border = `2px solid hsl(${hue}, 80%, 40%)`;
     }
 
+    // Evaluates gravity vector at drive start to lock and display phone orientation position
+    function detectAndLockPhonePosition(rawX, rawY, rawZ) {
+        const absX = Math.abs(rawX);
+        const absY = Math.abs(rawY);
+        const absZ = Math.abs(rawZ);
+
+        let desc = "Flat (Seat)";
+        let icon = "📱";
+        let cssClass = "pos-flat-up";
+        let orientationName = "Flat on Seat";
+
+        if (absZ > absX && absZ > absY) {
+            if (rawZ < 0) {
+                desc = "Flat (Down)";
+                icon = "📱";
+                cssClass = "pos-flat-down";
+                orientationName = "Flat (Face Down)";
+            } else {
+                desc = "Flat (Seat)";
+                icon = "📱";
+                cssClass = "pos-flat-up";
+                orientationName = "Flat on Seat (Face Up)";
+            }
+        } else if (absY > absX && absY > absZ) {
+            if (rawY >= 0) {
+                desc = "Mounted Vertical";
+                icon = "📱⬆️";
+                cssClass = "pos-portrait-up";
+                orientationName = "Mounted Vertical (Portrait)";
+            } else {
+                desc = "Mounted Inverted";
+                icon = "📱⬇️";
+                cssClass = "pos-portrait-down";
+                orientationName = "Mounted Inverted (Portrait)";
+            }
+        } else {
+            if (rawX >= 0) {
+                desc = "Mounted Landscape";
+                icon = "📱➡️";
+                cssClass = "pos-landscape-right";
+                orientationName = "Mounted Landscape (Right)";
+            } else {
+                desc = "Mounted Landscape";
+                icon = "📱⬅️";
+                cssClass = "pos-landscape-left";
+                orientationName = "Mounted Landscape (Left)";
+            }
+        }
+
+        lblPhonePosText.textContent = desc;
+        lblPhonePosIcon.textContent = icon;
+        lblPhonePosIcon.className = `phone-pos-icon ${cssClass}`;
+        phoneOrientationLocked = true;
+
+        logMessage(`Phone position locked at start: ${orientationName}`);
+    }
+
+    // Prepends timestamped message entry to operational log box
     function logMessage(msg) {
         txtLog.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + txtLog.innerHTML;
     }
 
+    // Requests screen wake lock to keep display active during trip tracking
     async function requestWakeLock() {
         if (!('wakeLock' in navigator)) return;
         try {
@@ -376,6 +286,7 @@
         }
     }
 
+    // Releases active screen wake lock
     function releaseWakeLock() {
         if (wakeLock !== null) {
             wakeLock.release();
@@ -383,12 +294,14 @@
         }
     }
 
+    // Re-requests wake lock when document visibility restores during active tracking
     document.addEventListener('visibilitychange', async () => {
         if (wakeLock !== null && document.visibilityState === 'visible' && isTracking && chkWakeLock.checked) {
             await requestWakeLock();
         }
     });
 
+    // Validates driver/vehicle selection and requests motion permissions before initializing sensors
     async function startEngine() {
         if (!ddlDriver.value || ddlDriver.value === "__ADD_NEW__" || !ddlVehicle.value || ddlVehicle.value === "__MANAGE_VEHICLES__") {
             alert("Ensure an active Driver and Vehicle are selected before starting a trip.");
@@ -405,6 +318,7 @@
         }
     }
 
+    // Initializes motion listeners, geolocation tracking, timers, and phone orientation lock
     async function initSensors() {
         isTracking = true;
         startTime = Date.now();
@@ -412,6 +326,9 @@
         cleanStreakSeconds = 0;
         hadPenaltyThisSecond = false;
         currentSpeedMph = 0.0;
+        phoneOrientationLocked = false;
+
+        lblPhonePosText.textContent = "Detecting...";
 
         if (chkWakeLock.checked) {
             await requestWakeLock();
@@ -427,6 +344,7 @@
         filteredX = 0; filteredY = 0; filteredZ = 0;
         let isCalibrated = false;
 
+        // Devicemotion event handler evaluating accelerometer and gravity vectors
         const motionHandler = (event) => {
             if (!isTracking) return;
 
@@ -434,10 +352,23 @@
             let rawY = event.acceleration?.y || 0;
             let rawZ = event.acceleration?.z || 0;
 
+            let gravX = rawX, gravY = rawY, gravZ = rawZ;
+
+            if (event.accelerationIncludingGravity) {
+                gravX = event.accelerationIncludingGravity.x || 0;
+                gravY = event.accelerationIncludingGravity.y || 0;
+                gravZ = event.accelerationIncludingGravity.z || 0;
+            }
+
             if (!event.acceleration && event.accelerationIncludingGravity) {
-                rawX = event.accelerationIncludingGravity.x;
-                rawY = event.accelerationIncludingGravity.y;
-                rawZ = event.accelerationIncludingGravity.z - 9.81;
+                rawX = gravX;
+                rawY = gravY;
+                rawZ = gravZ - 9.81;
+            }
+
+            // Lock initial phone position indicator on first sensor reading when drive starts
+            if (!phoneOrientationLocked) {
+                detectAndLockPhonePosition(gravX, gravY, gravZ);
             }
 
             if (!isCalibrated) {
@@ -453,38 +384,60 @@
             filteredY = (activeAlpha * cy) + ((1 - activeAlpha) * filteredY);
             filteredZ = (activeAlpha * cz) + ((1 - activeAlpha) * filteredZ);
 
+            // Vertical G isolates Z-axis bump force from lateral combined total
+            const verticalG = Math.abs(filteredZ) / 9.80665;
+
+            // Lateral + longitudinal G for driver behavior scoring (excludes vertical bumps)
+            const lateralAccel = Math.sqrt(filteredX*filteredX + filteredY*filteredY);
+            const lateralG = lateralAccel / 9.80665;
+
+            // Combined total G for display
             const totalAcceleration = Math.sqrt(filteredX*filteredX + filteredY*filteredY + filteredZ*filteredZ);
             const currentG = totalAcceleration / 9.80665;
 
-            lblCurrentG.textContent = `${currentG.toFixed(2)}g`;
+            lblCurrentG.textContent = `${lateralG.toFixed(2)}g`;
 
-            if (currentG > activeThreshold && currentSpeedMph > 0.5) {
+            const now = Date.now();
+
+            // Bump detection — vertical spikes are road condition, log only, no score impact
+            if (verticalG > BUMP_THRESHOLD && currentSpeedMph > 0.5) {
+                if (now - lastBumpTime > BUMP_COOLDOWN_MS) {
+                    lastBumpTime = now;
+                    logMessage(`Road: Bump detected (${verticalG.toFixed(2)}g vertical) — not penalized`);
+                }
+            }
+
+            // Driver behavior scoring — lateral/longitudinal G only
+            if (lateralG > activeThreshold && currentSpeedMph > 0.5) {
                 hadPenaltyThisSecond = true;
-                cleanStreakSeconds = 0; 
+                activeCleanSeconds = 0;  // Reset reward accumulator on any penalty event
 
-                // COOLDOWN CHECK: Has it been 2000ms since the last penalty?
-                const now = Date.now();
+                // Cooldown enforces minimum interval between penalty deductions (500ms)
                 if (now - lastPenaltyTime > INCIDENT_COOLDOWN_MS) {
-                    lastPenaltyTime = now; // Lock the gate
+                    lastPenaltyTime = now;
 
-                    const severity = currentG - activeThreshold;
+                    const severity = lateralG - activeThreshold;
                     const deduction = severity * PENALTY_MULTIPLIER;
                     score = Math.max(0, score - deduction);
                     updateScoreUI();
 
-                    let reason = "Bumpy Surface";
                     const absX = Math.abs(filteredX), absY = Math.abs(filteredY);
-                    if (absX > absY) reason = "Hard Turn";
-                    else if (absY > absX) reason = (filteredY > 0) ? "Hard Braking" : "Hard Acceleration";
+                    let reason = "Hard Maneuver";
+                    if (absX > absY) reason = "Hard Cornering";
+                    else reason = (filteredY > 0) ? "Hard Braking" : "Hard Acceleration";
 
-                    logMessage(`Penalty: -${deduction.toFixed(1)} pts (${currentG.toFixed(2)}g) ${reason}`);
+                    logMessage(`Penalty: -${deduction.toFixed(1)} pts (${lateralG.toFixed(2)}g lateral) ${reason}`);
                 }
+            } else if (lateralG >= LATERAL_ACTIVE_MIN && currentSpeedMph > 0.5) {
+                // Below threshold but actively maneuvering — marks this second as reward-eligible
+                wasActiveThisSecond = true;
             }
         };
 
         window.addEventListener('devicemotion', motionHandler, true);
         window.activeMotionHandler = motionHandler;
 
+        // Geolocation listener tracking vehicle speed in miles per hour
         if ("geolocation" in navigator) {
             watchPositionId = navigator.geolocation.watchPosition(
                 (pos) => {
@@ -495,34 +448,42 @@
             );
         }
 
+        // Interval timer updating drive duration and active-clean maneuvering rewards
         timerInterval = setInterval(() => {
             const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-            
+
             const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
             const secs = String(elapsedSeconds % 60).padStart(2, '0');
             lblDuration.textContent = `${mins}:${secs}`;
 
-            if (currentSpeedMph > 0.5 && !hadPenaltyThisSecond) {
-                cleanStreakSeconds++;
-                if (cleanStreakSeconds >= 30) {
-                    cleanStreakSeconds = 0;
+            // Reward logic: only credit seconds where the driver was actively maneuvering
+            // (lateral G above minimum) but stayed below the penalty threshold.
+            // Straight-line freeway driving (wasActiveThisSecond = false) earns no credit.
+            if (!hadPenaltyThisSecond && wasActiveThisSecond && currentSpeedMph > 0.5) {
+                activeCleanSeconds++;
+                if (activeCleanSeconds >= REWARD_WINDOW_SECONDS) {
+                    activeCleanSeconds = 0;
                     if (score < 100.0) {
-                        const addedPoints = REWARD_PER_SECOND * 30; 
+                        const addedPoints = REWARD_PER_SECOND * REWARD_WINDOW_SECONDS;
                         const previousScore = score;
                         score = Math.min(100.0, score + addedPoints);
                         updateScoreUI();
-                        
+
                         const realAdded = score - previousScore;
                         if (realAdded > 0.05) {
-                            logMessage(`Reward: +${realAdded.toFixed(2)} pts for 30s of clean driving.`);
+                            logMessage(`Reward: +${realAdded.toFixed(2)} pts for ${REWARD_WINDOW_SECONDS}s of controlled maneuvering.`);
                         }
                     }
                 }
             }
+
+            // Reset per-second flags for next interval
             hadPenaltyThisSecond = false;
+            wasActiveThisSecond = false;
         }, 1000);
     }
 
+    // Stops trip tracking, updates driver average score, and releases system locks
     function stopEngineExecution() {
         isTracking = false;
         releaseWakeLock();
@@ -553,22 +514,34 @@
         updateScoreUI();
     }
 
+    // Start/Stop button event binding
     btnStart.addEventListener('click', () => {
         if (!isTracking) startEngine();
         else stopEngineExecution();
     });
 
+    // Reset button event binding resetting metrics, orientation state, and reward counters
     btnReset.addEventListener('click', () => {
         score = 100.0; maxG = 0.0;
         lblScore.textContent = "100";
         lblCurrentG.textContent = "0.00g";
         lblDuration.textContent = "00:00";
         lblSpeed.textContent = "0.0 mph";
+        lblPhonePosText.textContent = "Not Started";
+        lblPhonePosIcon.textContent = "📱";
+        lblPhonePosIcon.className = "phone-pos-icon";
+        phoneOrientationLocked = false;
+        activeCleanSeconds = 0;
+        hadPenaltyThisSecond = false;
+        wasActiveThisSecond = false;
+        lastPenaltyTime = 0;
+        lastBumpTime = 0;
         btnReset.disabled = true;
         updateScoreUI();
         logMessage("Metrics cleared.");
     });
 
+    // Initial page load initialization steps
     renderDriverDropdown();
     renderVehicleDropdown();
     currentDriverSelection = ddlDriver.value;
