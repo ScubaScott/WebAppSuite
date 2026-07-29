@@ -20,7 +20,7 @@ const trackingGrid = document.getElementById("trackingGrid");
 const sessionWordBar = document.getElementById("sessionWordBar");
 const lastFiveList = document.getElementById("lastFiveList");
 const totalCalledSpan = document.getElementById("totalCalled");
-const lastManStatus   = document.getElementById("lastManStatus");
+const lastManStatus = document.getElementById("lastManStatus");
 const callLogLink = document.getElementById("callLogLink");
 const newSessionBtn = document.getElementById("newSessionBtn");
 const addCardBtn = document.getElementById("addCardBtn");
@@ -128,7 +128,7 @@ function updateUI() {
         const isStanding = anyStanding;
         lastManStatus.textContent = `Last man: ${isStanding ? "Standing" : "Sitting"}`;
         lastManStatus.classList.toggle("standing", isStanding);
-        lastManStatus.classList.toggle("sitting",  !isStanding);
+        lastManStatus.classList.toggle("sitting", !isStanding);
     }
 
     // 2. Last 6 called balls list — displayed as bingo-square-badge tiles
@@ -437,7 +437,14 @@ function openCallLogModal() {
 }
 
 newSessionBtn.addEventListener("click", () => {
-    if (!confirm("Start a new game session? Called numbers will be reset.")) return;
+    const newWord = prompt("Enter a 5-letter session word:", "BINGO");
+    if (!newWord) return;
+    if (newWord.length !== 5) {
+        alert("Invalid word. Using BINGO.");
+        session.word = "BINGO";
+    } else {
+        session.word = newWord.toUpperCase();
+    }
 
     session.called = [];
     session.lastBall = null;
@@ -730,7 +737,7 @@ function renderGamePickerItem(game) {
         const doubleWrap = document.createElement("div");
         doubleWrap.className = "double-cb-wrap";
         // Stop all pointer events from bubbling up to the item row
-        doubleWrap.addEventListener("click",  e => e.stopPropagation());
+        doubleWrap.addEventListener("click", e => e.stopPropagation());
         doubleWrap.addEventListener("pointerdown", e => e.stopPropagation());
 
         const cb = document.createElement("input");
@@ -1357,13 +1364,13 @@ if (loadCardBtn) loadCardBtn.addEventListener("click", openCardPicker);
 const THEMES = ["basic", "divebar"];
 
 // DOM refs for settings modal
-const settingsGearBtn  = document.getElementById("settingsGearBtn");
-const settingsModal    = document.getElementById("settingsModal");
+const settingsGearBtn = document.getElementById("settingsGearBtn");
+const settingsModal = document.getElementById("settingsModal");
 const settingsCloseBtn = document.getElementById("settingsCloseBtn");
-const themeBasicBtn    = document.getElementById("themeBasic");
-const themeDiveBarBtn  = document.getElementById("themeDiveBar");
-const checkBasic       = document.getElementById("checkBasic");
-const checkDiveBar     = document.getElementById("checkDiveBar");
+const themeBasicBtn = document.getElementById("themeBasic");
+const themeDiveBarBtn = document.getElementById("themeDiveBar");
+const checkBasic = document.getElementById("checkBasic");
+const checkDiveBar = document.getElementById("checkDiveBar");
 
 // Apply the named theme to the <html> element and persist it
 function applyTheme(name) {
@@ -1379,7 +1386,7 @@ function updateThemeCards(active) {
 
     // Basic card
     themeBasicBtn.setAttribute("aria-pressed", active === "basic" ? "true" : "false");
-    if (checkBasic)  checkBasic.classList.toggle("hidden",  active !== "basic");
+    if (checkBasic) checkBasic.classList.toggle("hidden", active !== "basic");
 
     // Dive Bar card
     themeDiveBarBtn.setAttribute("aria-pressed", active === "divebar" ? "true" : "false");
