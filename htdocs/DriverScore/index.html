@@ -1,4 +1,4 @@
-<!-- Version 1.2 -->
+<!-- Version 1.3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,10 +35,49 @@
         <label for="chkWakeLock" style="display:inline; margin:0; cursor:pointer;">Keep Screen Awake During Trip</label>
     </div>
     
-    <!-- Circular score gauge displaying current trip score with dynamic color gradient -->
-    <div class="score-display" id="scoreCircle">
-        <div class="score-value" id="lblScore">100</div>
-        <div class="score-label" id="lblScoreType">Trip Score</div>
+    <!-- Score circle with surrounding penalty indicators -->
+    <div class="score-ring-wrapper">
+
+        <!-- Upper-left: left-turn penalty arrow indicator -->
+        <div class="penalty-indicator pi-top-left" id="piTurnLeft" title="Left Turn Penalty">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <!-- Curved left-turn arrow pointing upper-left -->
+                <path d="M28 32 Q8 32 8 14 M8 14 L4 20 M8 14 L14 20" stroke="currentColor" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+
+        <!-- Upper-right: right-turn penalty arrow indicator -->
+        <div class="penalty-indicator pi-top-right" id="piTurnRight" title="Right Turn Penalty">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <!-- Curved right-turn arrow pointing upper-right -->
+                <path d="M12 32 Q32 32 32 14 M32 14 L36 20 M32 14 L26 20" stroke="currentColor" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+
+        <!-- Circular score gauge displaying current trip score with dynamic color gradient -->
+        <div class="score-display" id="scoreCircle">
+            <div class="score-value" id="lblScore">100</div>
+            <div class="score-label" id="lblScoreType">Trip Score</div>
+        </div>
+
+        <!-- Lower-left: hard braking penalty stop sign indicator -->
+        <div class="penalty-indicator pi-bot-left" id="piBrake" title="Braking Penalty">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <!-- Octagon stop sign shape -->
+                <polygon points="14,4 26,4 36,14 36,26 26,36 14,36 4,26 4,14" stroke="currentColor" stroke-width="2.5" fill="none"/>
+                <!-- STOP text inside octagon -->
+                <text x="20" y="25" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor" font-family="sans-serif">STOP</text>
+            </svg>
+        </div>
+
+        <!-- Lower-right: hard acceleration penalty indicator -->
+        <div class="penalty-indicator pi-bot-right" id="piAccel" title="Acceleration Penalty">
+            <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <!-- Lightning bolt acceleration icon -->
+                <polygon points="22,4 12,22 20,22 18,36 28,18 20,18" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.85"/>
+            </svg>
+        </div>
+
     </div>
 
     <!-- Live telematics data grid displaying filtered G-force, duration, speed, and locked phone position -->
@@ -77,6 +116,17 @@
 </div>
 
 <script>
+    // Penalty indicator heat levels — 0.0 (idle) to 1.0 (max red); decay over time
+    const INDICATOR_DECAY_RATE = 0.05;  // Heat lost per second when no penalty
+    const INDICATOR_HEAT_PER_HIT = 0.4; // Heat added per penalty event
+    let piHeat = { turnLeft: 0, turnRight: 0, brake: 0, accel: 0 };
+
+    // DOM references for the four penalty indicator elements
+    const piTurnLeft  = document.getElementById('piTurnLeft');
+    const piTurnRight = document.getElementById('piTurnRight');
+    const piBrake     = document.getElementById('piBrake');
+    const piAccel     = document.getElementById('piAccel');
+
     // Primary tracking flag and telemetry state variables
     let isTracking = false;
     let score = 100.0;
@@ -211,6 +261,72 @@
         const hue = (roundedScore / 100) * 120; 
         scoreCircle.style.background = `radial-gradient(circle, hsl(${hue}, 70%, 25%) 0%, hsl(${hue}, 80%, 15%) 100%)`;
         scoreCircle.style.border = `2px solid hsl(${hue}, 80%, 40%)`;
+    }
+
+    // Applies heat level to a penalty indicator element: black(0) → green(0.2) → yellow(0.6) → red(1.0)
+    function applyIndicatorHeat(el, heat) {
+        const clamped = Math.max(0, Math.min(1, heat));
+        let r, g, b, alpha;
+        if (clamped < 0.01) {
+            // Idle — nearly invisible dark state
+            r = 40; g = 40; b = 40; alpha = 0.35;
+        } else if (clamped < 0.5) {
+            // Green → Yellow transition
+            const t = clamped / 0.5;
+            r = Math.round(0   + t * 255);
+            g = Math.round(200 + t * (200 - 200));
+            b = 0;
+            alpha = 0.5 + t * 0.5;
+        } else {
+            // Yellow → Red transition
+            const t = (clamped - 0.5) / 0.5;
+            r = 255;
+            g = Math.round(200 * (1 - t));
+            b = 0;
+            alpha = 1.0;
+        }
+        el.style.color  = `rgba(${r},${g},${b},${alpha})`;
+        // Glow effect intensifies with heat
+        const glowBlur   = Math.round(clamped * 14);
+        const glowAlpha  = (clamped * 0.8).toFixed(2);
+        el.style.filter = clamped < 0.01
+            ? 'none'
+            : `drop-shadow(0 0 ${glowBlur}px rgba(${r},${g},${b},${glowAlpha}))`;
+    }
+
+    // Adds heat to the named penalty indicator channel and clamps to 1.0
+    function heatIndicator(channel) {
+        piHeat[channel] = Math.min(1.0, piHeat[channel] + INDICATOR_HEAT_PER_HIT);
+        applyIndicatorHeat(
+            channel === 'turnLeft'  ? piTurnLeft  :
+            channel === 'turnRight' ? piTurnRight :
+            channel === 'brake'     ? piBrake     : piAccel,
+            piHeat[channel]
+        );
+    }
+
+    // Decays all indicator heat levels by one step and refreshes their appearance
+    function decayIndicators() {
+        for (const ch of ['turnLeft', 'turnRight', 'brake', 'accel']) {
+            if (piHeat[ch] > 0) {
+                piHeat[ch] = Math.max(0, piHeat[ch] - INDICATOR_DECAY_RATE);
+                const el = ch === 'turnLeft'  ? piTurnLeft  :
+                           ch === 'turnRight' ? piTurnRight :
+                           ch === 'brake'     ? piBrake     : piAccel;
+                applyIndicatorHeat(el, piHeat[ch]);
+            }
+        }
+    }
+
+    // Resets all penalty indicator heat to idle
+    function resetIndicators() {
+        for (const ch of ['turnLeft', 'turnRight', 'brake', 'accel']) {
+            piHeat[ch] = 0;
+        }
+        applyIndicatorHeat(piTurnLeft,  0);
+        applyIndicatorHeat(piTurnRight, 0);
+        applyIndicatorHeat(piBrake,     0);
+        applyIndicatorHeat(piAccel,     0);
     }
 
     // Evaluates gravity vector at drive start to lock and display phone orientation position
@@ -423,8 +539,25 @@
 
                     const absX = Math.abs(filteredX), absY = Math.abs(filteredY);
                     let reason = "Hard Maneuver";
-                    if (absX > absY) reason = "Hard Cornering";
-                    else reason = (filteredY > 0) ? "Hard Braking" : "Hard Acceleration";
+                    if (absX > absY) {
+                        // Cornering — determine left vs right by sign of X-axis
+                        if (filteredX > 0) {
+                            reason = "Hard Cornering (Right)";
+                            heatIndicator('turnRight');
+                        } else {
+                            reason = "Hard Cornering (Left)";
+                            heatIndicator('turnLeft');
+                        }
+                    } else {
+                        // Longitudinal — positive Y = deceleration/braking; negative Y = acceleration
+                        if (filteredY > 0) {
+                            reason = "Hard Braking";
+                            heatIndicator('brake');
+                        } else {
+                            reason = "Hard Acceleration";
+                            heatIndicator('accel');
+                        }
+                    }
 
                     logMessage(`Penalty: -${deduction.toFixed(1)} pts (${lateralG.toFixed(2)}g lateral) ${reason}`);
                 }
@@ -448,7 +581,7 @@
             );
         }
 
-        // Interval timer updating drive duration and active-clean maneuvering rewards
+        // Interval timer updating drive duration, active-clean maneuvering rewards, and indicator decay
         timerInterval = setInterval(() => {
             const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
 
@@ -476,6 +609,9 @@
                     }
                 }
             }
+
+            // Decay indicator heat every second toward idle state
+            decayIndicators();
 
             // Reset per-second flags for next interval
             hadPenaltyThisSecond = false;
@@ -520,7 +656,7 @@
         else stopEngineExecution();
     });
 
-    // Reset button event binding resetting metrics, orientation state, and reward counters
+    // Reset button event binding resetting metrics, orientation state, reward counters, and indicators
     btnReset.addEventListener('click', () => {
         score = 100.0; maxG = 0.0;
         lblScore.textContent = "100";
@@ -537,6 +673,7 @@
         lastPenaltyTime = 0;
         lastBumpTime = 0;
         btnReset.disabled = true;
+        resetIndicators();  // Return all penalty indicators to dark idle state
         updateScoreUI();
         logMessage("Metrics cleared.");
     });
