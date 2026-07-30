@@ -1,3 +1,5 @@
+// Service Worker version identifier
+const VERSION = '1.0';
 const CACHE_NAME = 'scuba-app-suite-v1';
 const APP_SHELL = [
   './',

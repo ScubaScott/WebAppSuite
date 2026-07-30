@@ -1,4 +1,7 @@
-/* Version 1.7 */
+/* Stylesheet version identifier */
+:root {
+    --version: "1.8";
+}
 
 /* ================================================================
    THEME: BASIC (default)
@@ -2017,4 +2020,12 @@ body {
     font-size: 12px;
     color: rgba(255, 255, 255, 0.72);
     font-weight: 400;
+}
+
+/* Footer layout and small version text styling */
+.app-footer {
+    text-align: center;
+    padding: 16px 8px;
+    font-size: 0.75rem;
+    color: var(--text-subtle, #5f6368);
 }

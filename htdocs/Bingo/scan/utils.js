@@ -1,3 +1,6 @@
+// Scanner utility functions version identifier
+const VERSION = '1.0';
+
 // Helper: Rotate canvas by 90 degrees (clockwise or counter-clockwise)
 function rotateCanvas90(sourceCanvas, clockwise = true) {
     const dst = document.createElement("canvas");

@@ -1,5 +1,6 @@
 /* ── Tokens ─────────────────────────────────────────────────────────────── */
 :root {
+  --version:      "1.0";
   --wood-dark:    #3d2210;
   --wood-mid:     #6b3a1f;
   --wood-light:   #a45c2b;
@@ -621,4 +622,13 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* Footer layout and version text styling */
+.app-footer {
+  text-align: center;
+  padding: 16px 8px;
+  font-size: 0.75rem;
+  color: var(--wood-light, #a45c2b);
+  opacity: 0.8;
 }

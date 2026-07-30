@@ -100,6 +100,17 @@
     <div id="summaryOverlay" class="overlay hidden"></div>
     <div id="lastRoundBanner" class="last-round-banner hidden"></div>
 
+    <footer class="app-footer">
+      <p>Version <span id="appVersion">1.0</span></p>
+    </footer>
+
     <script src="app.js"></script>
+    <script>
+      // Display version identifier in footer
+      document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('appVersion');
+        if (el && typeof VERSION !== 'undefined') el.textContent = VERSION;
+      });
+    </script>
   </body>
 </html>

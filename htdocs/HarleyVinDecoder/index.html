@@ -488,12 +488,20 @@
         <div id="ocrList"></div>
 
         <div id="decodeResult" class="decode-result"></div>
+
+        <!-- Footer displaying application version -->
+        <footer class="app-footer" style="text-align:center; padding:16px 8px; font-size:0.75rem; color:var(--harley-text-secondary); opacity:0.8;">
+            <p>Version <span id="appVersion">1.0</span></p>
+        </footer>
     </div>
 
     <!-- Tesseract.js engine scripts -->
     <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js" onerror="window.tesseractLoadFailed = true;"></script>
 
     <script>
+        // Application version identifier
+        const VERSION = '1.0';
+
         const vinInput = document.getElementById("vinInput");
         const statusEl = document.getElementById("status");
         const decodeResult = document.getElementById("decodeResult");

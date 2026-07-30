@@ -1,3 +1,6 @@
+// Farkle application version identifier
+const VERSION = '1.0';
+
 // ─── Storage keys ────────────────────────────────────────────────────────────
 const STORAGE_KEYS = {
   players:  'farkle-players',

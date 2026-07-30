@@ -1,4 +1,7 @@
-/* Version 1.0 */
+/* Stylesheet version identifier */
+:root {
+    --version: "1.1";
+}
 
 /* CSS Theme Definitions & Custom Properties */
 body[data-theme="dark"] {
@@ -634,4 +637,12 @@ button.action-btn:active {
 
 .btn-save-settings:hover {
     background: #2563eb;
+}
+
+/* Footer layout and version text styling */
+.app-footer {
+    text-align: center;
+    padding: 16px 8px;
+    font-size: 0.75rem;
+    color: var(--text-subtle, #64748b);
 }

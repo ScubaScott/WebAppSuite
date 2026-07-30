@@ -333,9 +333,14 @@
             Force Refresh & Update App
         </button>
         <div id="refreshStatus" class="refresh-status" aria-live="polite"></div>
+        <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span id="footerVersion">1.0</span></p>
     </footer>
 
     <script>
+        // Main application suite version identifier
+        const VERSION = '1.0';
+        document.getElementById('footerVersion').textContent = VERSION;
+
         document.getElementById('forceRefreshBtn').addEventListener('click', async function () {
             const statusEl = document.getElementById('refreshStatus');
             const btn = this;

@@ -2,6 +2,9 @@
 // Simple server-side active game tracker for ScoreKeeper.
 // Stores active games in a local JSON file and supports POST updates and DELETE removals.
 
+// API endpoint version identifier
+$version = '1.0';
+
 $storageFile = __DIR__ . '/active-games.json';
 $method = $_SERVER['REQUEST_METHOD'];
 

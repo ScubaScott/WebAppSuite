@@ -1,7 +1,6 @@
-/* Version 1.1 */
-
 /* DriverScore Global Design Tokens & Theme Variables */
 :root {
+    --version: "1.2";
     --bg-color: #121212;
     --card-bg: #1e1e1e;
     --text-color: #ffffff;
@@ -406,4 +405,12 @@ button:disabled {
 
 #btnCalibrate.running {
     background-color: #9c27b0;
+}
+
+/* Footer layout and version text styling */
+.app-footer {
+    text-align: center;
+    padding: 16px 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted, #888888);
 }

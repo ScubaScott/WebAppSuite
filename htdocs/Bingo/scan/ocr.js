@@ -1,3 +1,6 @@
+// OCR module version identifier
+const VERSION = '1.0';
+
 // Standard 75-ball bingo column ranges (B-I-N-G-O). Used as a sanity check: if a recognized
 // number falls outside the range for its column, it's almost certainly a misread, so we retry
 // with different crop/zoom/PSM combinations rather than accepting the first guess.
