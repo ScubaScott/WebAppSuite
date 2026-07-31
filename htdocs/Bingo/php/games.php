@@ -1,16 +1,17 @@
 <?php
 /**
  * Bingo Game Modes API
- * GET  → returns all games as JSON
- * POST → saves a new game (body: { name, patterns: [{name, cells}] })
+ * GET    → returns all games as JSON
+ * POST   → saves a new game (body: { name, patterns: [{name, cells}] })
+ * DELETE → removes a game by id (?id=game_xxx), built-in games are protected
  */
 
 // API endpoint version identifier
-$version = '1.0';
+$version = '1.1';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
@@ -133,6 +134,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     http_response_code(201);
     echo json_encode($newGame);
+    exit;
+}
+
+// ---- DELETE (remove a game by id) ----
+if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $id = trim($_GET['id'] ?? '');
+
+    if ($id === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'id parameter is required']);
+        exit;
+    }
+
+    // Find the game in the list
+    $found = false;
+    $updated = [];
+    foreach ($games as $g) {
+        if ($g['id'] === $id) {
+            // Protect built-in games from deletion
+            if (!empty($g['builtin'])) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Built-in games cannot be deleted']);
+                exit;
+            }
+            $found = true; // Skip this game (i.e. delete it)
+        } else {
+            $updated[] = $g; // Keep all other games
+        }
+    }
+
+    if (!$found) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Game not found']);
+        exit;
+    }
+
+    if (file_put_contents($gamesFile, json_encode($updated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Could not write games file']);
+        exit;
+    }
+
+    echo json_encode(['success' => true, 'deleted' => $id]);
     exit;
 }
 

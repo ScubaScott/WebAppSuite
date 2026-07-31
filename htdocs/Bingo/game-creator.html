@@ -1,20 +1,28 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Game — Bingo</title>
+    <title>Create / Manage Games — Bingo</title>
+    <meta name="description" content="Create, load, and manage custom Bingo game modes and win patterns.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* ---- Design tokens ---- */
         :root {
-            --surface: #f8f9fa;
-            --card: #ffffff;
-            --text-main: #202124;
-            --text-subtle: #5f6368;
-            --border: #dfe1e5;
-            --primary: #1a73e8;
+            --surface:      #f8f9fa;
+            --card:         #ffffff;
+            --text-main:    #202124;
+            --text-subtle:  #5f6368;
+            --border:       #dfe1e5;
+            --primary:      #1a73e8;
             --primary-soft: rgba(26, 115, 232, 0.12);
+            --danger:       #c5221f;
+            --danger-soft:  rgba(197, 34, 31, 0.10);
+            --success:      #137333;
+            --radius-sm:    8px;
+            --radius-md:    12px;
+            --radius-pill:  999px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,6 +42,7 @@
             color: var(--text-main);
         }
 
+        /* ---- Section labels ---- */
         .section-label {
             font-size: 11px;
             font-weight: 600;
@@ -55,7 +64,9 @@
             margin-bottom: 6px;
         }
 
-        input[type="text"] {
+        /* ---- Inputs & selects ---- */
+        input[type="text"],
+        select {
             width: 100%;
             padding: 10px 14px;
             border: 1px solid var(--border);
@@ -66,11 +77,26 @@
             background: var(--card);
             outline: none;
             transition: border-color 0.15s, box-shadow 0.15s;
+            appearance: none;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        select:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(26,115,232,0.18);
+        }
+
+        /* Custom select arrow */
+        .select-wrapper { position: relative; }
+        .select-wrapper::after {
+            content: '▾';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--text-subtle);
+            font-size: 14px;
         }
 
         hr {
@@ -79,7 +105,20 @@
             margin: 18px 0;
         }
 
-        /* ---- Builder 5×5 grid ---- */
+        /* ---- Load-game confirmation banner ---- */
+        .load-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--primary-soft);
+            border: 1px solid rgba(26,115,232,0.25);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+        }
+        .load-banner span { font-size: 13px; color: var(--primary); flex: 1; }
+
+        /* ---- Builder 5x5 grid ---- */
         .builder-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -102,7 +141,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             border: 1px solid var(--border);
             background: var(--card);
             font-size: 10px;
@@ -133,7 +172,7 @@
             font-weight: 800;
         }
 
-        /* ---- Added patterns list ---- */
+        /* ---- Added-patterns list ---- */
         .patterns-list {
             display: flex;
             flex-direction: column;
@@ -154,7 +193,7 @@
             padding: 10px 14px;
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: var(--radius-md);
         }
 
         .pattern-mini {
@@ -164,15 +203,9 @@
             flex-shrink: 0;
         }
 
-        .pmini-cell {
-            width: 8px;
-            height: 8px;
-            border-radius: 1px;
-            background: var(--border);
-        }
-
-        .pmini-cell.in { background: var(--primary); }
-        .pmini-cell.free-cell { background: var(--primary-soft); border-radius: 50%; }
+        .pmini-cell { width: 8px; height: 8px; border-radius: 1px; background: var(--border); }
+        .pmini-cell.in           { background: var(--primary); }
+        .pmini-cell.free-cell    { background: var(--primary-soft); border-radius: 50%; }
         .pmini-cell.in.free-cell { background: var(--primary); border-radius: 50%; }
 
         .pattern-chip-name {
@@ -182,7 +215,63 @@
             color: var(--text-main);
         }
 
-        /* ---- Buttons ---- */
+        /* ---- Server games list ---- */
+        .server-games-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .server-game-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+
+        .server-game-name {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .server-game-badge {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: var(--radius-pill);
+            background: var(--surface);
+            color: var(--text-subtle);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        /* Trash icon button on each custom game row */
+        .btn-delete-game {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: var(--radius-sm);
+            color: var(--text-subtle);
+            font-size: 16px;
+            line-height: 1;
+            transition: background 0.12s, color 0.12s;
+            flex-shrink: 0;
+        }
+        .btn-delete-game:hover {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        /* ---- Generic buttons ---- */
         .btn-row {
             display: flex;
             gap: 10px;
@@ -192,7 +281,7 @@
         .btn {
             flex: 1;
             padding: 11px 16px;
-            border-radius: 999px;
+            border-radius: var(--radius-pill);
             font-size: 14px;
             font-weight: 500;
             font-family: inherit;
@@ -227,6 +316,16 @@
             cursor: not-allowed;
         }
 
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 2px 10px rgba(197,34,31,0.35);
+        }
+
+        /* ---- Status message ---- */
         .status-msg {
             margin-top: 14px;
             font-size: 13px;
@@ -235,24 +334,129 @@
             min-height: 18px;
         }
 
-        .status-msg.success { color: #137333; }
-        .status-msg.error   { color: #c5221f; }
+        .status-msg.success { color: var(--success); }
+        .status-msg.error   { color: var(--danger); }
+
+        /* ---- Delete confirmation modal ---- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.15s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .modal-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 24px 20px 20px;
+            max-width: 340px;
+            width: 100%;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+            animation: slideUp 0.18s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(16px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* Warning emoji icon in modal */
+        .modal-icon  { font-size: 36px; text-align: center; margin-bottom: 12px; }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+
+        .modal-body {
+            font-size: 13px;
+            color: var(--text-subtle);
+            text-align: center;
+            line-height: 1.55;
+            margin-bottom: 6px;
+        }
+
+        /* Red warning callout inside the modal */
+        .modal-warning {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            background: var(--danger-soft);
+            border: 1px solid rgba(197,34,31,0.25);
+            border-radius: var(--radius-sm);
+            padding: 9px 12px;
+            margin: 12px 0;
+            font-size: 12px;
+            color: var(--danger);
+            line-height: 1.45;
+        }
+
+        .modal-warning-icon { flex-shrink: 0; font-size: 14px; }
+
+        .modal-game-name {
+            font-weight: 600;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .modal-btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .modal-btn-row .btn { margin-top: 0; }
     </style>
 </head>
 <body>
 
-    <h1>✏️ Create New Game</h1>
+    <h1>&#x270F;&#xFE0F; Create / Manage Games</h1>
 
+    <!-- ========== LOAD EXISTING GAME ========== -->
+    <div class="section-label">Load Existing Game</div>
+    <div class="field-group">
+        <label for="loadGameSelect">Select a game to load into the editor</label>
+        <div class="select-wrapper">
+            <select id="loadGameSelect">
+                <option value="">&#x2014; Choose a game &#x2014;</option>
+            </select>
+        </div>
+    </div>
+    <div id="loadBanner" class="load-banner" style="display:none;">
+        <span id="loadBannerText"></span>
+        <button class="btn btn-secondary" id="clearLoadBtn" style="flex:none;padding:6px 12px;font-size:12px;">&#x2715; Clear</button>
+    </div>
+
+    <hr>
+
+    <!-- ========== GAME EDITOR FIELDS ========== -->
     <div class="field-group">
         <label for="gameName">Game Name</label>
-        <input type="text" id="gameName" placeholder="e.g. Regular Bingo, Four Corners…" maxlength="60" />
+        <input type="text" id="gameName" placeholder="e.g. Regular Bingo, Four Corners&#x2026;" maxlength="60" />
     </div>
 
     <hr>
 
     <div class="section-label">Patterns Added</div>
     <div class="patterns-list" id="patternsList">
-        <p class="patterns-empty">No patterns yet — build one below.</p>
+        <p class="patterns-empty">No patterns yet &#x2014; build one below.</p>
     </div>
 
     <hr>
@@ -261,7 +465,7 @@
 
     <div class="field-group">
         <label for="patternName">Pattern Name</label>
-        <input type="text" id="patternName" placeholder="e.g. Row 1, Diagonal, Four Corners…" maxlength="40" />
+        <input type="text" id="patternName" placeholder="e.g. Row 1, Diagonal, Four Corners&#x2026;" maxlength="40" />
     </div>
 
     <div class="builder-grid" id="builderGrid"></div>
@@ -273,34 +477,69 @@
 
     <div class="status-msg" id="statusMsg"></div>
 
+    <hr>
+
+    <!-- ========== SERVER GAME LIST ========== -->
+    <div class="section-label">Games on Server</div>
+    <div class="server-games-list" id="serverGamesList">
+        <p class="patterns-empty">Loading games&#x2026;</p>
+    </div>
+
+    <!-- ========== DELETE CONFIRMATION MODAL ========== -->
+    <div class="modal-overlay" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-card">
+            <div class="modal-icon">&#x26A0;&#xFE0F;</div>
+            <div class="modal-title" id="modalTitle">Delete Game?</div>
+            <div class="modal-body">
+                You are about to permanently delete:<br>
+                <span class="modal-game-name" id="modalGameName"></span>
+            </div>
+            <div class="modal-warning">
+                <span class="modal-warning-icon">&#x1F6A8;</span>
+                <span>This game will be <strong>removed from the server for all users</strong>. Any active Bingo sessions using this game may be affected. This action cannot be undone.</span>
+            </div>
+            <div class="modal-btn-row">
+                <button class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+                <button class="btn btn-danger"    id="modalConfirmBtn">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const GAMES_API  = './php/games.php';
-        const WORD       = 'BINGO';
-        const FREE_CELL  = 12;
+        // Game creator version identifier
+        const VERSION = '1.1';
 
-        let patterns     = [];
-        let currentCells = new Set();
+        const GAMES_API  = './php/games.php'; // REST endpoint for all game operations
+        const WORD       = 'BINGO';           // Column header letters
+        const FREE_CELL  = 12;                // Index of the FREE center cell
 
-        // ---- Build the 5×5 grid ----
+        let patterns      = [];        // Patterns added in the current editor session
+        let currentCells  = new Set(); // Cells currently selected in the builder grid
+        let pendingDeleteId   = null;  // ID of game pending deletion confirmation
+        let pendingDeleteName = null;  // Name of game pending deletion
+        let loadedGameId  = null;      // ID of a game loaded from server (null = new game)
+
+        // ---- Build 5x5 grid ----
         const builderGrid = document.getElementById('builderGrid');
 
-        // Column headers
+        // Column headers (B-I-N-G-O)
         for (let col = 0; col < 5; col++) {
             const hdr = document.createElement('div');
-            hdr.className = 'builder-col-header';
+            hdr.className   = 'builder-col-header';
             hdr.textContent = WORD[col];
             builderGrid.appendChild(hdr);
         }
 
-        // 25 cells (row-major)
+        // 25 cells in row-major order
         for (let idx = 0; idx < 25; idx++) {
             const cell   = document.createElement('div');
             const isFree = idx === FREE_CELL;
-            cell.className = 'builder-cell' + (isFree ? ' free daubed' : '');
+            cell.className   = 'builder-cell' + (isFree ? ' free daubed' : '');
             cell.textContent = isFree ? 'FREE' : '';
             cell.dataset.idx = idx;
 
             if (!isFree) {
+                // Toggle cell highlight on click
                 cell.addEventListener('click', () => {
                     if (currentCells.has(idx)) {
                         currentCells.delete(idx);
@@ -315,27 +554,28 @@
             builderGrid.appendChild(cell);
         }
 
-        // ---- Render patterns list ----
+        // ---- Render patterns already added to the list ----
         function renderPatternsList() {
             const list = document.getElementById('patternsList');
             list.innerHTML = '';
 
             if (patterns.length === 0) {
-                list.innerHTML = '<p class="patterns-empty">No patterns yet — build one below.</p>';
+                list.innerHTML = '<p class="patterns-empty">No patterns yet \u2014 build one below.</p>';
             } else {
                 for (const p of patterns) {
                     const chip = document.createElement('div');
                     chip.className = 'pattern-chip';
 
+                    // Build mini 5x5 thumbnail
                     let mini = '<div class="pattern-mini">';
                     for (let i = 0; i < 25; i++) {
-                        const isIn   = p.cells.includes(i) || i === FREE_CELL;
-                        const isFr   = i === FREE_CELL;
-                        mini += `<div class="pmini-cell${isIn ? ' in' : ''}${isFr ? ' free-cell' : ''}"></div>`;
+                        const isIn = p.cells.includes(i) || i === FREE_CELL;
+                        const isFr = i === FREE_CELL;
+                        mini += '<div class="pmini-cell' + (isIn ? ' in' : '') + (isFr ? ' free-cell' : '') + '"></div>';
                     }
                     mini += '</div>';
 
-                    chip.innerHTML = `${mini}<span class="pattern-chip-name">${p.name}</span>`;
+                    chip.innerHTML = mini + '<span class="pattern-chip-name">' + p.name + '</span>';
                     list.appendChild(chip);
                 }
             }
@@ -343,6 +583,7 @@
             updateSaveBtn();
         }
 
+        // ---- Enable Save button only when name + patterns are present ----
         function updateSaveBtn() {
             const hasName     = document.getElementById('gameName').value.trim().length > 0;
             const hasPatterns = patterns.length > 0;
@@ -362,64 +603,297 @@
                 return;
             }
 
-            const name = nameInput.value.trim() || `Pattern ${patterns.length + 1}`;
-            patterns.push({ name, cells: [...currentCells] });
+            const name = nameInput.value.trim() || ('Pattern ' + (patterns.length + 1));
+            patterns.push({ name: name, cells: Array.from(currentCells) });
 
-            // Reset builder
+            // Reset builder for next pattern
             currentCells.clear();
             nameInput.value = '';
-            builderGrid.querySelectorAll('.builder-cell:not(.free)').forEach(c => c.classList.remove('daubed'));
+            builderGrid.querySelectorAll('.builder-cell:not(.free)').forEach(function(c) { c.classList.remove('daubed'); });
             statusEl.textContent = '';
             statusEl.className   = 'status-msg';
 
             renderPatternsList();
         });
 
-        // ---- Save Game ----
+        // ---- Save Game (always POSTs a new game to the server) ----
         document.getElementById('saveGameBtn').addEventListener('click', async () => {
             const nameValue = document.getElementById('gameName').value.trim();
             const statusEl  = document.getElementById('statusMsg');
 
-            if (!nameValue)        { statusEl.textContent = 'Enter a game name.';           statusEl.className = 'status-msg error'; return; }
-            if (!patterns.length)  { statusEl.textContent = 'Add at least one pattern.';    statusEl.className = 'status-msg error'; return; }
+            if (!nameValue)       { statusEl.textContent = 'Enter a game name.';        statusEl.className = 'status-msg error'; return; }
+            if (!patterns.length) { statusEl.textContent = 'Add at least one pattern.'; statusEl.className = 'status-msg error'; return; }
 
-            const btn = document.getElementById('saveGameBtn');
+            const btn    = document.getElementById('saveGameBtn');
             btn.disabled = true;
-            statusEl.textContent = 'Saving…';
+            statusEl.textContent = 'Saving\u2026';
             statusEl.className   = 'status-msg';
 
             try {
                 const res = await fetch(GAMES_API, {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ name: nameValue, patterns })
+                    body:    JSON.stringify({ name: nameValue, patterns: patterns })
                 });
 
                 if (!res.ok) {
-                    const err = await res.json().catch(() => ({}));
-                    throw new Error(err.error || `Server error ${res.status}`);
+                    const err = await res.json().catch(function() { return {}; });
+                    throw new Error(err.error || ('Server error ' + res.status));
                 }
 
-                statusEl.textContent = '✓ Game saved! You can close this window.';
+                statusEl.textContent = '\u2713 Game saved! You can close this window.';
                 statusEl.className   = 'status-msg success';
 
-                // Notify the opener to reload its games list
+                // Notify the opener window (main Bingo page) to refresh its game list
                 if (window.opener && !window.opener.closed) {
                     window.opener.postMessage('games-updated', '*');
                 }
 
-                setTimeout(() => window.close(), 1800);
+                // Refresh our server list so the new game appears
+                loadedGameId = null;
+                hideBanner();
+                await fetchServerGames();
+
+                setTimeout(function() { window.close(); }, 1800);
 
             } catch (e) {
-                statusEl.textContent = `Error: ${e.message}`;
+                statusEl.textContent = 'Error: ' + e.message;
                 statusEl.className   = 'status-msg error';
-                btn.disabled = false;
+                btn.disabled         = false;
                 updateSaveBtn();
             }
         });
 
-        // Game creator version identifier
-        const VERSION = '1.0';
+        // ============================================================
+        // LOAD EXISTING GAME
+        // ============================================================
+
+        // Fill the load-dropdown with games from the server list
+        function populateLoadDropdown(games) {
+            const sel = document.getElementById('loadGameSelect');
+            // Remove all non-placeholder options
+            while (sel.options.length > 1) { sel.remove(1); }
+
+            for (const g of games) {
+                const opt = document.createElement('option');
+                opt.value       = g.id;
+                opt.textContent = g.builtin ? (g.name + ' (built-in)') : g.name;
+                sel.appendChild(opt);
+            }
+        }
+
+        // Show the confirmation banner when a game has been loaded into the editor
+        function showBanner(name, isBuiltin) {
+            const banner = document.getElementById('loadBanner');
+            const text   = document.getElementById('loadBannerText');
+            text.textContent = isBuiltin
+                ? ('Loaded "' + name + '" (built-in \u2014 will save as a new copy)')
+                : ('Loaded "' + name + '" \u2014 editing will save as a new copy');
+            banner.style.display = 'flex';
+        }
+
+        // Hide the banner and reset the load state
+        function hideBanner() {
+            document.getElementById('loadBanner').style.display = 'none';
+            document.getElementById('loadGameSelect').value = '';
+            loadedGameId = null;
+        }
+
+        // Load selected game data into the editor when dropdown changes
+        document.getElementById('loadGameSelect').addEventListener('change', async function(e) {
+            const id = e.target.value;
+            if (!id) return;
+
+            try {
+                const res   = await fetch(GAMES_API);
+                const games = await res.json();
+                const game  = games.find(function(g) { return g.id === id; });
+                if (!game) return;
+
+                // Populate editor fields with the loaded game
+                document.getElementById('gameName').value = game.name;
+                patterns = (game.patterns || []).map(function(p) {
+                    return { name: p.name, cells: Array.from(p.cells) };
+                });
+
+                loadedGameId = game.id;
+                showBanner(game.name, !!game.builtin);
+                renderPatternsList();
+
+                // Reset the builder so it is ready for a new pattern
+                currentCells.clear();
+                document.getElementById('patternName').value = '';
+                builderGrid.querySelectorAll('.builder-cell:not(.free)').forEach(function(c) { c.classList.remove('daubed'); });
+
+                const statusEl = document.getElementById('statusMsg');
+                statusEl.textContent = '';
+                statusEl.className   = 'status-msg';
+
+            } catch (err) {
+                const statusEl = document.getElementById('statusMsg');
+                statusEl.textContent = 'Could not load game: ' + err.message;
+                statusEl.className   = 'status-msg error';
+            }
+        });
+
+        // Clear loaded game and reset the entire editor
+        document.getElementById('clearLoadBtn').addEventListener('click', function() {
+            hideBanner();
+            document.getElementById('gameName').value    = '';
+            document.getElementById('patternName').value = '';
+            patterns = [];
+            currentCells.clear();
+            builderGrid.querySelectorAll('.builder-cell:not(.free)').forEach(function(c) { c.classList.remove('daubed'); });
+            renderPatternsList();
+            const statusEl = document.getElementById('statusMsg');
+            statusEl.textContent = '';
+            statusEl.className   = 'status-msg';
+        });
+
+        // ============================================================
+        // SERVER GAME LIST  (with per-game delete)
+        // ============================================================
+
+        // Fetch all games from server and render the management rows
+        async function fetchServerGames() {
+            const container = document.getElementById('serverGamesList');
+            container.innerHTML = '<p class="patterns-empty">Loading\u2026</p>';
+
+            try {
+                const res   = await fetch(GAMES_API);
+                const games = await res.json();
+
+                // Sync the load-game dropdown with the freshest data
+                populateLoadDropdown(games);
+
+                container.innerHTML = '';
+
+                if (!games.length) {
+                    container.innerHTML = '<p class="patterns-empty">No games found on server.</p>';
+                    return;
+                }
+
+                for (const g of games) {
+                    const row = document.createElement('div');
+                    row.className  = 'server-game-row';
+                    row.dataset.id = g.id;
+
+                    // Game name label
+                    const nameSpan       = document.createElement('span');
+                    nameSpan.className   = 'server-game-name';
+                    nameSpan.textContent = g.name;
+
+                    // Pattern count or Built-in badge
+                    const badge           = document.createElement('span');
+                    badge.className       = 'server-game-badge';
+                    const pCount          = (g.patterns && g.patterns.length) || 0;
+                    badge.textContent     = g.builtin ? 'Built-in' : (pCount + ' pattern' + (pCount !== 1 ? 's' : ''));
+
+                    row.appendChild(nameSpan);
+                    row.appendChild(badge);
+
+                    // Delete button only for non-built-in games
+                    if (!g.builtin) {
+                        const delBtn = document.createElement('button');
+                        delBtn.className  = 'btn-delete-game';
+                        delBtn.title      = 'Delete this game';
+                        delBtn.setAttribute('aria-label', 'Delete ' + g.name);
+                        delBtn.innerHTML  = '\uD83D\uDDD1'; // trash emoji
+                        delBtn.dataset.id = g.id;
+
+                        // Capture id/name in closure for the click handler
+                        (function(gameId, gameName) {
+                            delBtn.addEventListener('click', function() { openDeleteModal(gameId, gameName); });
+                        }(g.id, g.name));
+
+                        row.appendChild(delBtn);
+                    }
+
+                    container.appendChild(row);
+                }
+
+            } catch (err) {
+                container.innerHTML = '<p class="patterns-empty" style="color:var(--danger)">Failed to load games: ' + err.message + '</p>';
+            }
+        }
+
+        // ---- Delete modal ----
+
+        // Open the confirmation modal for a specific game
+        function openDeleteModal(id, name) {
+            pendingDeleteId   = id;
+            pendingDeleteName = name;
+            document.getElementById('modalGameName').textContent = name;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        // Close the modal without taking action
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+            pendingDeleteId   = null;
+            pendingDeleteName = null;
+        }
+
+        document.getElementById('modalCancelBtn').addEventListener('click', closeDeleteModal);
+
+        // Close modal when clicking the backdrop outside the card
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === document.getElementById('deleteModal')) { closeDeleteModal(); }
+        });
+
+        // Confirm delete: call DELETE /games.php?id=... then refresh
+        document.getElementById('modalConfirmBtn').addEventListener('click', async function() {
+            if (!pendingDeleteId) return;
+
+            const id   = pendingDeleteId;
+            const name = pendingDeleteName;
+            closeDeleteModal();
+
+            const statusEl = document.getElementById('statusMsg');
+            statusEl.textContent = 'Deleting "' + name + '"\u2026';
+            statusEl.className   = 'status-msg';
+
+            try {
+                const res = await fetch(GAMES_API + '?id=' + encodeURIComponent(id), {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(function() { return {}; });
+                    throw new Error(err.error || ('Server error ' + res.status));
+                }
+
+                statusEl.textContent = '\u2713 "' + name + '" has been deleted.';
+                statusEl.className   = 'status-msg success';
+
+                // Notify the opener to refresh its game list
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage('games-updated', '*');
+                }
+
+                // Clear editor if the deleted game was loaded
+                if (loadedGameId === id) {
+                    hideBanner();
+                    document.getElementById('gameName').value    = '';
+                    document.getElementById('patternName').value = '';
+                    patterns = [];
+                    currentCells.clear();
+                    builderGrid.querySelectorAll('.builder-cell:not(.free)').forEach(function(c) { c.classList.remove('daubed'); });
+                    renderPatternsList();
+                }
+
+                // Refresh the server-side game list
+                await fetchServerGames();
+
+            } catch (e) {
+                statusEl.textContent = 'Error: ' + e.message;
+                statusEl.className   = 'status-msg error';
+            }
+        });
+
+        // ---- Initial page load ----
+        fetchServerGames();  // Load game list and populate dropdown
+        renderPatternsList(); // Render empty patterns list
     </script>
 </body>
 </html>
