@@ -111,6 +111,8 @@
         .status-running { background: #16a34a22; color: #86efac; border: 1px solid #166534; }
         .status-paused { background: #f59e0b22; color: #fde68a; border: 1px solid #a16207; }
         .status-stopped { background: #64748b22; color: #cbd5e1; border: 1px solid #475569; }
+        /* Game Over status: distinct red-orange style to indicate a completed game */
+        .status-gameover { background: #7f1d1d33; color: #fca5a5; border: 1px solid #991b1b; }
         .empty-state {
             padding: 40px 24px;
             text-align: center;
@@ -169,8 +171,10 @@
             }
 
             gamesList.innerHTML = rows.map(game => {
-                const status = game.timerRunning ? 'running' : game.isPaused ? 'paused' : 'stopped';
-                const statusClass = status === 'running' ? 'status-running' : status === 'paused' ? 'status-paused' : 'status-stopped';
+                // Determine display status: game_over takes priority over timer state.
+                const isGameOver = game.status === 'game_over';
+                const status = isGameOver ? 'game over' : game.timerRunning ? 'running' : game.isPaused ? 'paused' : 'stopped';
+                const statusClass = isGameOver ? 'status-gameover' : status === 'running' ? 'status-running' : status === 'paused' ? 'status-paused' : 'status-stopped';
                 const title = `${game.homeTeamName || 'Home'} vs ${game.awayTeamName || 'Away'}`;
                 const scoreLabel = `${game.homeScore || 0} - ${game.awayScore || 0}`;
                 const periodLabel = `P${game.currentPeriod || 1}`;
@@ -251,7 +255,7 @@
         refresh();
 
         // Active games directory version identifier
-        const VERSION = '1.0';
+        const VERSION = '1.1';
     </script>
 </body>
 </html>
