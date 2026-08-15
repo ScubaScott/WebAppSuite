@@ -5,9 +5,532 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scan Bingo Card</title>
+    <meta name="description" content="Scan a bingo card using your camera or photo library to automatically extract numbers via OCR.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+
+    <!-- Load the main Bingo stylesheet for shared theme variables and components -->
+    <link rel="stylesheet" href="../style.css">
+
+    <!-- Scan-page specific styles that extend the main theme -->
+    <style>
+        /* Scan page layout version 1.1 */
+        body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .scan-container {
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ---- Camera & Preview ---- */
+        .video-wrap {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Camera viewfinder overlay grid guide */
+        .camera-grid-overlay {
+            position: absolute;
+            inset: 16px;
+            border: 2px dashed rgba(255, 255, 255, 0.75);
+            border-radius: 12px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
+        }
+
+        .overlay-grid-inner {
+            position: absolute;
+            inset: 0;
+        }
+
+        .grid-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .grid-line.v { width: 1px; top: 0; bottom: 0; }
+        .grid-line.v.v1 { left: 20%; }
+        .grid-line.v.v2 { left: 40%; }
+        .grid-line.v.v3 { left: 60%; }
+        .grid-line.v.v4 { left: 80%; }
+
+        .grid-line.h { height: 1px; left: 0; right: 0; }
+        .grid-line.h.h1 { top: 20%; }
+        .grid-line.h.h2 { top: 40%; }
+        .grid-line.h.h3 { top: 60%; }
+        .grid-line.h.h4 { top: 80%; }
+
+        /* Preview canvas */
+        #previewCanvas {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        /* ---- Buttons ---- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px 20px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-success {
+            background: #137333;
+            color: #ffffff;
+        }
+
+        .btn-success:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 2px 8px rgba(19,115,51,0.25);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button-group .btn { flex: 1; }
+
+        /* ---- Status Box ---- */
+        .status-box {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-subtle);
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .status-box.active {
+            color: var(--primary);
+            background: var(--primary-soft);
+            border-color: rgba(26, 115, 232, 0.3);
+        }
+
+        .status-box.success {
+            color: #137333;
+            background: #e6f4ea;
+            border-color: rgba(19, 115, 51, 0.3);
+        }
+
+        /* ---- Card section panels ---- */
+        .scan-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.06);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ---- Page topbar ---- */
+        .scan-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
+        }
+
+        /* Dive Bar dark topbar override */
+        [data-theme="divebar"] .scan-topbar {
+            background: #0f0c08;
+            border-color: #3d3328;
+        }
+
+        .scan-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--primary);
+            font-weight: 500;
+            font-size: 14px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 999px;
+            transition: background 0.15s ease;
+            font-family: inherit;
+        }
+
+        .scan-back-link:hover { background: var(--primary-soft); }
+
+        .scan-page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .target-card-badge {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-soft);
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+
+        /* ---- Auto-Crop Toggle Switch ---- */
+        .crop-toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crop-toggle-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-main);
+            user-select: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: var(--border);
+            transition: .2s;
+            border-radius: 20px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider { background-color: var(--primary); }
+        input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+        /* Crop status badge */
+        .crop-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-soft);
+            padding: 3px 8px;
+            border-radius: 999px;
+        }
+
+        /* Preview Wrap */
+        .preview-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .preview-wrap.hidden { display: none; }
+
+        /* ---- Scanned Bingo Grid ---- */
+        .scanned-grid-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .scanned-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .scanned-col-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            height: 32px;
+        }
+
+        .scanned-cell-input {
+            aspect-ratio: 1;
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--card);
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .scanned-cell-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+
+        .scanned-cell-input.free-cell {
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 800;
+            border-color: transparent;
+        }
+
+        .scanned-cell-input.invalid-cell {
+            border-color: #d93025;
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        /* ---- OCR Tuning Details ---- */
+        details.tuning-details {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 14px 18px;
+        }
+
+        details.tuning-details summary {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-subtle);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        details.tuning-details summary:hover { color: var(--primary); }
+
+        .tuning-table-wrap {
+            margin-top: 14px;
+            overflow-x: auto;
+        }
+
+        .tuning-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .tuning-table th, .tuning-table td {
+            border: 1px solid var(--border);
+            padding: 8px 10px;
+            text-align: left;
+            color: var(--text-main);
+        }
+
+        .tuning-table th { background: var(--surface); font-weight: 600; }
+
+        .tuning-table select, .tuning-table input[type="number"] {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            background: var(--card);
+            color: var(--text-main);
+        }
+
+        /* ---- Manual Crop Modal ---- */
+        .crop-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .crop-modal.hidden { display: none; }
+
+        .crop-modal-content {
+            background: var(--card);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 620px;
+            max-height: 94vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+        }
+
+        .crop-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .crop-modal-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .crop-canvas-wrap {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+            padding: 10px;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #cropCanvas {
+            max-width: 100%;
+            max-height: 55vh;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+        }
+
+        .crop-modal-footer {
+            display: flex;
+            gap: 8px;
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .crop-modal-footer .btn {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        /* Modal link button */
+        .modal-link-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-subtle);
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+            font-family: inherit;
+        }
+
+        .modal-link-btn:hover { background: var(--primary-soft); color: var(--primary); }
+
+        /* Camera unavailable placeholder */
+        .camera-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .camera-placeholder svg { opacity: 0.5; }
+    </style>
 
     <!-- OpenCV -->
     <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
@@ -19,22 +542,35 @@
     <script src="ocr.js"></script>
 </head>
 
+
 <body>
+    <!-- Apply saved theme before render to avoid flash -->
+    <script>
+        (function () {
+            // Read and apply the saved bingo theme from localStorage
+            const saved = localStorage.getItem('bingoTheme');
+            if (saved && saved !== 'basic') {
+                // Apply to <html> element, consistent with how tracking.js applies themes
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+    </script>
+
     <div class="scan-container">
         <!-- Top Navigation Bar -->
-        <header class="topbar">
-            <button id="backBtn" class="back-link" type="button">
+        <header class="scan-topbar">
+            <button id="backBtn" class="scan-back-link" type="button">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
                 </svg>
                 Back to Bingo
             </button>
-            <span class="page-title">Scan Bingo Card</span>
+            <span class="scan-page-title">Scan Bingo Card</span>
             <span id="targetCardBadge" class="target-card-badge">Card Scanner</span>
         </header>
 
         <!-- Camera & Capture Section -->
-        <section class="card">
+        <section class="scan-card">
             <div class="card-title">
                 <span>Camera Feed & Photos</span>
                 <div class="crop-toggle-wrap">
@@ -47,7 +583,13 @@
             </div>
 
             <div class="video-wrap">
-                <video id="camera" autoplay playsinline></video>
+                <video id="camera" autoplay playsinline muted></video>
+                <!-- Shown when camera is unavailable -->
+                <div id="cameraPlaceholder" class="camera-placeholder" style="display:none;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm9-8h-3.17l-1.86-2H8.03L6.17 7H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/></svg>
+                    <span>Camera unavailable</span>
+                    <span style="font-size:12px; opacity:0.7;">Use Camera Roll to pick a photo</span>
+                </div>
                 <div class="camera-grid-overlay">
                     <div class="overlay-grid-inner">
                         <div class="grid-line v v1"></div>
@@ -120,7 +662,7 @@
         </section>
 
         <!-- OCR Scanned Output Card -->
-        <section id="bingoOutputSection" class="card">
+        <section id="bingoOutputSection" class="scan-card">
             <div id="bingoOutput">
                 <p style="text-align: center; color: var(--text-subtle); font-size: 14px; padding: 20px 0;">
                     Capture a photo or select an image from your camera roll above to extract numbers automatically.
@@ -308,6 +850,7 @@
         const cancelCropBtn = document.getElementById("cancelCropBtn");
         const closeCropModalBtn = document.getElementById("closeCropModalBtn");
         const modalRotateCwBtn = document.getElementById("modalRotateCwBtn");
+        const cameraPlaceholder = document.getElementById("cameraPlaceholder");
 
         // Raw captured image state & cropper handle state
         let rawCapturedCanvas = null;
@@ -334,20 +877,32 @@
             }
         }
 
-        // Camera Initialization with square 1:1 aspect ratio constraint
-        navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: "environment",
-                aspectRatio: { ideal: 1.0 }
-            }
-        })
-        .then(stream => {
-            video.srcObject = stream;
-        })
-        .catch(err => {
-            console.warn("Camera access failed or unavailable:", err);
-            statusDiv.textContent = "Camera unavailable. You can upload a photo from Camera Roll or enter numbers manually.";
-        });
+        // Camera Initialization — tries environment (rear) camera first, falls back to any available camera
+        function startCamera() {
+            // First try environment/rear camera (mobile)
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' }, aspectRatio: { ideal: 1.0 } },
+                audio: false
+            }).then(stream => {
+                video.srcObject = stream;
+                cameraPlaceholder.style.display = 'none';
+            }).catch(() => {
+                // Fall back to any video device (desktop webcam)
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                    .then(stream => {
+                        video.srcObject = stream;
+                        cameraPlaceholder.style.display = 'none';
+                    })
+                    .catch(err => {
+                        console.warn('Camera access denied or unavailable:', err);
+                        video.style.display = 'none';
+                        cameraPlaceholder.style.display = 'flex';
+                        statusDiv.textContent = 'Camera unavailable. Use Camera Roll to pick a photo or enter numbers manually.';
+                    });
+            });
+        }
+
+        startCamera();
 
         // 1. Capture square photo from live camera feed
         captureBtn.onclick = () => {
@@ -759,7 +1314,7 @@
         ocrBtn.onclick = doOCR;
 
         // Bingo scanner page version identifier
-        const VERSION = '1.0';
+        const SCAN_VERSION = '1.1';
     </script>
 </body>
 
