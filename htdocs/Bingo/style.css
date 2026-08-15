@@ -1,6 +1,6 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "2.2";
+    --version: "2.3";
 
     /* Flashboard Call Balls Custom Configuration */
     --flashboard-ball-size: 27px;
@@ -1797,6 +1797,29 @@ body {
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.28);
     background: var(--primary-soft);
     color: var(--primary);
+}
+
+/* Unused cell in active game mode — desaturated and rendered in grayscale */
+.bingo-cell.unused-cell {
+    filter: grayscale(1) opacity(0.65);
+}
+
+.bingo-cell.unused-cell:not(.daubed):not(.free):not(.editing) {
+    background: var(--surface);
+    color: var(--text-subtle);
+    border-color: var(--border);
+}
+
+/* Retain dauber mark in grayscale when an unused number is called */
+.bingo-cell.unused-cell.daubed::before {
+    filter: grayscale(1);
+    opacity: 0.85;
+}
+
+[data-theme="divebar"] .bingo-cell.unused-cell:not(.daubed):not(.free):not(.editing) {
+    background: #1e1914;
+    color: #6d6253;
+    border-color: #33281e;
 }
 
 /* ---- Inline column picker on a card ---- */

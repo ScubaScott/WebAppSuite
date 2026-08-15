@@ -227,12 +227,12 @@
 
     <!-- Footer displaying application version -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.9</span></p>
+        <p>Version <span id="appVersion">2.0</span></p>
     </footer>
 
     <script>
         // Page version identifier fallback
-        const INDEX_VERSION = '1.9';
+        const INDEX_VERSION = '2.0';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;

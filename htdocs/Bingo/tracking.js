@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '2.2';
+const VERSION = '2.3';
 
 // ============================================================
 // SESSION STATE
@@ -1311,6 +1311,16 @@ function renderCard(card) {
         grid.appendChild(hdr);
     }
 
+    // Detect cells that are part of ANY pattern in the selected game mode
+    const usedPatternCells = new Set();
+    if (game && Array.isArray(game.patterns)) {
+        game.patterns.forEach(p => {
+            if (Array.isArray(p.cells)) {
+                p.cells.forEach(c => usedPatternCells.add(c));
+            }
+        });
+    }
+
     // Detect cells that are exactly one number away from completing a pattern
     const oneAwayCells = (isActive && game && !isTrueWinner)
         ? getOneAwayNeededCells(card, game)
@@ -1327,6 +1337,8 @@ function renderCard(card) {
         const isPartialCell = !isTrueWinner && session.doubleMode && winCells.has(idx);
         // One away: this uncalled cell is the last needed square for at least one pattern
         const isOneAway = !isTrueWinner && !isDaubed && oneAwayCells.has(idx);
+        // Unused in game mode: when a game mode is selected, squares not part of any pattern are rendered in grayscale
+        const isUnused = (game !== null) && !usedPatternCells.has(idx);
 
         const cell = document.createElement("div");
         cell.className = [
@@ -1337,7 +1349,8 @@ function renderCard(card) {
             isCellActive ? "editing" : "",
             isWinCell ? "win-cell" : "",
             isPartialCell ? "partial-win-cell" : "",
-            isOneAway ? "one-away-cell" : ""
+            isOneAway ? "one-away-cell" : "",
+            isUnused ? "unused-cell" : ""
         ].filter(Boolean).join(" ");
 
         cell.textContent = isFree ? "FREE" : (value ?? "");
