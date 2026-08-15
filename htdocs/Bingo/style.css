@@ -1,6 +1,6 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "2.1";
+    --version: "2.2";
 
     /* Flashboard Call Balls Custom Configuration */
     --flashboard-ball-size: 27px;
@@ -359,12 +359,73 @@
     box-shadow: 0 0 12px rgba(212, 160, 23, 0.2) !important;
 }
 
+/* ---- Floating Total Called badge in dive bar ---- */
+[data-theme="divebar"] .floating-total-badge {
+    background: #221d16;
+    border-color: #3d3328;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="divebar"] .floating-total-badge .ft-label {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .floating-total-badge .ft-num {
+    color: #e8dcc8;
+}
+
 /* ================================================================
-   FLOATING GEAR BUTTON — hover spin animation
+   FLOATING GEAR BUTTON & TOTAL CALLED CIRCLE
 ================================================================ */
 #settingsGearBtn:hover {
     transform: rotate(35deg) scale(1.08);
     box-shadow: 0 4px 18px rgba(60, 64, 67, 0.2);
+}
+
+.floating-total-wrap {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 900;
+    pointer-events: auto;
+}
+
+.floating-total-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
+    user-select: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: default;
+}
+
+.floating-total-badge:hover {
+    transform: scale(1.06);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+}
+
+.floating-total-badge .ft-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-subtle);
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.floating-total-badge .ft-num {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
 }
 
 /* ================================================================

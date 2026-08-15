@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '2.1';
+const VERSION = '2.2';
 
 // ============================================================
 // SESSION STATE
@@ -110,7 +110,7 @@ loadSession();
 function updateUI() {
     // 1. Total called count and Last Man status
     if (totalCalledSpan) {
-        totalCalledSpan.textContent = `Called: ${session.called.length}`;
+        totalCalledSpan.textContent = session.called.length;
     }
 
     // Last Man: Standing = at least one active card has no daubed squares.
@@ -148,20 +148,16 @@ function updateUI() {
             badge.innerHTML = `<span class="sq-letter">${letter}</span><span class="sq-num">${n}</span>`;
             // Clicking a badge in the Last 6 prompts to un-call it
             badge.addEventListener("click", () => {
-                if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
-                session.called = session.called.filter(x => x !== n);
-                if (session.lastBall === n) {
-                    session.lastBall = session.called[session.called.length - 1] || null;
-                }
-                saveSession();
-                updateUI();
+                promptUncallNumber(n);
             });
             lastFiveList.appendChild(badge);
         });
     }
 
     // 3. Word bar headers
-    updateSessionWordBar();
+    if (inputMode === "letter") {
+        updateSessionWordBar();
+    }
 
     // 4. Rebuild active tracking mode view
     if (inputMode === "number") {
@@ -235,6 +231,7 @@ function setInputMode(mode) {
     if (mode === "letter") {
         toggleByLetter.classList.add("active");
         toggleByNumber.classList.remove("active");
+        sessionWordBar.classList.remove("hidden");
         byLetterPanel.classList.remove("hidden");
         trackingGrid.classList.add("hidden");
 
@@ -245,6 +242,7 @@ function setInputMode(mode) {
     } else {
         toggleByNumber.classList.add("active");
         toggleByLetter.classList.remove("active");
+        sessionWordBar.classList.add("hidden");
         byLetterPanel.classList.add("hidden");
         trackingGrid.classList.remove("hidden");
         buildTrackingGrid();
@@ -519,7 +517,7 @@ function renderDauberPalette() {
 
     DAUBER_PALETTE.forEach(c => {
         const swatch = document.createElement("button");
-        swatch.className = "dauber-palette-swatch" + (c.rgb === currentRgb ? " selected" : "");
+        swatch.className = "dauber-palette-item" + (c.rgb === currentRgb ? " active" : "");
         swatch.style.background = `rgb(${c.rgb})`;
         swatch.title = c.name;
         swatch.type = "button";
@@ -1360,7 +1358,7 @@ function renderCard(card) {
         // In double mode show both pattern names joined with "+"
         const patternNames = winningPatterns.map(p => p.name).join(" + ");
         overlay.innerHTML = `
-            <span class="winner-bingo-text">BINGO!</span>
+            <span class="winner-bingo-text">${session.word}!</span>
             <span class="winner-game-name">${game.name}</span>
             <span class="winner-pattern-name">${patternNames}</span>
         `;

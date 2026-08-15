@@ -1,5 +1,5 @@
 // OCR module version identifier
-const VERSION = '1.0';
+const VERSION = '1.1';
 
 // Standard 75-ball bingo column ranges (B-I-N-G-O). Used as a sanity check: if a recognized
 // number falls outside the range for its column, it's almost certainly a misread, so we retry
@@ -11,6 +11,11 @@ const COLUMN_RANGES = [
     [46, 60],  // G
     [61, 75],  // O
 ];
+
+// Absolute valid range for any 75-ball bingo number.
+// Used by extractNumber to reject garbage OCR output before column-specific checks.
+const BINGO_MIN = 1;
+const BINGO_MAX = 75;
 
 // A single, reused Tesseract worker.
 let ocrWorker = null;
@@ -52,7 +57,7 @@ async function runOCR(canvas) {
 
     // Check if initial pass passed column range validation
     if (result.validCount >= 14 || !document.getElementById("validateColumnRanges").checked) {
-        return result.grid;
+        return deduplicateGrid(result.grid);
     }
 
     console.warn(`Initial orientation validity low (${result.validCount}/24). Testing rotations...`);
@@ -84,6 +89,7 @@ async function runOCR(canvas) {
         }
     }
 
+    bestResult.grid = deduplicateGrid(bestResult.grid);
     return bestResult.grid;
 }
 
@@ -332,12 +338,36 @@ function getOcrEngineMode() {
     }
 }
 
+// Parse OCR text to a valid bingo number (1–75). Any value outside that range is rejected.
 function extractNumber(text) {
     if (!text) return null;
     const digits = text.replace(/[^0-9]/g, "");
     if (!digits) return null;
     const num = parseInt(digits, 10);
-    return isNaN(num) ? null : num;
+    if (isNaN(num)) return null;
+    // Hard-reject anything outside the legal bingo range — catches misreads like 144, 0, etc.
+    if (num < BINGO_MIN || num > BINGO_MAX) return null;
+    return num;
+}
+
+// Remove duplicate numbers from the OCR grid. Each valid bingo number should appear only once.
+// When a duplicate is found, the later occurrence is cleared to null.
+// FREE cells and null/empty cells are ignored during deduplication.
+function deduplicateGrid(grid) {
+    const seen = new Set();
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+            const val = grid[r][c];
+            if (val === "FREE" || val === null || val === undefined) continue;
+            if (seen.has(val)) {
+                console.warn(`OCR dedup: removed duplicate ${val} at [${r},${c}]`);
+                grid[r][c] = null;
+            } else {
+                seen.add(val);
+            }
+        }
+    }
+    return grid;
 }
 
 // Render the scanned 5x5 bingo numbers into an interactive editable grid with headers and a "Use These Numbers" button
@@ -368,14 +398,21 @@ function drawBingoGrid(grid) {
 
     for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 5; c++) {
-            const val = (grid[r] && grid[r][c] !== undefined && grid[r][c] !== null) ? grid[r][c] : "";
+            const val    = (grid[r] && grid[r][c] !== undefined && grid[r][c] !== null) ? grid[r][c] : "";
             const isFree = (r === 2 && c === 2);
 
             if (isFree) {
                 html += `<input type="text" class="scanned-cell-input free-cell" data-row="${r}" data-col="${c}" value="FREE" readonly>`;
             } else {
                 const numVal = (val === "FREE") ? "" : val;
-                html += `<input type="number" class="scanned-cell-input" data-row="${r}" data-col="${c}" value="${numVal}" min="1" max="75">`;
+
+                // Flag cells whose value falls outside the expected BINGO column range
+                const [lo, hi] = COLUMN_RANGES[c];
+                const parsedNum = parseInt(numVal, 10);
+                const isInvalid = numVal !== "" && !isNaN(parsedNum) && (parsedNum < lo || parsedNum > hi);
+                const invalidClass = isInvalid ? " invalid-cell" : "";
+
+                html += `<input type="number" class="scanned-cell-input${invalidClass}" data-row="${r}" data-col="${c}" value="${numVal}" min="1" max="75">`;
             }
         }
     }
