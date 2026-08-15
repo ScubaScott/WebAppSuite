@@ -1,6 +1,12 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "1.8";
+    --version: "2.1";
+
+    /* Flashboard Call Balls Custom Configuration */
+    --flashboard-ball-size: 27px;
+    --flashboard-font-size: 11px;
+    --flashboard-v-gap: 3px;
+    --flashboard-h-offset: 6px;
 }
 
 /* ================================================================
@@ -446,6 +452,34 @@
     letter-spacing: 0.09em;
 }
 
+/* ---- Config Slider Groups (Settings Modal) ---- */
+.config-slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.config-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-subtle);
+}
+
+.config-slider-header span:last-child {
+    color: var(--text-main);
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.config-slider-group input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
 /* ---- Theme picker grid ---- */
 .theme-grid {
     display: flex;
@@ -889,61 +923,207 @@ body {
 }
 
 /* ================================
-   BY-NUMBER TRACKING GRID
-   Mobile-first: squares match bingo card cells
+   BY-NUMBER TRACKING GRID (FLASHBOARD)
+   Compact flashboard: balls are shrunk, staggered left/right,
+   and tightly overlapped vertically so all 75 fit on 1 screen.
 ================================ */
 
 .tracking-grid {
     display: grid;
-    /* 5 equal columns, minimum 0 so they compress on tiny screens */
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 6px;
+    gap: 2px;
     margin-bottom: 14px;
+    padding: 10px 6px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .grid-column {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    position: relative;
+    padding: 0 2px;
 }
 
-/* Override cursor for grid cells — circular bingo balls for input grid */
+/* Vertical column separator lines between B, I, N, G, O columns */
+.grid-column:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 36px;
+    bottom: 8px;
+    right: -1px;
+    width: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    opacity: 0.75;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Column Letter Badge Header at top of each column */
+.grid-column .bingo-col-header {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    background: var(--surface);
+    color: var(--primary);
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    flex-shrink: 0;
+}
+
+/* Column-specific colored letter ring accents like physical flashboards */
+.grid-column:nth-child(1) .bingo-col-header {
+    border-color: #d32f2f;
+    color: #d32f2f;
+}
+.grid-column:nth-child(2) .bingo-col-header {
+    border-color: #1976d2;
+    color: #1976d2;
+}
+.grid-column:nth-child(3) .bingo-col-header {
+    border-color: #f57c00;
+    color: #f57c00;
+}
+.grid-column:nth-child(4) .bingo-col-header {
+    border-color: #388e3c;
+    color: #388e3c;
+}
+.grid-column:nth-child(5) .bingo-col-header {
+    border-color: #7b1fa2;
+    color: #7b1fa2;
+}
+
+/* Container for the 15 balls in a column */
+.grid-column-balls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    gap: var(--flashboard-v-gap, 3px);
+}
+
+/* Compact circular bingo ball buttons */
 .bingo-cell.grid-num-cell {
     cursor: pointer;
-    /* Circular aspect ratio for number input grid */
+    width: var(--flashboard-ball-size, 27px);
+    height: var(--flashboard-ball-size, 27px);
+    min-width: var(--flashboard-ball-size, 27px);
+    min-height: var(--flashboard-ball-size, 27px);
     aspect-ratio: 1;
-    min-height: 0;
     border-radius: 50%;
-    font-size: clamp(11px, 2.8vw, 15px);
-    /* Smooth daub transition */
-    transition: transform 0.12s ease, box-shadow 0.12s ease,
-        background 0.15s ease, border-color 0.15s ease;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+    font-size: var(--flashboard-font-size, 11px);
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    user-select: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    margin-top: 0;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, z-index 0.15s ease;
 }
 
-.bingo-cell.grid-num-cell:hover:not(.daubed) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.16);
+/* Stagger offset: odd balls shift left, even balls shift right without touching */
+.bingo-cell.grid-num-cell.offset-left {
+    transform: translateX(calc(-1 * var(--flashboard-h-offset, 6px)));
+}
+
+.bingo-cell.grid-num-cell.offset-right {
+    transform: translateX(var(--flashboard-h-offset, 6px));
+}
+
+/* Hover effect on balls */
+.bingo-cell.grid-num-cell:hover {
+    z-index: 50 !important;
     border-color: var(--primary);
-    background: var(--primary-soft);
-    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-/* Called (daubed) state for grid cells — matches bingo card daub dot */
+.bingo-cell.grid-num-cell.offset-left:hover {
+    transform: translateX(calc(-1 * var(--flashboard-h-offset, 6px))) scale(1.15);
+}
+
+.bingo-cell.grid-num-cell.offset-right:hover {
+    transform: translateX(var(--flashboard-h-offset, 6px)) scale(1.15);
+}
+
+/* Uncalled ball styling */
+.bingo-cell.grid-num-cell:not(.daubed) {
+    background: var(--surface);
+    color: var(--text-main);
+    border-color: var(--border);
+}
+
+/* Called / Daubed ball styling — bright solid color fill with crisp contrast */
 .bingo-cell.grid-num-cell.daubed {
+    background: var(--daub-color-solid, #1a73e8);
+    color: #ffffff !important;
     border-color: transparent;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-@media (max-width: 640px) {
+/* Suppress background pseudo dot on flashboard balls so the entire ball is colored */
+.bingo-cell.grid-num-cell.daubed::before {
+    display: none !important;
+}
+
+/* Dive Bar theme styling for flashboard */
+[data-theme="divebar"] .tracking-grid {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+[data-theme="divebar"] .grid-column:not(:last-child)::after {
+    background: #3d3328;
+}
+
+[data-theme="divebar"] .grid-column .bingo-col-header {
+    background: #0f0c08;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="divebar"] .bingo-cell.grid-num-cell:not(.daubed) {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="divebar"] .bingo-cell.grid-num-cell.daubed {
+    background: var(--daub-color-solid, #c8281e);
+    color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(200, 40, 30, 0.5);
+}
+
+@media (max-width: 480px) {
     .tracking-grid {
-        gap: 4px;
+        padding: 8px 3px 10px;
+        gap: 1px;
     }
 
-    .grid-column {
-        gap: 3px;
-    }
-
-    .bingo-cell.grid-num-cell {
-        font-size: clamp(10px, 3vw, 13px);
+    .grid-column .bingo-col-header {
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
+        margin-bottom: 4px;
+        border-width: 1.5px;
     }
 }
 
@@ -1630,6 +1810,37 @@ body {
     align-items: center;
     justify-content: flex-start;
     gap: 12px;
+}
+
+.game-clear-btn {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.game-clear-btn:hover {
+    background: rgba(229, 57, 53, 0.08);
+    border-color: #e53935;
+    color: #e53935;
+}
+
+[data-theme="divebar"] .game-clear-btn {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .game-clear-btn:hover {
+    background: rgba(200, 40, 30, 0.15);
+    border-color: #c8281e;
+    color: #ff8a80;
 }
 
 .game-info {

@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '1.8';
+const VERSION = '2.1';
 
 // ============================================================
 // SESSION STATE
@@ -25,6 +25,7 @@ const totalCalledSpan = document.getElementById("totalCalled");
 const lastManStatus = document.getElementById("lastManStatus");
 const callLogLink = document.getElementById("callLogLink");
 const newSessionBtn = document.getElementById("newSessionBtn");
+const clearCardsBtn = document.getElementById("clearCardsBtn");
 const addCardBtn = document.getElementById("addCardBtn");
 const loadCardBtn = document.getElementById("loadCardBtn");
 const bingoCardsList = document.getElementById("bingoCardsList");
@@ -328,26 +329,34 @@ function buildTrackingGrid() {
         const colDiv = document.createElement("div");
         colDiv.className = "grid-column";
 
-        // Column letter header — matches bingo card header style
+        // Column letter header — circular badge at the top
         const hdr = document.createElement("div");
         hdr.className = "bingo-col-header";
         hdr.textContent = session.word[col];
         colDiv.appendChild(hdr);
 
+        // Container for staggered overlapping balls
+        const ballsDiv = document.createElement("div");
+        ballsDiv.className = "grid-column-balls";
+
         const start = col * 15 + 1;
         for (let i = 0; i < 15; i++) {
             const n = start + i;
             const btn = document.createElement("button");
-            // Use bingo-cell styling so buttons match the card squares
             const isCalled = session.called.includes(n);
-            btn.className = "bingo-cell grid-num-cell" + (isCalled ? " daubed" : "");
+            // Alternate horizontal offset: even indexed balls shift left, odd shift right
+            const offsetClass = (i % 2 === 0) ? "offset-left" : "offset-right";
+            btn.className = `bingo-cell grid-num-cell ${offsetClass}` + (isCalled ? " daubed" : "");
             btn.textContent = n;
             btn.setAttribute("aria-label", `${session.word[col]}${n}`);
-            // Prevent double-tap zoom on mobile — use touchend for instant response
+            // Explicit z-index stacking so top balls sit slightly below subsequent balls cleanly
+            btn.style.zIndex = 15 - i;
+            // Prevent double-tap zoom on mobile — use click for instant response
             btn.addEventListener("click", (e) => { e.preventDefault(); onNumberGridClick(n); });
-            colDiv.appendChild(btn);
+            ballsDiv.appendChild(btn);
         }
 
+        colDiv.appendChild(ballsDiv);
         trackingGrid.appendChild(colDiv);
     }
 }
@@ -438,24 +447,37 @@ function openCallLogModal() {
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
 }
 
-newSessionBtn.addEventListener("click", () => {
-    const newWord = prompt("Enter a 5-letter session word:", "BINGO");
-    if (!newWord) return;
-    if (newWord.length !== 5) {
-        alert("Invalid word. Using BINGO.");
-        session.word = "BINGO";
-    } else {
-        session.word = newWord.toUpperCase();
-    }
+// Change Game Name / Session Word button (does not clear called numbers or cards)
+if (newSessionBtn) {
+    newSessionBtn.addEventListener("click", () => {
+        const currentWord = session.word || "BINGO";
+        const newWord = prompt("Enter a 5-letter game name / session word:", currentWord);
+        if (!newWord) return;
+        if (newWord.trim().length !== 5) {
+            alert("Game name must be exactly 5 letters.");
+            return;
+        }
+        session.word = newWord.trim().toUpperCase();
+        saveSession();
+        updateUI();
+    });
+}
 
-    session.called = [];
-    session.lastBall = null;
-    activeLetterIdx = -1;
-    activeCardEdit = null;
+// Clear Cards button (resets all called numbers, keeping the game name and active cards intact)
+if (clearCardsBtn) {
+    clearCardsBtn.addEventListener("click", () => {
+        if (session.called.length === 0) return;
+        if (!confirm("Clear all called numbers? Active cards and game mode will be preserved.")) return;
 
-    saveSession();
-    updateUI();
-});
+        session.called = [];
+        session.lastBall = null;
+        activeLetterIdx = -1;
+        activeCardEdit = null;
+
+        saveSession();
+        updateUI();
+    });
+}
 
 // ============================================================
 // DAUBER COLOR & OPACITY CONTROLS
@@ -1484,6 +1506,104 @@ if (themeDiveBarBtn) {
 }
 
 // ============================================================
+// FLASHBOARD NUMBERS LAYOUT CONFIGURATION
+// ============================================================
+
+const DEFAULT_FLASHBOARD_CONFIG = {
+    ballSize: 27,   // px
+    fontSize: 11,   // px
+    vGap: 3,        // px
+    hOffset: 6      // px
+};
+
+let flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG };
+
+// DOM refs for configuration sliders
+const cfgBallSizeSlider = document.getElementById("cfgBallSizeSlider");
+const cfgBallSizeVal = document.getElementById("cfgBallSizeVal");
+const cfgFontSizeSlider = document.getElementById("cfgFontSizeSlider");
+const cfgFontSizeVal = document.getElementById("cfgFontSizeVal");
+const cfgVGapSlider = document.getElementById("cfgVGapSlider");
+const cfgVGapVal = document.getElementById("cfgVGapVal");
+const cfgHOffsetSlider = document.getElementById("cfgHOffsetSlider");
+const cfgHOffsetVal = document.getElementById("cfgHOffsetVal");
+const cfgResetBtn = document.getElementById("cfgResetBtn");
+
+// Apply current configuration variables directly to document root styles
+function applyFlashboardConfig() {
+    const root = document.documentElement;
+    root.style.setProperty("--flashboard-ball-size", `${flashboardConfig.ballSize}px`);
+    root.style.setProperty("--flashboard-font-size", `${flashboardConfig.fontSize}px`);
+    root.style.setProperty("--flashboard-v-gap", `${flashboardConfig.vGap}px`);
+    root.style.setProperty("--flashboard-h-offset", `${flashboardConfig.hOffset}px`);
+
+    // Sync slider input values and text readouts
+    if (cfgBallSizeSlider) cfgBallSizeSlider.value = flashboardConfig.ballSize;
+    if (cfgBallSizeVal) cfgBallSizeVal.textContent = `${flashboardConfig.ballSize}px`;
+
+    if (cfgFontSizeSlider) cfgFontSizeSlider.value = flashboardConfig.fontSize;
+    if (cfgFontSizeVal) cfgFontSizeVal.textContent = `${flashboardConfig.fontSize}px`;
+
+    if (cfgVGapSlider) cfgVGapSlider.value = flashboardConfig.vGap;
+    if (cfgVGapVal) cfgVGapVal.textContent = `${flashboardConfig.vGap}px`;
+
+    if (cfgHOffsetSlider) cfgHOffsetSlider.value = flashboardConfig.hOffset;
+    if (cfgHOffsetVal) cfgHOffsetVal.textContent = `${flashboardConfig.hOffset}px`;
+
+    localStorage.setItem("bingoFlashboardConfig", JSON.stringify(flashboardConfig));
+}
+
+// Load saved flashboard configuration or fall back to defaults
+function initFlashboardConfig() {
+    const saved = localStorage.getItem("bingoFlashboardConfig");
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG, ...parsed };
+        } catch (e) {
+            flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG };
+        }
+    }
+    applyFlashboardConfig();
+}
+
+// Event listeners for live slider adjustments
+if (cfgBallSizeSlider) {
+    cfgBallSizeSlider.addEventListener("input", (e) => {
+        flashboardConfig.ballSize = parseInt(e.target.value, 10);
+        applyFlashboardConfig();
+    });
+}
+
+if (cfgFontSizeSlider) {
+    cfgFontSizeSlider.addEventListener("input", (e) => {
+        flashboardConfig.fontSize = parseInt(e.target.value, 10);
+        applyFlashboardConfig();
+    });
+}
+
+if (cfgVGapSlider) {
+    cfgVGapSlider.addEventListener("input", (e) => {
+        flashboardConfig.vGap = parseInt(e.target.value, 10);
+        applyFlashboardConfig();
+    });
+}
+
+if (cfgHOffsetSlider) {
+    cfgHOffsetSlider.addEventListener("input", (e) => {
+        flashboardConfig.hOffset = parseInt(e.target.value, 10);
+        applyFlashboardConfig();
+    });
+}
+
+if (cfgResetBtn) {
+    cfgResetBtn.addEventListener("click", () => {
+        flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG };
+        applyFlashboardConfig();
+    });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 
@@ -1492,3 +1612,4 @@ applyDauberSettings();
 updateUI();
 loadGames();
 initTheme();
+initFlashboardConfig();

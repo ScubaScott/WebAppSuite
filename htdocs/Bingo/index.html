@@ -15,10 +15,31 @@
             <a href="../index.html" class="back-link">← Back to Apps</a>
             <h1>Bingo Number Tracker</h1>
         </div>
-        <button id="newSessionBtn" class="btn primary-btn">New Session</button>
+        <button id="newSessionBtn" class="btn primary-btn" title="Change Game Name">Game Name</button>
     </header>
 
     <main class="page-content">
+        <!-- Game Selection (Top of page) -->
+        <section id="gameSection" class="game-section">
+            <div class="game-section-header">
+                <div class="game-menu-wrap">
+                    <button id="gameMenuBtn" class="card-menu-btn" aria-label="Game menu" aria-expanded="false">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <div id="gameMenuDropdown" class="card-menu-dropdown hidden"></div>
+                </div>
+                <div class="game-info">
+                    <span class="stat-label">Game Mode</span>
+                    <div class="game-name-row">
+                        <span id="selectedGameName" class="selected-game-name">— None selected —</span>
+                        <!-- doubleModeBadge: shown when double mode is active -->
+                        <span id="doubleModeBadge" class="double-mode-badge hidden">Double</span>
+                    </div>
+                </div>
+                <button id="clearCardsBtn" class="link-button game-clear-btn" type="button" title="Reset all called numbers">Clear Cards</button>
+            </div>
+        </section>
+
         <section class="stats-card">
             <div class="last-five-card">
                 <div class="stat-header">
@@ -73,26 +94,6 @@
 
         <!-- BY NUMBER tracking grid (existing) -->
         <section id="trackingGrid" class="tracking-grid hidden" aria-label="Bingo numbers"></section>
-
-        <!-- Game Selection -->
-        <section id="gameSection" class="game-section">
-            <div class="game-section-header">
-                <div class="game-menu-wrap">
-                    <button id="gameMenuBtn" class="card-menu-btn" aria-label="Game menu" aria-expanded="false">
-                        <span></span><span></span><span></span>
-                    </button>
-                    <div id="gameMenuDropdown" class="card-menu-dropdown hidden"></div>
-                </div>
-                <div class="game-info">
-                    <span class="stat-label">Game Mode</span>
-                    <div class="game-name-row">
-                        <span id="selectedGameName" class="selected-game-name">— None selected —</span>
-                        <!-- doubleModeBadge: shown when double mode is active -->
-                        <span id="doubleModeBadge" class="double-mode-badge hidden">Double</span>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- Bingo Cards -->
         <section id="bingoCardsSection" class="bingo-cards-section" aria-label="Bingo cards">
@@ -171,17 +172,58 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Flashboard Call Balls Configuration section -->
+            <div class="settings-section">
+                <div class="settings-section-label">Flashboard Numbers Layout</div>
+                
+                <div class="config-slider-group">
+                    <div class="config-slider-header">
+                        <span>Circle Size</span>
+                        <span id="cfgBallSizeVal">27px</span>
+                    </div>
+                    <input type="range" id="cfgBallSizeSlider" min="18" max="42" step="1" value="27">
+                </div>
+
+                <div class="config-slider-group">
+                    <div class="config-slider-header">
+                        <span>Number Font Size</span>
+                        <span id="cfgFontSizeVal">11px</span>
+                    </div>
+                    <input type="range" id="cfgFontSizeSlider" min="8" max="20" step="1" value="11">
+                </div>
+
+                <div class="config-slider-group">
+                    <div class="config-slider-header">
+                        <span>Vertical Spacing</span>
+                        <span id="cfgVGapVal">3px</span>
+                    </div>
+                    <input type="range" id="cfgVGapSlider" min="0" max="16" step="1" value="3">
+                </div>
+
+                <div class="config-slider-group">
+                    <div class="config-slider-header">
+                        <span>Horizontal Offset (Stagger)</span>
+                        <span id="cfgHOffsetVal">6px</span>
+                    </div>
+                    <input type="range" id="cfgHOffsetSlider" min="0" max="18" step="1" value="6">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button id="cfgResetBtn" class="link-button" type="button" style="font-size:12px;">Reset to Defaults</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Footer displaying application version -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.5</span></p>
+        <p>Version <span id="appVersion">1.8</span></p>
     </footer>
 
     <script>
         // Page version identifier fallback
-        const INDEX_VERSION = '1.5';
+        const INDEX_VERSION = '1.8';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
