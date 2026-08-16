@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '2.3';
+const VERSION = '2.9';
 
 // ============================================================
 // SESSION STATE
@@ -11,6 +11,7 @@ let session = {
     lastBall: null,
     cards: [],
     gameId: null,
+    inputMode: "letter",
     doubleMode: false  // double bingo: requires 2 matching patterns on one card to win
 };
 
@@ -30,13 +31,9 @@ const addCardBtn = document.getElementById("addCardBtn");
 const loadCardBtn = document.getElementById("loadCardBtn");
 const bingoCardsList = document.getElementById("bingoCardsList");
 const selectedGameNameEl = document.getElementById("selectedGameName");
-const gameMenuBtn = document.getElementById("gameMenuBtn");
-const gameMenuDropdown = document.getElementById("gameMenuDropdown");
+const gameSection = document.getElementById("gameSection");
 
-// Dauber selector
-const dauberColorBtn = document.getElementById("dauberColorBtn");
-const dauberColorPreview = document.getElementById("dauberColorPreview");
-const dauberMenuDropdown = document.getElementById("dauberMenuDropdown");
+// Dauber selector (Settings modal)
 const dauberPalette = document.getElementById("dauberPalette");
 const dauberOpacitySlider = document.getElementById("dauberOpacitySlider");
 const opacityValueText = document.getElementById("opacityValueText");
@@ -75,6 +72,7 @@ function saveSession() {
         lastBall: session.lastBall,
         cards: session.cards,
         gameId: session.gameId,
+        inputMode: inputMode,
         dauber: session.dauber,
         doubleMode: session.doubleMode || false
     }));
@@ -92,6 +90,7 @@ function loadSession() {
     session.called = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall || null;
     session.gameId = obj.gameId || null;
+    inputMode = obj.inputMode || "letter";
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     session.doubleMode = obj.doubleMode || false;
 
@@ -115,23 +114,26 @@ function updateUI() {
 
     // Last Man: Standing = at least one active card has no daubed squares.
     // Sitting = every active card has at least 1 daubed non-FREE square called.
+    // Only displayed if there are active cards in the session.
     if (lastManStatus) {
         const calledSet = new Set(session.called);
-        const activeCards = session.cards.filter(c => c.active);
+        const activeCards = session.cards.filter(c => c.active !== false);
 
-        // A card is "standing" if none of its non-FREE squares are in the called set
-        const anyStanding = activeCards.length === 0
-            ? false   // no cards = nothing to stand
-            : activeCards.some(c =>
+        if (activeCards.length === 0) {
+            lastManStatus.classList.add("hidden");
+        } else {
+            lastManStatus.classList.remove("hidden");
+            // A card is "standing" if none of its non-FREE squares are in the called set
+            const isStanding = activeCards.some(c =>
                 c.squares.every((val, idx) =>
                     idx === 12 || val === null || val === "FREE" || !calledSet.has(val)
                 )
             );
 
-        const isStanding = anyStanding;
-        lastManStatus.textContent = `Last man: ${isStanding ? "Standing" : "Sitting"}`;
-        lastManStatus.classList.toggle("standing", isStanding);
-        lastManStatus.classList.toggle("sitting", !isStanding);
+            lastManStatus.textContent = `Last man: ${isStanding ? "Standing" : "Sitting"}`;
+            lastManStatus.classList.toggle("standing", isStanding);
+            lastManStatus.classList.toggle("sitting", !isStanding);
+        }
     }
 
     // 2. Last 6 called balls list — displayed as bingo-square-badge tiles
@@ -227,6 +229,7 @@ function updateSessionWordBar() {
 
 function setInputMode(mode) {
     inputMode = mode;
+    saveSession();
 
     if (mode === "letter") {
         toggleByLetter.classList.add("active");
@@ -492,15 +495,10 @@ const DAUBER_PALETTE = [
     { name: "Gold", rgb: "245, 124, 0" }
 ];
 
-let dauberMenuOpen = false;
-
 function applyDauberSettings() {
     const daub = session.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     document.documentElement.style.setProperty("--daub-rgb", daub.rgb);
     document.documentElement.style.setProperty("--daub-alpha", daub.opacity);
-    if (dauberColorPreview) {
-        dauberColorPreview.style.background = `rgb(${daub.rgb})`;
-    }
     if (opacityValueText) {
         opacityValueText.textContent = `${Math.round(daub.opacity * 100)}%`;
     }
@@ -529,33 +527,8 @@ function renderDauberPalette() {
             saveSession();
             renderAllCards();
             renderDauberPalette();
-            closeDauberMenu();
         });
         dauberPalette.appendChild(swatch);
-    });
-}
-
-function toggleDauberMenu() {
-    dauberMenuOpen = !dauberMenuOpen;
-    if (dauberMenuDropdown) {
-        dauberMenuDropdown.classList.toggle("hidden", !dauberMenuOpen);
-    }
-    if (dauberMenuOpen) {
-        renderDauberPalette();
-    }
-}
-
-function closeDauberMenu() {
-    dauberMenuOpen = false;
-    if (dauberMenuDropdown) {
-        dauberMenuDropdown.classList.add("hidden");
-    }
-}
-
-if (dauberColorBtn) {
-    dauberColorBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleDauberMenu();
     });
 }
 
@@ -607,45 +580,16 @@ function selectGame(gameId) {
     updateUI();
 }
 
-function toggleGameMenu() {
-    gameMenuOpen = !gameMenuOpen;
-    gameMenuDropdown.classList.toggle("hidden", !gameMenuOpen);
-    gameMenuBtn.setAttribute("aria-expanded", gameMenuOpen ? "true" : "false");
-    if (gameMenuOpen) renderGameMenuDropdown();
+if (gameSection) {
+    gameSection.addEventListener("click", (e) => {
+        // Prevent opening if the clearCardsBtn was clicked
+        if (e.target.closest("#clearCardsBtn")) return;
+        openGamePicker();
+    });
 }
-
-function closeGameMenu() {
-    gameMenuOpen = false;
-    gameMenuDropdown.classList.add("hidden");
-    gameMenuBtn.setAttribute("aria-expanded", "false");
-}
-
-function renderGameMenuDropdown() {
-    gameMenuDropdown.innerHTML = "";
-
-    const changeBtn = document.createElement("button");
-    changeBtn.className = "card-menu-item";
-    changeBtn.textContent = "🎯  Select game";
-    changeBtn.addEventListener("click", openGamePicker);
-
-    const createBtn = document.createElement("button");
-    createBtn.className = "card-menu-item";
-    createBtn.textContent = "➕  Create game";
-    createBtn.addEventListener("click", openGameCreator);
-
-    gameMenuDropdown.appendChild(changeBtn);
-    gameMenuDropdown.appendChild(createBtn);
-}
-
-gameMenuBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    toggleGameMenu();
-});
 
 // Global click-outside handler
 document.addEventListener("click", (e) => {
-    if (gameMenuOpen && !e.target.closest("#gameSection")) closeGameMenu();
-    if (dauberMenuOpen && !e.target.closest(".dauber-selector-wrap")) closeDauberMenu();
     if (openMenuCardId !== null && !e.target.closest(".bingo-card")) {
         openMenuCardId = null;
         renderAllCards();
@@ -657,8 +601,6 @@ document.addEventListener("click", (e) => {
 // ============================================================
 
 function openGamePicker() {
-    closeGameMenu();
-
     const modal = document.createElement("div");
     modal.id = "gamePickerModal";
     modal.className = "game-picker-modal";
@@ -687,9 +629,37 @@ function openGamePicker() {
     const list = document.createElement("div");
     list.className = "game-picker-list";
 
-    if (availableGames.length === 0) {
-        list.innerHTML = '<p class="bingo-cards-placeholder">No games yet. Use "Create Game" to make one.</p>';
-    } else {
+    // "+ New Game" item at the top of the picker list
+    const newGameItem = document.createElement("div");
+    newGameItem.className = "game-picker-item new-game-item";
+    newGameItem.setAttribute("role", "button");
+    newGameItem.setAttribute("tabindex", "0");
+    newGameItem.style.borderStyle = "dashed";
+    newGameItem.style.borderColor = "var(--primary)";
+    newGameItem.innerHTML = `
+        <div class="mini-card-grid" style="display:flex; align-items:center; justify-content:center; background:var(--primary-soft); border-radius:6px; color:var(--primary); font-size:20px; font-weight:700;">
+            +
+        </div>
+        <div class="game-picker-info">
+            <span class="game-picker-name" style="color:var(--primary); font-weight:700;">+ Create New Game</span>
+            <span class="game-picker-meta">Define custom bingo winning patterns</span>
+        </div>
+    `;
+    newGameItem.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeGamePicker();
+        openGameCreator();
+    });
+    newGameItem.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            closeGamePicker();
+            openGameCreator();
+        }
+    });
+    list.appendChild(newGameItem);
+
+    if (availableGames.length > 0) {
         for (const game of availableGames) {
             list.appendChild(renderGamePickerItem(game));
         }
@@ -789,6 +759,28 @@ function renderGamePickerItem(game) {
             const list = document.getElementById("gamePickerModal")?.querySelector(".game-picker-list");
             if (list) {
                 list.innerHTML = "";
+                // Re-add new game item
+                const newGameItem = document.createElement("div");
+                newGameItem.className = "game-picker-item new-game-item";
+                newGameItem.setAttribute("role", "button");
+                newGameItem.setAttribute("tabindex", "0");
+                newGameItem.style.borderStyle = "dashed";
+                newGameItem.style.borderColor = "var(--primary)";
+                newGameItem.innerHTML = `
+                    <div class="mini-card-grid" style="display:flex; align-items:center; justify-content:center; background:var(--primary-soft); border-radius:6px; color:var(--primary); font-size:20px; font-weight:700;">
+                        +
+                    </div>
+                    <div class="game-picker-info">
+                        <span class="game-picker-name" style="color:var(--primary); font-weight:700;">+ Create New Game</span>
+                        <span class="game-picker-meta">Define custom bingo winning patterns</span>
+                    </div>
+                `;
+                newGameItem.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    closeGamePicker();
+                    openGameCreator();
+                });
+                list.appendChild(newGameItem);
                 for (const g of availableGames) list.appendChild(renderGamePickerItem(g));
             }
             shouldScrollToWinner = true;
@@ -819,7 +811,6 @@ function closeGamePicker() {
 // ============================================================
 
 function openGameCreator() {
-    closeGameMenu();
     const w = window.open("./game-creator.html", "bingoGameCreator",
         "width=500,height=740,top=60,left=120,resizable=yes");
     if (!w) alert("Please allow popups for this site to open the game creator.");
@@ -1132,6 +1123,8 @@ function menuAction(cardId, action) {
     renderAllCards();
 }
 
+
+
 function onCardCellClick(cardId, cellIdx) {
     const card = session.cards.find(c => c.id === cardId);
     if (!card || !card.editMode) return;
@@ -1200,22 +1193,29 @@ function renderCard(card) {
     const wrapper = document.createElement("div");
     wrapper.className = [
         "bingo-card",
-        isEditing ? "card-editing" : "",
+        isEditing ? "card-editing" : "card-view-scaled",
         !isActive ? "card-inactive" : "",
         isTrueWinner ? "card-winner" : ""  // card-winner only on true win (2 patterns in double mode)
     ].filter(Boolean).join(" ");
     wrapper.dataset.cardId = card.id;
 
+    // Card tap opens card menu
+    wrapper.style.cursor = "pointer";
+    wrapper.addEventListener("click", (e) => {
+        // Avoid toggling menu when interacting with inputs, number picker, cell clicks, or dropdown menu
+        if (e.target.closest(".card-menu-dropdown") ||
+            e.target.closest(".bingo-card-label-input") ||
+            e.target.closest(".bingo-card-serial-input") ||
+            e.target.closest(".card-number-picker") ||
+            e.target.closest(".bingo-cell")) {
+            return;
+        }
+        toggleMenu(card.id);
+    });
+
     // ---- Card header ----
     const header = document.createElement("div");
     header.className = "bingo-card-header";
-
-    const menuBtn = document.createElement("button");
-    menuBtn.className = "card-menu-btn" + (isMenuOpen ? " open" : "");
-    menuBtn.setAttribute("aria-label", "Card menu");
-    menuBtn.setAttribute("aria-expanded", isMenuOpen ? "true" : "false");
-    menuBtn.innerHTML = `<span></span><span></span><span></span>`;
-    menuBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(card.id); });
 
     const titleWrap = document.createElement("div");
     titleWrap.className = "bingo-card-title-wrap";
@@ -1264,7 +1264,6 @@ function renderCard(card) {
     if (isEditing) { badge.textContent = "editing"; badge.classList.add("badge-editing"); }
     else if (!isActive) { badge.textContent = "inactive"; badge.classList.add("badge-inactive"); }
 
-    header.appendChild(menuBtn);
     header.appendChild(titleWrap);
     if (badge.textContent) header.appendChild(badge);
 
@@ -1291,7 +1290,10 @@ function renderCard(card) {
             const btn = document.createElement("button");
             btn.className = "card-menu-item";
             btn.textContent = item.label;
-            btn.addEventListener("click", () => menuAction(card.id, item.action));
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                menuAction(card.id, item.action);
+            });
             menu.appendChild(btn);
         }
 
@@ -1356,7 +1358,10 @@ function renderCard(card) {
         cell.textContent = isFree ? "FREE" : (value ?? "");
 
         if (!isFree && isEditing) {
-            cell.addEventListener("click", () => onCardCellClick(card.id, idx));
+            cell.addEventListener("click", (e) => {
+                e.stopPropagation();
+                onCardCellClick(card.id, idx);
+            });
         }
 
         grid.appendChild(cell);
@@ -1387,6 +1392,7 @@ function renderCard(card) {
 
         const picker = document.createElement("div");
         picker.className = "card-number-picker";
+        picker.addEventListener("click", (e) => e.stopPropagation());
 
         const pickerLabel = document.createElement("div");
         pickerLabel.className = "card-picker-label";
@@ -1413,7 +1419,10 @@ function renderCard(card) {
             btn.setAttribute("aria-label", `${session.word[col]}${n}`);
 
             if (!alreadyUsed) {
-                btn.addEventListener("click", () => onCardNumberSelect(card.id, editCellIdx, n));
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    onCardNumberSelect(card.id, editCellIdx, n);
+                });
             }
 
             pickerGrid.appendChild(btn);
@@ -1615,12 +1624,79 @@ if (cfgResetBtn) {
 }
 
 // ============================================================
+// BINGO CARD SIZE (VIEW MODE) CONFIGURATION
+// ============================================================
+
+// Default slider value: 50 (maps to 2-column small view)
+const DEFAULT_CARD_SIZE = 50;
+
+// Threshold: slider values >= this switch from 2-column to 1-column layout
+const CARD_SIZE_COL_THRESHOLD = 70;
+
+let cardSizeValue = DEFAULT_CARD_SIZE;
+
+// DOM refs for card size slider
+const cardSizeSlider = document.getElementById("cardSizeSlider");
+const cardSizeValueText = document.getElementById("cardSizeValueText");
+
+// Map slider value (30–100) to a CSS scale factor for card content (0.55–1.0)
+function cardSizeToScale(val) {
+    const min = 30, max = 100;
+    const scaleMin = 0.55, scaleMax = 1.0;
+    return scaleMin + ((val - min) / (max - min)) * (scaleMax - scaleMin);
+}
+
+// Apply card size: sets CSS variables and updates column count
+function applyCardSize() {
+    const root = document.documentElement;
+    const scale = cardSizeToScale(cardSizeValue);
+    const cols = cardSizeValue >= CARD_SIZE_COL_THRESHOLD ? 1 : 2;
+
+    root.style.setProperty("--card-view-scale", scale.toFixed(3));
+    root.style.setProperty("--card-view-cols", cols);
+
+    // Update slider UI and label
+    if (cardSizeSlider) cardSizeSlider.value = cardSizeValue;
+    if (cardSizeValueText) {
+        cardSizeValueText.textContent = cols === 1
+            ? `Large (1 col)`
+            : `Small (2 col)`;
+    }
+
+    // Persist to localStorage
+    localStorage.setItem("bingoCardSize", cardSizeValue);
+
+    // Re-render cards to reflect updated column/scale classes
+    renderAllCards();
+}
+
+// Load saved card size or fall back to default
+function initCardSize() {
+    const saved = localStorage.getItem("bingoCardSize");
+    if (saved !== null) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed)) cardSizeValue = parsed;
+    }
+    applyCardSize();
+}
+
+// Card size slider event listener — live update as user drags
+if (cardSizeSlider) {
+    cardSizeSlider.addEventListener("input", (e) => {
+        cardSizeValue = parseInt(e.target.value, 10);
+        applyCardSize();
+    });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 
-setInputMode("letter");
+setInputMode(inputMode || "letter");
 applyDauberSettings();
+renderDauberPalette();
 updateUI();
 loadGames();
 initTheme();
 initFlashboardConfig();
+initCardSize();

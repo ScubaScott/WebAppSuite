@@ -20,14 +20,8 @@
 
     <main class="page-content">
         <!-- Game Selection (Top of page) -->
-        <section id="gameSection" class="game-section">
+        <section id="gameSection" class="game-section" style="cursor: pointer;" title="Tap to select game mode">
             <div class="game-section-header">
-                <div class="game-menu-wrap">
-                    <button id="gameMenuBtn" class="card-menu-btn" aria-label="Game menu" aria-expanded="false">
-                        <span></span><span></span><span></span>
-                    </button>
-                    <div id="gameMenuDropdown" class="card-menu-dropdown hidden"></div>
-                </div>
                 <div class="game-info">
                     <span class="stat-label">Game Mode</span>
                     <div class="game-name-row">
@@ -47,39 +41,10 @@
                     <button id="callLogLink" class="link-button" type="button">Call log</button>
                 </div>
                 <div id="lastFiveList" class="last-five-list" aria-live="polite"></div>
-                <!-- Footer row: Last Man status (left) -->
-                <div class="stat-footer">
-                    <span class="lastman-status standing" id="lastManStatus">Last man: Standing</span>
-                </div>
             </div>
         </section>
 
-        <!-- Input mode toggle & Dauber color selector -->
-        <div class="input-mode-toggle-wrap">
-            <div class="input-mode-toggle" role="group" aria-label="Input mode">
-                <button id="toggleByLetter" class="toggle-btn active" data-mode="letter">By Letter</button>
-                <button id="toggleByNumber" class="toggle-btn" data-mode="number">By Number</button>
-            </div>
 
-            <div class="dauber-selector-wrap">
-                <button id="dauberColorBtn" class="dauber-color-btn" type="button" aria-label="Dauber Settings" title="Dauber Color & Opacity" aria-expanded="false">
-                    <span id="dauberColorPreview" class="dauber-color-preview"></span>
-                </button>
-
-                <div id="dauberMenuDropdown" class="dauber-menu-dropdown hidden">
-                    <div class="dauber-menu-title">Dauber Color</div>
-                    <div id="dauberPalette" class="dauber-palette"></div>
-                    <div class="dauber-menu-divider"></div>
-                    <div class="dauber-slider-section">
-                        <div class="dauber-slider-header">
-                            <span>Dauber Opacity</span>
-                            <span id="opacityValueText">25%</span>
-                        </div>
-                        <input type="range" id="dauberOpacitySlider" min="0.10" max="1.00" step="0.05" value="0.25">
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Session word bar (game name) -->
         <section id="sessionWordBar" class="session-word-bar" aria-label="Bingo columns"></section>
@@ -97,7 +62,10 @@
         <!-- Bingo Cards -->
         <section id="bingoCardsSection" class="bingo-cards-section" aria-label="Bingo cards">
             <div class="bingo-cards-header">
-                <span class="stat-label">Bingo Cards</span>
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span class="stat-label">Bingo Cards</span>
+                    <span class="lastman-status standing hidden" id="lastManStatus">Last man: Standing</span>
+                </div>
                 <div class="cards-header-actions">
                     <button id="loadCardBtn" class="link-button" type="button">📥 Load Card</button>
                     <button id="addCardBtn" class="link-button" type="button">+ Add Card</button>
@@ -150,76 +118,113 @@
                 <button id="settingsCloseBtn" class="settings-close-btn" aria-label="Close settings">&times;</button>
             </div>
 
-            <!-- Theme selector section -->
-            <div class="settings-section">
-                <div class="settings-section-label">Theme</div>
-                <div class="theme-grid" id="themeGrid">
-                    <!-- Basic theme card -->
-                    <button class="theme-card" id="themeBasic" data-theme="basic" aria-pressed="true">
-                        <div class="theme-preview theme-preview-basic">
-                            <div class="tp-header"></div>
-                            <div class="tp-cells">
-                                <div class="tp-cell"></div><div class="tp-cell"></div><div class="tp-cell"></div>
-                                <div class="tp-cell tp-daubed"></div><div class="tp-cell"></div><div class="tp-cell"></div>
+            <div class="settings-body">
+                <!-- Game Input Mode section -->
+                <div class="settings-section">
+                    <div class="settings-section-label">Input Mode</div>
+                    <div class="input-mode-toggle" role="group" aria-label="Input mode" style="justify-content: center;">
+                        <button id="toggleByLetter" class="toggle-btn active" data-mode="letter">By Letter</button>
+                        <button id="toggleByNumber" class="toggle-btn" data-mode="number">By Number</button>
+                    </div>
+                </div>
+
+                <!-- Theme selector section -->
+                <div class="settings-section">
+                    <div class="settings-section-label">Theme</div>
+                    <div class="theme-grid" id="themeGrid">
+                        <!-- Basic theme card -->
+                        <button class="theme-card" id="themeBasic" data-theme="basic" aria-pressed="true">
+                            <div class="theme-preview theme-preview-basic">
+                                <div class="tp-header"></div>
+                                <div class="tp-cells">
+                                    <div class="tp-cell"></div><div class="tp-cell"></div><div class="tp-cell"></div>
+                                    <div class="tp-cell tp-daubed"></div><div class="tp-cell"></div><div class="tp-cell"></div>
+                                </div>
                             </div>
-                        </div>
-                        <span class="theme-card-name">Basic</span>
-                        <span class="theme-card-check" id="checkBasic">✓</span>
-                    </button>
+                            <span class="theme-card-name">Basic</span>
+                            <span class="theme-card-check" id="checkBasic">✓</span>
+                        </button>
 
-                    <!-- Dive Bar theme card -->
-                    <button class="theme-card" id="themeDiveBar" data-theme="divebar" aria-pressed="false">
-                        <div class="theme-preview theme-preview-divebar">
-                            <div class="tp-header"></div>
-                            <div class="tp-cells">
-                                <div class="tp-cell"></div><div class="tp-cell"></div><div class="tp-cell"></div>
-                                <div class="tp-cell tp-daubed"></div><div class="tp-cell"></div><div class="tp-cell"></div>
+                        <!-- Dive Bar theme card -->
+                        <button class="theme-card" id="themeDiveBar" data-theme="divebar" aria-pressed="false">
+                            <div class="theme-preview theme-preview-divebar">
+                                <div class="tp-header"></div>
+                                <div class="tp-cells">
+                                    <div class="tp-cell"></div><div class="tp-cell"></div><div class="tp-cell"></div>
+                                    <div class="tp-cell tp-daubed"></div><div class="tp-cell"></div><div class="tp-cell"></div>
+                                </div>
                             </div>
+                            <span class="theme-card-name">Dive Bar</span>
+                            <span class="theme-card-check hidden" id="checkDiveBar">✓</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card Size section — controls view-mode card scale and column count -->
+                <div class="settings-section">
+                    <div class="settings-section-label">Card Size (View Mode)</div>
+                    <div class="config-slider-group">
+                        <div class="config-slider-header">
+                            <span>Size</span>
+                            <span id="cardSizeValueText">Small (2 col)</span>
                         </div>
-                        <span class="theme-card-name">Dive Bar</span>
-                        <span class="theme-card-check hidden" id="checkDiveBar">✓</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Flashboard Call Balls Configuration section -->
-            <div class="settings-section">
-                <div class="settings-section-label">Flashboard Numbers Layout</div>
-                
-                <div class="config-slider-group">
-                    <div class="config-slider-header">
-                        <span>Circle Size</span>
-                        <span id="cfgBallSizeVal">27px</span>
+                        <input type="range" id="cardSizeSlider" min="30" max="100" step="5" value="50">
                     </div>
-                    <input type="range" id="cfgBallSizeSlider" min="18" max="42" step="1" value="27">
                 </div>
 
-                <div class="config-slider-group">
-                    <div class="config-slider-header">
-                        <span>Number Font Size</span>
-                        <span id="cfgFontSizeVal">11px</span>
+                <!-- Dauber Settings section -->
+                <div class="settings-section">
+                    <div class="settings-section-label">Dauber Style</div>
+                    <div id="dauberPalette" class="dauber-palette" style="margin-bottom: 12px;"></div>
+                    
+                    <div class="config-slider-group">
+                        <div class="config-slider-header">
+                            <span>Opacity</span>
+                            <span id="opacityValueText">25%</span>
+                        </div>
+                        <input type="range" id="dauberOpacitySlider" min="0.10" max="1.00" step="0.05" value="0.25">
                     </div>
-                    <input type="range" id="cfgFontSizeSlider" min="8" max="20" step="1" value="11">
                 </div>
 
-                <div class="config-slider-group">
-                    <div class="config-slider-header">
-                        <span>Vertical Spacing</span>
-                        <span id="cfgVGapVal">3px</span>
+                <!-- Flashboard Call Balls Configuration section -->
+                <div class="settings-section">
+                    <div class="settings-section-label">Flashboard Numbers Layout</div>
+                    
+                    <div class="config-slider-group">
+                        <div class="config-slider-header">
+                            <span>Circle Size</span>
+                            <span id="cfgBallSizeVal">27px</span>
+                        </div>
+                        <input type="range" id="cfgBallSizeSlider" min="18" max="42" step="1" value="27">
                     </div>
-                    <input type="range" id="cfgVGapSlider" min="0" max="16" step="1" value="3">
-                </div>
 
-                <div class="config-slider-group">
-                    <div class="config-slider-header">
-                        <span>Horizontal Offset (Stagger)</span>
-                        <span id="cfgHOffsetVal">6px</span>
+                    <div class="config-slider-group">
+                        <div class="config-slider-header">
+                            <span>Number Font Size</span>
+                            <span id="cfgFontSizeVal">11px</span>
+                        </div>
+                        <input type="range" id="cfgFontSizeSlider" min="8" max="20" step="1" value="11">
                     </div>
-                    <input type="range" id="cfgHOffsetSlider" min="0" max="18" step="1" value="6">
-                </div>
 
-                <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
-                    <button id="cfgResetBtn" class="link-button" type="button" style="font-size:12px;">Reset to Defaults</button>
+                    <div class="config-slider-group">
+                        <div class="config-slider-header">
+                            <span>Vertical Spacing</span>
+                            <span id="cfgVGapVal">3px</span>
+                        </div>
+                        <input type="range" id="cfgVGapSlider" min="0" max="16" step="1" value="3">
+                    </div>
+
+                    <div class="config-slider-group">
+                        <div class="config-slider-header">
+                            <span>Horizontal Offset (Stagger)</span>
+                            <span id="cfgHOffsetVal">6px</span>
+                        </div>
+                        <input type="range" id="cfgHOffsetSlider" min="0" max="18" step="1" value="6">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                        <button id="cfgResetBtn" class="link-button" type="button" style="font-size:12px;">Reset to Defaults</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -227,12 +232,12 @@
 
     <!-- Footer displaying application version -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">2.0</span></p>
+        <p>Version <span id="appVersion">2.9</span></p>
     </footer>
 
     <script>
         // Page version identifier fallback
-        const INDEX_VERSION = '2.0';
+        const INDEX_VERSION = '2.9';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
