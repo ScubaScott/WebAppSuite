@@ -1,5 +1,6 @@
 // OCR module version identifier
-const VERSION = '1.1';
+const VERSION = '1.2';
+
 
 // Standard 75-ball bingo column ranges (B-I-N-G-O). Used as a sanity check: if a recognized
 // number falls outside the range for its column, it's almost certainly a misread, so we retry
@@ -419,65 +420,37 @@ function drawBingoGrid(grid) {
 
     html += `
             </div>
-            <button id="saveScannedCardBtn" class="btn btn-success" type="button" style="margin-top: 10px;">
+            <button id="applyOCRBtn" class="btn btn-success" type="button" style="margin-top: 10px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                 </svg>
-                Use These Numbers
+                Apply to Card Editor
             </button>
         </div>
     `;
 
     container.innerHTML = html;
 
-    const saveBtn = document.getElementById("saveScannedCardBtn");
-    if (saveBtn) {
-        saveBtn.onclick = saveScannedCard;
+    const applyBtn = document.getElementById('applyOCRBtn');
+    if (applyBtn) {
+        applyBtn.onclick = () => {
+            // Collect current values from the editable OCR result grid
+            const inputs = document.querySelectorAll('.scanned-cell-input');
+            const grid = Array(5).fill(null).map(() => Array(5).fill(null));
+            inputs.forEach(input => {
+                const r = parseInt(input.getAttribute('data-row'), 10);
+                const c = parseInt(input.getAttribute('data-col'), 10);
+                if (r === 2 && c === 2) {
+                    grid[r][c] = 'FREE';
+                } else {
+                    const val = parseInt(input.value, 10);
+                    grid[r][c] = isNaN(val) ? null : val;
+                }
+            });
+            // Pass result to card editor (window.applyOCRResult defined in scan.html)
+            if (typeof window.applyOCRResult === 'function') {
+                window.applyOCRResult(grid);
+            }
+        };
     }
-}
-
-// Save the edited scanned 5x5 grid numbers to localStorage and return to main bingo page
-function saveScannedCard() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetCardId = urlParams.get("cardId");
-
-    const inputs = document.querySelectorAll(".scanned-cell-input");
-    const squares = Array(25).fill("");
-
-    inputs.forEach(input => {
-        const r = parseInt(input.getAttribute("data-row"), 10);
-        const c = parseInt(input.getAttribute("data-col"), 10);
-        const index = r * 5 + c;
-
-        if (r === 2 && c === 2) {
-            squares[index] = "FREE";
-        } else {
-            const val = parseInt(input.value, 10);
-            squares[index] = isNaN(val) ? "" : val;
-        }
-    });
-
-    let sessionData = localStorage.getItem("bingoSession");
-    let sessionObj = sessionData ? JSON.parse(sessionData) : null;
-
-    if (!sessionObj || !Array.isArray(sessionObj.cards)) {
-        alert("No active session found. Returning to main page.");
-        window.location.href = "../index.html";
-        return;
-    }
-
-    let cardToUpdate = null;
-    if (targetCardId) {
-        cardToUpdate = sessionObj.cards.find(c => String(c.id) === String(targetCardId));
-    }
-    if (!cardToUpdate && sessionObj.cards.length > 0) {
-        cardToUpdate = sessionObj.cards[0];
-    }
-
-    if (cardToUpdate) {
-        cardToUpdate.squares = squares;
-        localStorage.setItem("bingoSession", JSON.stringify(sessionObj));
-    }
-
-    window.location.href = "../index.html";
 }

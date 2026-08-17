@@ -4,19 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scan Bingo Card</title>
-    <meta name="description" content="Scan a bingo card using your camera or photo library to automatically extract numbers via OCR.">
+    <title>Card Editor — Bingo Number Tracker</title>
+    <meta name="description" content="Add or edit a bingo card: enter numbers using the column picker, scan a photo, or load from server.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
-    <!-- Load the main Bingo stylesheet for shared theme variables and components -->
+    <!-- Shared Bingo stylesheet for theme variables and base components -->
     <link rel="stylesheet" href="../style.css">
 
-    <!-- Scan-page specific styles that extend the main theme -->
     <style>
-        /* Scan page layout version 1.1 */
+        /* Card editor page layout — version 1.2 */
         body {
-            padding: 16px;
+            padding: 16px 16px 48px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -28,178 +27,10 @@
             max-width: 640px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-        }
-
-        /* ---- Camera & Preview ---- */
-        .video-wrap {
-            position: relative;
-            width: 100%;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #000;
-            aspect-ratio: 1 / 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* Camera viewfinder overlay grid guide */
-        .camera-grid-overlay {
-            position: absolute;
-            inset: 16px;
-            border: 2px dashed rgba(255, 255, 255, 0.75);
-            border-radius: 12px;
-            pointer-events: none;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
-        }
-
-        .overlay-grid-inner {
-            position: absolute;
-            inset: 0;
-        }
-
-        .grid-line {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.4);
-        }
-
-        .grid-line.v { width: 1px; top: 0; bottom: 0; }
-        .grid-line.v.v1 { left: 20%; }
-        .grid-line.v.v2 { left: 40%; }
-        .grid-line.v.v3 { left: 60%; }
-        .grid-line.v.v4 { left: 80%; }
-
-        .grid-line.h { height: 1px; left: 0; right: 0; }
-        .grid-line.h.h1 { top: 20%; }
-        .grid-line.h.h2 { top: 40%; }
-        .grid-line.h.h3 { top: 60%; }
-        .grid-line.h.h4 { top: 80%; }
-
-        /* Preview canvas */
-        #previewCanvas {
-            width: 100%;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-        }
-
-        /* ---- Buttons ---- */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            padding: 12px 20px;
-            font-family: inherit;
-            font-size: 15px;
-            font-weight: 500;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-        }
-
-        .btn:active { transform: scale(0.98); }
-
-        .btn-primary {
-            background: var(--primary);
-            color: #ffffff;
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.1);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-
-        .btn-secondary {
-            background: var(--surface);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--primary-soft);
-            color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        .btn-success {
-            background: #137333;
-            color: #ffffff;
-        }
-
-        .btn-success:hover {
-            filter: brightness(1.1);
-            box-shadow: 0 2px 8px rgba(19,115,51,0.25);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .button-group .btn { flex: 1; }
-
-        /* ---- Status Box ---- */
-        .status-box {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-subtle);
-            padding: 10px 14px;
-            border-radius: 10px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            text-align: center;
-        }
-
-        .status-box.active {
-            color: var(--primary);
-            background: var(--primary-soft);
-            border-color: rgba(26, 115, 232, 0.3);
-        }
-
-        .status-box.success {
-            color: #137333;
-            background: #e6f4ea;
-            border-color: rgba(19, 115, 51, 0.3);
-        }
-
-        /* ---- Card section panels ---- */
-        .scan-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
             gap: 14px;
-            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.06);
         }
 
-        .card-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        /* ---- Page topbar ---- */
+        /* ---- Top navigation bar ---- */
         .scan-topbar {
             display: flex;
             align-items: center;
@@ -211,7 +42,6 @@
             box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
         }
 
-        /* Dive Bar dark topbar override */
         [data-theme="divebar"] .scan-topbar {
             background: #0f0c08;
             border-color: #3d3328;
@@ -250,90 +80,116 @@
             border-radius: 999px;
         }
 
-        /* ---- Auto-Crop Toggle Switch ---- */
-        .crop-toggle-wrap {
+        /* ---- Section panel cards ---- */
+        .scan-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.06);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: space-between;
         }
 
-        .crop-toggle-label {
+        /* ---- Tab navigation bar ---- */
+        .editor-tab-bar {
+            display: flex;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 4px;
+            gap: 2px;
+        }
+
+        .editor-tab {
+            flex: 1;
+            padding: 10px 6px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-subtle);
             font-size: 13px;
             font-weight: 500;
-            color: var(--text-main);
-            user-select: none;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 36px;
-            height: 20px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
             cursor: pointer;
-            inset: 0;
-            background-color: var(--border);
-            transition: .2s;
-            border-radius: 20px;
+            transition: background 0.15s, color 0.15s;
+            font-family: inherit;
+            text-align: center;
+            white-space: nowrap;
         }
 
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 14px;
-            width: 14px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .2s;
-            border-radius: 50%;
-        }
-
-        input:checked + .toggle-slider { background-color: var(--primary); }
-        input:checked + .toggle-slider:before { transform: translateX(16px); }
-
-        /* Crop status badge */
-        .crop-status-badge {
-            font-size: 11px;
+        .editor-tab.active {
+            background: var(--primary);
+            color: #fff;
             font-weight: 600;
-            color: var(--primary);
-            background: var(--primary-soft);
-            padding: 3px 8px;
-            border-radius: 999px;
         }
 
-        /* Preview Wrap */
-        .preview-wrap {
+        .editor-tab:not(.active):hover {
+            background: var(--primary-soft);
+            color: var(--primary);
+        }
+
+        /* ---- Editor panels ---- */
+        .editor-panel.hidden { display: none; }
+
+        /* ---- Card detail name/serial inputs ---- */
+        .card-details-fields {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
 
-        .preview-wrap.hidden { display: none; }
-
-        /* ---- Scanned Bingo Grid ---- */
-        .scanned-grid-wrap {
+        .field-group {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 4px;
         }
 
-        .scanned-grid {
+        .field-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .card-detail-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            color: var(--text-main);
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            box-sizing: border-box;
+        }
+
+        .card-detail-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+
+        /* ---- Manual entry 5x5 grid ---- */
+        .editor-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 6px;
         }
 
-        .scanned-col-header {
+        /* Column letter headers (B I N G O) */
+        .editor-col-header {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -342,6 +198,265 @@
             color: var(--primary);
             height: 32px;
         }
+
+        /* Individual grid cells */
+        .editor-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 700;
+            border: 2px solid var(--border);
+            background: var(--card);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s, transform 0.1s;
+            user-select: none;
+            position: relative;
+        }
+
+        .editor-cell:active:not(.free) { transform: scale(0.91); }
+
+        /* Empty cell — shows a + hint */
+        .editor-cell.empty {
+            background: var(--surface);
+            border-style: dashed;
+            border-color: var(--border);
+        }
+
+        .editor-cell.empty::before {
+            content: '+';
+            font-size: 20px;
+            font-weight: 300;
+            color: var(--border);
+        }
+
+        /* Filled cell — subtle primary border */
+        .editor-cell.filled {
+            border-color: var(--primary);
+            border-style: solid;
+        }
+
+        /* Currently-selected cell — highlighted ring */
+        .editor-cell.selected {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.22);
+        }
+
+        /* FREE center cell */
+        .editor-cell.free {
+            background: var(--primary);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            border-color: var(--primary);
+            cursor: default;
+        }
+
+        /* ---- Number picker panel (appears below grid when a cell is selected) ---- */
+        .editor-picker {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            animation: pickerFadeIn 0.14s ease;
+        }
+
+        @keyframes pickerFadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .editor-picker.hidden { display: none; }
+
+        .editor-picker-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-subtle);
+            text-align: center;
+        }
+
+        /* 15 number buttons laid out in 5 columns */
+        .editor-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            width: 100%;
+        }
+
+        .editor-pick-btn {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card);
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.12s, border-color 0.12s, transform 0.1s;
+            font-family: inherit;
+        }
+
+        .editor-pick-btn:hover:not(:disabled) {
+            background: var(--primary-soft);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: scale(1.08);
+        }
+
+        .editor-pick-btn:active:not(:disabled) { transform: scale(0.93); }
+
+        /* Currently-set number for this cell */
+        .editor-pick-btn.current {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Number already used in this column on the card */
+        .editor-pick-btn.used {
+            opacity: 0.28;
+            cursor: not-allowed;
+        }
+
+        /* ---- Action buttons ---- */
+        .editor-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* ---- Shared button styles ---- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px 20px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { filter: brightness(1.1); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-success { background: #137333; color: #fff; }
+        .btn-success:hover { filter: brightness(1.1); box-shadow: 0 2px 8px rgba(19,115,51,0.25); }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        .button-group { display: flex; gap: 10px; }
+        .button-group .btn { flex: 1; }
+
+        /* ---- Scan tab: status box ---- */
+        .status-box {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-subtle);
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .status-box.active { color: var(--primary); background: var(--primary-soft); border-color: rgba(26, 115, 232, 0.3); }
+        .status-box.success { color: #137333; background: #e6f4ea; border-color: rgba(19, 115, 51, 0.3); }
+
+        /* ---- Scan tab: camera & preview ---- */
+        .video-wrap {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Camera viewfinder guide overlay */
+        .camera-grid-overlay {
+            position: absolute;
+            inset: 16px;
+            border: 2px dashed rgba(255, 255, 255, 0.75);
+            border-radius: 12px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
+        }
+
+        .overlay-grid-inner { position: absolute; inset: 0; }
+        .grid-line { position: absolute; background: rgba(255, 255, 255, 0.4); }
+        .grid-line.v { width: 1px; top: 0; bottom: 0; }
+        .grid-line.v.v1 { left: 20%; }
+        .grid-line.v.v2 { left: 40%; }
+        .grid-line.v.v3 { left: 60%; }
+        .grid-line.v.v4 { left: 80%; }
+        .grid-line.h { height: 1px; left: 0; right: 0; }
+        .grid-line.h.h1 { top: 20%; }
+        .grid-line.h.h2 { top: 40%; }
+        .grid-line.h.h3 { top: 60%; }
+        .grid-line.h.h4 { top: 80%; }
+
+        #previewCanvas {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .preview-wrap { display: flex; flex-direction: column; gap: 10px; }
+        .preview-wrap.hidden { display: none; }
+
+        /* Auto-crop toggle switch */
+        .crop-toggle-wrap { display: flex; align-items: center; gap: 8px; }
+        .crop-toggle-label { font-size: 13px; font-weight: 500; color: var(--text-main); user-select: none; }
+        .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: var(--border); transition: .2s; border-radius: 20px; }
+        .toggle-slider:before { position: absolute; content: ''; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
+        input:checked + .toggle-slider { background-color: var(--primary); }
+        input:checked + .toggle-slider:before { transform: translateX(16px); }
+        .crop-status-badge { font-size: 11px; font-weight: 600; color: var(--primary); background: var(--primary-soft); padding: 3px 8px; border-radius: 999px; }
+
+        /* ---- Scan tab: OCR result review grid ---- */
+        .scanned-grid-wrap { display: flex; flex-direction: column; gap: 14px; }
+        .scanned-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .scanned-col-header { display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--primary); height: 32px; }
 
         .scanned-cell-input {
             aspect-ratio: 1;
@@ -354,209 +469,103 @@
             text-align: center;
             color: var(--text-main);
             outline: none;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
-        .scanned-cell-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
-        }
+        .scanned-cell-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }
+        .scanned-cell-input.free-cell { background: var(--primary-soft); color: var(--primary); font-size: 11px; font-weight: 800; border-color: transparent; }
+        .scanned-cell-input.invalid-cell { border-color: #d93025; background: #fce8e6; color: #c5221f; }
 
-        .scanned-cell-input.free-cell {
-            background: var(--primary-soft);
-            color: var(--primary);
-            font-size: 11px;
-            font-weight: 800;
-            border-color: transparent;
-        }
-
-        .scanned-cell-input.invalid-cell {
-            border-color: #d93025;
-            background: #fce8e6;
-            color: #c5221f;
-        }
-
-        /* ---- OCR Tuning Details ---- */
-        details.tuning-details {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 14px 18px;
-        }
-
-        details.tuning-details summary {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-subtle);
-            cursor: pointer;
-            user-select: none;
-        }
-
+        /* ---- Scan tab: OCR tuning ---- */
+        details.tuning-details { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 14px 18px; }
+        details.tuning-details summary { font-size: 14px; font-weight: 600; color: var(--text-subtle); cursor: pointer; user-select: none; }
         details.tuning-details summary:hover { color: var(--primary); }
-
-        .tuning-table-wrap {
-            margin-top: 14px;
-            overflow-x: auto;
-        }
-
-        .tuning-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .tuning-table th, .tuning-table td {
-            border: 1px solid var(--border);
-            padding: 8px 10px;
-            text-align: left;
-            color: var(--text-main);
-        }
-
+        .tuning-table-wrap { margin-top: 14px; overflow-x: auto; }
+        .tuning-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .tuning-table th, .tuning-table td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; color: var(--text-main); }
         .tuning-table th { background: var(--surface); font-weight: 600; }
+        .tuning-table select, .tuning-table input[type='number'] { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; background: var(--card); color: var(--text-main); }
 
-        .tuning-table select, .tuning-table input[type="number"] {
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            font-size: 13px;
-            background: var(--card);
-            color: var(--text-main);
-        }
+        /* ---- Manual crop modal ---- */
+        .crop-modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 12px; }
+        .crop-modal.hidden { display: none; }
+        .crop-modal-content { background: var(--card); border-radius: 18px; width: 100%; max-width: 620px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4); }
+        .crop-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+        .crop-modal-header h3 { font-size: 15px; font-weight: 600; color: var(--text-main); margin: 0; }
+        .crop-canvas-wrap { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; background: #111; padding: 10px; overflow: hidden; touch-action: none; }
+        #cropCanvas { max-width: 100%; max-height: 55vh; border-radius: 4px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); cursor: crosshair; }
+        .crop-modal-footer { display: flex; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--border); background: var(--surface); }
+        .crop-modal-footer .btn { flex: 1; padding: 10px 14px; font-size: 14px; }
+        .modal-link-btn { background: transparent; border: none; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-subtle); padding: 4px 8px; border-radius: 6px; transition: background 0.15s; font-family: inherit; }
+        .modal-link-btn:hover { background: var(--primary-soft); color: var(--primary); }
+        .camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 500; pointer-events: none; }
+        .camera-placeholder svg { opacity: 0.5; }
 
-        /* ---- Manual Crop Modal ---- */
-        .crop-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 2000;
+        /* ---- Load from Server tab: card list ---- */
+        .server-card-item {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 12px;
             padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            margin-bottom: 8px;
         }
 
-        .crop-modal.hidden { display: none; }
-
-        .crop-modal-content {
-            background: var(--card);
-            border-radius: 18px;
-            width: 100%;
-            max-width: 620px;
-            max-height: 94vh;
+        .server-card-info {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+            gap: 2px;
+            min-width: 0;
         }
 
-        .crop-modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .crop-modal-header h3 {
-            font-size: 15px;
+        .server-card-name {
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-main);
-            margin: 0;
-        }
-
-        .crop-canvas-wrap {
-            position: relative;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #111;
-            padding: 10px;
+            white-space: nowrap;
             overflow: hidden;
-            touch-action: none;
+            text-overflow: ellipsis;
         }
 
-        #cropCanvas {
-            max-width: 100%;
-            max-height: 55vh;
-            border-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            cursor: crosshair;
-        }
-
-        .crop-modal-footer {
-            display: flex;
-            gap: 8px;
-            padding: 12px 18px;
-            border-top: 1px solid var(--border);
-            background: var(--surface);
-        }
-
-        .crop-modal-footer .btn {
-            flex: 1;
-            padding: 10px 14px;
-            font-size: 14px;
-        }
-
-        /* Modal link button */
-        .modal-link-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
+        .server-card-serial {
+            font-size: 12px;
             color: var(--text-subtle);
-            padding: 4px 8px;
-            border-radius: 6px;
-            transition: background 0.15s ease;
-            font-family: inherit;
         }
 
-        .modal-link-btn:hover { background: var(--primary-soft); color: var(--primary); }
-
-        /* Camera unavailable placeholder */
-        .camera-placeholder {
-            position: absolute;
-            inset: 0;
+        .server-card-actions {
             display: flex;
-            flex-direction: column;
+            gap: 6px;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: rgba(255,255,255,0.6);
-            font-size: 14px;
-            font-weight: 500;
-            pointer-events: none;
+            flex-shrink: 0;
         }
-
-        .camera-placeholder svg { opacity: 0.5; }
     </style>
 
-    <!-- OpenCV -->
+    <!-- OpenCV for auto-crop detection -->
     <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 
-    <!-- Tesseract.js -->
+    <!-- Tesseract.js for OCR digit recognition -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <script src="utils.js"></script>
     <script src="ocr.js"></script>
 </head>
 
-
 <body>
     <!-- Apply saved theme before render to avoid flash -->
     <script>
         (function () {
-            // Read and apply the saved bingo theme from localStorage
             const saved = localStorage.getItem('bingoTheme');
             if (saved && saved !== 'basic') {
-                // Apply to <html> element, consistent with how tracking.js applies themes
                 document.documentElement.setAttribute('data-theme', saved);
             }
         })();
     </script>
 
     <div class="scan-container">
+
         <!-- Top Navigation Bar -->
         <header class="scan-topbar">
             <button id="backBtn" class="scan-back-link" type="button">
@@ -565,246 +574,296 @@
                 </svg>
                 Back to Bingo
             </button>
-            <span class="scan-page-title">Scan Bingo Card</span>
-            <span id="targetCardBadge" class="target-card-badge">Card Scanner</span>
+            <span id="editorPageTitle" class="scan-page-title">Add Card</span>
+            <span id="editorModeBadge" class="target-card-badge">New Card</span>
         </header>
 
-        <!-- Camera & Capture Section -->
-        <section class="scan-card">
-            <div class="card-title">
-                <span>Camera Feed & Photos</span>
-                <div class="crop-toggle-wrap">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="autoCropToggle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="crop-toggle-label">Auto-Crop</span>
+        <!-- Card Name & Serial Number Inputs (always visible) -->
+        <div class="scan-card">
+            <div class="card-title">Card Details</div>
+            <div class="card-details-fields">
+                <div class="field-group">
+                    <label for="cardNameInput">Card Name</label>
+                    <input type="text" id="cardNameInput" class="card-detail-input" placeholder="e.g. Card 1" maxlength="50">
+                </div>
+                <div class="field-group">
+                    <label for="cardSerialInput">Serial Number</label>
+                    <input type="text" id="cardSerialInput" class="card-detail-input" placeholder="e.g. SN-001" maxlength="30">
                 </div>
             </div>
+        </div>
 
-            <div class="video-wrap">
-                <video id="camera" autoplay playsinline muted></video>
-                <!-- Shown when camera is unavailable -->
-                <div id="cameraPlaceholder" class="camera-placeholder" style="display:none;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm9-8h-3.17l-1.86-2H8.03L6.17 7H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/></svg>
-                    <span>Camera unavailable</span>
-                    <span style="font-size:12px; opacity:0.7;">Use Camera Roll to pick a photo</span>
+        <!-- Tab Navigation Bar -->
+        <div class="editor-tab-bar" role="tablist">
+            <button class="editor-tab active" data-tab="manual" id="tabManual" role="tab" aria-selected="true" type="button">✏️ Manual Entry</button>
+            <button class="editor-tab" data-tab="scan" id="tabScan" role="tab" aria-selected="false" type="button">📷 Scan</button>
+            <button class="editor-tab" data-tab="server" id="tabServer" role="tab" aria-selected="false" type="button">📥 Load from Server</button>
+        </div>
+
+        <!-- ===== Panel: Manual Entry ===== -->
+        <div class="editor-panel" data-panel="manual" id="panelManual">
+
+            <!-- 5x5 Number Picker Grid -->
+            <div class="scan-card">
+                <div class="card-title">
+                    <span>Card Numbers</span>
+                    <span style="font-size: 12px; font-weight: 400; color: var(--text-subtle);">Tap a cell to pick a number</span>
                 </div>
-                <div class="camera-grid-overlay">
-                    <div class="overlay-grid-inner">
-                        <div class="grid-line v v1"></div>
-                        <div class="grid-line v v2"></div>
-                        <div class="grid-line v v3"></div>
-                        <div class="grid-line v v4"></div>
-                        <div class="grid-line h h1"></div>
-                        <div class="grid-line h h2"></div>
-                        <div class="grid-line h h3"></div>
-                        <div class="grid-line h h4"></div>
+                <!-- Column headers + 25 cells rendered by JS -->
+                <div id="manualGrid" class="editor-grid" role="grid" aria-label="Bingo card number grid"></div>
+                <!-- Number picker dropdown (shown when a cell is selected) -->
+                <div id="manualPicker" class="editor-picker hidden" aria-live="polite"></div>
+            </div>
+
+            <!-- Save Action Buttons -->
+            <div class="scan-card">
+                <div class="editor-actions">
+                    <button id="saveDoneBtn" class="btn btn-success" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        </svg>
+                        Save &amp; Return to Bingo
+                    </button>
+                    <button id="saveServerBtn" class="btn btn-secondary" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                        </svg>
+                        Save to Server
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Panel: Scan ===== -->
+        <div class="editor-panel hidden" data-panel="scan" id="panelScan">
+
+            <!-- Camera & Capture Section -->
+            <section class="scan-card">
+                <div class="card-title">
+                    <span>Camera Feed &amp; Photos</span>
+                    <div class="crop-toggle-wrap">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoCropToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="crop-toggle-label">Auto-Crop</span>
                     </div>
                 </div>
-            </div>
 
-            <div class="button-group">
-                <button id="captureBtn" class="btn btn-primary" type="button">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm9-8h-3.17l-1.86-2H8.03L6.17 7H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-9 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-                    </svg>
-                    Capture Photo
-                </button>
-                <button id="galleryBtn" class="btn btn-secondary" type="button">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-3.86 2.14 2.57 3-3.86L17 19H5z"/>
-                    </svg>
-                    Camera Roll
-                </button>
-                <input type="file" id="fileInput" accept="image/*" style="display: none;">
-            </div>
-
-            <!-- Preview & Crop Controls -->
-            <div id="previewWrap" class="preview-wrap hidden">
-                <div class="card-title" style="margin-top: 6px;">
-                    <span>Captured Image Preview</span>
-                    <span id="cropStatusBadge" class="crop-status-badge">Raw Photo</span>
+                <div class="video-wrap">
+                    <video id="camera" autoplay playsinline muted></video>
+                    <div id="cameraPlaceholder" class="camera-placeholder" style="display:none;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm9-8h-3.17l-1.86-2H8.03L6.17 7H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/></svg>
+                        <span>Camera unavailable</span>
+                        <span style="font-size:12px; opacity:0.7;">Use Camera Roll to pick a photo</span>
+                    </div>
+                    <div class="camera-grid-overlay">
+                        <div class="overlay-grid-inner">
+                            <div class="grid-line v v1"></div>
+                            <div class="grid-line v v2"></div>
+                            <div class="grid-line v v3"></div>
+                            <div class="grid-line v v4"></div>
+                            <div class="grid-line h h1"></div>
+                            <div class="grid-line h h2"></div>
+                            <div class="grid-line h h3"></div>
+                            <div class="grid-line h h4"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <canvas id="previewCanvas"></canvas>
+                <div class="button-group">
+                    <button id="captureBtn" class="btn btn-primary" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm9-8h-3.17l-1.86-2H8.03L6.17 7H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-9 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+                        </svg>
+                        Capture Photo
+                    </button>
+                    <button id="galleryBtn" class="btn btn-secondary" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-3.86 2.14 2.57 3-3.86L17 19H5z"/>
+                        </svg>
+                        Camera Roll
+                    </button>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                </div>
 
-                <div class="button-group" style="flex-wrap: wrap;">
-                    <button id="rotateCwBtn" class="btn btn-secondary" type="button">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M15.55 5.55L11 1v3.07C7.06 4.56 4 7.92 4 12s3.06 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91s2.16-5.43 5-5.91V10l4.55-4.45z"/>
-                        </svg>
-                        Rotate 90° ↻
-                    </button>
-                    <button id="manualCropBtn" class="btn btn-secondary" type="button">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z"/>
-                        </svg>
-                        Manual Crop
-                    </button>
-                    <button id="resetPhotoBtn" class="btn btn-secondary" type="button">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                        </svg>
-                        Reset
-                    </button>
+                <!-- Preview & Crop Controls (shown after capture) -->
+                <div id="previewWrap" class="preview-wrap hidden">
+                    <div class="card-title" style="margin-top: 6px;">
+                        <span>Captured Image Preview</span>
+                        <span id="cropStatusBadge" class="crop-status-badge">Raw Photo</span>
+                    </div>
+                    <canvas id="previewCanvas"></canvas>
+                    <div class="button-group" style="flex-wrap: wrap;">
+                        <button id="rotateCwBtn" class="btn btn-secondary" type="button">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.55 5.55L11 1v3.07C7.06 4.56 4 7.92 4 12s3.06 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91s2.16-5.43 5-5.91V10l4.55-4.45z"/>
+                            </svg>
+                            Rotate 90° ↻
+                        </button>
+                        <button id="manualCropBtn" class="btn btn-secondary" type="button">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z"/>
+                            </svg>
+                            Manual Crop
+                        </button>
+                        <button id="resetPhotoBtn" class="btn btn-secondary" type="button">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                            </svg>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <button id="ocrBtn" class="btn btn-primary" type="button" disabled style="margin-top: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                    Run OCR Recognition
+                </button>
+
+                <div id="status" class="status-box">Ready to capture photo or choose from Camera Roll</div>
+            </section>
+
+            <!-- OCR Result Grid — review before applying to editor -->
+            <section id="bingoOutputSection" class="scan-card">
+                <div id="bingoOutput">
+                    <p style="text-align: center; color: var(--text-subtle); font-size: 14px; padding: 20px 0;">
+                        Capture a photo and run OCR to extract numbers, then click "Apply to Card Editor".
+                    </p>
+                </div>
+            </section>
+
+            <!-- OCR Tuning (collapsible) -->
+            <details class="tuning-details">
+                <summary>⚙️ Advanced OCR Tuning &amp; Controls</summary>
+                <div class="tuning-table-wrap">
+                    <table class="tuning-table">
+                        <thead>
+                            <tr><th>Setting</th><th>Value</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><label for="threshMode">Threshold Mode</label></td>
+                                <td>
+                                    <select id="threshMode">
+                                        <option value="otsu">OTSU</option>
+                                        <option value="binary">Binary</option>
+                                        <option value="adaptive">Adaptive</option>
+                                    </select>
+                                </td>
+                                <td>Chooses how image is binarized into black-and-white.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="blurMode">Blur</label></td>
+                                <td>
+                                    <select id="blurMode">
+                                        <option value="none">None</option>
+                                        <option value="gaussian" selected>Gaussian</option>
+                                        <option value="median">Median</option>
+                                    </select>
+                                </td>
+                                <td>Softens noise before thresholding.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="zoomFactor">Zoom Factor</label></td>
+                                <td><input id="zoomFactor" type="number" value="3" min="1" max="5"></td>
+                                <td>Enlarges numbers before recognition.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="ocrEngineMode">OCR Engine Mode</label></td>
+                                <td>
+                                    <select id="ocrEngineMode">
+                                        <option value="default">Default</option>
+                                        <option value="legacy">Legacy</option>
+                                        <option value="lstm" selected>LSTM</option>
+                                    </select>
+                                </td>
+                                <td>Engine choice (LSTM recommended for digits).</td>
+                            </tr>
+                            <tr>
+                                <td><label for="pageSegMode">Page Segmentation</label></td>
+                                <td>
+                                    <select id="pageSegMode">
+                                        <option value="auto">Auto</option>
+                                        <option value="single_block" selected>Single Block</option>
+                                        <option value="single_line">Single Line</option>
+                                        <option value="single_word">Single Word</option>
+                                        <option value="single_char">Single Char</option>
+                                    </select>
+                                </td>
+                                <td>Tells Tesseract structure of target digit images.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="invertColors">Invert Colors</label></td>
+                                <td><input id="invertColors" type="checkbox"></td>
+                                <td>Use if light digits appear on dark background.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="morphMode">Morphology</label></td>
+                                <td>
+                                    <select id="morphMode">
+                                        <option value="none">None</option>
+                                        <option value="dilate">Dilate</option>
+                                        <option value="erode">Erode</option>
+                                        <option value="open">Open</option>
+                                        <option value="close">Close</option>
+                                    </select>
+                                </td>
+                                <td>Cleanup pass after thresholding.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="binaryThreshold">Binary Threshold</label></td>
+                                <td><input id="binaryThreshold" type="number" value="127" min="0" max="255"></td>
+                                <td>Cutoff threshold for Binary mode.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="adaptiveBlockSize">Adaptive Block Size</label></td>
+                                <td><input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2"></td>
+                                <td>Neighborhood size for Adaptive thresholding.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="adaptiveC">Adaptive C</label></td>
+                                <td><input id="adaptiveC" type="number" value="2" min="0" max="20"></td>
+                                <td>Cutoff bias for Adaptive mode.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="rowOffset">Row Shift</label></td>
+                                <td><input id="rowOffset" type="number" value="0" min="-2" max="2"></td>
+                                <td>Shifts OCR sampling up/down by row.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="colOffset">Column Shift</label></td>
+                                <td><input id="colOffset" type="number" value="0" min="-2" max="2"></td>
+                                <td>Shifts OCR sampling left/right by column.</td>
+                            </tr>
+                            <tr>
+                                <td><label for="validateColumnRanges">Validate Column Ranges</label></td>
+                                <td><input id="validateColumnRanges" type="checkbox" checked></td>
+                                <td>Validates B-I-N-G-O 75-ball ranges (1-15, 16-30, etc.).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+
+        <!-- ===== Panel: Load from Server ===== -->
+        <div class="editor-panel hidden" data-panel="server" id="panelServer">
+            <div class="scan-card">
+                <div class="card-title">Saved Server Cards</div>
+                <div id="serverCardsList">
+                    <p style="text-align: center; color: var(--text-subtle); font-size: 14px; padding: 20px 0;">
+                        Loading saved cards...
+                    </p>
                 </div>
             </div>
+        </div>
 
-            <button id="ocrBtn" class="btn btn-primary" type="button" disabled style="margin-top: 8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                </svg>
-                Run OCR Recognition
-            </button>
+    </div><!-- /.scan-container -->
 
-            <div id="status" class="status-box">Ready to capture photo or choose from Camera Roll</div>
-        </section>
-
-        <!-- OCR Scanned Output Card -->
-        <section id="bingoOutputSection" class="scan-card">
-            <div id="bingoOutput">
-                <p style="text-align: center; color: var(--text-subtle); font-size: 14px; padding: 20px 0;">
-                    Capture a photo or select an image from your camera roll above to extract numbers automatically.
-                </p>
-            </div>
-        </section>
-
-        <!-- OCR Tuning Section (Collapsible) -->
-        <details class="tuning-details">
-            <summary>⚙️ Advanced OCR Tuning & Controls</summary>
-            <div class="tuning-table-wrap">
-                <table class="tuning-table">
-                    <thead>
-                        <tr>
-                            <th>Setting</th>
-                            <th>Value</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><label for="threshMode">Threshold Mode</label></td>
-                            <td>
-                                <select id="threshMode">
-                                    <option value="otsu">OTSU</option>
-                                    <option value="binary">Binary</option>
-                                    <option value="adaptive">Adaptive</option>
-                                </select>
-                            </td>
-                            <td>Chooses how image is binarized into black-and-white.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="blurMode">Blur</label></td>
-                            <td>
-                                <select id="blurMode">
-                                    <option value="none">None</option>
-                                    <option value="gaussian" selected>Gaussian</option>
-                                    <option value="median">Median</option>
-                                </select>
-                            </td>
-                            <td>Softens noise before thresholding.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="zoomFactor">Zoom Factor</label></td>
-                            <td>
-                                <input id="zoomFactor" type="number" value="3" min="1" max="5">
-                            </td>
-                            <td>Enlarges numbers before recognition.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="ocrEngineMode">OCR Engine Mode</label></td>
-                            <td>
-                                <select id="ocrEngineMode">
-                                    <option value="default">Default</option>
-                                    <option value="legacy">Legacy</option>
-                                    <option value="lstm" selected>LSTM</option>
-                                </select>
-                            </td>
-                            <td>Engine choice (LSTM recommended for digits).</td>
-                        </tr>
-                        <tr>
-                            <td><label for="pageSegMode">Page Segmentation</label></td>
-                            <td>
-                                <select id="pageSegMode">
-                                    <option value="auto">Auto</option>
-                                    <option value="single_block" selected>Single Block</option>
-                                    <option value="single_line">Single Line</option>
-                                    <option value="single_word">Single Word</option>
-                                    <option value="single_char">Single Char</option>
-                                </select>
-                            </td>
-                            <td>Tells Tesseract structure of target digit images.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="invertColors">Invert Colors</label></td>
-                            <td>
-                                <input id="invertColors" type="checkbox">
-                            </td>
-                            <td>Use if light digits appear on dark background.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="morphMode">Morphology</label></td>
-                            <td>
-                                <select id="morphMode">
-                                    <option value="none">None</option>
-                                    <option value="dilate">Dilate</option>
-                                    <option value="erode">Erode</option>
-                                    <option value="open">Open</option>
-                                    <option value="close">Close</option>
-                                </select>
-                            </td>
-                            <td>Cleanup pass after thresholding.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="binaryThreshold">Binary Threshold</label></td>
-                            <td>
-                                <input id="binaryThreshold" type="number" value="127" min="0" max="255">
-                            </td>
-                            <td>Cutoff threshold for Binary mode.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="adaptiveBlockSize">Adaptive Block Size</label></td>
-                            <td>
-                                <input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2">
-                            </td>
-                            <td>Neighborhood size for Adaptive thresholding.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="adaptiveC">Adaptive C</label></td>
-                            <td>
-                                <input id="adaptiveC" type="number" value="2" min="0" max="20">
-                            </td>
-                            <td>Cutoff bias for Adaptive mode.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="rowOffset">Row Shift</label></td>
-                            <td>
-                                <input id="rowOffset" type="number" value="0" min="-2" max="2">
-                            </td>
-                            <td>Shifts OCR sampling up/down by row.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="colOffset">Column Shift</label></td>
-                            <td>
-                                <input id="colOffset" type="number" value="0" min="-2" max="2">
-                            </td>
-                            <td>Shifts OCR sampling left/right by column.</td>
-                        </tr>
-                        <tr>
-                            <td><label for="validateColumnRanges">Validate Column Ranges</label></td>
-                            <td>
-                                <input id="validateColumnRanges" type="checkbox" checked>
-                            </td>
-                            <td>Validates B-I-N-G-O 75-ball ranges (1-15, 16-30, etc.).</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </details>
-    </div>
-
-    <!-- Manual Crop Modal -->
+    <!-- Manual Crop Modal (used by scan tab) -->
     <div id="manualCropModal" class="crop-modal hidden">
         <div class="crop-modal-content">
             <div class="crop-modal-header">
@@ -825,61 +884,544 @@
         </div>
     </div>
 
+    <!-- Footer: page version -->
+    <footer class="app-footer">
+        <p>Card Editor v<span id="editorVersion">1.2</span></p>
+    </footer>
+
     <script>
-        const video = document.getElementById("camera");
-        const captureBtn = document.getElementById("captureBtn");
-        const galleryBtn = document.getElementById("galleryBtn");
-        const fileInput = document.getElementById("fileInput");
-        const previewWrap = document.getElementById("previewWrap");
-        const previewCanvas = document.getElementById("previewCanvas");
-        const ocrBtn = document.getElementById("ocrBtn");
-        const statusDiv = document.getElementById("status");
-        const backBtn = document.getElementById("backBtn");
-        const targetCardBadge = document.getElementById("targetCardBadge");
-        const autoCropToggle = document.getElementById("autoCropToggle");
-        const cropStatusBadge = document.getElementById("cropStatusBadge");
-        const manualCropBtn = document.getElementById("manualCropBtn");
-        const resetPhotoBtn = document.getElementById("resetPhotoBtn");
-        const rotateCwBtn = document.getElementById("rotateCwBtn");
+        // Card editor page version identifier
+        const SCAN_VERSION = '1.2';
+        document.getElementById('editorVersion').textContent = SCAN_VERSION;
+
+        // ============================================================
+        // BINGO COLUMN CONSTANTS
+        // ============================================================
+
+        // Standard BINGO column letter labels
+        const BINGO_COLS = ['B', 'I', 'N', 'G', 'O'];
+
+        // Valid number ranges per column (standard 75-ball bingo)
+        const BINGO_RANGES = [[1, 15], [16, 30], [31, 45], [46, 60], [61, 75]];
+
+        // Index of the FREE center cell in the flat 25-element squares array
+        const FREE_CELL_IDX = 12;
+
+        // ============================================================
+        // CARD EDITOR STATE
+        // ============================================================
+
+        // Working 25-element squares array (null=empty, number=filled, 'FREE'=free center)
+        let cardSquares = Array(25).fill(null);
+        cardSquares[FREE_CELL_IDX] = 'FREE';
+
+        // Index of the cell whose number picker is currently open (-1 = none)
+        let activePickerCellIdx = -1;
+
+        // Parse URL parameters to determine editor mode
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentMode = urlParams.get('mode') || 'add'; // 'add' | 'edit'
+        const targetCardId = urlParams.get('cardId');
+
+        // DOM element refs
+        const cardNameInput = document.getElementById('cardNameInput');
+        const cardSerialInput = document.getElementById('cardSerialInput');
+        const manualGridEl = document.getElementById('manualGrid');
+        const manualPickerEl = document.getElementById('manualPicker');
+        const saveDoneBtn = document.getElementById('saveDoneBtn');
+        const saveServerBtn = document.getElementById('saveServerBtn');
+        const backBtn = document.getElementById('backBtn');
+
+        // Track whether the server cards list has been fetched this session
+        let serverCardsLoaded = false;
+
+        // ============================================================
+        // CARD EDITOR — initialization
+        // ============================================================
+
+        function initCardState() {
+            // Update page title and badge to reflect mode
+            document.getElementById('editorPageTitle').textContent =
+                currentMode === 'edit' ? 'Edit Card' : 'Add Card';
+            document.getElementById('editorModeBadge').textContent =
+                currentMode === 'edit' ? 'Editing' : 'New Card';
+
+            if (currentMode === 'edit' && targetCardId) {
+                // Pre-load existing card data from localStorage session
+                const sessionData = localStorage.getItem('bingoSession');
+                if (sessionData) {
+                    try {
+                        const sessionObj = JSON.parse(sessionData);
+                        const card = sessionObj.cards.find(c => String(c.id) === String(targetCardId));
+                        if (card) {
+                            cardSquares = Array.isArray(card.squares)
+                                ? [...card.squares]
+                                : Array(25).fill(null);
+                            cardSquares[FREE_CELL_IDX] = 'FREE'; // always ensure FREE is set
+                            cardNameInput.value = card.label || '';
+                            cardSerialInput.value = card.serial || '';
+                        }
+                    } catch (e) {
+                        console.warn('Failed to load card from session:', e);
+                    }
+                }
+            } else {
+                // Add mode: suggest a default card name based on current card count
+                try {
+                    const sessionData = localStorage.getItem('bingoSession');
+                    if (sessionData) {
+                        const sessionObj = JSON.parse(sessionData);
+                        const num = Array.isArray(sessionObj.cards) ? sessionObj.cards.length + 1 : 1;
+                        cardNameInput.value = `Card ${num}`;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            renderManualGrid();
+        }
+
+        // ============================================================
+        // CARD EDITOR — tab navigation
+        // ============================================================
+
+        function switchTab(tabName) {
+            // Update tab button active states and aria attributes
+            document.querySelectorAll('.editor-tab').forEach(btn => {
+                const isActive = btn.dataset.tab === tabName;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            // Show only the panel matching the selected tab
+            document.querySelectorAll('.editor-panel').forEach(panel => {
+                panel.classList.toggle('hidden', panel.dataset.panel !== tabName);
+            });
+            // Fetch server cards when switching to the server tab
+            if (tabName === 'server') loadServerCards();
+        }
+
+        // Wire up tab button click handlers
+        document.querySelectorAll('.editor-tab').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        // ============================================================
+        // CARD EDITOR — manual entry 5x5 grid
+        // ============================================================
+
+        function renderManualGrid() {
+            if (!manualGridEl) return;
+            manualGridEl.innerHTML = '';
+
+            // Render BINGO column letter headers
+            for (let c = 0; c < 5; c++) {
+                const hdr = document.createElement('div');
+                hdr.className = 'editor-col-header';
+                hdr.textContent = BINGO_COLS[c];
+                manualGridEl.appendChild(hdr);
+            }
+
+            // Render 25 cells in row-major order
+            for (let idx = 0; idx < 25; idx++) {
+                const col = idx % 5;
+                const isFree = (idx === FREE_CELL_IDX);
+                const value = cardSquares[idx];
+                const isFilled = !isFree && value !== null && value !== '';
+                const isSelected = (activePickerCellIdx === idx);
+
+                const cell = document.createElement('div');
+                cell.className = [
+                    'editor-cell',
+                    isFree ? 'free' : '',
+                    !isFree && isFilled ? 'filled' : '',
+                    !isFree && !isFilled ? 'empty' : '',
+                    isSelected ? 'selected' : ''
+                ].filter(Boolean).join(' ');
+
+                cell.textContent = isFree ? 'FREE' : (isFilled ? value : '');
+                cell.setAttribute('role', 'gridcell');
+
+                if (!isFree) {
+                    cell.setAttribute('aria-label',
+                        `${BINGO_COLS[col]} column, ${isFilled ? 'value ' + value : 'empty'}`);
+                    cell.addEventListener('click', () => selectCell(idx));
+                }
+
+                manualGridEl.appendChild(cell);
+            }
+
+            // Render or hide the picker panel below the grid
+            renderPicker();
+        }
+
+        function selectCell(idx) {
+            // Toggle picker: clicking the already-active cell closes it
+            activePickerCellIdx = (activePickerCellIdx === idx) ? -1 : idx;
+            renderManualGrid();
+        }
+
+        function renderPicker() {
+            if (!manualPickerEl) return;
+            manualPickerEl.innerHTML = '';
+
+            if (activePickerCellIdx === -1) {
+                manualPickerEl.classList.add('hidden');
+                return;
+            }
+
+            manualPickerEl.classList.remove('hidden');
+
+            const cellIdx = activePickerCellIdx;
+            const col = cellIdx % 5;
+            const [lo, hi] = BINGO_RANGES[col];
+            const currentValue = cardSquares[cellIdx];
+
+            // Collect numbers already placed in this column (excluding the active cell)
+            const usedInCol = new Set();
+            for (let r = 0; r < 5; r++) {
+                const sq = cardSquares[r * 5 + col];
+                if (r * 5 + col !== cellIdx && sq !== null && sq !== 'FREE' && sq !== '') {
+                    usedInCol.add(sq);
+                }
+            }
+
+            // Column picker header label
+            const pickerLabel = document.createElement('div');
+            pickerLabel.className = 'editor-picker-label';
+            pickerLabel.textContent = `Select ${BINGO_COLS[col]} number (${lo}–${hi})`;
+            manualPickerEl.appendChild(pickerLabel);
+
+            // 15 number buttons in a 5-column grid
+            const pickerGrid = document.createElement('div');
+            pickerGrid.className = 'editor-picker-grid';
+
+            for (let n = lo; n <= hi; n++) {
+                const isUsed = usedInCol.has(n);
+                const isCurrent = (currentValue === n);
+
+                const btn = document.createElement('button');
+                btn.className = [
+                    'editor-pick-btn',
+                    isUsed ? 'used' : '',
+                    isCurrent ? 'current' : ''
+                ].filter(Boolean).join(' ');
+                btn.type = 'button';
+                btn.textContent = n;
+                btn.disabled = isUsed;
+                btn.title = isUsed ? 'Already on this card' : '';
+                btn.setAttribute('aria-label', `${BINGO_COLS[col]}${n}`);
+
+                if (!isUsed) {
+                    btn.addEventListener('click', () => {
+                        // Set the selected number and close the picker
+                        cardSquares[cellIdx] = n;
+                        activePickerCellIdx = -1;
+                        renderManualGrid();
+                    });
+                }
+
+                pickerGrid.appendChild(btn);
+            }
+
+            manualPickerEl.appendChild(pickerGrid);
+
+            // Clear cell button (only shown when the cell already has a value)
+            if (currentValue !== null && currentValue !== '') {
+                const clearBtn = document.createElement('button');
+                clearBtn.type = 'button';
+                clearBtn.className = 'btn btn-secondary';
+                clearBtn.style.cssText = 'margin-top: 4px; padding: 8px 20px; font-size: 13px; width: auto;';
+                clearBtn.textContent = '✕ Clear Cell';
+                clearBtn.addEventListener('click', () => {
+                    cardSquares[cellIdx] = null;
+                    activePickerCellIdx = -1;
+                    renderManualGrid();
+                });
+                manualPickerEl.appendChild(clearBtn);
+            }
+        }
+
+        // ============================================================
+        // CARD EDITOR — receive OCR result from scan tab (global, called by ocr.js)
+        // ============================================================
+
+        window.applyOCRResult = function (grid) {
+            // Convert 5x5 OCR result grid to flat 25-element squares array
+            const newSquares = Array(25).fill(null);
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const idx = r * 5 + c;
+                    const val = grid[r] && grid[r][c];
+                    if (r === 2 && c === 2) {
+                        newSquares[idx] = 'FREE';
+                    } else if (val !== null && val !== undefined && val !== '') {
+                        const parsed = parseInt(val, 10);
+                        newSquares[idx] = isNaN(parsed) ? null : parsed;
+                    }
+                }
+            }
+            cardSquares = newSquares;
+            cardSquares[FREE_CELL_IDX] = 'FREE';
+            activePickerCellIdx = -1;
+            // Switch to Manual Entry tab so user can review and save
+            switchTab('manual');
+            renderManualGrid();
+        };
+
+        // ============================================================
+        // CARD EDITOR — save card to localStorage session
+        // ============================================================
+
+        function saveCard() {
+            const name = cardNameInput.value.trim() || 'Card';
+            const serial = cardSerialInput.value.trim();
+
+            // Normalize squares: convert empty/undefined values to null
+            const squares = cardSquares.map((v, i) => {
+                if (i === FREE_CELL_IDX) return 'FREE';
+                if (v === null || v === '' || v === undefined) return null;
+                return typeof v === 'number' ? v : (parseInt(v, 10) || null);
+            });
+
+            // Load current session from localStorage
+            let sessionData = localStorage.getItem('bingoSession');
+            let sessionObj = sessionData ? JSON.parse(sessionData) : null;
+
+            // Create a default session if none exists
+            if (!sessionObj || !Array.isArray(sessionObj.cards)) {
+                sessionObj = {
+                    word: 'BINGO', called: [], lastBall: null, cards: [],
+                    gameId: null, inputMode: 'letter',
+                    dauber: { rgb: '26, 115, 232', opacity: 0.25 }
+                };
+            }
+
+            if (currentMode === 'edit' && targetCardId) {
+                // Update the matching existing card in session
+                const card = sessionObj.cards.find(c => String(c.id) === String(targetCardId));
+                if (card) {
+                    card.squares = squares;
+                    card.label = name;
+                    card.serial = serial;
+                    card.editMode = false;
+                } else {
+                    alert('Card not found in session. It may have been removed.');
+                    return;
+                }
+            } else {
+                // Push a new card into the session
+                const num = sessionObj.cards.length + 1;
+                sessionObj.cards.push({
+                    id: Date.now(),
+                    label: name || `Card ${num}`,
+                    serial: serial,
+                    squares: squares,
+                    editMode: false,
+                    active: true
+                });
+            }
+
+            localStorage.setItem('bingoSession', JSON.stringify(sessionObj));
+            window.location.href = '../index.html';
+        }
+
+        // ============================================================
+        // CARD EDITOR — save card to server via PHP API
+        // ============================================================
+
+        async function saveCardToServer() {
+            const name = cardNameInput.value.trim() || 'Card';
+            const serial = cardSerialInput.value.trim();
+
+            // Normalize squares before posting
+            const squares = cardSquares.map((v, i) => {
+                if (i === FREE_CELL_IDX) return 'FREE';
+                if (v === null || v === '' || v === undefined) return null;
+                return typeof v === 'number' ? v : (parseInt(v, 10) || null);
+            });
+
+            if (saveServerBtn) saveServerBtn.disabled = true;
+
+            try {
+                const res = await fetch('../php/cards.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: (currentMode === 'edit' && targetCardId) ? parseInt(targetCardId) : Date.now(),
+                        name: name,
+                        serial: serial,
+                        squares: squares
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Invalidate server cache so Load from Server tab refreshes
+                    serverCardsLoaded = false;
+                    alert(`✓ Card "${name}" saved to server!`);
+                } else {
+                    alert('Error saving to server: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Server error. Ensure PHP backend is available.');
+            } finally {
+                if (saveServerBtn) saveServerBtn.disabled = false;
+            }
+        }
+
+        // ============================================================
+        // CARD EDITOR — load from server tab
+        // ============================================================
+
+        async function loadServerCards() {
+            // Avoid refetching on every tab switch
+            if (serverCardsLoaded) return;
+            const container = document.getElementById('serverCardsList');
+            if (!container) return;
+
+            container.innerHTML = '<p style="text-align:center; color:var(--text-subtle); padding:20px 0;">Loading saved cards...</p>';
+
+            try {
+                const res = await fetch('../php/cards.php');
+                const savedCards = await res.json();
+                serverCardsLoaded = true;
+
+                if (!Array.isArray(savedCards) || savedCards.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:var(--text-subtle); font-size:14px; padding:20px 0;">No cards saved on server yet.<br>Save a card using the "Save to Server" button on the Manual Entry tab.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                savedCards.forEach(savedCard => container.appendChild(renderServerCardItem(savedCard)));
+            } catch (err) {
+                container.innerHTML = '<p style="text-align:center; color:#d93025; font-size:14px; padding:20px 0;">Could not reach server.<br>Check that the PHP backend is available.</p>';
+                serverCardsLoaded = false; // allow retry on next tab switch
+            }
+        }
+
+        function renderServerCardItem(savedCard) {
+            const item = document.createElement('div');
+            item.className = 'server-card-item';
+
+            // Mini 5x5 card preview grid
+            const miniGrid = document.createElement('div');
+            miniGrid.className = 'mini-card-grid';
+            const squares = Array.isArray(savedCard.squares) ? savedCard.squares : Array(25).fill(null);
+            for (let i = 0; i < 25; i++) {
+                const mc = document.createElement('div');
+                const val = squares[i];
+                const isFree = (i === 12 || val === 'FREE');
+                const hasVal = !isFree && val !== null && val !== '';
+                mc.className = ['mini-cell', isFree ? 'mini-free' : '', hasVal ? 'mini-pattern' : ''].filter(Boolean).join(' ');
+                miniGrid.appendChild(mc);
+            }
+
+            // Card name and serial info column
+            const info = document.createElement('div');
+            info.className = 'server-card-info';
+
+            const nameEl = document.createElement('span');
+            nameEl.className = 'server-card-name';
+            nameEl.textContent = savedCard.name || 'Card';
+
+            const serialEl = document.createElement('span');
+            serialEl.className = 'server-card-serial';
+            serialEl.textContent = savedCard.serial ? `S/N: ${savedCard.serial}` : 'No Serial #';
+
+            info.appendChild(nameEl);
+            info.appendChild(serialEl);
+
+            // Load + Delete action buttons
+            const actions = document.createElement('div');
+            actions.className = 'server-card-actions';
+
+            const loadBtn = document.createElement('button');
+            loadBtn.type = 'button';
+            loadBtn.className = 'btn btn-primary';
+            loadBtn.style.cssText = 'padding: 8px 16px; font-size: 13px; width: auto;';
+            loadBtn.textContent = 'Load';
+            loadBtn.onclick = () => {
+                // Pre-populate card state from server card and switch to Manual Entry tab
+                cardSquares = [...squares];
+                cardSquares[FREE_CELL_IDX] = 'FREE';
+                cardNameInput.value = savedCard.name || '';
+                cardSerialInput.value = savedCard.serial || '';
+                activePickerCellIdx = -1;
+                switchTab('manual');
+                renderManualGrid();
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'btn btn-secondary';
+            deleteBtn.style.cssText = 'padding: 8px 10px; font-size: 13px; width: auto;';
+            deleteBtn.title = 'Delete from server';
+            deleteBtn.textContent = '🗑';
+            deleteBtn.onclick = async () => {
+                if (!confirm(`Delete "${savedCard.name}" from server?`)) return;
+                try {
+                    await fetch(`../php/cards.php?id=${savedCard.id}`, { method: 'DELETE' });
+                    item.remove();
+                } catch (err) {
+                    console.error(err);
+                }
+            };
+
+            actions.appendChild(loadBtn);
+            actions.appendChild(deleteBtn);
+
+            item.appendChild(miniGrid);
+            item.appendChild(info);
+            item.appendChild(actions);
+
+            return item;
+        }
+
+        // ============================================================
+        // CAMERA & SCAN LOGIC (scan tab)
+        // ============================================================
+
+        const video = document.getElementById('camera');
+        const captureBtn = document.getElementById('captureBtn');
+        const galleryBtn = document.getElementById('galleryBtn');
+        const fileInput = document.getElementById('fileInput');
+        const previewWrap = document.getElementById('previewWrap');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ocrBtn = document.getElementById('ocrBtn');
+        const statusDiv = document.getElementById('status');
+        const autoCropToggle = document.getElementById('autoCropToggle');
+        const cropStatusBadge = document.getElementById('cropStatusBadge');
+        const manualCropBtn = document.getElementById('manualCropBtn');
+        const resetPhotoBtn = document.getElementById('resetPhotoBtn');
+        const rotateCwBtn = document.getElementById('rotateCwBtn');
 
         // Crop modal elements
-        const manualCropModal = document.getElementById("manualCropModal");
-        const cropCanvas = document.getElementById("cropCanvas");
-        const applyCropBtn = document.getElementById("applyCropBtn");
-        const fullPhotoCropBtn = document.getElementById("fullPhotoCropBtn");
-        const cancelCropBtn = document.getElementById("cancelCropBtn");
-        const closeCropModalBtn = document.getElementById("closeCropModalBtn");
-        const modalRotateCwBtn = document.getElementById("modalRotateCwBtn");
-        const cameraPlaceholder = document.getElementById("cameraPlaceholder");
+        const manualCropModal = document.getElementById('manualCropModal');
+        const cropCanvas = document.getElementById('cropCanvas');
+        const applyCropBtn = document.getElementById('applyCropBtn');
+        const fullPhotoCropBtn = document.getElementById('fullPhotoCropBtn');
+        const cancelCropBtn = document.getElementById('cancelCropBtn');
+        const closeCropModalBtn = document.getElementById('closeCropModalBtn');
+        const modalRotateCwBtn = document.getElementById('modalRotateCwBtn');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
 
-        // Raw captured image state & cropper handle state
+        // Raw captured image state and cropper handle state
         let rawCapturedCanvas = null;
         let currentCorners = null;
         let activeHandle = null;
         let cropScaleX = 1;
         let cropScaleY = 1;
 
-        // Back button
-        backBtn.onclick = () => {
-            window.location.href = "../index.html";
-        };
+        // Back button — return to main bingo page without saving
+        backBtn.onclick = () => { window.location.href = '../index.html'; };
 
-        // Target card badge
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetCardId = urlParams.get("cardId");
-        let sessionData = localStorage.getItem("bingoSession");
-        let sessionObj = sessionData ? JSON.parse(sessionData) : null;
+        // Save & Done button
+        if (saveDoneBtn) saveDoneBtn.addEventListener('click', saveCard);
 
-        if (targetCardId && sessionObj && Array.isArray(sessionObj.cards)) {
-            const card = sessionObj.cards.find(c => String(c.id) === String(targetCardId));
-            if (card) {
-                targetCardBadge.textContent = `Target: ${card.label}`;
-            }
-        }
+        // Save to Server button
+        if (saveServerBtn) saveServerBtn.addEventListener('click', saveCardToServer);
 
-        // Camera Initialization — tries environment (rear) camera first, falls back to any available camera
+        // Camera Initialization — tries rear camera first, falls back to any camera
         function startCamera() {
-            // First try environment/rear camera (mobile)
             navigator.mediaDevices.getUserMedia({
                 video: { facingMode: { ideal: 'environment' }, aspectRatio: { ideal: 1.0 } },
                 audio: false
@@ -887,7 +1429,6 @@
                 video.srcObject = stream;
                 cameraPlaceholder.style.display = 'none';
             }).catch(() => {
-                // Fall back to any video device (desktop webcam)
                 navigator.mediaDevices.getUserMedia({ video: true, audio: false })
                     .then(stream => {
                         video.srcObject = stream;
@@ -897,7 +1438,7 @@
                         console.warn('Camera access denied or unavailable:', err);
                         video.style.display = 'none';
                         cameraPlaceholder.style.display = 'flex';
-                        statusDiv.textContent = 'Camera unavailable. Use Camera Roll to pick a photo or enter numbers manually.';
+                        if (statusDiv) statusDiv.textContent = 'Camera unavailable. Use Camera Roll to pick a photo.';
                     });
             });
         }
@@ -907,68 +1448,47 @@
         // 1. Capture square photo from live camera feed
         captureBtn.onclick = () => {
             if (!video.videoWidth) {
-                statusDiv.textContent = "Waiting for camera feed...";
+                if (statusDiv) statusDiv.textContent = 'Waiting for camera feed...';
                 return;
             }
-
-            statusDiv.className = "status-box active";
-            statusDiv.textContent = "Capturing photo...";
-
-            // Crop video stream to exact centered 1:1 square
+            if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Capturing photo...'; }
             const minDim = Math.min(video.videoWidth, video.videoHeight);
             const sx = (video.videoWidth - minDim) / 2;
             const sy = (video.videoHeight - minDim) / 2;
-
-            rawCapturedCanvas = document.createElement("canvas");
+            rawCapturedCanvas = document.createElement('canvas');
             rawCapturedCanvas.width = minDim;
             rawCapturedCanvas.height = minDim;
-            const rawCtx = rawCapturedCanvas.getContext("2d");
-            rawCtx.drawImage(video, sx, sy, minDim, minDim, 0, 0, minDim, minDim);
-
+            rawCapturedCanvas.getContext('2d').drawImage(video, sx, sy, minDim, minDim, 0, 0, minDim, minDim);
             currentCorners = null;
-            previewWrap.classList.remove("hidden");
-
-            processCapturedImage("Live Photo");
+            previewWrap.classList.remove('hidden');
+            processCapturedImage('Live Photo');
         };
 
         // 2. Pick photo from Camera Roll
-        galleryBtn.onclick = () => {
-            fileInput.click();
-        };
+        galleryBtn.onclick = () => fileInput.click();
 
         fileInput.onchange = (e) => {
             const file = e.target.files && e.target.files[0];
             if (!file) return;
-
-            statusDiv.className = "status-box active";
-            statusDiv.textContent = "Loading image from Camera Roll...";
-
+            if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Loading image from Camera Roll...'; }
             const objectUrl = URL.createObjectURL(file);
             const img = new Image();
-
             img.onload = () => {
                 URL.revokeObjectURL(objectUrl);
-
-                rawCapturedCanvas = document.createElement("canvas");
+                rawCapturedCanvas = document.createElement('canvas');
                 rawCapturedCanvas.width = img.naturalWidth;
                 rawCapturedCanvas.height = img.naturalHeight;
-                const rawCtx = rawCapturedCanvas.getContext("2d");
-                rawCtx.drawImage(img, 0, 0);
-
+                rawCapturedCanvas.getContext('2d').drawImage(img, 0, 0);
                 currentCorners = null;
-                previewWrap.classList.remove("hidden");
-
-                processCapturedImage("Camera Roll");
+                previewWrap.classList.remove('hidden');
+                processCapturedImage('Camera Roll');
             };
-
             img.onerror = () => {
                 URL.revokeObjectURL(objectUrl);
-                statusDiv.className = "status-box";
-                statusDiv.textContent = "Error loading photo from Camera Roll.";
+                if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Error loading photo from Camera Roll.'; }
             };
-
             img.src = objectUrl;
-            fileInput.value = "";
+            fileInput.value = '';
         };
 
         // 3. Rotate 90° Clockwise
@@ -976,7 +1496,7 @@
             if (!rawCapturedCanvas) return;
             rawCapturedCanvas = rotateCanvas90(rawCapturedCanvas, true);
             currentCorners = null;
-            processCapturedImage("Rotated Photo");
+            processCapturedImage('Rotated Photo');
         };
 
         modalRotateCwBtn.onclick = () => {
@@ -987,45 +1507,37 @@
         };
 
         // Global helper for ocr.js to update preview canvas after auto-rotation
-        window.drawCanvasToPreview = function(canvasSource) {
+        window.drawCanvasToPreview = function (canvasSource) {
             previewCanvas.width = canvasSource.width;
             previewCanvas.height = canvasSource.height;
-            previewCanvas.getContext("2d").drawImage(canvasSource, 0, 0);
+            previewCanvas.getContext('2d').drawImage(canvasSource, 0, 0);
         };
 
-        // Process image (Auto-crop or Raw Preview)
+        // Process captured image through auto-crop or show raw
         function processCapturedImage(sourceName) {
             const isAutoCropOn = autoCropToggle.checked;
-
-            if (isAutoCropOn && typeof autoCrop === "function" && typeof cv !== "undefined") {
-                statusDiv.textContent = "Auto-cropping card grid...";
+            if (isAutoCropOn && typeof autoCrop === 'function' && typeof cv !== 'undefined') {
+                if (statusDiv) statusDiv.textContent = 'Auto-cropping card grid...';
                 autoCrop(rawCapturedCanvas).then(croppedCanvas => {
                     previewCanvas.width = croppedCanvas.width;
                     previewCanvas.height = croppedCanvas.height;
-                    previewCanvas.getContext("2d").drawImage(croppedCanvas, 0, 0);
-
-                    if (croppedCanvas.corners) {
-                        currentCorners = croppedCanvas.corners;
-                    }
-
-                    cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
-                    statusDiv.className = "status-box success";
-                    statusDiv.textContent = "Card isolated! Click Run OCR to recognize digits, or Manual Crop to adjust.";
-                    ocrBtn.disabled = false;
+                    previewCanvas.getContext('2d').drawImage(croppedCanvas, 0, 0);
+                    if (croppedCanvas.corners) currentCorners = croppedCanvas.corners;
+                    if (cropStatusBadge) cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
+                    if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Card isolated! Click Run OCR to recognize digits, or Manual Crop to adjust.'; }
+                    if (ocrBtn) ocrBtn.disabled = false;
                 }).catch(err => {
-                    console.warn("Auto-crop failed:", err);
+                    console.warn('Auto-crop failed:', err);
                     drawRawPhotoToPreview();
-                    cropStatusBadge.textContent = `${sourceName}`;
-                    statusDiv.className = "status-box";
-                    statusDiv.textContent = "Auto-crop could not find grid. Click Manual Crop to frame card, or Run OCR.";
-                    ocrBtn.disabled = false;
+                    if (cropStatusBadge) cropStatusBadge.textContent = sourceName;
+                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Auto-crop could not find grid. Click Manual Crop to frame card, or Run OCR.'; }
+                    if (ocrBtn) ocrBtn.disabled = false;
                 });
             } else {
                 drawRawPhotoToPreview();
-                cropStatusBadge.textContent = `${sourceName} (Auto-Crop OFF)`;
-                statusDiv.className = "status-box success";
-                statusDiv.textContent = "Photo loaded! Click Manual Crop to frame 5×5 grid, or Run OCR.";
-                ocrBtn.disabled = false;
+                if (cropStatusBadge) cropStatusBadge.textContent = `${sourceName} (Auto-Crop OFF)`;
+                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Photo loaded! Click Manual Crop to frame 5×5 grid, or Run OCR.'; }
+                if (ocrBtn) ocrBtn.disabled = false;
             }
         }
 
@@ -1033,30 +1545,24 @@
             if (!rawCapturedCanvas) return;
             previewCanvas.width = rawCapturedCanvas.width;
             previewCanvas.height = rawCapturedCanvas.height;
-            previewCanvas.getContext("2d").drawImage(rawCapturedCanvas, 0, 0);
+            previewCanvas.getContext('2d').drawImage(rawCapturedCanvas, 0, 0);
         }
 
-        // Reset Photo Button
         resetPhotoBtn.onclick = () => {
             if (!rawCapturedCanvas) return;
             drawRawPhotoToPreview();
             currentCorners = null;
-            cropStatusBadge.textContent = "Full Photo";
-            statusDiv.className = "status-box";
-            statusDiv.textContent = "Reset to full photo. Click Manual Crop to frame card, or Run OCR.";
+            if (cropStatusBadge) cropStatusBadge.textContent = 'Full Photo';
+            if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Reset to full photo. Click Manual Crop to frame card, or Run OCR.'; }
         };
 
-        // Manual Crop Modal & Canvas Dragging Logic
         manualCropBtn.onclick = openManualCropper;
 
         function openManualCropper() {
             if (!rawCapturedCanvas) return;
-
-            manualCropModal.classList.remove("hidden");
-
+            manualCropModal.classList.remove('hidden');
             const origW = rawCapturedCanvas.width;
             const origH = rawCapturedCanvas.height;
-
             if (!currentCorners) {
                 currentCorners = {
                     tl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.08) },
@@ -1065,124 +1571,86 @@
                     bl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.92) }
                 };
             }
-
             const maxW = Math.min(window.innerWidth - 44, 580);
             const maxH = Math.min(window.innerHeight * 0.55, 460);
             const aspect = origW / origH;
-
-            let dispW = maxW;
-            let dispH = maxW / aspect;
-            if (dispH > maxH) {
-                dispH = maxH;
-                dispW = maxH * aspect;
-            }
-
+            let dispW = maxW, dispH = maxW / aspect;
+            if (dispH > maxH) { dispH = maxH; dispW = maxH * aspect; }
             cropCanvas.width = dispW;
             cropCanvas.height = dispH;
-
             cropScaleX = dispW / origW;
             cropScaleY = dispH / origH;
-
             drawCropCanvas();
         }
 
         function drawCropCanvas() {
             if (!cropCanvas || !rawCapturedCanvas || !currentCorners) return;
-            const ctx = cropCanvas.getContext("2d");
-            const w = cropCanvas.width;
-            const h = cropCanvas.height;
-
+            const ctx = cropCanvas.getContext('2d');
+            const w = cropCanvas.width, h = cropCanvas.height;
             ctx.clearRect(0, 0, w, h);
-
             ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
 
-            const dispPts = {
+            const dp = {
                 tl: { x: currentCorners.tl.x * cropScaleX, y: currentCorners.tl.y * cropScaleY },
                 tr: { x: currentCorners.tr.x * cropScaleX, y: currentCorners.tr.y * cropScaleY },
                 br: { x: currentCorners.br.x * cropScaleX, y: currentCorners.br.y * cropScaleY },
                 bl: { x: currentCorners.bl.x * cropScaleX, y: currentCorners.bl.y * cropScaleY }
             };
 
+            // Darken outside the crop region
             ctx.save();
-            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.fillRect(0, 0, w, h);
-
-            ctx.globalCompositeOperation = "destination-out";
+            ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath();
-            ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
-            ctx.lineTo(dispPts.tr.x, dispPts.tr.y);
-            ctx.lineTo(dispPts.br.x, dispPts.br.y);
-            ctx.lineTo(dispPts.bl.x, dispPts.bl.y);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
+            ctx.moveTo(dp.tl.x, dp.tl.y); ctx.lineTo(dp.tr.x, dp.tr.y);
+            ctx.lineTo(dp.br.x, dp.br.y); ctx.lineTo(dp.bl.x, dp.bl.y);
+            ctx.closePath(); ctx.fill(); ctx.restore();
 
+            // Draw cropped image region
             ctx.save();
             ctx.beginPath();
-            ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
-            ctx.lineTo(dispPts.tr.x, dispPts.tr.y);
-            ctx.lineTo(dispPts.br.x, dispPts.br.y);
-            ctx.lineTo(dispPts.bl.x, dispPts.bl.y);
-            ctx.closePath();
-            ctx.clip();
+            ctx.moveTo(dp.tl.x, dp.tl.y); ctx.lineTo(dp.tr.x, dp.tr.y);
+            ctx.lineTo(dp.br.x, dp.br.y); ctx.lineTo(dp.bl.x, dp.bl.y);
+            ctx.closePath(); ctx.clip();
             ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
 
-            // Draw 5x5 grid guide lines inside quad
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-            ctx.lineWidth = 1;
+            // 5×5 guide grid lines inside the crop quad
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
             for (let i = 1; i < 5; i++) {
                 const t = i / 5;
-                const topX = dispPts.tl.x + t * (dispPts.tr.x - dispPts.tl.x);
-                const topY = dispPts.tl.y + t * (dispPts.tr.y - dispPts.tl.y);
-                const botX = dispPts.bl.x + t * (dispPts.br.x - dispPts.bl.x);
-                const botY = dispPts.bl.y + t * (dispPts.br.y - dispPts.bl.y);
-
                 ctx.beginPath();
-                ctx.moveTo(topX, topY);
-                ctx.lineTo(botX, botY);
+                ctx.moveTo(dp.tl.x + t * (dp.tr.x - dp.tl.x), dp.tl.y + t * (dp.tr.y - dp.tl.y));
+                ctx.lineTo(dp.bl.x + t * (dp.br.x - dp.bl.x), dp.bl.y + t * (dp.br.y - dp.bl.y));
                 ctx.stroke();
-
-                const leftX = dispPts.tl.x + t * (dispPts.bl.x - dispPts.tl.x);
-                const leftY = dispPts.tl.y + t * (dispPts.bl.y - dispPts.tl.y);
-                const rightX = dispPts.tr.x + t * (dispPts.br.x - dispPts.tr.x);
-                const rightY = dispPts.tr.y + t * (dispPts.br.y - dispPts.tr.y);
-
                 ctx.beginPath();
-                ctx.moveTo(leftX, leftY);
-                ctx.lineTo(rightX, rightY);
+                ctx.moveTo(dp.tl.x + t * (dp.bl.x - dp.tl.x), dp.tl.y + t * (dp.bl.y - dp.tl.y));
+                ctx.lineTo(dp.tr.x + t * (dp.br.x - dp.tr.x), dp.tr.y + t * (dp.br.y - dp.tr.y));
                 ctx.stroke();
             }
             ctx.restore();
 
+            // Blue quad border
             ctx.save();
-            ctx.strokeStyle = "#1a73e8";
-            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = '#1a73e8'; ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.moveTo(dispPts.tl.x, dispPts.tl.y);
-            ctx.lineTo(dispPts.tr.x, dispPts.tr.y);
-            ctx.lineTo(dispPts.br.x, dispPts.br.y);
-            ctx.lineTo(dispPts.bl.x, dispPts.bl.y);
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
+            ctx.moveTo(dp.tl.x, dp.tl.y); ctx.lineTo(dp.tr.x, dp.tr.y);
+            ctx.lineTo(dp.br.x, dp.br.y); ctx.lineTo(dp.bl.x, dp.bl.y);
+            ctx.closePath(); ctx.stroke(); ctx.restore();
 
+            // Corner drag handles
             const handleRadius = 14;
-            for (const key of ["tl", "tr", "br", "bl"]) {
-                const pt = dispPts[key];
+            for (const key of ['tl', 'tr', 'br', 'bl']) {
+                const pt = dp[key];
                 ctx.save();
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, handleRadius, 0, Math.PI * 2);
-                ctx.fillStyle = "#ffffff";
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(pt.x, pt.y, handleRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff'; ctx.fill();
                 ctx.lineWidth = 3;
-                ctx.strokeStyle = (activeHandle === key) ? "#e53935" : "#1a73e8";
+                ctx.strokeStyle = (activeHandle === key) ? '#e53935' : '#1a73e8';
                 ctx.stroke();
-
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
-                ctx.fillStyle = (activeHandle === key) ? "#e53935" : "#1a73e8";
-                ctx.fill();
-                ctx.restore();
+                ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = (activeHandle === key) ? '#e53935' : '#1a73e8';
+                ctx.fill(); ctx.restore();
             }
         }
 
@@ -1200,121 +1668,90 @@
             if (!currentCorners || !rawCapturedCanvas) return;
             const pos = getCanvasPos(e, cropCanvas);
             const threshold = 34;
-
-            let closestKey = null;
-            let minDist = Infinity;
-
-            for (const key of ["tl", "tr", "br", "bl"]) {
-                const dispX = currentCorners[key].x * cropScaleX;
-                const dispY = currentCorners[key].y * cropScaleY;
-                const dist = Math.hypot(pos.x - dispX, pos.y - dispY);
-                if (dist < threshold && dist < minDist) {
-                    minDist = dist;
-                    closestKey = key;
-                }
+            let closestKey = null, minDist = Infinity;
+            for (const key of ['tl', 'tr', 'br', 'bl']) {
+                const dist = Math.hypot(
+                    pos.x - currentCorners[key].x * cropScaleX,
+                    pos.y - currentCorners[key].y * cropScaleY
+                );
+                if (dist < threshold && dist < minDist) { minDist = dist; closestKey = key; }
             }
-
-            if (closestKey) {
-                activeHandle = closestKey;
-                e.preventDefault();
-                drawCropCanvas();
-            }
+            if (closestKey) { activeHandle = closestKey; e.preventDefault(); drawCropCanvas(); }
         }
 
         function handleMove(e) {
             if (!activeHandle || !rawCapturedCanvas || !currentCorners) return;
             e.preventDefault();
             const pos = getCanvasPos(e, cropCanvas);
-
-            const origW = rawCapturedCanvas.width;
-            const origH = rawCapturedCanvas.height;
-
-            let rawX = Math.max(0, Math.min(origW, Math.round(pos.x / cropScaleX)));
-            let rawY = Math.max(0, Math.min(origH, Math.round(pos.y / cropScaleY)));
-
-            currentCorners[activeHandle] = { x: rawX, y: rawY };
+            currentCorners[activeHandle] = {
+                x: Math.max(0, Math.min(rawCapturedCanvas.width, Math.round(pos.x / cropScaleX))),
+                y: Math.max(0, Math.min(rawCapturedCanvas.height, Math.round(pos.y / cropScaleY)))
+            };
             drawCropCanvas();
         }
 
-        function handleEnd(e) {
-            if (activeHandle) {
-                activeHandle = null;
-                drawCropCanvas();
-            }
+        function handleEnd() {
+            if (activeHandle) { activeHandle = null; drawCropCanvas(); }
         }
 
-        cropCanvas.addEventListener("mousedown", handleStart);
-        cropCanvas.addEventListener("mousemove", handleMove);
-        window.addEventListener("mouseup", handleEnd);
+        cropCanvas.addEventListener('mousedown', handleStart);
+        cropCanvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+        cropCanvas.addEventListener('touchstart', handleStart, { passive: false });
+        cropCanvas.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleEnd);
 
-        cropCanvas.addEventListener("touchstart", handleStart, { passive: false });
-        cropCanvas.addEventListener("touchmove", handleMove, { passive: false });
-        window.addEventListener("touchend", handleEnd);
-
-        // Apply crop button
         applyCropBtn.onclick = () => {
             if (!rawCapturedCanvas || !currentCorners) return;
             const croppedCanvas = warpCorners(rawCapturedCanvas, currentCorners);
-
             previewCanvas.width = croppedCanvas.width;
             previewCanvas.height = croppedCanvas.height;
-            previewCanvas.getContext("2d").drawImage(croppedCanvas, 0, 0);
-
-            manualCropModal.classList.add("hidden");
-            cropStatusBadge.textContent = "Manual Cropped";
-
-            statusDiv.className = "status-box success";
-            statusDiv.textContent = "Card cropped! Click Run OCR to recognize digits.";
-            ocrBtn.disabled = false;
+            previewCanvas.getContext('2d').drawImage(croppedCanvas, 0, 0);
+            manualCropModal.classList.add('hidden');
+            if (cropStatusBadge) cropStatusBadge.textContent = 'Manual Cropped';
+            if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Card cropped! Click Run OCR to recognize digits.'; }
+            if (ocrBtn) ocrBtn.disabled = false;
         };
 
-        // Full photo selection button inside crop modal
         fullPhotoCropBtn.onclick = () => {
             if (!rawCapturedCanvas) return;
-            const origW = rawCapturedCanvas.width;
-            const origH = rawCapturedCanvas.height;
             currentCorners = {
                 tl: { x: 0, y: 0 },
-                tr: { x: origW, y: 0 },
-                br: { x: origW, y: origH },
-                bl: { x: 0, y: origH }
+                tr: { x: rawCapturedCanvas.width, y: 0 },
+                br: { x: rawCapturedCanvas.width, y: rawCapturedCanvas.height },
+                bl: { x: 0, y: rawCapturedCanvas.height }
             };
             drawCropCanvas();
         };
 
-        // Cancel / close crop modal
         cancelCropBtn.onclick = closeCropModal;
         closeCropModalBtn.onclick = closeCropModal;
+        function closeCropModal() { manualCropModal.classList.add('hidden'); }
 
-        function closeCropModal() {
-            manualCropModal.classList.add("hidden");
-        }
-
-        // Run OCR action
+        // Run OCR — result populates the review grid in the Scan tab
         async function doOCR() {
-            ocrBtn.disabled = true;
-            statusDiv.className = "status-box active";
-            statusDiv.textContent = "Running OCR digit recognition... Please wait.";
-
+            if (ocrBtn) ocrBtn.disabled = true;
+            if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Running OCR digit recognition... Please wait.'; }
             try {
                 const grid = await runOCR(previewCanvas);
                 drawBingoGrid(grid);
-                statusDiv.className = "status-box success";
-                statusDiv.textContent = "✓ OCR completed! Verify the numbers below and click Use.";
+                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = '✓ OCR completed! Verify numbers below, then click "Apply to Card Editor".'; }
             } catch (err) {
                 console.error(err);
-                statusDiv.className = "status-box";
-                statusDiv.textContent = "OCR failed to recognize grid. You can type numbers into the grid manually below.";
+                if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'OCR failed. You can still click "Apply to Card Editor" with an empty grid or try again.'; }
                 drawBingoGrid([]);
             } finally {
-                ocrBtn.disabled = false;
+                if (ocrBtn) ocrBtn.disabled = false;
             }
         }
 
-        ocrBtn.onclick = doOCR;
+        if (ocrBtn) ocrBtn.onclick = doOCR;
 
-        // Bingo scanner page version identifier
-        const SCAN_VERSION = '1.1';
+        // ============================================================
+        // PAGE INITIALIZATION
+        // ============================================================
+
+        initCardState();
     </script>
 </body>
 

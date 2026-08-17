@@ -67,7 +67,6 @@
                     <span class="lastman-status standing hidden" id="lastManStatus">Last man: Standing</span>
                 </div>
                 <div class="cards-header-actions">
-                    <button id="loadCardBtn" class="link-button" type="button">📥 Load Card</button>
                     <button id="addCardBtn" class="link-button" type="button">+ Add Card</button>
                 </div>
             </div>
@@ -230,14 +229,13 @@
         </div>
     </div>
 
-    <!-- Footer displaying application version -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">2.9</span></p>
+        <p>Version <span id="appVersion">3.0</span></p>
     </footer>
 
     <script>
-        // Page version identifier fallback
-        const INDEX_VERSION = '2.9';
+        // Page version identifier
+        const INDEX_VERSION = '3.0';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
