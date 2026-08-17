@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.1';
+const VERSION = '3.2';
 
 
 // ============================================================
@@ -1071,8 +1071,8 @@ function renderCard(card) {
         const isPartialCell = !isTrueWinner && session.doubleMode && winCells.has(idx);
         // One away: this uncalled cell is the last needed square for at least one pattern
         const isOneAway = !isTrueWinner && !isDaubed && oneAwayCells.has(idx);
-        // Unused in game mode: squares not part of any pattern are rendered in grayscale
-        const isUnused = (game !== null) && !usedPatternCells.has(idx);
+        // Unused in game mode: squares not part of any pattern are rendered in grayscale (FREE square is always considered used/daubed)
+        const isUnused = !isFree && (game !== null) && !usedPatternCells.has(idx);
 
         const cell = document.createElement("div");
         cell.className = [

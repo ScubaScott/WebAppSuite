@@ -56,7 +56,7 @@
                     </div>
                 </div>
                 <button id="clearCardsBtn" class="link-button game-clear-btn" type="button"
-                    title="Reset all called numbers">Clear Cards</button>
+                    title="Reset all called numbers">Clear All Balls</button>
             </div>
         </section>
 
@@ -244,12 +244,12 @@
     </div>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">3.1</span></p>
+        <p>Version <span id="appVersion">3.2</span></p>
     </footer>
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '3.1';
+        const INDEX_VERSION = '3.2';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
