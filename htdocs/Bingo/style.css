@@ -1,6 +1,6 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "2.9";
+    --version: "3.0";
 
     /* Flashboard Call Balls Custom Configuration */
     --flashboard-ball-size: 27px;
@@ -126,7 +126,7 @@
 }
 
 /* ---- Cards / panels — beat-up dark wood surface ---- */
-[data-theme="divebar"] .last-five-card,
+[data-theme="divebar"] .last-six-card,
 [data-theme="divebar"] .number-picker,
 [data-theme="divebar"] .bingo-cards-section,
 [data-theme="divebar"] .bingo-card,
@@ -137,8 +137,8 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-/* ---- Cup ring stains on .last-five-card ---- */
-[data-theme="divebar"] .last-five-card::after {
+/* ---- Cup ring stains on .last-six-card ---- */
+[data-theme="divebar"] .last-six-card::after {
     content: "";
     position: absolute;
     width: 52px;
@@ -150,7 +150,7 @@
     pointer-events: none;
 }
 
-[data-theme="divebar"] .last-five-card::before {
+[data-theme="divebar"] .last-six-card::before {
     content: "";
     position: absolute;
     width: 38px;
@@ -162,8 +162,8 @@
     pointer-events: none;
 }
 
-/* Make .last-five-card relative so the ring pseudo-elements work */
-[data-theme="divebar"] .last-five-card {
+/* Make .last-six-card relative so the ring pseudo-elements work */
+[data-theme="divebar"] .last-six-card {
     position: relative;
     overflow: hidden;
 }
@@ -230,7 +230,7 @@
     box-shadow: 0 0 10px rgba(212, 160, 23, 0.2);
 }
 
-/* ---- Last-five badges ---- */
+/* ---- Last-six badges ---- */
 [data-theme="divebar"] .bingo-square-badge {
     background: #2a2118;
     border-color: #3d3328;
@@ -801,7 +801,7 @@ body {
     margin-bottom: 14px;
 }
 
-.last-five-card {
+.last-six-card {
     display: grid;
     gap: 14px;
     padding: 16px;
@@ -840,37 +840,12 @@ body {
     background: rgba(26, 115, 232, 0.08);
 }
 
-.last-five-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-
-.last-five-item {
-    min-width: 48px;
-    min-height: 48px;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-main);
-}
-
-.last-five-item.empty {
-    color: var(--text-subtle);
-    background: var(--card);
-}
-
 .total-count {
     font-size: 13px;
     color: var(--text-subtle);
 }
 
-/* ---- Footer row inside .last-five-card ---- */
+/* ---- Footer row inside .last-six-card ---- */
 /* Flex row: last-man status pinned left, called count pinned right */
 .stat-footer {
     display: flex;
@@ -913,13 +888,16 @@ body {
    Each badge mirrors a bingo card cell in layout
 ================================ */
 
-.last-five-list {
+.last-six-list {
     display: flex;
     flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
     gap: 6px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 2px;
+    width: 100%;
 }
 
 .bingo-square-badge {
@@ -950,6 +928,27 @@ body {
     box-shadow: 0 6px 16px rgba(229, 57, 53, 0.22);
     border-color: #e53935;
     background: rgba(229, 57, 53, 0.07);
+}
+
+/* Placeholder badge when no ball or empty slot */
+.bingo-square-badge.placeholder {
+    cursor: default;
+    border-style: dashed;
+    border-color: var(--border);
+    background: var(--card);
+    opacity: 0.55;
+}
+
+.bingo-square-badge.placeholder:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border);
+    background: var(--card);
+}
+
+.bingo-square-badge.placeholder .sq-num {
+    color: var(--text-subtle);
+    font-weight: 400;
 }
 
 /* Most recently called ball — solid primary highlight */

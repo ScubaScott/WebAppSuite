@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.0';
+const VERSION = '3.1';
 
 
 // ============================================================
@@ -22,7 +22,7 @@ let session = {
 
 const trackingGrid = document.getElementById("trackingGrid");
 const sessionWordBar = document.getElementById("sessionWordBar");
-const lastFiveList = document.getElementById("lastFiveList");
+const lastSixList = document.getElementById("lastSixList");
 const totalCalledSpan = document.getElementById("totalCalled");
 const lastManStatus = document.getElementById("lastManStatus");
 const callLogLink = document.getElementById("callLogLink");
@@ -137,9 +137,11 @@ function updateUI() {
     }
 
     // 2. Last 6 called balls list — displayed as bingo-square-badge tiles
-    if (lastFiveList) {
-        lastFiveList.innerHTML = "";
+    if (lastSixList) {
+        lastSixList.innerHTML = "";
         const recent = session.called.slice(-6).reverse();
+        
+        // Render called ball badges up to 6
         recent.forEach((n, pos) => {
             const letter = session.word[Math.floor((n - 1) / 15)] || "";
             const badge = document.createElement("span");
@@ -152,8 +154,17 @@ function updateUI() {
             badge.addEventListener("click", () => {
                 promptUncallNumber(n);
             });
-            lastFiveList.appendChild(badge);
+            lastSixList.appendChild(badge);
         });
+
+        // Fill remaining slots with placeholder badges to keep layout stable (total 6 slots)
+        const emptySlotsCount = 6 - recent.length;
+        for (let i = 0; i < emptySlotsCount; i++) {
+            const emptyBadge = document.createElement("span");
+            emptyBadge.className = "bingo-square-badge placeholder";
+            emptyBadge.innerHTML = `<span class="sq-letter">&nbsp;</span><span class="sq-num">&ndash;</span>`;
+            lastSixList.appendChild(emptyBadge);
+        }
     }
 
     // 3. Word bar headers
