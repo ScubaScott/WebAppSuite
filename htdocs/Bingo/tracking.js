@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.2';
+const VERSION = '3.3';
 
 
 // ============================================================
@@ -12,7 +12,7 @@ let session = {
     lastBall: null,
     cards: [],
     gameId: null,
-    inputMode: "letter",
+    inputMode: "number",
     doubleMode: false  // double bingo: requires 2 matching patterns on one card to win
 };
 
@@ -54,7 +54,7 @@ const doubleModeBadge = document.getElementById("doubleModeBadge");
 // CURRENT STATE
 // ============================================================
 
-let inputMode = "letter"; // "letter" | "number"
+let inputMode = "number"; // "letter" | "number"
 let activeLetterIdx = -1;       // BINGO column selected (-1 = none)
 let openMenuCardId = null;     // card with open menu
 let availableGames = [];       // loaded from server
@@ -90,7 +90,7 @@ function loadSession() {
     session.called = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall || null;
     session.gameId = obj.gameId || null;
-    inputMode = obj.inputMode || "letter";
+    inputMode = obj.inputMode || "number";
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     session.doubleMode = obj.doubleMode || false;
 
@@ -140,7 +140,7 @@ function updateUI() {
     if (lastSixList) {
         lastSixList.innerHTML = "";
         const recent = session.called.slice(-6).reverse();
-        
+
         // Render called ball badges up to 6
         recent.forEach((n, pos) => {
             const letter = session.word[Math.floor((n - 1) / 15)] || "";
@@ -1015,7 +1015,7 @@ function renderCard(card) {
         menu.addEventListener("click", (e) => e.stopPropagation());
 
         const menuItems = [
-            { action: "edit",   label: "\u270F\uFE0F  Edit card" },
+            { action: "edit", label: "\u270F\uFE0F  Edit card" },
             { action: "remove", label: "\uD83D\uDDD1  Remove card" }
         ];
 
@@ -1206,10 +1206,10 @@ if (themeDiveBarBtn) {
 // ============================================================
 
 const DEFAULT_FLASHBOARD_CONFIG = {
-    ballSize: 27,   // px
-    fontSize: 11,   // px
-    vGap: 3,        // px
-    hOffset: 6      // px
+    ballSize: 30,   // px
+    fontSize: 20,   // px
+    vGap: 0,        // px
+    hOffset: 10      // px
 };
 
 let flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG };
@@ -1368,7 +1368,7 @@ if (cardSizeSlider) {
 // INIT
 // ============================================================
 
-setInputMode(inputMode || "letter");
+setInputMode(inputMode || "number");
 applyDauberSettings();
 renderDauberPalette();
 updateUI();
