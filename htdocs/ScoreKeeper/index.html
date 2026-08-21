@@ -5,342 +5,347 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Score Keeper</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="description" content="ScoreKeeper — track scores, periods, and elapsed time for any sport.">
+    <!-- External stylesheet contains all application styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #e0424244 url("./media/bgimages/saber.png") no-repeat center top/cover;
-            background-attachment: fixed;
-            background-size: cover;
-            /* background-blend-mode: overlay; */
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-bottom: 12px;
-            color: #fef2f2;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        .back-link:hover {
-            text-decoration: underline;
-            color: #ffffff;
-        }
-
-        .interactive-box {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .history-table::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .history-table::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 10px;
-        }
-
-        .hidden {
-            display: none;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="scorekeeper.css">
 </head>
 
-<body class="bg-black text-white min-h-screen flex flex-col items-center justify-center p-4">
+<body style="margin:0;padding:0;">
 
-    <div class="w-full max-w-md flex flex-col items-center space-y-4">
-        <a href="../" class="back-link self-start">← Back to Apps</a>
-        <div
-            class="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full flex flex-col items-center space-y-6">
-            <div class="flex justify-between items-center w-full px-2">
-            <div class="flex flex-col items-center">
-                <div id="home-team-name"
-                    class="interactive-box bg-transparent text-red-500 text-center font-bold uppercase text-[10px] w-20 mb-1">
-                    Us</div>
-                <div id="score-home"
-                    class="interactive-box text-5xl font-bold text-red-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">
-                    0</div>
-            </div>
+    <!-- Main scoreboard content, vertically centered -->
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
+    <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+        <a href="../" class="back-link" style="align-self:flex-start;">← Back to Apps</a>
+        <div style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
 
-            <div class="flex flex-col items-center">
-                <div class="text-[10px] text-gray-500 font-bold uppercase mb-1">Period</div>
-                <div id="period-display"
-                    class="interactive-box text-3xl font-black text-white bg-gray-700 rounded-lg px-4 py-2 border-2 border-gray-600 hover:bg-gray-600 transition">
-                    P1</div>
-            </div>
-
-            <div class="flex flex-col items-center">
-                <div id="away-team-name"
-                    class="interactive-box bg-transparent text-blue-500 text-center font-bold uppercase text-[10px] w-20 mb-1">
-                    Them</div>
-                <div id="score-away"
-                    class="interactive-box text-5xl font-bold text-blue-500 bg-gray-800 rounded-xl px-6 py-3 shadow-inner border border-gray-700 hover:bg-gray-800 transition">
-                    0</div>
-            </div>
-        </div>
-
-        <!-- Team edit panels (hidden until name clicked) - full width and responsive -->
-        <div id="team-edit-panels"
-            class="w-full flex flex-col md:flex-row md:justify-between items-start px-2 space-y-3 md:space-y-0 md:space-x-4">
-            <div id="home-edit-panel"
-                class="hidden bg-gray-800/80 p-3 rounded-xl border border-red-900/30 w-full md:w-1/2">
-                <div class="flex items-center justify-between">
-                    <div class="text-xs text-red-300 font-bold uppercase mb-2">Edit Home Team</div>
-                    <div id="home-color-swatch" class="h-6 w-6 rounded border ml-2" style="background:#ef4444"></div>
+            <!-- Score row: Home | Period | Away -->
+            <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
+                <!-- Home team -->
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                    <div id="home-team-name"
+                        style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                        Us</div>
+                    <div id="score-home"
+                        class="interactive-box"
+                        style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
+                        0</div>
                 </div>
-                <input id="home-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white"
-                    placeholder="Team name">
-                <div class="flex items-center gap-2">
-                    <select id="home-color-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
-                        <option value="#ef4444">Red</option>
-                        <option value="#3b82f6">Blue</option>
-                        <option value="#10b981">Green</option>
-                        <option value="#f59e0b">Yellow</option>
-                        <option value="#ffffff">White</option>
-                        <option value="#000000">Black</option>
-                        <option value="#fb923c">Orange</option>
-                        <option value="#8b5cf6">Purple</option>
-                    </select>
+
+                <!-- Period -->
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                    <div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">Period</div>
+                    <div id="period-display"
+                        class="interactive-box"
+                        style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;transition:background 0.15s;">
+                        P1</div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <select id="home-bg-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
-                        <option value="saber.png">Saber</option>
-                        <option value="chill.png">Chill</option>
-                    </select>
-                </div>
-                <div class="flex gap-2">
-                    <button id="home-save-btn"
-                        class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">Save</button>
-                    <button onclick="hideHomeEditPanel()"
-                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
+
+                <!-- Away team -->
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                    <div id="away-team-name"
+                        style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                        Them</div>
+                    <div id="score-away"
+                        class="interactive-box"
+                        style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
+                        0</div>
                 </div>
             </div>
 
-            <div id="away-edit-panel"
-                class="hidden bg-gray-800/80 p-3 rounded-xl border border-blue-900/30 w-full md:w-1/2">
-                <div class="flex items-center justify-between">
-                    <div class="text-xs text-blue-300 font-bold uppercase mb-2">Edit Away Team</div>
-                    <div id="away-color-swatch" class="h-6 w-6 rounded border ml-2" style="background:#3b82f6"></div>
+            <!-- Timer displays -->
+            <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:24px;">
+                <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                    <div style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">Remaining</div>
+                    <div id="timer-display"
+                        class="interactive-box"
+                        style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;"
+                        title="Tap while stopped to choose a time limit">00:40:00.0</div>
                 </div>
-                <input id="away-name-input" class="w-full mb-2 mt-2 px-2 py-1 rounded bg-gray-900 text-white"
-                    placeholder="Team name">
-                <div class="flex items-center gap-2">
-                    <select id="away-color-select" class="flex-1 mb-2 px-2 py-1 rounded bg-gray-900 text-white">
-                        <option value="#3b82f6">Blue</option>
-                        <option value="#ef4444">Red</option>
-                        <option value="#10b981">Green</option>
-                        <option value="#f59e0b">Yellow</option>
-                        <option value="#ffffff">White</option>
-                        <option value="#000000">Black</option>
-                        <option value="#fb923c">Orange</option>
-                        <option value="#8b5cf6">Purple</option>
-                    </select>
-                </div>
-                <div class="flex gap-2">
-                    <button id="away-save-btn"
-                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Save</button>
-                    <button onclick="hideAwayEditPanel()"
-                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded">Cancel</button>
+
+                <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                    <div style="font-size:0.75rem;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">Elapsed</div>
+                    <div id="elapsed-time-display"
+                        class="interactive-box"
+                        style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">00:00:00.0</div>
                 </div>
             </div>
-        </div>
 
-        <div class="flex flex-col items-center w-full space-y-6">
-            <div class="flex flex-col items-center w-full">
-                <div class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Remaining</div>
-                <div id="timer-display"
-                    class="interactive-box text-6xl font-mono text-center tracking-tight font-extrabold text-white"
-                    title="Tap while stopped to choose a time limit">00:40:00.0</div>
+            <!-- Time limit selection panel (shown when timer tapped while stopped) -->
+            <div id="adjustment-panel"
+                style="display:none;width:100%;background:rgba(31,41,55,0.85);padding:16px;border-radius:14px;border:1px solid rgba(185,28,28,0.3);flex-direction:column;align-items:center;gap:12px;">
+                <div style="font-size:10px;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Select Time Limit</div>
+                <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;">
+                    <button onclick="setTimeLimitOption(12 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">12 min</button>
+                    <button onclick="setTimeLimitOption(20 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">20 min</button>
+                    <button onclick="setTimeLimitOption(35 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">35 min</button>
+                    <button onclick="setTimeLimitOption(40 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">40 min</button>
+                    <button onclick="chooseManualLimit()" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Manual</button>
+                </div>
             </div>
 
-            <div class="flex flex-col items-center w-full group">
-                <div
-                    class="text-xs text-gray-600 uppercase tracking-widest font-bold mb-1 group-hover:text-red-400 transition">
-                    Elapsed</div>
-                <div id="elapsed-time-display"
-                    class="interactive-box text-3xl font-mono text-center text-gray-400 transition">00:00:00.0</div>
+            <!-- Elapsed-time adjustment panel (shown while clock is running) -->
+            <div id="elapsed-adjust-panel"
+                style="display:none;width:100%;background:rgba(31,41,55,0.85);padding:16px;border-radius:14px;border:1px solid rgba(29,78,216,0.3);flex-direction:column;align-items:center;gap:12px;">
+                <div style="font-size:10px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Adjust elapsed time</div>
+                <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;">
+                    <button onclick="adjustElapsedMinutes(1)"  style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+1 min</button>
+                    <button onclick="adjustElapsedMinutes(-1)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-1 min</button>
+                    <button onclick="adjustElapsedMinutes(5)"  style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+5 min</button>
+                    <button onclick="adjustElapsedMinutes(-5)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-5 min</button>
+                    <button onclick="hideElapsedAdjustPanel()" style="background:#b91c1c;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Close</button>
+                </div>
+                <div style="font-size:10px;color:#6b7280;text-align:center;">Tap elapsed time during a running clock to correct early/late starts.</div>
             </div>
-        </div>
 
-        <div id="adjustment-panel"
-            class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-red-900/30 flex flex-col items-center space-y-3">
-            <div class="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Select Time Limit</div>
-            <div class="flex flex-wrap justify-center gap-2 w-full">
-                <button onclick="setTimeLimitOption(12 * 60 * 1000)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">12 min</button>
-                <button onclick="setTimeLimitOption(20 * 60 * 1000)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">20 min</button>
-                <button onclick="setTimeLimitOption(35 * 60 * 1000)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">35 min</button>
-                <button onclick="setTimeLimitOption(40 * 60 * 1000)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">40 min</button>
-                <button onclick="chooseManualLimit()"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">Manual</button>
+            <!-- Start / Pause / New Game buttons -->
+            <div style="width:100%;display:flex;justify-content:center;gap:8px;">
+                <button id="start-stop-btn"
+                    style="flex:1;background:#10b981;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                    onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">Start</button>
+                <button id="pause-btn"
+                    style="flex:1;background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                    class="hidden"
+                    onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">Pause</button>
+                <button id="reset-btn"
+                    style="flex:1;background:#374151;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                    onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">New Game</button>
             </div>
-        </div>
 
-        <div id="elapsed-adjust-panel"
-            class="hidden w-full bg-gray-800/80 p-4 rounded-xl border border-blue-900/30 flex flex-col items-center space-y-3">
-            <div class="text-[10px] text-blue-300 font-bold uppercase tracking-tighter">Adjust elapsed time</div>
-            <div class="flex flex-wrap justify-center gap-2 w-full">
-                <button onclick="adjustElapsedMinutes(1)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+1 min</button>
-                <button onclick="adjustElapsedMinutes(-1)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-1 min</button>
-                <button onclick="adjustElapsedMinutes(5)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">+5 min</button>
-                <button onclick="adjustElapsedMinutes(-5)"
-                    class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-xs font-bold">-5 min</button>
-                <button onclick="hideElapsedAdjustPanel()"
-                    class="bg-red-700 hover:bg-red-600 px-3 py-2 rounded text-xs font-bold">Close</button>
+            <!-- Score History table -->
+            <div style="width:100%;background:#1f2937;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:1px solid #374151;">
+                <div style="background:#374151;padding:8px 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#d1d5db;">Score History</div>
+                <div class="history-table" style="max-height:192px;overflow-y:auto;">
+                    <table style="width:100%;text-align:left;font-size:0.875rem;table-layout:fixed;">
+                        <colgroup>
+                            <col style="width:52%;">
+                            <col style="width:34%;">
+                            <col style="width:14%;">
+                        </colgroup>
+                        <thead style="background:#1f2937;position:sticky;top:0;z-index:2;">
+                            <tr style="color:#6b7280;font-size:10px;text-transform:uppercase;white-space:nowrap;">
+                                <th style="padding:8px 10px 8px 12px;">Team (Score)</th>
+                                <th style="padding:8px 6px;">Elapsed</th>
+                                <th style="padding:8px 12px 8px 6px;text-align:right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="text-[10px] text-gray-400 text-center">Tap elapsed time during a running clock to correct
-                early/late starts.</div>
-        </div>
 
-        <div class="w-full flex justify-center space-x-2">
-            <button id="start-stop-btn"
-                class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">Start</button>
-            <button id="pause-btn"
-                class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hidden">Pause</button>
-            <button id="reset-btn"
-                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition transform active:scale-95 shadow-lg">New Game</button>
-        </div>
-
-        <div class="w-full bg-gray-800 rounded-xl overflow-hidden shadow-xl border border-gray-700">
-            <div class="bg-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-300">Score History
+            <!-- Links -->
+            <div style="width:100%;text-align:center;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
+                <a href="ScoreKeeperActiveGames.html" style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active Games</a>
+                <a href="ScoreKeeperHelp.html" style="font-size:0.875rem;font-weight:700;color:#60a5fa;text-decoration:underline;">help!</a>
             </div>
-            <div class="max-h-48 overflow-y-auto history-table">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-800 sticky top-0">
-                        <tr class="text-gray-500 text-[10px] uppercase">
-                            <th class="px-4 py-2">Team (Score)</th>
-                            <th class="px-4 py-2">Elapsed</th>
-                            <th class="px-4 py-2 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-body" class="divide-y divide-gray-700"></tbody>
-                </table>
-            </div>
-        </div>
 
-        <div class="w-full text-center pt-4 space-y-2">
-            <a href="ScoreKeeperActiveGames.html"
-                class="text-sm font-bold text-emerald-400 hover:text-emerald-200 underline">View Active Games</a>
-            <a href="ScoreKeeperHelp.html"
-                class="text-sm font-bold text-blue-400 hover:text-blue-200 underline">help!</a>
-        </div>
+        </div><!-- end card -->
+    </div><!-- end max-width wrapper -->
+    </div><!-- end min-height centering wrapper -->
 
-    </div>
-
-    <div class="fixed right-4 bottom-4">
-        <button id="mute-btn"
-            class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition"
-            title="Mute / unmute sound">
-            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6"
-                fill="currentColor">
-                <path
-                    d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
+    <!-- Floating action buttons (fixed position, bottom corners) -->
+    <div style="position:fixed;right:16px;bottom:16px;">
+        <button id="mute-btn" class="fab" title="Mute / unmute sound">
+            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:24px;height:24px;" fill="currentColor">
+                <path d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
             </svg>
         </button>
     </div>
 
-    <div class="fixed left-4 bottom-4">
-        <button id="settings-btn"
-            class="w-12 h-12 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center shadow-lg hover:bg-gray-800 transition"
-            title="Timer Settings">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor">
-                <path
-                    d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+    <div style="position:fixed;left:16px;bottom:16px;">
+        <button id="settings-btn" class="fab" title="Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:24px;height:24px;" fill="currentColor">
+                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
             </svg>
         </button>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div
-            class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm flex flex-col space-y-4">
-            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-gray-400"
-                        fill="currentColor">
-                        <path
-                            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+    <!-- ================================================================
+         Settings Modal
+         Scrollable overlay panel with: Team Setup, Theme, Timer Settings.
+         ================================================================ -->
+    <div id="settings-modal" class="hidden">
+        <div class="settings-panel">
+
+            <!-- Sticky header -->
+            <div class="settings-header">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:20px;height:20px;color:#9ca3af;" fill="currentColor">
+                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
                     </svg>
-                    Timer Settings
+                    Settings
                 </h3>
-                <button id="close-settings-x"
-                    class="text-gray-400 hover:text-white text-2xl leading-none transition">&times;</button>
+                <button id="close-settings-x" class="settings-close-x">&times;</button>
             </div>
-            <div class="flex flex-col space-y-4">
-                <!-- Add Pause Button Setting -->
-                <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
-                    <div class="flex flex-col pr-2">
-                        <span class="text-sm font-semibold text-white">Add Pause Button</span>
-                        <span class="text-xs text-gray-400">Shows a dedicated button to pause the timer without
-                            advancing the period.</span>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input type="checkbox" id="setting-add-pause" class="sr-only peer">
-                        <div
-                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
+
+            <!-- Scrollable body -->
+            <div class="settings-body">
+
+                <!-- ── TEAM SETUP ─────────────────────────────────── -->
+                <div class="settings-section-label">Team Setup</div>
+                <div class="team-setup-grid">
+
+                    <!-- Home team card -->
+                    <div class="team-card">
+                        <div class="team-card-header">
+                            <span class="team-card-label">Home</span>
+                            <div id="home-color-swatch" class="team-color-swatch" style="background:#ef4444;"></div>
                         </div>
+                        <input id="home-name-input" class="team-name-input" placeholder="Team name" autocomplete="off">
+                        <select id="home-color-select" class="team-color-select">
+                            <option value="#ef4444">Red</option>
+                            <option value="#3b82f6">Blue</option>
+                            <option value="#10b981">Green</option>
+                            <option value="#f59e0b">Yellow</option>
+                            <option value="#fb923c">Orange</option>
+                            <option value="#8b5cf6">Purple</option>
+                            <option value="#ffffff">White</option>
+                            <option value="#000000">Black</option>
+                        </select>
+                    </div>
+
+                    <!-- Away team card -->
+                    <div class="team-card">
+                        <div class="team-card-header">
+                            <span class="team-card-label">Away</span>
+                            <div id="away-color-swatch" class="team-color-swatch" style="background:#3b82f6;"></div>
+                        </div>
+                        <input id="away-name-input" class="team-name-input" placeholder="Team name" autocomplete="off">
+                        <select id="away-color-select" class="team-color-select">
+                            <option value="#3b82f6">Blue</option>
+                            <option value="#ef4444">Red</option>
+                            <option value="#10b981">Green</option>
+                            <option value="#f59e0b">Yellow</option>
+                            <option value="#fb923c">Orange</option>
+                            <option value="#8b5cf6">Purple</option>
+                            <option value="#ffffff">White</option>
+                            <option value="#000000">Black</option>
+                        </select>
+                    </div>
+
+                </div><!-- end team-setup-grid -->
+
+                <!-- ── THEME ──────────────────────────────────────── -->
+                <div class="settings-section-label">Theme</div>
+                <div class="theme-grid" id="theme-grid">
+
+                    <!-- Theme: Saber Dark -->
+                    <div class="theme-card" id="theme-saber-dark" data-theme="saber-dark" onclick="applyTheme('saber-dark')">
+                        <div class="theme-preview" style="background-image:url('./media/bgimages/saber.png');"></div>
+                        <div class="theme-name">Saber Dark</div>
+                        <div class="theme-check">✓</div>
+                    </div>
+
+                    <!-- Theme: Saber Intense — saber bg with deep crimson accent -->
+                    <div class="theme-card" id="theme-saber-intense" data-theme="saber-intense" onclick="applyTheme('saber-intense')">
+                        <div class="theme-preview" style="background-image:url('./media/bgimages/saber.png');filter:saturate(1.6) brightness(0.75);"></div>
+                        <div class="theme-name">Saber Intense</div>
+                        <div class="theme-check">✓</div>
+                    </div>
+
+                    <!-- Theme: Chill Ice -->
+                    <div class="theme-card" id="theme-chill-ice" data-theme="chill-ice" onclick="applyTheme('chill-ice')">
+                        <div class="theme-preview" style="background-image:url('./media/bgimages/chill.png');"></div>
+                        <div class="theme-name">Chill Ice</div>
+                        <div class="theme-check">✓</div>
+                    </div>
+
+                    <!-- Theme: Chill Night — chill bg darkened for night play -->
+                    <div class="theme-card" id="theme-chill-night" data-theme="chill-night" onclick="applyTheme('chill-night')">
+                        <div class="theme-preview" style="background-image:url('./media/bgimages/chill.png');filter:hue-rotate(200deg) brightness(0.55) saturate(1.4);"></div>
+                        <div class="theme-name">Chill Night</div>
+                        <div class="theme-check">✓</div>
+                    </div>
+
+                </div><!-- end theme-grid -->
+
+                <!-- ── TIMER SETTINGS ─────────────────────────────── -->
+                <div class="settings-section-label">Timer Settings</div>
+
+                <!-- Add Pause Button toggle -->
+                <div class="settings-row">
+                    <div class="settings-row-text">
+                        <strong>Add Pause Button</strong>
+                        <span>Shows a dedicated button to pause the timer without advancing the period.</span>
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-add-pause">
+                        <div class="toggle-track"></div>
                     </label>
                 </div>
-                <!-- Pause on Score Setting -->
-                <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
-                    <div class="flex flex-col pr-2">
-                        <span class="text-sm font-semibold text-white">Pause on Score</span>
-                        <span class="text-xs text-gray-400">Automatically pauses the timer when a score is
-                            registered.</span>
+
+                <!-- Pause on Score toggle -->
+                <div class="settings-row">
+                    <div class="settings-row-text">
+                        <strong>Pause on Score</strong>
+                        <span>Automatically pauses the timer when a score is registered.</span>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input type="checkbox" id="setting-pause-on-score" class="sr-only peer">
-                        <div
-                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
-                        </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-pause-on-score">
+                        <div class="toggle-track"></div>
                     </label>
                 </div>
-                <!-- Log Pause/Resume Setting -->
-                <div class="flex items-center justify-between py-2 border-b border-gray-800 gap-4">
-                    <div class="flex flex-col pr-2">
-                        <span class="text-sm font-semibold text-white">Log Pause/Resume Times</span>
-                        <span class="text-xs text-gray-400">Logs pause and resume events in the history.</span>
+
+                <!-- Log Pause/Resume toggle -->
+                <div class="settings-row">
+                    <div class="settings-row-text">
+                        <strong>Log Pause/Resume Times</strong>
+                        <span>Logs pause and resume events in the history.</span>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input type="checkbox" id="setting-log-pause-resume" class="sr-only peer">
-                        <div
-                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
-                        </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-log-pause-resume">
+                        <div class="toggle-track"></div>
                     </label>
                 </div>
-                <!-- Log Period Start/Stop Setting -->
-                <div class="flex items-center justify-between py-2 gap-4">
-                    <div class="flex flex-col pr-2">
-                        <span class="text-sm font-semibold text-white">Log Period Start/Stop Times</span>
-                        <span class="text-xs text-gray-400">Logs local time when periods start and stop.</span>
+
+                <!-- Log Period Start/Stop toggle -->
+                <div class="settings-row">
+                    <div class="settings-row-text">
+                        <strong>Log Period Start/Stop Times</strong>
+                        <span>Logs local time when periods start and stop.</span>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input type="checkbox" id="setting-log-period-start-stop" class="sr-only peer">
-                        <div
-                            class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative">
-                        </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-log-period-start-stop">
+                        <div class="toggle-track"></div>
                     </label>
                 </div>
+
+                <!-- Score Splash Home toggle -->
+                <div class="settings-row">
+                    <div class="settings-row-text">
+                        <strong>Score Splash – Home</strong>
+                        <span>Celebration animation when the home team scores.</span>
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-splash-home">
+                        <div class="toggle-track"></div>
+                    </label>
+                </div>
+
+                <!-- Score Splash Away toggle -->
+                <div class="settings-row">
+                    <div class="settings-row-text">
+                        <strong>Score Splash – Away</strong>
+                        <span>Celebration animation when the away team scores.</span>
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-splash-away">
+                        <div class="toggle-track"></div>
+                    </label>
+                </div>
+
+            </div><!-- end settings-body -->
+
+            <!-- Sticky footer -->
+            <div class="settings-footer">
+                <button id="close-settings-btn" class="settings-done-btn">Done</button>
             </div>
-            <div class="pt-2">
-                <button id="close-settings-btn"
-                    class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition">Done</button>
-            </div>
-        </div>
-    </div>
+
+        </div><!-- end settings-panel -->
+    </div><!-- end settings-modal -->
     <audio id="whistle-sound" src="media/whistle.mp3" preload="auto"></audio>
 
     <script>
@@ -357,15 +362,11 @@
         const awayNameInput = document.getElementById('away-name-input');
         const homeColorSelect = document.getElementById('home-color-select');
         const awayColorSelect = document.getElementById('away-color-select');
-        const homeSaveBtn = document.getElementById('home-save-btn');
-        const awaySaveBtn = document.getElementById('away-save-btn');
         const homeColorSwatch = document.getElementById('home-color-swatch');
         const awayColorSwatch = document.getElementById('away-color-swatch');
         const periodDisplay = document.getElementById('period-display');
         const historyBody = document.getElementById('history-body');
         const adjustmentPanel = document.getElementById('adjustment-panel');
-        const homeEditPanel = document.getElementById('home-edit-panel');
-        const homeBgSelect = document.getElementById('home-bg-select');
         const elapsedAdjustPanel = document.getElementById('elapsed-adjust-panel');
         const muteBtn = document.getElementById('mute-btn');
         const muteIcon = document.getElementById('mute-icon');
@@ -376,6 +377,8 @@
         const settingPauseOnScore = document.getElementById('setting-pause-on-score');
         const settingLogPauseResume = document.getElementById('setting-log-pause-resume');
         const settingLogPeriodStartStop = document.getElementById('setting-log-period-start-stop');
+        const settingSplashHome = document.getElementById('setting-splash-home');
+        const settingSplashAway = document.getElementById('setting-splash-away');
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const closeSettingsX = document.getElementById('close-settings-x');
         const pauseBtn = document.getElementById('pause-btn');
@@ -402,8 +405,99 @@
         let isPaused = false;
         let logPauseResume = false;
         let logPeriodStartStop = true;
+        let splashOnHome = true;   // Show celebration splash when home team scores
+        let splashOnAway = true;   // Show celebration splash when away team scores
         let activeGameId = null;
         let activeGameStarted = false;
+        let selectedTheme = 'saber-dark'; // Active theme name persisted to localStorage
+
+        // Theme definitions: background image and body background-color fallback.
+        // Each theme maps to a bg image file and an accent color for the page overlay.
+        const THEMES = {
+            'saber-dark': {
+                image: 'saber.png',
+                bgColor: '#4a1010',
+                label: 'Saber Dark'
+            },
+            'saber-intense': {
+                image: 'saber.png',
+                bgColor: '#2d0a0a',
+                label: 'Saber Intense',
+                // CSS filter applied to the body background image via inline style
+                filter: 'saturate(1.6) brightness(0.75)'
+            },
+            'chill-ice': {
+                image: 'chill.png',
+                bgColor: '#b3d9e8',
+                label: 'Chill Ice'
+            },
+            'chill-night': {
+                image: 'chill.png',
+                bgColor: '#071522',
+                label: 'Chill Night',
+                filter: 'hue-rotate(200deg) brightness(0.55) saturate(1.4)'
+            }
+        };
+
+        // Apply a theme by name: update body background and mark the active card.
+        function applyTheme(themeName) {
+            const theme = THEMES[themeName] || THEMES['saber-dark'];
+            selectedTheme = themeName;
+            // Set body background image and fallback color, anchored to lower-right corner and fixed
+            document.body.style.backgroundImage = `url("media/bgimages/${theme.image}")`;
+            document.body.style.backgroundColor = theme.bgColor;
+            document.body.style.backgroundPosition = 'right bottom';
+            document.body.style.backgroundAttachment = 'fixed';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundSize = 'cover';
+
+            // Apply CSS filter to body if the theme specifies one (via a fixed background overlay)
+            if (theme.filter) {
+                document.body.dataset.themeFilter = theme.filter;
+                // Apply filter to a fixed full-viewport pseudo-overlay div
+                let overlay = document.getElementById('theme-filter-overlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'theme-filter-overlay';
+                    overlay.style.cssText = [
+                        'position:fixed', 'inset:0', 'z-index:-1',
+                        'pointer-events:none',
+                        `background:url("media/bgimages/${theme.image}") no-repeat right bottom / cover`,
+                        'background-attachment:fixed'
+                    ].join(';');
+                    document.body.appendChild(overlay);
+                } else {
+                    overlay.style.background = `url("media/bgimages/${theme.image}") no-repeat right bottom / cover`;
+                    overlay.style.backgroundAttachment = 'fixed';
+                }
+                overlay.style.filter = theme.filter;
+                // Hide main body bg so only overlay shows
+                document.body.style.backgroundImage = 'none';
+            } else {
+                // Remove overlay if no filter needed
+                const overlay = document.getElementById('theme-filter-overlay');
+                if (overlay) overlay.remove();
+                document.body.style.backgroundImage = `url("media/bgimages/${theme.image}")`;
+                document.body.style.backgroundPosition = 'right bottom';
+                document.body.style.backgroundAttachment = 'fixed';
+                document.body.style.backgroundRepeat = 'no-repeat';
+                document.body.style.backgroundSize = 'cover';
+            }
+            // Mark the active theme card in the settings grid
+            syncThemeCards();
+            saveState();
+        }
+
+        // Sync visual active state of theme cards with the current selectedTheme.
+        function syncThemeCards() {
+            document.querySelectorAll('.theme-card').forEach(card => {
+                if (card.dataset.theme === selectedTheme) {
+                    card.classList.add('theme-active');
+                } else {
+                    card.classList.remove('theme-active');
+                }
+            });
+        }
 
         const STORAGE_KEY = 'timerStateV7';
         const ACTIVE_GAMES_KEY = 'scoreKeeperActiveGamesV1';
@@ -567,10 +661,12 @@
                 startTime, accumulatedTime, timeLimit, isCountingUp,
                 running: timerRunning, homeScore, awayScore,
                 currentPeriod, scoreHistory, homeTeamName, awayTeamName,
-                homeTeamColor, awayTeamColor, homeBackgroundImage, muted,
+                homeTeamColor, awayTeamColor, muted,
                 addPauseButton, pauseOnScore, isPaused,
                 logPauseResume, logPeriodStartStop,
+                splashOnHome, splashOnAway,
                 activeGameId, activeGameStarted,
+                selectedTheme,
                 lastSavedAt: Date.now()
             };
             safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
@@ -601,7 +697,7 @@
         function getElapsedStamp() {
             const now = Date.now();
             let elapsed = accumulatedTime + (startTime ? now - startTime : 0);
-            return `P${currentPeriod} - ${formatTime(elapsed)}`;
+            return `P${currentPeriod}:${formatTime(elapsed)}`;
         }
 
         function formatLocalLabel(date) {
@@ -611,22 +707,16 @@
         function updateMuteButton() {
             if (muted) {
                 muteIcon.innerHTML = '<path d="M16.5 12c0 1.17-.51 2.22-1.32 2.94l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94s-.51-2.22-1.32-2.94l-1.42 1.42C15.97 10.58 16.5 11.74 16.5 12z"/><path d="M4.27 3L3 4.27l5 5V15h4l5 5 1.27-1.27L4.27 3zm6.73 12.73H9V8.27l4-4v11.45l-1 .01z"/>';
-                muteBtn.classList.add('bg-red-600');
-                muteBtn.classList.remove('bg-gray-900/90');
+                muteBtn.classList.add('fab-muted');
             } else {
                 muteIcon.innerHTML = '<path d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z"/>';
-                muteBtn.classList.add('bg-gray-900/90');
-                muteBtn.classList.remove('bg-red-600');
+                muteBtn.classList.remove('fab-muted');
             }
         }
 
-        function updateHomeEditBackground(image = homeBackgroundImage) {
-            if (homeEditPanel) {
-                homeEditPanel.style.backgroundImage = `url("media/bgimages/${image}")`;
-                homeEditPanel.style.backgroundSize = 'cover';
-                homeEditPanel.style.backgroundPosition = 'center';
-            }
-            document.body.style.backgroundImage = `url("media/bgimages/${image}")`;
+        function updateHomeEditBackground(image) {
+            // Update the page body background when theme/image changes.
+            // image parameter is kept for backward-compat but theme system is now used.
         }
 
         function playWhistle() {
@@ -646,7 +736,8 @@
             isCountingUp = ms <= 0;
             accumulatedTime = 0;
             startTime = null;
-            adjustmentPanel.classList.add('hidden');
+            // Hide the time limit picker after selection.
+            adjustmentPanel.style.display = 'none';
             if (timerRunning) stopTimer();
             updateTimer();
             saveState();
@@ -671,15 +762,17 @@
         }
 
         // Show or hide the elapsed-time adjustment panel while the timer is running.
-        // This is used for small corrections when the clock was started early or late.
+        // Used for small corrections when the clock was started early or late.
         function showElapsedAdjustPanel() {
-            elapsedAdjustPanel.classList.remove('hidden');
-            adjustmentPanel.classList.add('hidden');
+            elapsedAdjustPanel.style.display = 'flex';
+            adjustmentPanel.style.display = 'none';
         }
 
         function hideElapsedAdjustPanel() {
-            elapsedAdjustPanel.classList.add('hidden');
+            elapsedAdjustPanel.style.display = 'none';
         }
+        // Expose hideElapsedAdjustPanel globally so inline onclick can call it.
+        window.hideElapsedAdjustPanel = hideElapsedAdjustPanel;
 
         // Adjust the internal elapsed time by a positive or negative number of minutes.
         // Works during a running timer to correct early / late start behavior.
@@ -699,7 +792,11 @@
         };
 
         timerDisplay.addEventListener('click', () => {
-            if (!timerRunning) adjustmentPanel.classList.toggle('hidden');
+            // Toggle time-limit selection panel when tapped while stopped.
+            if (!timerRunning) {
+                const isShown = adjustmentPanel.style.display === 'flex';
+                adjustmentPanel.style.display = isShown ? 'none' : 'flex';
+            }
         });
 
         elapsedTimeDisplay.addEventListener('click', () => {
@@ -716,25 +813,29 @@
             historyBody.innerHTML = '';
             scoreHistory.forEach((entry, index) => {
                 const row = document.createElement('tr');
-                row.className = "hover:bg-gray-700/50 transition";
+                row.className = "history-row";
                 if (entry.type === 'event') {
                     row.innerHTML = `
-                        <td class="px-4 py-2 text-gray-300" colspan="2">${entry.text}</td>
-                        <td class="px-4 py-2 text-right">
-                            <button onclick="deleteScore(${index})" class="text-gray-500 hover:text-white transition">✕</button>
+                        <td style="padding:6px 6px 6px 12px;" colspan="2" class="history-event-cell" title="${entry.text}">${entry.text}</td>
+                        <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;">
+                            <button onclick="deleteScore(${index})" class="history-delete-btn" title="Remove entry">✕</button>
                         </td>
                     `;
                 } else {
                     const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
+                    // Compact format for legacy timestamps if any exist in stored state
+                    const displayTime = (entry.gameTime || '').replace(/^P(\d+)\s*-\s*/, 'P$1:');
                     row.innerHTML = `
-                        <td class="px-4 py-2 font-bold">
-                            <span class="inline-block h-3 w-3 rounded-full mr-2 align-middle" style="background: ${color}; border: 1px solid rgba(255,255,255,0.15)"></span>
-                            <span style="color: ${color};">${entry.teamName}</span>
-                            <span class="text-gray-300"> (${entry.currentScore})</span>
+                        <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
+                            <div class="history-team-cell" title="${entry.teamName} (${entry.currentScore})">
+                                <span class="history-dot" style="background:${color};"></span>
+                                <span class="history-team-name" style="color:${color};">${entry.teamName}</span>
+                                <span class="history-score-tag">(${entry.currentScore})</span>
+                            </div>
                         </td>
-                        <td class="px-4 py-2 text-gray-400 text-xs font-mono">${entry.gameTime}</td>
-                        <td class="px-4 py-2 text-right">
-                            <button onclick="deleteScore(${index})" class="text-gray-500 hover:text-white transition">✕</button>
+                        <td style="padding:6px 6px;vertical-align:middle;" class="history-time-cell" title="${displayTime}">${displayTime}</td>
+                        <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;">
+                            <button onclick="deleteScore(${index})" class="history-delete-btn" title="Remove entry">✕</button>
                         </td>
                     `;
                 }
@@ -755,20 +856,94 @@
             saveState();
         };
 
+        // Trigger a brief particle-burst celebration animation anchored to the score element.
+        // The animation lasts ~1 second and runs in a fixed overlay so it never shifts layout.
+        function triggerScoreSplash(teamId, color) {
+            const anchor = teamId === 'home' ? scoreHomeEl : scoreAwayEl;
+            const rect = anchor.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            // Container overlay positioned at the score element's center
+            const overlay = document.createElement('div');
+            overlay.className = 'score-splash-overlay';
+            overlay.style.left = cx + 'px';
+            overlay.style.top  = cy + 'px';
+            overlay.style.width  = '0';
+            overlay.style.height = '0';
+            document.body.appendChild(overlay);
+
+            // Expanding ring behind particles
+            const ring = document.createElement('div');
+            ring.className = 'score-splash-ring';
+            const ringSize = 80;
+            ring.style.cssText = [
+                `width:${ringSize}px`, `height:${ringSize}px`,
+                `left:0`, `top:0`,
+                `border: 3px solid ${color}`,
+                `opacity: 0.8`
+            ].join(';');
+            overlay.appendChild(ring);
+
+            // Particle burst: 10 particles spread in a full circle
+            const particleCount = 10;
+            const shapes = ['circle', 'star'];
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'score-splash-particle';
+                const angle = (360 / particleCount) * i;
+                const dist = 55 + Math.random() * 35;
+                const tx = Math.cos(angle * Math.PI / 180) * dist;
+                const ty = Math.sin(angle * Math.PI / 180) * dist;
+                const size = 7 + Math.random() * 7;
+                const delay = Math.random() * 0.15;
+                p.style.cssText = [
+                    `width:${size}px`, `height:${size}px`,
+                    `left:0`, `top:0`,
+                    `background:${color}`,
+                    `--tx:${tx}px`, `--ty:${ty}px`,
+                    `--rot:${Math.random() * 360}deg`,
+                    `animation-delay:${delay}s`,
+                    `box-shadow: 0 0 6px 2px ${color}55`
+                ].join(';');
+                overlay.appendChild(p);
+            }
+
+            // Floating score label that drifts upward and fades
+            const label = document.createElement('div');
+            label.className = 'score-splash-score-label';
+            label.textContent = '+1';
+            label.style.cssText = [
+                `color:${color}`,
+                `left:0`, `top:0`,
+                `white-space:nowrap`
+            ].join(';');
+            overlay.appendChild(label);
+
+            // Remove the overlay from the DOM after the animation completes
+            setTimeout(() => {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }, 1100);
+        }
+
         function addScore(teamId) {
             if (teamId === 'home') homeScore++; else awayScore++;
             scoreHomeEl.textContent = homeScore;
             scoreAwayEl.textContent = awayScore;
             const snapshot = `${homeScore}-${awayScore}`;
+            const teamColor = teamId === 'home' ? homeTeamColor : awayTeamColor;
             scoreHistory.push({
                 type: 'score',
                 teamId,
                 teamName: teamId === 'home' ? homeTeamName : awayTeamName,
                 currentScore: snapshot,
                 gameTime: getElapsedStamp(),
-                teamColor: teamId === 'home' ? homeTeamColor : awayTeamColor
+                teamColor
             });
             renderHistory();
+            // Trigger celebration splash if enabled for this team
+            if (teamId === 'home' && splashOnHome) triggerScoreSplash('home', teamColor);
+            if (teamId === 'away' && splashOnAway) triggerScoreSplash('away', teamColor);
             if (pauseOnScore && timerRunning) {
                 pauseTimer();
             } else {
@@ -791,11 +966,11 @@
 
         function updateTimerDisplayColor(remaining = null) {
             if (remaining === null || remaining > 120000) {
-                timerDisplay.classList.remove('text-red-500');
-                timerDisplay.classList.add('text-white');
+                // Normal: white text
+                timerDisplay.style.color = '#ffffff';
             } else {
-                timerDisplay.classList.remove('text-white');
-                timerDisplay.classList.add('text-red-500');
+                // Under 2 minutes: red warning text
+                timerDisplay.style.color = '#ef4444';
             }
         }
 
@@ -824,12 +999,12 @@
         function updateStartStopButton() {
             if (timerRunning) {
                 startStopBtn.textContent = 'Stop';
-                startStopBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
-                startStopBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                // Red background while running
+                startStopBtn.style.background = '#dc2626';
             } else {
                 startStopBtn.textContent = 'Start';
-                startStopBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                startStopBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                // Green background when stopped
+                startStopBtn.style.background = '#10b981';
             }
         }
 
@@ -853,7 +1028,7 @@
                     }
                 }
             }
-            adjustmentPanel.classList.add('hidden');
+            adjustmentPanel.style.display = 'none';
             timerInterval = setInterval(updateTimer, 100);
             timerRunning = true;
             updateStartStopButton();
@@ -922,16 +1097,61 @@
         }
 
         function openSettings() {
+            // Populate timer toggle states
             settingAddPause.checked = addPauseButton;
             settingPauseOnScore.checked = pauseOnScore;
             settingLogPauseResume.checked = logPauseResume;
             settingLogPeriodStartStop.checked = logPeriodStartStop;
+            if (settingSplashHome) settingSplashHome.checked = splashOnHome;
+            if (settingSplashAway) settingSplashAway.checked = splashOnAway;
+            // Populate team card inputs with current values
+            if (homeNameInput) homeNameInput.value = homeTeamName;
+            if (homeColorSelect) homeColorSelect.value = homeTeamColor;
+            if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
+            if (awayNameInput) awayNameInput.value = awayTeamName;
+            if (awayColorSelect) awayColorSelect.value = awayTeamColor;
+            if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
+            // Sync the active theme card highlight
+            syncThemeCards();
+            // Show the modal
             settingsModal.classList.remove('hidden');
         }
 
-        // Allow closing settings
+        // Apply team card values to the scoreboard and close the settings modal.
+        // Team changes take effect when Done (or X) is pressed.
+        function applyTeamSettings() {
+            // Home team
+            const newHomeName = homeNameInput ? homeNameInput.value.trim() : '';
+            const newHomeColor = homeColorSelect ? homeColorSelect.value : homeTeamColor;
+            if (newHomeName) homeTeamName = newHomeName;
+            homeTeamColor = newHomeColor || homeTeamColor;
+            homeNameEl.textContent = homeTeamName;
+            scoreHomeEl.textContent = homeScore;
+            homeNameEl.style.color = homeTeamColor;
+            scoreHomeEl.style.color = homeTeamColor;
+            if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
+            scoreHistory.forEach(e => { if (e.teamId === 'home') { e.teamName = homeTeamName; e.teamColor = homeTeamColor; } });
+
+            // Away team
+            const newAwayName = awayNameInput ? awayNameInput.value.trim() : '';
+            const newAwayColor = awayColorSelect ? awayColorSelect.value : awayTeamColor;
+            if (newAwayName) awayTeamName = newAwayName;
+            awayTeamColor = newAwayColor || awayTeamColor;
+            awayNameEl.textContent = awayTeamName;
+            scoreAwayEl.textContent = awayScore;
+            awayNameEl.style.color = awayTeamColor;
+            scoreAwayEl.style.color = awayTeamColor;
+            if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
+            scoreHistory.forEach(e => { if (e.teamId === 'away') { e.teamName = awayTeamName; e.teamColor = awayTeamColor; } });
+
+            renderHistory();
+        }
+
+        // Close the settings modal, applying any pending team changes first.
         function closeSettings() {
+            applyTeamSettings();
             settingsModal.classList.add('hidden');
+            saveState();
         }
 
         if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
@@ -967,6 +1187,20 @@
             });
         }
 
+        if (settingSplashHome) {
+            settingSplashHome.addEventListener('change', () => {
+                splashOnHome = settingSplashHome.checked;
+                saveState();
+            });
+        }
+
+        if (settingSplashAway) {
+            settingSplashAway.addEventListener('change', () => {
+                splashOnAway = settingSplashAway.checked;
+                saveState();
+            });
+        }
+
         periodDisplay.addEventListener('click', () => {
             if (!timerRunning) cyclePeriod();
         });
@@ -979,79 +1213,17 @@
             saveState();
         });
 
-        // Allow tapping team names to edit them while the clock is stopped
-        // Show edit panels instead of simple prompts so user can change name + color
-        function showHomeEditPanel() {
-            if (timerRunning) return;
-            homeNameInput.value = homeTeamName;
-            homeColorSelect.value = homeTeamColor;
-            if (homeBgSelect) homeBgSelect.value = homeBackgroundImage;
-            updateHomeEditBackground();
-            document.getElementById('home-edit-panel').classList.remove('hidden');
-            document.getElementById('away-edit-panel').classList.add('hidden');
-        }
-        function hideHomeEditPanel() { document.getElementById('home-edit-panel').classList.add('hidden'); }
-        function showAwayEditPanel() {
-            if (timerRunning) return;
-            awayNameInput.value = awayTeamName;
-            awayColorSelect.value = awayTeamColor;
-            document.getElementById('away-edit-panel').classList.remove('hidden');
-            document.getElementById('home-edit-panel').classList.add('hidden');
-        }
-        function hideAwayEditPanel() { document.getElementById('away-edit-panel').classList.add('hidden'); }
 
-        homeNameEl.addEventListener('click', showHomeEditPanel);
-        awayNameEl.addEventListener('click', showAwayEditPanel);
-
-        // Save handlers
-        homeSaveBtn.addEventListener('click', () => {
-            const newName = homeNameInput.value.trim();
-            const newColor = homeColorSelect.value;
-            const newBackground = homeBgSelect ? homeBgSelect.value : homeBackgroundImage;
-            if (newName) homeTeamName = newName;
-            homeTeamColor = newColor || homeTeamColor;
-            homeBackgroundImage = newBackground || homeBackgroundImage;
-            homeNameEl.textContent = homeTeamName;
-            scoreHomeEl.textContent = homeScore;
-            // apply color to visible elements
-            homeNameEl.style.color = homeTeamColor;
-            scoreHomeEl.style.color = homeTeamColor;
-            if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
-            updateHomeEditBackground();
-            // update all existing history entries for this team to use the new color and name
-            scoreHistory.forEach(e => { if (e.teamId === 'home') { e.teamName = homeTeamName; e.teamColor = homeTeamColor; } });
-            renderHistory();
-            saveState();
-            hideHomeEditPanel();
-        });
-
-        awaySaveBtn.addEventListener('click', () => {
-            const newName = awayNameInput.value.trim();
-            const newColor = awayColorSelect.value;
-            if (newName) awayTeamName = newName;
-            awayTeamColor = newColor || awayTeamColor;
-            awayNameEl.textContent = awayTeamName;
-            scoreAwayEl.textContent = awayScore;
-            awayNameEl.style.color = awayTeamColor;
-            scoreAwayEl.style.color = awayTeamColor;
-            if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
-            scoreHistory.forEach(e => { if (e.teamId === 'away') { e.teamName = awayTeamName; e.teamColor = awayTeamColor; } });
-            renderHistory();
-            saveState();
-            hideAwayEditPanel();
-        });
-
-        // Update swatches when user changes the select so they see the color immediately
+        // Live swatch preview: update swatch color as the user picks a different color.
         if (homeColorSelect && homeColorSwatch) {
-            homeColorSelect.addEventListener('change', () => homeColorSwatch.style.background = homeColorSelect.value);
-        }
-        if (homeBgSelect) {
-            homeBgSelect.addEventListener('change', () => {
-                updateHomeEditBackground(homeBgSelect.value || homeBackgroundImage);
+            homeColorSelect.addEventListener('change', () => {
+                homeColorSwatch.style.background = homeColorSelect.value;
             });
         }
         if (awayColorSelect && awayColorSwatch) {
-            awayColorSelect.addEventListener('change', () => awayColorSwatch.style.background = awayColorSelect.value);
+            awayColorSelect.addEventListener('change', () => {
+                awayColorSwatch.style.background = awayColorSelect.value;
+            });
         }
 
         // Publish the current game as "game over" so it remains on the active games
@@ -1118,7 +1290,7 @@
             renderHistory();
             updateTimer();
             updateStartStopButton();
-            adjustmentPanel.classList.add('hidden');
+            adjustmentPanel.style.display = 'none';
             if (pauseBtn) pauseBtn.disabled = true;
 
             // Persist the fresh state.
@@ -1145,13 +1317,15 @@
                 isPaused = !!saved.isPaused;
                 logPauseResume = !!saved.logPauseResume;
                 logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
+                // Default splash to true if not yet stored (first run after update)
+                splashOnHome = saved.splashOnHome !== undefined ? !!saved.splashOnHome : true;
+                splashOnAway = saved.splashOnAway !== undefined ? !!saved.splashOnAway : true;
                 activeGameStarted = !!saved.activeGameStarted;
                 activeGameId = activeGameStarted ? saved.activeGameId || null : null;
                 homeTeamName = saved.homeTeamName || saved.redTeamName || homeTeamName;
                 awayTeamName = saved.awayTeamName || saved.blueTeamName || awayTeamName;
                 homeTeamColor = saved.homeTeamColor || saved.redTeamColor || homeTeamColor;
                 awayTeamColor = saved.awayTeamColor || saved.blueTeamColor || awayTeamColor;
-                homeBackgroundImage = saved.homeBackgroundImage || 'saber.png';
                 scoreHistory = scoreHistory.map(entry => ({
                     ...entry,
                     type: entry.type || (entry.teamId ? 'score' : 'event')
@@ -1179,10 +1353,14 @@
                     updateStartStopButton();
                     updateTimer();
                 }
-                updateHomeEditBackground();
+                // Restore and apply saved theme (or default to saber-dark)
+                selectedTheme = saved.selectedTheme || 'saber-dark';
+                applyTheme(selectedTheme);
                 updateMuteButton();
                 updatePauseButtonVisibility();
             } else {
+                // No saved state: apply the default theme
+                applyTheme(selectedTheme);
                 updateTimer();
                 updateMuteButton();
                 updatePauseButtonVisibility();
@@ -1203,7 +1381,7 @@
         });
 
         // ScoreKeeper version identifier
-        const VERSION = '1.1';
+        const VERSION = '1.8';
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
 
@@ -1216,8 +1394,8 @@
     </script>
 
     <!-- Footer displaying application version -->
-    <footer class="text-center py-4 text-xs text-gray-400 opacity-75">
-        <p>Version <span id="appVersion">1.0</span></p>
+    <footer>
+        <p>Version <span id="appVersion">1.8</span></p>
     </footer>
 </body>
 

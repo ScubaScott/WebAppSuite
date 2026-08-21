@@ -1,0 +1,603 @@
+/* ============================================================
+   ScoreKeeper — scorekeeper.css
+   Version: 1.8
+   All visual styles for the ScoreKeeper application.
+   ============================================================ */
+
+/* ---- Design Tokens ---- */
+/* Theme CSS variables — overridden by JS when a theme is selected */
+:root {
+    --theme-bg-image:    url("./media/bgimages/saber.png");
+    --theme-bg-color:    #6b1a1a;
+    --theme-accent:      #ef4444;
+    --theme-accent-glow: rgba(239,68,68,0.35);
+}
+
+/* ---- Base Reset ---- */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ---- Body / Background ---- */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--theme-bg-color);
+    background-image: var(--theme-bg-image);
+    background-repeat: no-repeat;
+    background-position: right bottom;
+    background-size: cover;
+    background-attachment: fixed;
+    color: #fff;
+    min-height: 100vh;
+}
+
+/* ---- Back Link ---- */
+.back-link {
+    display: inline-block;
+    margin-bottom: 12px;
+    color: #fef2f2;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: color 0.15s;
+}
+.back-link:hover {
+    text-decoration: underline;
+    color: #ffffff;
+}
+
+/* ---- Interactive score / name boxes ---- */
+.interactive-box {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* ---- Score History Table & Delete Button ---- */
+.history-table {
+    width: 100%;
+}
+.history-table table {
+    width: 100%;
+    table-layout: fixed;
+}
+.history-table::-webkit-scrollbar {
+    width: 4px;
+}
+.history-table::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 10px;
+}
+
+.history-row {
+    border-bottom: 1px solid rgba(55, 65, 81, 0.7);
+    transition: background-color 0.15s ease;
+    white-space: nowrap;
+}
+.history-row:hover {
+    background-color: rgba(55, 65, 81, 0.45);
+}
+
+/* Single-line team score cell with auto-size clamp & text truncation */
+.history-team-cell {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: clamp(0.72rem, 2.5vw, 0.85rem);
+    font-weight: 700;
+}
+.history-dot {
+    flex-shrink: 0;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    border: 1px solid rgba(255,255,255,0.25);
+}
+.history-team-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex-shrink: 1;
+}
+.history-score-tag {
+    flex-shrink: 0;
+    color: #9ca3af;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+/* Compact elapsed time column */
+.history-time-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(0.68rem, 2.2vw, 0.78rem);
+    font-family: monospace;
+    color: #9ca3af;
+}
+
+/* Event log row cell */
+.history-event-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(0.72rem, 2.4vw, 0.82rem);
+    color: #d1d5db;
+}
+
+.history-delete-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #9ca3af;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+.history-delete-btn:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+.history-delete-btn:active {
+    transform: scale(0.92);
+}
+
+/* ---- Utility ---- */
+.hidden {
+    display: none !important;
+}
+
+/* ============================================================
+   Score Splash Animation
+   Particle burst overlay shown when a score is registered.
+   ============================================================ */
+@keyframes scoreSplashParticle {
+    0%   { transform: translate(-50%, -50%) scale(0.5) rotate(var(--rot)); opacity: 1; }
+    60%  { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.4) rotate(var(--rot)); opacity: 0; }
+}
+
+@keyframes scoreSplashRing {
+    0%   { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+}
+
+@keyframes scoreSplashScore {
+    0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+    50%  { transform: translate(-50%, calc(-50% - 30px)) scale(1.6); opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% - 60px)) scale(1); opacity: 0; }
+}
+
+.score-splash-overlay {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.score-splash-particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: scoreSplashParticle 0.9s ease-out forwards;
+}
+
+.score-splash-ring {
+    position: absolute;
+    border-radius: 50%;
+    animation: scoreSplashRing 0.6s ease-out forwards;
+}
+
+.score-splash-score-label {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: 2.5rem;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+    animation: scoreSplashScore 0.95s ease-out forwards;
+}
+
+/* ============================================================
+   Settings Modal
+   Full-viewport overlay with a scrollable inner panel.
+   Matches the scrollable behavior of the Bingo config page.
+   ============================================================ */
+
+/* Backdrop overlay */
+#settings-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 50;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 16px 16px 32px;
+    overflow-y: auto;   /* backdrop scrolls on very short viewports */
+}
+
+/* Inner panel wrapper */
+.settings-panel {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75);
+    width: 100%;
+    max-width: 400px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    /* Let the panel grow as tall as needed; backdrop handles overflow */
+}
+
+/* Sticky header */
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 14px;
+    border-bottom: 1px solid #1f2937;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    background: #111827;
+    border-radius: 20px 20px 0 0;
+    z-index: 1;
+}
+
+.settings-header h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Close X button */
+.settings-close-x {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s;
+    padding: 0 4px;
+}
+.settings-close-x:hover {
+    color: #fff;
+}
+
+/* Scrollable body */
+.settings-body {
+    padding: 0 24px;
+    flex: 1;
+}
+
+/* Section heading inside settings */
+.settings-section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6b7280;
+    padding: 18px 0 8px;
+}
+
+/* Individual toggle-style setting row */
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px solid #1f2937;
+}
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row-text {
+    display: flex;
+    flex-direction: column;
+    padding-right: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.settings-row-text strong {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+}
+.settings-row-text span {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+/* Toggle switch */
+.toggle-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.toggle-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.toggle-track {
+    width: 44px;
+    height: 24px;
+    background: #374151;
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.2s;
+}
+.toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #6b7280;
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+}
+.toggle-label input:checked + .toggle-track {
+    background: #10b981;
+}
+.toggle-label input:checked + .toggle-track::after {
+    transform: translateX(20px);
+    background: #fff;
+}
+
+/* Sticky footer with Done button */
+.settings-footer {
+    padding: 14px 24px 20px;
+    border-top: 1px solid #1f2937;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: #111827;
+    border-radius: 0 0 20px 20px;
+}
+.settings-done-btn {
+    width: 100%;
+    background: #1f2937;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.settings-done-btn:hover {
+    background: #374151;
+}
+
+/* ============================================================
+   Team Setup Cards (at top of settings modal)
+   Side-by-side home/away configuration cards.
+   ============================================================ */
+.team-setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding-bottom: 4px;
+}
+
+/* Individual team card */
+.team-card {
+    background: #1c2433;
+    border-radius: 14px;
+    padding: 12px 10px;
+    border: 1px solid #2d3748;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+/* Card top row: label + color swatch */
+.team-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.team-card-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+}
+
+/* Round color swatch preview */
+.team-color-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+/* Team name text input */
+.team-name-input {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    padding: 6px 8px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.team-name-input:focus {
+    border-color: #6b7280;
+}
+
+/* Color picker dropdown */
+.team-color-select {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    padding: 5px 8px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+}
+
+/* Apply / Save button inside team card */
+.team-apply-btn {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    transition: filter 0.15s;
+}
+.team-apply-btn:hover {
+    filter: brightness(1.2);
+}
+
+/* ============================================================
+   Theme Selection Grid (inside settings modal)
+   Click a theme card to apply background + accent color.
+   ============================================================ */
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding-bottom: 8px;
+}
+
+/* Theme preview card */
+.theme-card {
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s;
+    position: relative;
+}
+.theme-card:hover {
+    transform: scale(1.04);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+}
+/* Highlight the currently-active theme */
+.theme-card.theme-active {
+    border-color: #10b981;
+}
+
+/* Background image preview area */
+.theme-preview {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    background-size: cover;
+    background-position: center;
+}
+
+/* Theme name label at bottom of preview */
+.theme-name {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.60);
+    backdrop-filter: blur(4px);
+}
+
+/* Checkmark badge on active theme */
+.theme-check {
+    display: none;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #10b981;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.theme-card.theme-active .theme-check {
+    display: flex;
+}
+
+/* ============================================================
+   Floating Action Buttons (Mute & Settings)
+   ============================================================ */
+.fab {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(17, 17, 17, 0.90);
+    border: 1px solid #374151;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.fab:hover {
+    background: #1f2937;
+}
+/* Red background when muted */
+.fab.fab-muted {
+    background: #dc2626;
+    border-color: #991b1b;
+}
+
+/* ============================================================
+   Footer version tag
+   ============================================================ */
+footer {
+    text-align: center;
+    padding: 16px 0 8px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.35);
+}
