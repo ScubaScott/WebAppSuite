@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.4';
+const VERSION = '3.5';
 
 
 // ============================================================
@@ -13,7 +13,8 @@ let session = {
     cards: [],
     gameId: null,
     inputMode: "number",
-    doubleMode: false  // double bingo: requires 2 matching patterns on one card to win
+    doubleMode: false,  // double bingo: requires 2 matching patterns on one card to win
+    ballTarget: 0       // prize-window target ball count (0 = disabled)
 };
 
 // ============================================================
@@ -50,6 +51,11 @@ const numberPicker = document.getElementById("numberPicker");
 // Double mode badge in the game section
 const doubleModeBadge = document.getElementById("doubleModeBadge");
 
+// Ball target floating badge sub-elements
+const ftLabel = document.getElementById("ftLabel");
+const ftSub = document.getElementById("ftSub");
+const floatingTotalBadge = document.getElementById("floatingTotalBadge");
+
 // ============================================================
 // CURRENT STATE
 // ============================================================
@@ -74,7 +80,8 @@ function saveSession() {
         gameId: session.gameId,
         inputMode: inputMode,
         dauber: session.dauber,
-        doubleMode: session.doubleMode || false
+        doubleMode: session.doubleMode || false,
+        ballTarget: session.ballTarget || 0   // prize-window target ball count
     }));
 }
 
@@ -93,6 +100,7 @@ function loadSession() {
     inputMode = obj.inputMode || "number";
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     session.doubleMode = obj.doubleMode || false;
+    session.ballTarget = obj.ballTarget || 0;  // restore prize-window target (default off)
 
     // Migrate cards: ensure editMode, active, and serial fields exist
     session.cards = Array.isArray(obj.cards)
@@ -107,9 +115,38 @@ loadSession();
 // ============================================================
 
 function updateUI() {
-    // 1. Total called count and Last Man status
+    // 1. Total called count, floating badge, and Last Man status
+    const calledCount = session.called.length;
+    const target = session.ballTarget || 0;
+
     if (totalCalledSpan) {
-        totalCalledSpan.textContent = session.called.length;
+        totalCalledSpan.textContent = calledCount;
+    }
+
+    // Update floating badge for ball target mode
+    if (floatingTotalBadge) {
+        if (target > 0) {
+            // Target active: expand badge to pill, show called count + remaining sub-row
+            const remaining = Math.max(0, target - calledCount);
+            const isOver = calledCount >= target;
+
+            floatingTotalBadge.classList.add("target-active");
+            floatingTotalBadge.classList.toggle("target-reached", isOver);
+
+            if (ftLabel) ftLabel.textContent = `${calledCount} called`;
+            if (ftSub) {
+                ftSub.textContent = isOver ? "OVER" : `${remaining} left`;
+                ftSub.classList.remove("hidden");
+            }
+        } else {
+            // Target off: restore normal circle badge
+            floatingTotalBadge.classList.remove("target-active", "target-reached");
+            if (ftLabel) ftLabel.textContent = "Called";
+            if (ftSub) {
+                ftSub.textContent = "";
+                ftSub.classList.add("hidden");
+            }
+        }
     }
 
     // Last Man: Standing = at least one active card has no daubed squares.
@@ -636,8 +673,85 @@ function openGamePicker() {
     hdr.appendChild(closeBtn);
     panel.appendChild(hdr);
 
+    // ---- Ball Target stepper row ----
+    // Allows the caller to set a prize-window target ball count for special games.
+    // Setting to 0 disables the feature. Lives above the game list so it doesn't
+    // interfere with normal game selection.
+    const targetRow = document.createElement("div");
+    const isTargetSet = (session.ballTarget || 0) > 0;
+    targetRow.className = "ball-target-row" + (isTargetSet ? " target-is-set" : "");
+
+    const targetLabelWrap = document.createElement("div");
+    targetLabelWrap.className = "ball-target-label-wrap";
+    const targetLabel = document.createElement("span");
+    targetLabel.className = "ball-target-label";
+    targetLabel.textContent = "Ball Target";
+    const targetHint = document.createElement("span");
+    targetHint.className = "ball-target-hint";
+    targetHint.textContent = "Prize-window ball count  ·  0 = off";
+    targetLabelWrap.appendChild(targetLabel);
+    targetLabelWrap.appendChild(targetHint);
+
+    const targetControls = document.createElement("div");
+    targetControls.className = "ball-target-controls";
+
+    // Decrement button
+    const decBtn = document.createElement("button");
+    decBtn.className = "ball-target-step-btn";
+    decBtn.type = "button";
+    decBtn.textContent = "−";
+    decBtn.setAttribute("aria-label", "Decrease ball target");
+
+    // Number input (spinners hidden via CSS)
+    const targetInput = document.createElement("input");
+    targetInput.type = "number";
+    targetInput.className = "ball-target-input";
+    targetInput.min = "0";
+    targetInput.max = "75";
+    targetInput.step = "1";
+    targetInput.value = session.ballTarget || 0;
+    targetInput.setAttribute("aria-label", "Ball target count");
+
+    // Increment button
+    const incBtn = document.createElement("button");
+    incBtn.className = "ball-target-step-btn";
+    incBtn.type = "button";
+    incBtn.textContent = "+";
+    incBtn.setAttribute("aria-label", "Increase ball target");
+
+    // Update ballTarget on any input change and refresh the UI live
+    function applyTargetValue(val) {
+        const parsed = Math.max(0, Math.min(75, parseInt(val, 10) || 0));
+        session.ballTarget = parsed;
+        targetInput.value = parsed;
+        const active = parsed > 0;
+        targetRow.classList.toggle("target-is-set", active);
+        saveSession();
+        updateUI();  // refresh badge and card chips immediately (picker stays open)
+    }
+
+    targetInput.addEventListener("input", () => applyTargetValue(targetInput.value));
+    decBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        applyTargetValue((session.ballTarget || 0) - 1);
+    });
+    incBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        applyTargetValue((session.ballTarget || 0) + 1);
+    });
+    // Prevent stepper interactions from closing the picker
+    targetRow.addEventListener("click", (e) => e.stopPropagation());
+
+    targetControls.appendChild(decBtn);
+    targetControls.appendChild(targetInput);
+    targetControls.appendChild(incBtn);
+    targetRow.appendChild(targetLabelWrap);
+    targetRow.appendChild(targetControls);
+    panel.appendChild(targetRow);
+
     const list = document.createElement("div");
     list.className = "game-picker-list";
+
 
     // "+ New Game" item at the top of the picker list
     const newGameItem = document.createElement("div");
@@ -860,6 +974,30 @@ function checkCardWin(card, game) {
     return patterns.length > 0 ? patterns[0] : null;
 }
 
+// Returns the minimum number of additional balls needed for this card to win any pattern.
+// Considers only uncalled, non-FREE squares. Returns null if game/card unavailable.
+// Returns 0 if the card is already a winner (isTrueWin).
+function getBallsNeededToWin(card, game) {
+    if (!game || !card || card.active === false) return null;
+    if (isTrueWin(card, game)) return 0;
+
+    const calledSet = new Set(session.called);
+    let minNeeded = Infinity;
+
+    for (const pattern of game.patterns) {
+        // Count uncalled non-FREE squares in this pattern
+        const missing = pattern.cells.filter(cellIdx => {
+            if (cellIdx === FREE_CELL) return false;           // FREE always counts as filled
+            const val = card.squares[cellIdx];
+            if (val === null || val === "FREE") return false;  // empty slot — skip
+            return !calledSet.has(val);                         // uncalled = still needed
+        });
+        if (missing.length < minNeeded) minNeeded = missing.length;
+    }
+
+    return minNeeded === Infinity ? null : minNeeded;
+}
+
 // Returns a Set of cell indices that are the single missing (uncalled, non-FREE) square
 // needed to complete at least one pattern. Used to trigger the "one away" pulse effect.
 // Returns an empty Set if the card is already a winner or has no near-complete patterns.
@@ -1006,7 +1144,34 @@ function renderCard(card) {
     labelEl.textContent = card.label;
     titleWrap.appendChild(labelEl);
 
+    // ---- Ball target needs chip ----
+    // Show how many balls this card still needs to win, color-coded against the prize window.
+    // Only shown when ballTarget is active, card is active, and card has not already won.
+    const targetBalls = session.ballTarget || 0;
+    if (targetBalls > 0 && isActive && !isTrueWinner && game) {
+        const needed = getBallsNeededToWin(card, game);
+        if (needed !== null && needed > 0) {
+            const calledCount = session.called.length;
+            const remaining = Math.max(0, targetBalls - calledCount);
+            const isOver = calledCount >= targetBalls;
+
+            // Determine chip urgency class
+            let chipClass = "achievable";
+            if (isOver) {
+                chipClass = "impossible";  // target already blown — consolation prize territory
+            } else if (needed > remaining) {
+                chipClass = "late";        // can't win big prize within remaining window
+            }
+
+            const chip = document.createElement("span");
+            chip.className = `card-needs-chip ${chipClass}`;
+            chip.textContent = `needs ${needed}`;
+            titleWrap.appendChild(chip);
+        }
+    }
+
     header.appendChild(titleWrap);
+
 
     // ---- Dropdown menu (Edit and Remove only) ----
     if (isMenuOpen) {

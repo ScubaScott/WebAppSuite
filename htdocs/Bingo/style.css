@@ -1,6 +1,6 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "3.1";
+    --version: "3.2";
 
     /* Flashboard Call Balls Custom Configuration */
     --flashboard-ball-size: 27px;
@@ -420,8 +420,11 @@
     justify-content: center;
     box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
     user-select: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* Smooth transitions for size, color, and border changes when target mode activates */
+    transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.25s ease, height 0.25s ease,
+        border-radius 0.25s ease, border-color 0.25s ease, padding 0.25s ease;
     cursor: default;
+    padding: 4px;
 }
 
 .floating-total-badge:hover {
@@ -2520,4 +2523,210 @@ body {
     padding: 16px 8px;
     font-size: 0.75rem;
     color: var(--text-subtle, #5f6368);
+}
+
+/* ================================================================
+   BALL TARGET FEATURE
+   When a ball target is set, the floating badge expands to show
+   the called count and the remaining balls in the prize window.
+   Each bingo card gets a chip showing how many balls it needs to win.
+================================================================ */
+
+/* Badge expands to a pill when target mode is active */
+.floating-total-badge.target-active {
+    width: auto;
+    min-width: 58px;
+    height: auto;
+    border-radius: 18px;
+    padding: 7px 13px;
+}
+
+/* Target has been reached or exceeded — full red state */
+.floating-total-badge.target-reached {
+    border-color: #e53935;
+    box-shadow: 0 2px 14px rgba(229, 57, 53, 0.28);
+}
+
+.floating-total-badge.target-reached .ft-num {
+    color: #e53935;
+}
+
+.floating-total-badge.target-reached .ft-sub {
+    color: #e53935;
+}
+
+/* Secondary sub-row label displayed below the main count */
+.floating-total-badge .ft-sub {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-subtle);
+    line-height: 1;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+/* ---- Card needs chip ---- */
+
+/* Base chip — shown in the card header when ball target is active */
+.card-needs-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Achievable: still within the prize window — green */
+.card-needs-chip.achievable {
+    background: rgba(67, 160, 71, 0.14);
+    color: #2e7d32;
+    border-color: rgba(67, 160, 71, 0.3);
+}
+
+/* Late: needs more balls than the remaining prize window — orange/amber */
+.card-needs-chip.late {
+    background: rgba(251, 140, 0, 0.14);
+    color: #e65100;
+    border-color: rgba(251, 140, 0, 0.32);
+}
+
+/* Impossible: target already reached/exceeded — red */
+.card-needs-chip.impossible {
+    background: rgba(229, 57, 53, 0.12);
+    color: #c62828;
+    border-color: rgba(229, 57, 53, 0.28);
+}
+
+/* ---- Ball Target stepper row inside the game picker panel ---- */
+
+.ball-target-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.ball-target-label-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ball-target-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.ball-target-hint {
+    font-size: 11px;
+    color: var(--text-subtle);
+}
+
+.ball-target-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Stepper +/- buttons */
+.ball-target-step-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-main);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s ease, border-color 0.13s ease;
+    flex-shrink: 0;
+}
+
+.ball-target-step-btn:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
+
+/* Number input in the stepper */
+.ball-target-input {
+    width: 52px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 6px;
+    outline: none;
+    /* Remove default number input spinners */
+    -moz-appearance: textfield;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ball-target-input::-webkit-inner-spin-button,
+.ball-target-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.ball-target-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.18);
+}
+
+/* Active target state — highlight the label row in green */
+.ball-target-row.target-is-set .ball-target-label {
+    color: var(--primary);
+}
+
+/* ================================================================
+   BALL TARGET — DIVE BAR THEME OVERRIDES
+================================================================ */
+
+/* Dive bar target-reached: use the amber/warm red palette */
+[data-theme="divebar"] .floating-total-badge.target-reached {
+    border-color: #d4241a;
+    box-shadow: 0 4px 18px rgba(212, 36, 26, 0.35);
+}
+
+[data-theme="divebar"] .floating-total-badge.target-reached .ft-num,
+[data-theme="divebar"] .floating-total-badge.target-reached .ft-sub {
+    color: #ff6b6b;
+}
+
+[data-theme="divebar"] .card-needs-chip.achievable {
+    background: rgba(67, 160, 71, 0.18);
+    color: #81c784;
+    border-color: rgba(67, 160, 71, 0.35);
+}
+
+[data-theme="divebar"] .card-needs-chip.late {
+    background: rgba(251, 140, 0, 0.18);
+    color: #ffb74d;
+    border-color: rgba(251, 140, 0, 0.35);
+}
+
+[data-theme="divebar"] .card-needs-chip.impossible {
+    background: rgba(229, 57, 53, 0.18);
+    color: #ff6b6b;
+    border-color: rgba(229, 57, 53, 0.35);
 }

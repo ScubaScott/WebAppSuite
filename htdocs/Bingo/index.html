@@ -99,9 +99,12 @@
          FLOATING TOTAL CALLED COUNTER (fixed, bottom-right)
     ================================================ -->
     <div class="floating-total-wrap">
+        <!-- floating-total-badge: circle shows called count; expands to pill when ball target is active -->
         <div class="floating-total-badge" id="floatingTotalBadge" title="Total Numbers Called">
-            <span class="ft-label">Called</span>
+            <span class="ft-label" id="ftLabel">Called</span>
             <span class="ft-num" id="totalCalled">0</span>
+            <!-- ft-sub: hidden by default; shows remaining / OVER when ball target is set -->
+            <span class="ft-sub hidden" id="ftSub"></span>
         </div>
     </div>
 
@@ -246,12 +249,12 @@
     </div>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">3.4</span></p>
+        <p>Version <span id="appVersion">3.5</span></p>
     </footer>
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '3.4';
+        const INDEX_VERSION = '3.5';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
