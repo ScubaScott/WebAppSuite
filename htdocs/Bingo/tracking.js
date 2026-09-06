@@ -128,7 +128,7 @@ function updateUI() {
         if (target > 0) {
             // Target active: expand badge to pill, show called count + remaining sub-row
             const remaining = Math.max(0, target - calledCount);
-            const isOver = calledCount >= target;
+            const isOver = calledCount > target;
 
             floatingTotalBadge.classList.add("target-active");
             floatingTotalBadge.classList.toggle("target-reached", isOver);
