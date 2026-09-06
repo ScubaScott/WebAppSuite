@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.3';
+const VERSION = '3.4';
 
 
 // ============================================================

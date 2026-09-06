@@ -1,6 +1,6 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "3.0";
+    --version: "3.1";
 
     /* Flashboard Call Balls Custom Configuration */
     --flashboard-ball-size: 27px;
@@ -1525,10 +1525,79 @@ body {
     margin-bottom: 16px;
 }
 
+/* Header styling for combined Game Mode & Cards tile */
+.combined-tile-header {
+    gap: 12px;
+}
+
+/* Interactive game selector trigger inside the combined tile header */
+.game-selector-trigger {
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 6px 10px;
+    margin: -6px -10px;
+    transition: background 0.15s ease;
+    user-select: none;
+    min-width: 0;
+}
+
+.game-selector-trigger:hover,
+.game-selector-trigger:focus-visible {
+    background: var(--surface);
+    outline: none;
+}
+
+[data-theme="divebar"] .game-selector-trigger:hover,
+[data-theme="divebar"] .game-selector-trigger:focus-visible {
+    background: rgba(212, 160, 23, 0.08);
+}
+
 .cards-header-actions {
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+/* Bottom action container for + Add Card under cards */
+.cards-bottom-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.add-card-bottom-btn {
+    width: 100%;
+    max-width: 260px;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.add-card-bottom-btn:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+}
+
+[data-theme="divebar"] .add-card-bottom-btn {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .add-card-bottom-btn:hover {
+    background: rgba(212, 160, 23, 0.14);
+    border-color: #d4a017;
+    color: #f5d9c8;
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.25);
 }
 
 /* Column count driven by --card-view-cols (set by JS Card Size slider) */

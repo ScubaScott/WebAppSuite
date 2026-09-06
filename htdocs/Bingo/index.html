@@ -44,36 +44,38 @@
         <!-- BY NUMBER tracking grid (existing) -->
         <section id="trackingGrid" class="tracking-grid hidden" aria-label="Bingo numbers"></section>
 
-        <!-- Game Selection -->
-        <section id="gameSection" class="game-section" style="cursor: pointer;" title="Tap to select game mode">
-            <div class="game-section-header">
-                <div class="game-info">
-                    <span class="stat-label">Game Mode</span>
-                    <div class="game-name-row">
-                        <span id="selectedGameName" class="selected-game-name">— None selected —</span>
-                        <!-- doubleModeBadge: shown when double mode is active -->
-                        <span id="doubleModeBadge" class="double-mode-badge hidden">Double</span>
+        <!-- Combined Game Mode and Bingo Cards Section -->
+        <section id="bingoCardsSection" class="bingo-cards-section" aria-label="Game Mode and Bingo Cards">
+            <!-- Header: Game Mode selector on left, Clear Cards button on right -->
+            <div class="bingo-cards-header combined-tile-header">
+                <div id="gameSection" class="game-selector-trigger" role="button" tabindex="0" title="Tap to select game mode" aria-label="Select Game Mode">
+                    <div class="game-info">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="stat-label">Game Mode</span>
+                            <span class="lastman-status standing hidden" id="lastManStatus">Last man: Standing</span>
+                        </div>
+                        <div class="game-name-row">
+                            <span id="selectedGameName" class="selected-game-name">— None selected —</span>
+                            <!-- doubleModeBadge: shown when double mode is active -->
+                            <span id="doubleModeBadge" class="double-mode-badge hidden">Double</span>
+                        </div>
                     </div>
                 </div>
-                <button id="clearCardsBtn" class="link-button game-clear-btn" type="button"
-                    title="Reset all called numbers">Clear All Balls</button>
-            </div>
-        </section>
-
-        <!-- Bingo Cards -->
-        <section id="bingoCardsSection" class="bingo-cards-section" aria-label="Bingo cards">
-            <div class="bingo-cards-header">
-                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                    <span class="stat-label">Bingo Cards</span>
-                    <span class="lastman-status standing hidden" id="lastManStatus">Last man: Standing</span>
-                </div>
                 <div class="cards-header-actions">
-                    <button id="addCardBtn" class="link-button" type="button">+ Add Card</button>
+                    <button id="clearCardsBtn" class="link-button game-clear-btn" type="button"
+                        title="Clear all called numbers">Clear Cards</button>
                 </div>
             </div>
+
+            <!-- Cards List: contains cards or empty placeholder -->
             <div id="bingoCardsList" class="bingo-cards-list">
                 <!-- Cards will be rendered here -->
                 <p class="bingo-cards-placeholder">No bingo cards added yet.</p>
+            </div>
+
+            <!-- Footer: Add Card button at the bottom of the tile under cards -->
+            <div class="cards-bottom-actions">
+                <button id="addCardBtn" class="btn secondary-btn add-card-bottom-btn" type="button">+ Add Card</button>
             </div>
         </section>
     </main>
@@ -244,12 +246,12 @@
     </div>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">3.2</span></p>
+        <p>Version <span id="appVersion">3.4</span></p>
     </footer>
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '3.2';
+        const INDEX_VERSION = '3.4';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
