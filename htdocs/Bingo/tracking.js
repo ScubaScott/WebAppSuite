@@ -133,7 +133,7 @@ function updateUI() {
             floatingTotalBadge.classList.add("target-active");
             floatingTotalBadge.classList.toggle("target-reached", isOver);
 
-            if (ftLabel) ftLabel.textContent = `${calledCount} called`;
+            // ftLabel stays as "Called" — only the sub-row changes
             if (ftSub) {
                 ftSub.textContent = isOver ? "OVER" : `${remaining} left`;
                 ftSub.classList.remove("hidden");
