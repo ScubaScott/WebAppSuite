@@ -14,12 +14,10 @@
 
 
     <!-- PWA / Home screen -->
-    <!--
     <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#3d2210" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Scuba's App Suite" />
-    -->
 
     <link rel="icon" type="image/png" href="./media/scuba.png">
     <link rel="icon" type="image/png" sizes="192x192" href="./media/scuba.png">
@@ -338,17 +336,24 @@
 
     <script>
         // Main application suite version identifier
-        const VERSION = '1.0';
+        const VERSION = '1.1';
         document.getElementById('footerVersion').textContent = VERSION;
+
+        // Register the service worker for PWA offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(err => {
+                console.warn('SW registration failed:', err);
+            });
+        }
 
         document.getElementById('forceRefreshBtn').addEventListener('click', async function () {
             const statusEl = document.getElementById('refreshStatus');
             const btn = this;
             btn.disabled = true;
-            statusEl.textContent = 'Clearing cache & updating Service Workers...';
+            statusEl.textContent = 'Clearing cache & stopping service workers...';
 
             try {
-                // 1. Unregister all service workers
+                // 1. Unregister all service workers so stale fetch handlers are removed
                 if ('serviceWorker' in navigator) {
                     const registrations = await navigator.serviceWorker.getRegistrations();
                     for (const registration of registrations) {
@@ -356,26 +361,26 @@
                     }
                 }
 
-                // 2. Delete all CacheStorage caches
+                // 2. Delete every CacheStorage cache (CSS, JS, HTML — all stale copies)
                 if ('caches' in window) {
                     const keys = await caches.keys();
                     await Promise.all(keys.map(key => caches.delete(key)));
                 }
 
-                statusEl.textContent = 'Cache cleared! Reloading latest code...';
+                statusEl.textContent = 'Cache cleared! Loading latest version...';
 
-                // 3. Perform hard reload with cache-busting timestamp
+                // 3. Hard reload with a cache-busting query string.
+                // The new service worker re-registers automatically on the next page load
+                // (via the registration script above), replacing the old stale worker.
                 setTimeout(() => {
-                    const baseUrl = window.location.origin + window.location.pathname;
-                    window.location.href = baseUrl + '?v=' + Date.now();
-                }, 500);
+                    const base = window.location.origin + window.location.pathname;
+                    window.location.href = base + '?bust=' + Date.now();
+                }, 600);
 
             } catch (err) {
                 console.error('Refresh error:', err);
-                statusEl.textContent = 'Refreshing page...';
-                setTimeout(() => {
-                    window.location.reload(true);
-                }, 500);
+                statusEl.textContent = 'Falling back to hard reload...';
+                setTimeout(() => window.location.reload(true), 600);
             }
         });
     </script>
