@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.5';
+const VERSION = '3.6';
 
 
 // ============================================================
@@ -1155,12 +1155,15 @@ function renderCard(card) {
             const remaining = Math.max(0, targetBalls - calledCount);
             const isOver = calledCount >= targetBalls;
 
-            // Determine chip urgency class
+            // Determine chip urgency class:
+            // - achievable (green): needed < remaining (still within prize window with balls to spare)
+            // - warning (yellow): needed === remaining (must hit every remaining ball to win prize)
+            // - impossible (red): needed > remaining or target exceeded (cannot win big prize)
             let chipClass = "achievable";
-            if (isOver) {
-                chipClass = "impossible";  // target already blown — consolation prize territory
-            } else if (needed > remaining) {
-                chipClass = "late";        // can't win big prize within remaining window
+            if (isOver || needed > remaining) {
+                chipClass = "impossible";
+            } else if (needed === remaining) {
+                chipClass = "warning";
             }
 
             const chip = document.createElement("span");

@@ -2584,21 +2584,28 @@ body {
     transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-/* Achievable: still within the prize window — green */
+/* Achievable: still within the prize window with balls to spare — green */
 .card-needs-chip.achievable {
     background: rgba(67, 160, 71, 0.14);
     color: #2e7d32;
     border-color: rgba(67, 160, 71, 0.3);
 }
 
-/* Late: needs more balls than the remaining prize window — orange/amber */
+/* Warning: needed equals remaining balls; must hit every number — yellow */
+.card-needs-chip.warning {
+    background: rgba(245, 158, 11, 0.18);
+    color: #b45309;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* Late: legacy fallback for amber urgency */
 .card-needs-chip.late {
     background: rgba(251, 140, 0, 0.14);
     color: #e65100;
     border-color: rgba(251, 140, 0, 0.32);
 }
 
-/* Impossible: target already reached/exceeded — red */
+/* Impossible: target exceeded or needed exceeds remaining balls — red */
 .card-needs-chip.impossible {
     background: rgba(229, 57, 53, 0.12);
     color: #c62828;
@@ -2717,6 +2724,12 @@ body {
     background: rgba(67, 160, 71, 0.18);
     color: #81c784;
     border-color: rgba(67, 160, 71, 0.35);
+}
+
+[data-theme="divebar"] .card-needs-chip.warning {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.45);
 }
 
 [data-theme="divebar"] .card-needs-chip.late {
