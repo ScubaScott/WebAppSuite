@@ -12,431 +12,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <style>
-        :root {
-            --harley-orange: #ff6600;
-            --harley-orange-hover: #ff8533;
-            --harley-black: #0c0c0e;
-            --harley-gray-dark: #121214;
-            --harley-gray-light: #1c1c1f;
-            --harley-border: rgba(255, 102, 0, 0.25);
-            --harley-text-primary: #f5f5f7;
-            --harley-text-secondary: #8a8a93;
-            --font-display: 'Montserrat', sans-serif;
-            --font-sans: 'Inter', sans-serif;
-        }
-
-        body {
-            margin: 0;
-            background: var(--harley-black);
-            color: var(--harley-text-primary);
-            font-family: var(--font-sans);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 2rem 1rem;
-            box-sizing: border-box;
-        }
-
-        .app {
-            width: 100%;
-            max-width: 600px;
-            background: var(--harley-gray-dark);
-            border: 1px solid var(--harley-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-            box-sizing: border-box;
-        }
-
-        h1 {
-            text-align: center;
-            color: var(--harley-orange);
-            font-family: var(--font-display);
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-top: 0;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 0 10px rgba(255, 102, 0, 0.2);
-            font-size: 1.75rem;
-        }
-
-        .subtitle {
-            text-align: center;
-            font-size: 0.85rem;
-            color: var(--harley-text-secondary);
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        label {
-            display: block;
-            margin-top: 1.2rem;
-            margin-bottom: 0.4rem;
-            color: var(--harley-orange);
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 0.8rem;
-            background: #000;
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 6px;
-            font-size: 1.15rem;
-            font-family: monospace;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--harley-orange);
-            box-shadow: 0 0 8px rgba(255, 102, 0, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Buttons styling */
-        button {
-            padding: 0.7rem 1.2rem;
-            border-radius: 6px;
-            border: none;
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--harley-orange) 0%, #e65c00 100%);
-            color: #000;
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--harley-orange-hover) 0%, var(--harley-orange) 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.25);
-        }
-
-        .btn-secondary {
-            background: var(--harley-gray-light);
-            color: var(--harley-text-primary);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 102, 0, 0.35);
-            transform: translateY(-1px);
-        }
-
-        .btn-active {
-            background: var(--harley-orange) !important;
-            color: #000 !important;
-            border-color: var(--harley-orange) !important;
-            box-shadow: 0 0 10px rgba(255, 102, 0, 0.3);
-        }
-
-        /* Layout grids */
-        .upload-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-
-        .adjust-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .adjust-buttons button {
-            flex: 1;
-            min-width: 110px;
-        }
-
-        .crop-confirm-row {
-            display: none;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-            animation: slideDown 0.25s ease-out;
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .crop-confirm-row button {
-            flex: 1;
-        }
-
-        /* Canvas HUD wrapper */
-        .canvas-container {
-            position: relative;
-            width: 100%;
-            margin-top: 1rem;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--harley-border);
-            background: #000;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-        }
-
-        #vinCanvas {
-            display: block;
-            width: 100%;
-            height: auto;
-            cursor: crosshair;
-        }
-
-        .canvas-overlay {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            right: 12px;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.85);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 102, 0, 0.4);
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--harley-text-primary);
-            text-align: center;
-            pointer-events: none; /* Make click-through to allow dragging underneath */
-            transition: opacity 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .hint {
-            margin-top: 0.5rem;
-            font-size: 0.8rem;
-            color: var(--harley-text-secondary);
-            line-height: 1.4;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.4rem;
-        }
-
-        /* Candidates list styling */
-        .candidates-title {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--harley-text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.6rem;
-            margin-top: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .candidate-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .candidate-btn {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            text-align: left;
-            font-family: monospace;
-            font-size: 1.05rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            border-radius: 6px;
-            background: var(--harley-gray-light);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: var(--harley-text-primary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .candidate-btn:hover {
-            background: rgba(255, 102, 0, 0.06);
-            border-color: rgba(255, 102, 0, 0.4);
-            transform: translateX(2px);
-        }
-
-        .no-candidates {
-            padding: 1.2rem;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 6px;
-            border: 1px dashed rgba(255, 255, 255, 0.1);
-            color: var(--harley-text-secondary);
-            font-size: 0.85rem;
-            text-align: center;
-            line-height: 1.4;
-        }
-
-        .status {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: var(--harley-orange);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .status:empty {
-            display: none;
-        }
-
-        /* Decoder Specs Card styling */
-        .decode-result {
-            display: none;
-            margin-top: 1.5rem;
-        }
-
-        .decode-error {
-            background: rgba(255, 69, 58, 0.08);
-            border: 1px solid rgba(255, 69, 58, 0.25);
-            padding: 0.9rem 1.2rem;
-            border-radius: 6px;
-            color: #ff453a;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 500;
-        }
-
-        .spec-card {
-            background: var(--harley-gray-light);
-            border-radius: 8px;
-            border: 1px solid var(--harley-border);
-            overflow: hidden;
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .spec-header {
-            background: rgba(255, 102, 0, 0.08);
-            padding: 0.9rem 1.2rem;
-            border-bottom: 1px solid var(--harley-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .spec-header h3 {
-            margin: 0;
-            color: var(--harley-orange);
-            font-family: var(--font-display);
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-weight: 700;
-        }
-
-        .spec-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1px;
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        @media (max-width: 480px) {
-            .spec-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .spec-item {
-            background: var(--harley-gray-light);
-            padding: 0.9rem 1.2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
-        }
-
-        .spec-label {
-            font-size: 0.72rem;
-            color: var(--harley-text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-weight: 600;
-        }
-
-        .spec-value {
-            font-size: 0.95rem;
-            color: var(--harley-text-primary);
-            font-weight: 700;
-        }
-
-        /* Badges */
-        .badge {
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.2rem;
-        }
-
-        .badge-success {
-            background: rgba(52, 199, 89, 0.12);
-            color: #30d158;
-            border: 1px solid rgba(52, 199, 89, 0.25);
-        }
-
-        .badge-danger {
-            background: rgba(255, 69, 58, 0.12);
-            color: #ff453a;
-            border: 1px solid rgba(255, 69, 58, 0.25);
-        }
-
-        .badge-warning {
-            background: rgba(255, 159, 10, 0.12);
-            color: #ff9f0a;
-            border: 1px solid rgba(255, 159, 10, 0.25);
-        }
-
-        .badge-neutral {
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--harley-text-secondary);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-    </style>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -449,50 +26,102 @@
             <input id="vinInput" type="text" maxlength="40" placeholder="TYPE 17-DIGIT VIN OR SCAN PHOTO">
         </div>
 
-        <div class="upload-buttons">
-            <button id="cameraBtn" class="btn-primary">📷 Scan with Camera</button>
-            <button id="galleryBtn" class="btn-secondary">🖼 Choose from Gallery</button>
-        </div>
+        <!-- Collapsible Scan VIN section -->
+        <button id="scanSectionToggle" class="scan-section-toggle" type="button" aria-expanded="false" aria-controls="scanSectionContent">
+            <span>📷 Scan VIN (Camera / OCR)</span>
+            <span class="scan-toggle-icon" id="scanToggleIcon">▼</span>
+        </button>
 
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
-        <input type="file" id="galleryInput" accept="image/*" style="display:none">
-
-        <!-- Image Adjustments and States -->
-        <div class="adjust-buttons">
-            <button id="rotateLeftBtn" class="btn-secondary">⟲ Rotate L</button>
-            <button id="rotateRightBtn" class="btn-secondary">⟳ Rotate R</button>
-            <button id="cropToggleBtn" class="btn-secondary">✂ Crop Mode</button>
-            <button id="resetImageBtn" class="btn-secondary" style="display:none;">⎌ Reset Photo</button>
-        </div>
-
-        <div id="cropConfirmRow" class="crop-confirm-row">
-            <button id="applyCropBtn" class="btn-primary">✔️ Apply Crop</button>
-            <button id="cancelCropBtn" class="btn-secondary">❌ Clear Selection</button>
-        </div>
-
-        <div class="hint">
-            <span>Tight crops around the VIN line increase recognition speed and bypass visual noise.</span>
-        </div>
-
-        <div class="canvas-container">
-            <canvas id="vinCanvas" width="480" height="320"></canvas>
-            <div id="canvasOverlay" class="canvas-overlay">
-                <span id="canvasOverlayText">No image loaded. Capture or select a photo above.</span>
+        <div id="scanSectionContent" class="scan-collapsible-content">
+            <div class="upload-buttons">
+                <button id="cameraBtn" class="btn-primary">📷 Scan with Camera</button>
+                <button id="galleryBtn" class="btn-secondary">🖼 Choose from Gallery</button>
             </div>
+
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+            <input type="file" id="galleryInput" accept="image/*" style="display:none">
+
+            <!-- Image Adjustments and States -->
+            <div class="adjust-buttons">
+                <button id="rotateLeftBtn" class="btn-secondary">⟲ Rotate L</button>
+                <button id="rotateRightBtn" class="btn-secondary">⟳ Rotate R</button>
+                <button id="cropToggleBtn" class="btn-secondary">✂ Crop Mode</button>
+                <button id="resetImageBtn" class="btn-secondary" style="display:none;">⎌ Reset Photo</button>
+            </div>
+
+            <div id="cropConfirmRow" class="crop-confirm-row">
+                <button id="applyCropBtn" class="btn-primary">✔️ Apply Crop</button>
+                <button id="cancelCropBtn" class="btn-secondary">❌ Clear Selection</button>
+            </div>
+
+            <div class="hint">
+                <span>Tight crops around the VIN line increase recognition speed and bypass visual noise.</span>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="vinCanvas" width="480" height="320"></canvas>
+                <div id="canvasOverlay" class="canvas-overlay">
+                    <span id="canvasOverlayText">No image loaded. Capture or select a photo above.</span>
+                </div>
+            </div>
+
+            <button id="processImageBtn" class="btn-primary" style="width:100%; margin-top:1.2rem; padding:0.85rem; font-size:1rem;">⚡ Analyze Image with OCR</button>
+
+            <div class="status" id="status"></div>
+
+            <div id="ocrList"></div>
         </div>
 
-        <button id="processImageBtn" class="btn-primary" style="width:100%; margin-top:1.2rem; padding:0.85rem; font-size:1rem;">⚡ Analyze Image with OCR</button>
-
-        <div class="status" id="status"></div>
-
-        <div id="ocrList"></div>
-
-        <div id="decodeResult" class="decode-result"></div>
+        <!-- Dedicated Results Section (Expanded and always visible by default) -->
+        <section class="results-section" id="resultsSection" aria-labelledby="resultsHeading">
+            <button type="button" id="resultsToggleBtn" class="results-section-header" aria-expanded="true" aria-controls="resultsContent">
+                <span id="resultsHeading">📊 Decoded Results</span>
+                <span class="results-toggle-icon" id="resultsToggleIcon">▲</span>
+            </button>
+            <div id="resultsContent" class="results-section-content">
+                <div id="decodeResult" class="decode-result">
+                    <div class="decode-empty-state" id="decodeEmptyPrompt">
+                        <strong>NO VIN ENTERED</strong>
+                        <span>Enter or scan a 17-digit (1981–Present), 9-digit AMF (1970–1980), or 8–10 digit Vintage (1930–1969) Harley VIN to view decoded specifications.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Footer displaying application version -->
-        <footer class="app-footer" style="text-align:center; padding:16px 8px; font-size:0.75rem; color:var(--harley-text-secondary); opacity:0.8;">
-            <p>Version <span id="appVersion">1.0</span></p>
+        <footer class="app-footer">
+            <p>Version <span id="appVersion">1.3</span></p>
         </footer>
+    </div>
+
+    <!-- Floating Gear Settings Button (Positioned in Lower Left Corner) -->
+    <button id="settingsBtn" class="settings-gear-btn" type="button" title="Open Settings" aria-label="Open Settings" onclick="openSettingsModal()">
+        <svg viewBox="0 0 24 24">
+            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+        </svg>
+    </button>
+
+    <!-- Settings Modal -->
+    <div id="settingsModalOverlay" class="settings-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+        <div class="settings-modal">
+            <div class="settings-modal-header">
+                <h2 id="settingsModalTitle">Settings</h2>
+                <button id="closeSettingsBtn" class="settings-close-btn" type="button" aria-label="Close Settings" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="settings-group">
+                <div class="settings-group-title">Color Theme</div>
+                <div class="theme-options">
+                    <button type="button" class="theme-option-btn selected" id="themeOptHd" data-theme="hd" onclick="applyTheme('hd')">
+                        <div class="theme-preview-box theme-preview-hd">HARLEY</div>
+                        <span>HD (Default)</span>
+                    </button>
+                    <button type="button" class="theme-option-btn" id="themeOptLight" data-theme="light" onclick="applyTheme('light')">
+                        <div class="theme-preview-box theme-preview-light">LIGHT</div>
+                        <span>Light</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Tesseract.js engine scripts -->
@@ -500,7 +129,117 @@
 
     <script>
         // Application version identifier
-        const VERSION = '1.0';
+        const VERSION = '1.4';
+
+        // Settings modal functions
+        function openSettingsModal() {
+            const modal = document.getElementById("settingsModalOverlay");
+            if (modal) {
+                modal.classList.add("active");
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeSettingsModal() {
+            const modal = document.getElementById("settingsModalOverlay");
+            if (modal) {
+                modal.classList.remove("active");
+                modal.style.display = "none";
+            }
+        }
+
+        // Collapsible Scan VIN section elements
+        const scanSectionToggle = document.getElementById("scanSectionToggle");
+        const scanSectionContent = document.getElementById("scanSectionContent");
+
+        // Toggle collapsible Scan VIN section
+        if (scanSectionToggle && scanSectionContent) {
+            scanSectionToggle.addEventListener("click", () => {
+                const isCurrentlyOpen = scanSectionContent.classList.contains("open");
+                if (isCurrentlyOpen) {
+                    scanSectionContent.classList.remove("open");
+                    scanSectionToggle.setAttribute("aria-expanded", "false");
+                } else {
+                    scanSectionContent.classList.add("open");
+                    scanSectionToggle.setAttribute("aria-expanded", "true");
+                    // Re-draw canvas when section is revealed
+                    if (typeof drawImage === "function") {
+                        drawImage();
+                    }
+                }
+            });
+        }
+
+        // Results section toggle elements
+        const resultsToggleBtn = document.getElementById("resultsToggleBtn");
+        const resultsContent = document.getElementById("resultsContent");
+        const resultsToggleIcon = document.getElementById("resultsToggleIcon");
+
+        // Toggle Results section collapse/expand
+        if (resultsToggleBtn && resultsContent && resultsToggleIcon) {
+            resultsToggleBtn.addEventListener("click", () => {
+                const isCollapsed = resultsContent.classList.contains("collapsed");
+                if (isCollapsed) {
+                    resultsContent.classList.remove("collapsed");
+                    resultsToggleBtn.setAttribute("aria-expanded", "true");
+                    resultsToggleIcon.textContent = "▲";
+                } else {
+                    resultsContent.classList.add("collapsed");
+                    resultsToggleBtn.setAttribute("aria-expanded", "false");
+                    resultsToggleIcon.textContent = "▼";
+                }
+            });
+        }
+
+        // Settings modal and theme management elements
+        const settingsBtn = document.getElementById("settingsBtn");
+        const settingsModalOverlay = document.getElementById("settingsModalOverlay");
+        const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+        const themeOptHd = document.getElementById("themeOptHd");
+        const themeOptLight = document.getElementById("themeOptLight");
+        const appVersionEl = document.getElementById("appVersion");
+
+        // Sync rendered version display
+        if (appVersionEl) {
+            appVersionEl.textContent = VERSION;
+        }
+
+        function applyTheme(themeName) {
+            if (themeName === "light") {
+                document.documentElement.setAttribute("data-theme", "light");
+                if (themeOptLight) themeOptLight.classList.add("selected");
+                if (themeOptHd) themeOptHd.classList.remove("selected");
+            } else {
+                document.documentElement.removeAttribute("data-theme");
+                if (themeOptHd) themeOptHd.classList.add("selected");
+                if (themeOptLight) themeOptLight.classList.remove("selected");
+            }
+            try {
+                localStorage.setItem("hdev_theme", themeName);
+            } catch (err) {
+                // Ignore storage restrictions if running in private mode
+            }
+            // Re-draw canvas placeholder when theme changes to match background
+            if (typeof drawImage === "function") {
+                drawImage();
+            }
+        }
+
+        // Initialize active theme from localStorage or default to 'hd'
+        let savedTheme = "hd";
+        try {
+            savedTheme = localStorage.getItem("hdev_theme") || "hd";
+        } catch (e) {}
+        applyTheme(savedTheme);
+
+        // Modal overlay outside-click listener
+        if (settingsModalOverlay) {
+            settingsModalOverlay.addEventListener("click", (e) => {
+                if (e.target === settingsModalOverlay) {
+                    closeSettingsModal();
+                }
+            });
+        }
 
         const vinInput = document.getElementById("vinInput");
         const statusEl = document.getElementById("status");
@@ -618,11 +357,18 @@
             canvas.height = 320;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw dark background grid pattern
-            ctx.fillStyle = "#0c0c0e";
+            // Determine theme mode for placeholder graphics
+            const isLight = document.documentElement.getAttribute("data-theme") === "light";
+            const bgColor = isLight ? "#f0f2f5" : "#0c0c0e";
+            const gridColor = isLight ? "rgba(0, 0, 0, 0.05)" : "rgba(255, 102, 0, 0.04)";
+            const titleColor = isLight ? "rgba(0, 0, 0, 0.6)" : "rgba(255, 255, 255, 0.5)";
+            const subtitleColor = isLight ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.25)";
+
+            // Draw background grid pattern
+            ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.strokeStyle = "rgba(255, 102, 0, 0.04)";
+            ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
             const gridSize = 20;
             for (let x = 0; x < canvas.width; x += gridSize) {
@@ -639,7 +385,7 @@
             }
 
             // Draw scanning target graphic
-            ctx.strokeStyle = "rgba(255, 102, 0, 0.2)";
+            ctx.strokeStyle = "rgba(255, 102, 0, 0.3)";
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(canvas.width / 2, canvas.height / 2 - 15, 30, 0, Math.PI * 2);
@@ -651,12 +397,12 @@
             ctx.fill();
 
             // Text prompts
-            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.fillStyle = titleColor;
             ctx.font = "600 13px 'Inter', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("CAMERA / GALLERY SCANNED VIEW", canvas.width / 2, canvas.height / 2 + 40);
             
-            ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+            ctx.fillStyle = subtitleColor;
             ctx.font = "400 11px 'Inter', sans-serif";
             ctx.fillText("Load a photo and orient/crop it for clean OCR recognition", canvas.width / 2, canvas.height / 2 + 60);
         }
@@ -1206,11 +952,19 @@
         }
 
         // --- Spec Sheet Decoder ---
+        // Progressive decoding: starts at 3 chars for Modern era.
+        // Each new character unlocks the next decoded field.
+        // AMF (9-digit) and Vintage (8-10 digit) formats are also matched early.
         function decodeVin(vin) {
             // Sanitize input whitespace and convert to upper case
             vin = vin.toUpperCase().replace(/\s+/g, "");
             if (vin.length === 0) {
-                decodeResult.style.display = "none";
+                decodeResult.innerHTML = `
+                    <div class="decode-empty-state" id="decodeEmptyPrompt">
+                        <strong>NO VIN ENTERED</strong>
+                        <span>Enter or scan a 17-digit (1981–Present), 9-digit AMF (1970–1980), or 8–10 digit Vintage (1930–1969) Harley VIN to view decoded specifications.</span>
+                    </div>
+                `;
                 return;
             }
 
