@@ -5,12 +5,15 @@
     <meta charset="UTF-8">
     <title>Harley VIN Decoder & OCR Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Scan and decode Harley-Davidson 17-digit Vehicle Identification Numbers using your camera, with real-time specification breakdown and check digit checksum validation.">
+    <meta name="description"
+        content="Scan and decode Harley-Davidson 17-digit Vehicle Identification Numbers using your camera, with real-time specification breakdown and check digit checksum validation.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
@@ -27,7 +30,8 @@
         </div>
 
         <!-- Collapsible Scan VIN section -->
-        <button id="scanSectionToggle" class="scan-section-toggle" type="button" aria-expanded="false" aria-controls="scanSectionContent">
+        <button id="scanSectionToggle" class="scan-section-toggle" type="button" aria-expanded="false"
+            aria-controls="scanSectionContent">
             <span>📷 Scan VIN (Camera / OCR)</span>
             <span class="scan-toggle-icon" id="scanToggleIcon">▼</span>
         </button>
@@ -65,7 +69,9 @@
                 </div>
             </div>
 
-            <button id="processImageBtn" class="btn-primary" style="width:100%; margin-top:1.2rem; padding:0.85rem; font-size:1rem;">⚡ Analyze Image with OCR</button>
+            <button id="processImageBtn" class="btn-primary"
+                style="width:100%; margin-top:1.2rem; padding:0.85rem; font-size:1rem;">⚡ Analyze Image with
+                OCR</button>
 
             <div class="status" id="status"></div>
 
@@ -74,7 +80,8 @@
 
         <!-- Dedicated Results Section (Expanded and always visible by default) -->
         <section class="results-section" id="resultsSection" aria-labelledby="resultsHeading">
-            <button type="button" id="resultsToggleBtn" class="results-section-header" aria-expanded="true" aria-controls="resultsContent">
+            <button type="button" id="resultsToggleBtn" class="results-section-header" aria-expanded="true"
+                aria-controls="resultsContent">
                 <span id="resultsHeading">📊 Decoded Results</span>
                 <span class="results-toggle-icon" id="resultsToggleIcon">▲</span>
             </button>
@@ -82,7 +89,8 @@
                 <div id="decodeResult" class="decode-result">
                     <div class="decode-empty-state" id="decodeEmptyPrompt">
                         <strong>NO VIN ENTERED</strong>
-                        <span>Enter or scan a 17-digit (1981–Present), 9-digit AMF (1970–1980), or 8–10 digit Vintage (1930–1969) Harley VIN to view decoded specifications.</span>
+                        <span>Enter or scan a 17-digit (1981–Present), 9-digit AMF (1970–1980), or 8–10 digit Vintage
+                            (1930–1969) Harley VIN to view decoded specifications.</span>
                     </div>
                 </div>
             </div>
@@ -90,32 +98,38 @@
 
         <!-- Footer displaying application version -->
         <footer class="app-footer">
-            <p>Version <span id="appVersion">1.3</span></p>
+            <p>Version <span id="appVersion">1.6</span></p>
         </footer>
     </div>
 
     <!-- Floating Gear Settings Button (Positioned in Lower Left Corner) -->
-    <button id="settingsBtn" class="settings-gear-btn" type="button" title="Open Settings" aria-label="Open Settings" onclick="openSettingsModal()">
+    <button id="settingsBtn" class="settings-gear-btn" type="button" title="Open Settings" aria-label="Open Settings"
+        onclick="openSettingsModal()">
         <svg viewBox="0 0 24 24">
-            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            <path
+                d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
         </svg>
     </button>
 
     <!-- Settings Modal -->
-    <div id="settingsModalOverlay" class="settings-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div id="settingsModalOverlay" class="settings-modal-overlay" role="dialog" aria-modal="true"
+        aria-labelledby="settingsModalTitle">
         <div class="settings-modal">
             <div class="settings-modal-header">
                 <h2 id="settingsModalTitle">Settings</h2>
-                <button id="closeSettingsBtn" class="settings-close-btn" type="button" aria-label="Close Settings" onclick="closeSettingsModal()">&times;</button>
+                <button id="closeSettingsBtn" class="settings-close-btn" type="button" aria-label="Close Settings"
+                    onclick="closeSettingsModal()">&times;</button>
             </div>
             <div class="settings-group">
                 <div class="settings-group-title">Color Theme</div>
                 <div class="theme-options">
-                    <button type="button" class="theme-option-btn selected" id="themeOptHd" data-theme="hd" onclick="applyTheme('hd')">
+                    <button type="button" class="theme-option-btn selected" id="themeOptHd" data-theme="hd"
+                        onclick="applyTheme('hd')">
                         <div class="theme-preview-box theme-preview-hd">HARLEY</div>
                         <span>HD (Default)</span>
                     </button>
-                    <button type="button" class="theme-option-btn" id="themeOptLight" data-theme="light" onclick="applyTheme('light')">
+                    <button type="button" class="theme-option-btn" id="themeOptLight" data-theme="light"
+                        onclick="applyTheme('light')">
                         <div class="theme-preview-box theme-preview-light">LIGHT</div>
                         <span>Light</span>
                     </button>
@@ -125,11 +139,12 @@
     </div>
 
     <!-- Tesseract.js engine scripts -->
-    <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js" onerror="window.tesseractLoadFailed = true;"></script>
+    <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"
+        onerror="window.tesseractLoadFailed = true;"></script>
 
     <script>
         // Application version identifier
-        const VERSION = '1.4';
+        const VERSION = '1.6';
 
         // Settings modal functions
         function openSettingsModal() {
@@ -225,13 +240,6 @@
             }
         }
 
-        // Initialize active theme from localStorage or default to 'hd'
-        let savedTheme = "hd";
-        try {
-            savedTheme = localStorage.getItem("hdev_theme") || "hd";
-        } catch (e) {}
-        applyTheme(savedTheme);
-
         // Modal overlay outside-click listener
         if (settingsModalOverlay) {
             settingsModalOverlay.addEventListener("click", (e) => {
@@ -241,18 +249,22 @@
             });
         }
 
+        // VIN input and output DOM element references
         const vinInput = document.getElementById("vinInput");
         const statusEl = document.getElementById("status");
         const decodeResult = document.getElementById("decodeResult");
 
+        // Camera and gallery controls
         const cameraBtn = document.getElementById("cameraBtn");
         const galleryBtn = document.getElementById("galleryBtn");
         const cameraInput = document.getElementById("cameraInput");
         const galleryInput = document.getElementById("galleryInput");
 
+        // Canvas element and rendering context
         const canvas = document.getElementById("vinCanvas");
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas ? canvas.getContext("2d") : null;
 
+        // Image adjustment buttons
         const rotateLeftBtn = document.getElementById("rotateLeftBtn");
         const rotateRightBtn = document.getElementById("rotateRightBtn");
         const cropToggleBtn = document.getElementById("cropToggleBtn");
@@ -260,12 +272,20 @@
         const applyCropBtn = document.getElementById("applyCropBtn");
         const cancelCropBtn = document.getElementById("cancelCropBtn");
 
-        let originalImageSrc = null; // Store original uploaded file
-        let loadedImage = null;      // Current working image element (may be cropped/rotated)
+        // Canvas image state variables
+        let originalImageSrc = null;
+        let loadedImage = null;
         let rotation = 0;
         let cropMode = false;
         let cropStart = null;
         let cropEnd = null;
+
+        // Initialize active theme from localStorage or default to 'hd'
+        let savedTheme = "hd";
+        try {
+            savedTheme = localStorage.getItem("hdev_theme") || "hd";
+        } catch (e) { }
+        applyTheme(savedTheme);
 
         // Persistent Tesseract worker context variables
         let ocrWorker = null;
@@ -275,7 +295,7 @@
         window.addEventListener("DOMContentLoaded", () => {
             drawCanvasPlaceholder();
             updateCropButtons();
-            
+
             // Listen for user input changes for real-time decoding
             vinInput.addEventListener("input", (e) => {
                 decodeVin(e.target.value);
@@ -356,7 +376,7 @@
             canvas.width = 480;
             canvas.height = 320;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             // Determine theme mode for placeholder graphics
             const isLight = document.documentElement.getAttribute("data-theme") === "light";
             const bgColor = isLight ? "#f0f2f5" : "#0c0c0e";
@@ -367,7 +387,7 @@
             // Draw background grid pattern
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
+
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
             const gridSize = 20;
@@ -390,7 +410,7 @@
             ctx.beginPath();
             ctx.arc(canvas.width / 2, canvas.height / 2 - 15, 30, 0, Math.PI * 2);
             ctx.stroke();
-            
+
             ctx.fillStyle = "rgba(255, 102, 0, 0.1)";
             ctx.beginPath();
             ctx.arc(canvas.width / 2, canvas.height / 2 - 15, 20, 0, Math.PI * 2);
@@ -401,7 +421,7 @@
             ctx.font = "600 13px 'Inter', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("CAMERA / GALLERY SCANNED VIEW", canvas.width / 2, canvas.height / 2 + 40);
-            
+
             ctx.fillStyle = subtitleColor;
             ctx.font = "400 11px 'Inter', sans-serif";
             ctx.fillText("Load a photo and orient/crop it for clean OCR recognition", canvas.width / 2, canvas.height / 2 + 60);
@@ -820,7 +840,7 @@
             const results = Array.from(candidates).map(vin => {
                 const checkDigit = calculateVinCheckDigit(vin);
                 const hasValidChecksum = (vin.length === 17 && checkDigit !== null && checkDigit === vin[8]);
-                
+
                 // Scoring heuristic based on format and valid details
                 let score = 0;
                 let format = "";
@@ -951,18 +971,390 @@
             return remainder === 10 ? 'X' : remainder.toString();
         }
 
-        // --- Spec Sheet Decoder ---
-        // Progressive decoding: starts at 3 chars for Modern era.
-        // Each new character unlocks the next decoded field.
-        // AMF (9-digit) and Vintage (8-10 digit) formats are also matched early.
+        // --- Lookup Tables for Harley-Davidson VIN Decoding ---
+
+        // World Manufacturer Identifier (WMI) map for characters 1-3
+        const WMI_MAP = {
+            '1HD': 'Manufactured for sale within the United States',
+            '5HD': 'Manufactured for sale outside of the United States',
+            '932': 'Manufactured in and for sale only in Brazil',
+            'MEG': 'Manufactured in and for sale only in India',
+            'MLY': 'Manufactured in Thailand'
+        };
+
+        // Motorcycle Weight Class map for character 4
+        const CLASS_MAP = {
+            '1': 'Heavyweight (≥ 901 cc)',
+            '4': 'Lightweight (≤ 900 cc)',
+            '8': 'Sidecar'
+        };
+
+        // Comprehensive Model Designation map for characters 5-6
+        const MODEL_MAP = {
+            // FL Touring Models
+            'AA': 'FLH',
+            'AB': 'FLHP',
+            'AC': 'FLH',
+            'AD': 'FLH - Classic',
+            'AE': 'FLT',
+            'AF': 'FLTC',
+            'AH': 'FLHP - Deluxe',
+            'AJ': 'FLH - Heritage',
+            'AK': 'FLHS',
+            'AL': 'FLH - Shrine',
+            'DA': 'FLT, FLHTP',
+            'DB': 'FLTC',
+            'DC': 'FLHT',
+            'DD': 'FLHT',
+            'DE': 'FLHTC',
+            'DF': 'FLHTP',
+            'DG': 'FLHTC Shrine',
+            'DH': 'FLTC',
+            'DJ': 'FLHTC',
+            'DK': 'FLTC Shrine',
+            'DM': 'FLTCU - Ultra',
+            'DN': 'FLTCU - Ultra',
+            'DP': 'FLHTC',
+            'DS': 'FLTCU - Ultra Shrine',
+            'DT': 'FLHTCU - Ultra Shrine',
+            'FA': 'FLHRS, FLHS',
+            'FB': 'FLHRI, FLHR',
+            'FC': 'FLHTCUI, FLHTCU',
+            'FD': 'FLHR',
+            'FE': 'FLTCUI',
+            'FF': 'FLHTCI, FLHTC',
+            'FG': 'FLHTCUI',
+            'FH': 'FLHPI',
+            'FL': 'FLHTCUI, FLHTCU',
+            'FM': 'FLHTPI',
+            'FP': 'FLTR',
+            'FR': 'FLHRCI, FLHRC',
+            'FS': 'FLTRI',
+            'FT': 'FLHPEI',
+            'FW': 'FLHR Shrine',
+            'KA': 'FLHX',
+            'KB': 'FLHX',
+            'KE': 'FLHTK',
+            'KG': 'FLTRU',
+            'KH': 'FLTRX',
+            'KX': 'SIDECAR TLE ULTRA',
+            'MA': 'FLHTCUTG - Trike',
+            'MB': 'Trike',
+            'MC': 'FLRT',
+            'PF': 'FLSTDSE',
+            'PG': 'FLHRSEI2',
+            'PR': 'FLHTCUSE7 - CVO',
+            'PY': 'FLSTSE3 - CVO',
+            'PZ': 'FLHXSE - CVO',
+            'TE': 'FLHTKSE CVO Limited',
+
+            // FX/FL Dyna Glide Models
+            'BA': 'FXE',
+            'BB': 'FXEF, FXSTDI',
+            'BC': 'FXS',
+            'BD': 'FXB',
+            'BE': 'FXWG',
+            'BF': 'FXSB',
+            'BG': 'FXDG',
+            'EA': 'FXR',
+            'EB': 'FXRS',
+            'EC': 'FXRT',
+            'ED': 'FXRP - Windshield',
+            'EE': 'FXRDG',
+            'EF': 'FXRP - Fairing',
+            'EG': 'FXRS-SP Sport Edition',
+            'EH': 'FXRD',
+            'EJ': 'FXRC',
+            'EK': 'FXRP - C.H.P.',
+            'EL': 'FXLR',
+            'EM': 'FXRS - CON',
+            'ES': 'FXR',
+            'ET': 'FXR',
+            'EV': 'FXR',
+            'GA': 'FXDB-D Daytona',
+            'GB': 'FXDB-S Sturgis',
+            'GC': 'FXDC',
+            'GD': 'FXDL',
+            'GE': 'FXDWG',
+            'GG': 'FXDS-CON',
+            'GH': 'FXD',
+            'GJ': 'FXDX',
+            'GK': 'FXDP',
+            'GL': 'FXDXT',
+            'GM': 'FXDI',
+            'GN': 'FXDL',
+            'GP': 'FXDWG',
+            'GR': 'FXDXI',
+            'GT': 'FXDC',
+            'GV': 'FXDC',
+            'GX': 'TL',
+            'GY': 'FXDF',
+            'GZ': 'FLD',
+            'PB': 'FXDWG',
+            'PE': 'FXDWG3',
+            'PS': 'FXDSE',
+            'PX': 'FSDFSE',
+            'VA': 'FXDBP',
+
+            // FL/FX Softail Models
+            'BH': 'FXST',
+            'BJ': 'FLST, FLSTC',
+            'BK': 'FXSTC',
+            'BL': 'FXSTS',
+            'BM': 'FLSTF',
+            'BN': 'FLSTN',
+            'BP': 'FXSTSB',
+            'BR': 'FLSTS',
+            'BS': 'FXSTD',
+            'BT': 'FXSTB',
+            'BV': 'FXST',
+            'BW': 'FLSTC',
+            'BX': 'FLSTF',
+            'BY': 'FLSTC',
+            'BZ': 'FXSTSI',
+            'JA': 'FXSTB',
+            'JB': 'FXSTDI',
+            'JD': 'FLSTN',
+            'JE': 'FLST',
+            'JF': 'FLSTI',
+            'JG': 'FLSTF',
+            'JH': 'FLSTC',
+            'JJ': 'FXCW',
+            'JK': 'FXCWC',
+            'JL': 'FXSTC',
+            'JM': 'FLSTSB',
+            'JN': 'FLSTFB',
+            'JP': 'FXS',
+            'JR': 'FLS',
+            'JT': 'FLSTFBS',
+            'PL': 'FLSTFSE',
+            'PN': 'FLSTFSE',
+            'PT': 'FXSTSSE',
+            'SB': 'FLSTSB',
+
+            // XL Sportster Models
+            'CA': 'XLH',
+            'CB': 'XLS',
+            'CC': 'XLX',
+            'CD': 'XR-1000',
+            'CE': 'XL 883H',
+            'CF': 'XL 883 Deluxe',
+            'CG': 'XL 1200C',
+            'CH': 'XL 1200S',
+            'CJ': 'XL 883C',
+            'CK': 'XL 883R',
+            'CN': 'XL883',
+            'CM': 'XL883L',
+            'CP': 'XL883C',
+            'CR': 'XL883L',
+            'CS': 'XL883R',
+            'CT': 'XL1200C',
+            'CV': 'XL1200R',
+            'CW': 'XL1200L',
+            'CX': 'XL1200L',
+            'CY': 'XL50',
+            'CZ': 'XL1200N',
+            'LA': 'XR1200',
+            'LC': 'XL1200X',
+            'LD': 'XR1200X',
+            'LE': 'XL883N',
+            'LF': 'XL1200V',
+            'LH': 'XL1200CP',
+            'LJ': 'XL1200CA',
+            'LK': 'XL1200CB',
+
+            // V-ROD Models
+            'HA': 'VRSCA',
+            'HC': 'VRSCR',
+            'HD': 'VRSCD',
+            'HF': 'VRSCA',
+            'HH': 'VRSCDX',
+            'HJ': 'VRSCX',
+            'HP': 'VRSCF',
+
+            // Street Models
+            'NA': 'XG500',
+            'NB': 'XG750'
+        };
+
+        // Engine family map for character 7 - ordered with newest engine architectures first
+        const ENGINE_MAP = {
+            'A': 'Revolution Max 1250 / 1130 Revolution (100 CV) / Evolution 883cc',
+            'B': 'Twin Cam 88 (EFI) / 1450 Counter-Balanced EFI / Evolution 1200cc',
+            'C': 'Revolution Max 1250 (1250cc) / Twin Cam 96 / 1550',
+            'D': 'Revolution Max 975 (975cc) / Twin Cam 103 / 1550 EFI',
+            'E': 'Twin Cam 110 (1800cc) / 1690 EFI',
+            'F': 'Twin Cam 103 (1690cc) / 1690 Balanced-EFI',
+            'G': 'Twin Cam 103 High Output (1690cc) / 1246 Revolution EFI',
+            'H': 'Twin Cam 110 CVO (1800cc) / 1246 / 1000 Ironhead XL',
+            'J': '1246 Revolution',
+            'K': '1340 Shovelhead',
+            'L': '1340 Evolution / Evolution (883cc)',
+            'M': 'Milwaukee-Eight 107 (1746cc) / Twin Cam 103 / 883 Evolution XL',
+            'N': 'Milwaukee-Eight 114 (1868cc) / 1100 Evolution XL',
+            'P': 'Milwaukee-Eight 117 (1923cc) / 1200 Evolution XL',
+            'R': 'Revolution Max 975 (975cc) / 1340 Evolution Fuel Injected',
+            'S': '500 Single (Armstrong Military)',
+            'V': 'Evolution (1340cc / 80ci) / Twin Cam 88 Carburetor, 130B',
+            'W': 'Twin Cam 88 Fuel Injected',
+            'Y': 'Twin Cam 88 Counter Balanced - Carb',
+            'Z': 'Revolution Max 1250 (1252cc) / 1130 Revolution',
+            '1': '1450 EFI',
+            '2': '883 ESPFI',
+            '3': '1200 ESPFI',
+            '4': '1584 ESPFI',
+            '5': '1584 ESPFI, Twin Cam 96B',
+            '6': '1200',
+            '8': '1800 ESPFI',
+            '9': '1250 ESPFI / 1800 ESPFI'
+        };
+
+        // Introduction market/date map for character 8
+        const INTRO_MAP = {
+            '1': 'Domestic (Normal / Regular intro)',
+            '2': 'Domestic (Mid-Year intro)',
+            '3': 'California (Normal / Regular intro)',
+            '4': 'Domestic (Mid-Year intro)',
+            '5': 'California (Mid-Year intro)',
+            '6': 'California (Mid-Year intro)',
+            'A': 'Canada (Normal intro)',
+            'B': 'Canada (Mid-Year intro)',
+            'C': 'International (Normal intro)',
+            'D': 'International (Mid-Year intro)',
+            'E': 'Japan (Normal intro)',
+            'F': 'Japan (Mid-Year intro)',
+            'G': 'Australia (Normal intro)',
+            'H': 'Australia (Mid-Year intro)',
+            'J': 'Brazil (Normal intro)',
+            'K': 'Brazil (Mid-Year intro)',
+            'L': 'Asia Pacific (Normal intro)',
+            'M': 'Asia Pacific (Mid-Year intro)',
+            'N': 'India (Normal intro)',
+            'P': 'India (Mid-Year intro)'
+        };
+
+        // Model Year map for character 10 - assumes newest 30-year cycle first
+        const YEAR_MAP = {
+            'B': '2011 (or 1981)', 'C': '2012 (or 1982)', 'D': '2013 (or 1983)', 'E': '2014 (or 1984)',
+            'F': '2015 (or 1985)', 'G': '2016 (or 1986)', 'H': '2017 (or 1987)', 'J': '2018 (or 1988)',
+            'K': '2019 (or 1989)', 'L': '2020 (or 1990)', 'M': '2021 (or 1991)', 'N': '2022 (or 1992)',
+            'P': '2023 (or 1993)', 'R': '2024 (or 1994)', 'S': '2025 (or 1995)', 'T': '2026 (or 1996)',
+            'V': '2027 (or 1997)', 'W': '2028 (or 1998)', 'X': '2029 (or 1999)', 'Y': '2030 (or 2000)',
+            '1': '2031 (or 2001)', '2': '2032 (or 2002)', '3': '2033 (or 2003)', '4': '2034 (or 2004)',
+            '5': '2035 (or 2005)', '6': '2036 (or 2006)', '7': '2037 (or 2007)', '8': '2038 (or 2008)',
+            '9': '2039 (or 2009)', 'A': '2040 (or 2010)'
+        };
+
+        // Assembly Plant map for character 11
+        const PLANT_MAP = {
+            'Y': 'York, PA, USA',
+            'B': 'York, PA, USA',
+            'T': 'Tomahawk, WI, USA',
+            'J': 'Milwaukee, WI, USA',
+            'K': 'Kansas City, MO, USA (Closed 2019)',
+            'D': 'Manaus, Brazil',
+            'E': 'East Troy, WI, USA (Buell)',
+            'N': 'Haryana, India (Bawal District Rewari)',
+            'L': 'Rayong, Thailand'
+        };
+
+        // AMF Shovelhead Era (1970–1980) model code map
+        const MODEL_70_80 = {
+            '1A': 'FL/FLP-1200', '2A': 'FLH-1200', '3A': 'XL/XLH-1000', '4A': 'XLCH-1000',
+            '5A': 'GE-750', '6A': 'SS-350 Sprint', '7A': 'SX-125', '8A': 'M65-S',
+            '7B': 'ERS', '8B': 'MSR-100', '2C': 'FX-1200', '3C': 'SX-350 Sprint',
+            '5C': 'MC-65', '6C': 'SR-100', '1D': 'LE Sidecar', '2D': 'X-90',
+            '3D': 'Z-90', '4D': 'XLA', '5D': 'SX-175', '6D': 'SX-250',
+            '7D': 'MX-250', '9D': 'FXE-1200', '4E': 'XLS-1000', '5E': 'FXEF-1200',
+            '6E': 'FXEF-80', '7E': 'FLHS-1200', '9E': 'SS-250', '2F': 'FXS-1200',
+            '3F': 'SXT-125', '4F': 'SS-175', '6F': 'SS-125', '7F': 'XLCR-1000',
+            '2G': 'XLT-1000', '3G': 'FLH-80', '5G': 'FLT-80', '6G': 'FXE-80',
+            '7G': 'FXS-80', '9G': 'FXWG-80', '1H': 'FXB-80', '2H': 'CLE-80 Sidecar',
+            '3H': 'FLH-80 Classic', '5H': 'FLHS-80', '6H': 'FL-80', '7H': 'FLH-1200 Police',
+            '8H': 'FLH-1200 Shrine', '9H': 'FLH-80 Police', '1K': 'FLH-80 Shrine'
+        };
+
+        // AMF Shovelhead Era (1970–1980) year code map
+        const YEAR_70_80 = {
+            'H0': '1970', 'H1': '1971', 'H2': '1972', 'H3': '1973', 'H4': '1974',
+            'H5': '1975', 'H6': '1976', 'H7': '1977', 'H8': '1978', 'H9': '1979',
+            'J0': '1980'
+        };
+
+        // Helper to construct interactive VIN character tape markup
+        function renderVinTapeHtml(vin) {
+            let boxes = '';
+            for (let i = 0; i < vin.length; i++) {
+                boxes += `
+                    <div class="vin-char-box" data-idx="${i}" title="Character ${i + 1}: '${vin[i]}'">
+                        <span class="vin-char-letter">${vin[i]}</span>
+                        <span class="vin-char-pos">${i + 1}</span>
+                    </div>
+                `;
+            }
+            return `
+                <div class="vin-tape-container">
+                    <div class="vin-tape-title">VIN Character Map · Hover to Highlight Segment</div>
+                    <div class="vin-tape">${boxes}</div>
+                </div>
+            `;
+        }
+
+        // Connects interactive hover states between character boxes and spec items
+        function setupVinHighlightListeners() {
+            const charBoxes = decodeResult.querySelectorAll('.vin-char-box');
+            const specItems = decodeResult.querySelectorAll('.spec-item');
+
+            specItems.forEach(item => {
+                const indicesStr = item.getAttribute('data-char-indices');
+                if (!indicesStr) return;
+                const indices = indicesStr.split(',').map(s => parseInt(s.trim(), 10));
+
+                item.addEventListener('mouseenter', () => {
+                    indices.forEach(idx => {
+                        const box = decodeResult.querySelector(`.vin-char-box[data-idx="${idx}"]`);
+                        if (box) box.classList.add('highlighted');
+                    });
+                });
+
+                item.addEventListener('mouseleave', () => {
+                    charBoxes.forEach(box => box.classList.remove('highlighted'));
+                });
+            });
+
+            charBoxes.forEach(box => {
+                const idx = parseInt(box.getAttribute('data-idx'), 10);
+                box.addEventListener('mouseenter', () => {
+                    specItems.forEach(item => {
+                        const indicesStr = item.getAttribute('data-char-indices');
+                        if (!indicesStr) return;
+                        const indices = indicesStr.split(',').map(s => parseInt(s.trim(), 10));
+                        if (indices.includes(idx)) {
+                            item.classList.add('highlighted');
+                        }
+                    });
+                });
+
+                box.addEventListener('mouseleave', () => {
+                    specItems.forEach(item => item.classList.remove('highlighted'));
+                });
+            });
+        }
+
+        // --- Progressive Spec Sheet Decoder ---
+        // Begins decoding as soon as at least 3 characters are entered.
+        // Refines the breakdown as each additional character is entered.
+        // Assumes newest models first until the pattern does not fit.
         function decodeVin(vin) {
-            // Sanitize input whitespace and convert to upper case
+            // Clean whitespace and normalize to uppercase
             vin = vin.toUpperCase().replace(/\s+/g, "");
-            if (vin.length === 0) {
+
+            // Under 3 characters: prompt user to enter at least 3 characters
+            if (vin.length < 3) {
                 decodeResult.innerHTML = `
                     <div class="decode-empty-state" id="decodeEmptyPrompt">
-                        <strong>NO VIN ENTERED</strong>
-                        <span>Enter or scan a 17-digit (1981–Present), 9-digit AMF (1970–1980), or 8–10 digit Vintage (1930–1969) Harley VIN to view decoded specifications.</span>
+                        <strong>${vin.length === 0 ? 'NO VIN ENTERED' : 'ENTER AT LEAST 3 CHARACTERS'}</strong>
+                        <span>Enter at least 3 characters (e.g. 1HD...) to begin real-time decoding. Specifications refine progressively as each character is typed.</span>
                     </div>
                 `;
                 return;
@@ -970,530 +1362,370 @@
 
             decodeResult.style.display = "block";
 
-            // ERA 1: Modern 17-digit format (1981–Present)
-            if (vin.length === 17) {
-                const cleanCheck = vin.replace(/[^A-HJ-NPR-Z0-9]/g, "");
-                if (cleanCheck.length !== 17) {
-                    let illegalCharWarning = "";
-                    if (/[IOQ]/.test(vin)) {
-                        illegalCharWarning = " (Includes illegal characters: I, O, or Q)";
+            // --- Pattern Check 1: Vintage Engine Casing Era (1930–1969) ---
+            // Identified when input begins with a 2-digit number (30–69) followed by letters
+            const vintageYearPrefix = parseInt(vin.substring(0, 2), 10);
+            const isVintagePattern = !isNaN(vintageYearPrefix) &&
+                vintageYearPrefix >= 30 &&
+                vintageYearPrefix <= 69 &&
+                /^[A-Z]/.test(vin[2]);
+
+            if (isVintagePattern) {
+                const fullYear = 1900 + vintageYearPrefix;
+                const letterMatch = vin.substring(2).match(/^[A-Z]+/);
+                const modelPart = letterMatch ? letterMatch[0] : '';
+                const serialPart = letterMatch ? vin.substring(2 + modelPart.length) : '';
+                const serialNum = serialPart.length > 0 ? parseInt(serialPart, 10) : null;
+
+                // Build index strings for character highlighting
+                const yearIndices = "0,1";
+                const modelIndicesArr = [];
+                for (let i = 2; i < 2 + modelPart.length; i++) modelIndicesArr.push(i);
+                const modelIndices = modelIndicesArr.join(",");
+
+                const serialIndicesArr = [];
+                for (let i = 2 + modelPart.length; i < vin.length; i++) serialIndicesArr.push(i);
+                const serialIndices = serialIndicesArr.join(",");
+
+                // Parity check for 1962-1969 when full serial is available
+                let parityBadge = "";
+                if (fullYear >= 1962 && fullYear <= 1969 && serialPart.length >= 4) {
+                    const isYearOdd = (fullYear % 2 !== 0);
+                    let isParityValid = false;
+                    if (serialPart.length === 4) {
+                        isParityValid = (isYearOdd === (parseInt(serialPart[0], 10) % 2 !== 0));
+                    } else if (serialPart.length >= 5) {
+                        const firstTwo = parseInt(serialPart.substring(0, 2), 10);
+                        isParityValid = (isYearOdd === (firstTwo % 2 !== 0));
                     }
-                    decodeResult.innerHTML = `
-                        <div class="decode-error">
-                            <span>⚠️ Format Error: 17-digit VIN contains invalid characters.${illegalCharWarning}</span>
-                        </div>`;
-                    return;
+                    parityBadge = isParityValid
+                        ? `<span class="badge badge-success">✔️ Parity OK</span>`
+                        : `<span class="badge badge-danger">⚠️ Parity Mismatch</span>`;
                 }
 
-                // Calculate check digit and compare
-                const calculatedCheckDigit = calculateVinCheckDigit(vin);
-                const actualCheckDigit = vin[8];
-                const isCheckDigitValid = (calculatedCheckDigit !== null && calculatedCheckDigit === actualCheckDigit);
-
-                // Extract segment blocks
-                const wmi = vin.substring(0, 3);
-                const mClass = vin[3];
-                const modelCode = vin.substring(4, 6);
-                const engineCode = vin[6];
-                const introCode = vin[7];
-                const modelYearCode = vin[9];
-                const plantCode = vin[10];
-                const serialNumber = vin.substring(11);
-
-                // WMI lookup map
-                const wmiMap = {
-                    '1HD': 'Manufactured for sale within the United States',
-                    '5HD': 'Manufactured for sale outside of the United States',
-                    '932': 'Manufactured in and for sale only in Brazil',
-                    'MEG': 'Manufactured in and for sale only in India',
-                    'MLY': 'Manufactured in Thailand'
-                };
-                const decodedWmi = wmiMap[wmi] || `Unknown WMI (${wmi})`;
-
-                // Weight class map
-                const classMap = {
-                    '1': 'Heavyweight (≥ 901 cc)',
-                    '4': 'Lightweight (≤ 900 cc)',
-                    '8': 'Sidecar'
-                };
-                const decodedClass = classMap[mClass] || `Unknown Class (${mClass})`;
-
-                // Comprehensive Model Designation map
-                const modelMap = {
-                    // FL Touring Models
-                    'AA': 'FLH',
-                    'AB': 'FLHP',
-                    'AC': 'FLH',
-                    'AD': 'FLH - Classic',
-                    'AE': 'FLT',
-                    'AF': 'FLTC',
-                    'AH': 'FLHP - Deluxe',
-                    'AJ': 'FLH - Heritage',
-                    'AK': 'FLHS',
-                    'AL': 'FLH - Shrine',
-                    'DA': 'FLT, FLHTP',
-                    'DB': 'FLTC',
-                    'DC': 'FLHT',
-                    'DD': 'FLHT',
-                    'DE': 'FLHTC',
-                    'DF': 'FLHTP',
-                    'DG': 'FLHTC Shrine',
-                    'DH': 'FLTC',
-                    'DJ': 'FLHTC',
-                    'DK': 'FLTC Shrine',
-                    'DM': 'FLTCU - Ultra',
-                    'DN': 'FLTCU - Ultra',
-                    'DP': 'FLHTC',
-                    'DS': 'FLTCU - Ultra Shrine',
-                    'DT': 'FLHTCU - Ultra Shrine',
-                    'FA': 'FLHRS, FLHS',
-                    'FB': 'FLHRI, FLHR',
-                    'FC': 'FLHTCUI, FLHTCU',
-                    'FD': 'FLHR',
-                    'FE': 'FLTCUI',
-                    'FF': 'FLHTCI, FLHTC',
-                    'FG': 'FLHTCUI',
-                    'FH': 'FLHPI',
-                    'FL': 'FLHTCUI, FLHTCU',
-                    'FM': 'FLHTPI',
-                    'FP': 'FLTR',
-                    'FR': 'FLHRCI, FLHRC',
-                    'FS': 'FLTRI',
-                    'FT': 'FLHPEI',
-                    'FW': 'FLHR Shrine',
-                    'KA': 'FLHX',
-                    'KB': 'FLHX',
-                    'KE': 'FLHTK',
-                    'KG': 'FLTRU',
-                    'KH': 'FLTRX',
-                    'KX': 'SIDECAR TLE ULTRA',
-                    'MA': 'FLHTCUTG - Trike',
-                    'MB': 'Trike',
-                    'MC': 'FLRT',
-                    'PF': 'FLSTDSE',
-                    'PG': 'FLHRSEI2',
-                    'PR': 'FLHTCUSE7 - CVO',
-                    'PY': 'FLSTSE3 - CVO',
-                    'PZ': 'FLHXSE - CVO',
-
-                    // FX/FL Dyna Glide Models
-                    'BA': 'FXE',
-                    'BB': 'FXEF, FXSTDI',
-                    'BC': 'FXS',
-                    'BD': 'FXB',
-                    'BE': 'FXWG',
-                    'BF': 'FXSB',
-                    'BG': 'FXDG',
-                    'EA': 'FXR',
-                    'EB': 'FXRS',
-                    'EC': 'FXRT',
-                    'ED': 'FXRP - Windshield',
-                    'EE': 'FXRDG',
-                    'EF': 'FXRP - Fairing',
-                    'EG': 'FXRS-SP Sport Edition',
-                    'EH': 'FXRD',
-                    'EJ': 'FXRC',
-                    'EK': 'FXRP - C.H.P.',
-                    'EL': 'FXLR',
-                    'EM': 'FXRS – CON',
-                    'ES': 'FXR',
-                    'ET': 'FXR',
-                    'EV': 'FXR',
-                    'GA': 'FXDB-D Daytona',
-                    'GB': 'FXDB-S Sturgis',
-                    'GC': 'FXDC',
-                    'GD': 'FXDL',
-                    'GE': 'FXDWG',
-                    'GG': 'FXDS-CON',
-                    'GH': 'FXD',
-                    'GJ': 'FXDX',
-                    'GK': 'FXDP',
-                    'GL': 'FXDXT',
-                    'GM': 'FXDI',
-                    'GN': 'FXDL',
-                    'GP': 'FXDWG',
-                    'GR': 'FXDXI',
-                    'GT': 'FXDC',
-                    'GV': 'FXDC',
-                    'GX': 'TL',
-                    'GY': 'FXDF',
-                    'GZ': 'FLD',
-                    'PB': 'FXDWG',
-                    'PE': 'FXDWG3',
-                    'PS': 'FXDSE',
-                    'PX': 'FSDFSE',
-                    'VA': 'FXDBP',
-
-                    // FL/FX Softail Models
-                    'BH': 'FXST',
-                    'BJ': 'FLST, FLSTC',
-                    'BK': 'FXSTC',
-                    'BL': 'FXSTS',
-                    'BM': 'FLSTF',
-                    'BN': 'FLSTN',
-                    'BP': 'FXSTSB',
-                    'BR': 'FLSTS',
-                    'BS': 'FXSTD',
-                    'BT': 'FXSTB',
-                    'BV': 'FXST',
-                    'BW': 'FLSTC',
-                    'BX': 'FLSTF',
-                    'BY': 'FLSTC',
-                    'BZ': 'FXSTSI',
-                    'JA': 'FXSTB',
-                    'JB': 'FXSTDI',
-                    'JD': 'FLSTN',
-                    'JE': 'FLST',
-                    'JF': 'FLSTI',
-                    'JG': 'FLSTF',
-                    'JH': 'FLSTC',
-                    'JJ': 'FXCW',
-                    'JK': 'FXCWC',
-                    'JL': 'FXSTC',
-                    'JM': 'FLSTSB',
-                    'JN': 'FLSTFB',
-                    'JP': 'FXS',
-                    'JR': 'FLS',
-                    'JT': 'FLSTFBS',
-                    'PF': 'FXSTDSE',
-                    'PH': 'FXSTDSE',
-                    'PL': 'FLSTFSE',
-                    'PN': 'FLSTFSE',
-                    'PT': 'FXSTSSE',
-                    'PY': 'FLSTSE',
-
-                    // XL Sportster Models
-                    'CA': 'XLH',
-                    'CB': 'XLS',
-                    'CC': 'XLX',
-                    'CD': 'XR-1000',
-                    'CE': 'XL 883H',
-                    'CF': 'XL 883 Deluxe',
-                    'CG': 'XL 1200C',
-                    'CH': 'XL 1200S',
-                    'CJ': 'XL 883C',
-                    'CK': 'XL 883R',
-                    'CN': 'XL883',
-                    'CM': 'XL883L',
-                    'CP': 'XL883C',
-                    'CR': 'XL883L',
-                    'CS': 'XL883R',
-                    'CT': 'XL1200C',
-                    'CV': 'XL1200R',
-                    'CW': 'XL1200L',
-                    'CX': 'XL1200L',
-                    'CY': 'XL50',
-                    'CZ': 'XL1200N',
-                    'LA': 'XR1200',
-                    'LC': 'XL1200X',
-                    'LD': 'XR1200X',
-                    'LE': 'XL883N',
-                    'LF': 'XL1200V',
-                    'LH': 'XL1200CP',
-                    'LJ': 'XL1200CA',
-                    'LK': 'XL1200CB',
-
-                    // V-ROD Models
-                    'HA': 'VRSCA',
-                    'HC': 'VRSCR',
-                    'HD': 'VRSCD',
-                    'HF': 'VRSCA',
-                    'HH': 'VRSCDX',
-                    'HJ': 'VRSCX',
-                    'HP': 'VRSCF',
-
-                    // Street Models
-                    'NA': 'XG500',
-                    'NB': 'XG750'
-                };
-                const decodedModel = modelMap[modelCode] || `Model Code: ${modelCode}`;
-
-                // Engine details map
-                const engineMap = {
-                    'A': '1130 Revolution (100 CV) / Revolution Max 1250 / Evolution 883cc',
-                    'B': '1450 Fuel Injected Counter Balanced / Twin Cam 88 (EFI) / Evolution 1200cc',
-                    'C': '1550 / Twin Cam 96 / Revolution Max 1250 (1250cc)',
-                    'D': '1550 EFI / Twin Cam 103 / Revolution Max 975 (975cc)',
-                    'E': '1690 EFI / Twin Cam 110 (1800cc)',
-                    'F': '1690 Balanced-EFI / Twin Cam 103 (1690cc)',
-                    'G': '1246 Revolution EFI / Twin Cam 103 High Output (1690cc)',
-                    'H': '1246 (2001-2009) or 1000 Ironhead XL / Twin Cam 110 CVO (1800cc)',
-                    'J': '1246',
-                    'K': '1340 Shovelhead',
-                    'L': '1340 Evolution / Evolution (883cc)',
-                    'M': '883 Evolution XL or Twin Cam 103 / Milwaukee-Eight 107 (1746cc)',
-                    'N': '1100 Evolution XL / Milwaukee-Eight 114 (1868cc)',
-                    'P': '1200 Evolution XL / Milwaukee-Eight 117 (1923cc)',
-                    'R': '1340 Evolution Fuel Injected / Revolution Max 975 (975cc)',
-                    'S': '500 Single (Armstrong Military)',
-                    'V': 'Twin Cam 88 Carburetor, 130B / Evolution (1340cc / 80ci)',
-                    'W': 'Twin Cam 88 Fuel Injected',
-                    'Y': 'Twin Cam 88 Counter Balanced - Carb',
-                    'Z': '1130 Revolution / Revolution Max 1250 (1252cc)',
-                    '1': '1450 EFI',
-                    '2': '883 ESPFI',
-                    '3': '1200 ESPFI',
-                    '4': '1584 ESPFI',
-                    '5': '1584 ESPFI, Twin Cam 96B',
-                    '6': '1200',
-                    '8': '1800 ESPFI',
-                    '9': '1800 ESPFI / 1250 ESPFI'
-                };
-                const decodedEngine = engineMap[engineCode] || `Engine Code: ${engineCode}`;
-
-                // Introduction periods map
-                const introMap = {
-                    '1': 'Domestic (Normal / Regular intro)',
-                    '2': 'Domestic (Mid-Year intro)',
-                    '3': 'California (Normal / Regular intro)',
-                    '4': 'Domestic (Mid-Year intro)',
-                    '5': 'California (Mid-Year intro)',
-                    '6': 'California (Mid-Year intro)',
-                    'A': 'Canada (Normal intro)',
-                    'B': 'Canada (Mid-Year intro)',
-                    'C': 'International (Normal intro)',
-                    'D': 'International (Mid-Year intro)',
-                    'E': 'Japan (Normal intro)',
-                    'F': 'Japan (Mid-Year intro)',
-                    'G': 'Australia (Normal intro)',
-                    'H': 'Australia (Mid-Year intro)',
-                    'J': 'Brazil (Normal intro)',
-                    'K': 'Brazil (Mid-Year intro)',
-                    'L': 'Asia Pacific (Normal intro)',
-                    'M': 'Asia Pacific (Mid-Year intro)',
-                    'N': 'India (Normal intro)',
-                    'P': 'India (Mid-Year intro)'
-                };
-                const decodedIntro = introMap[introCode] || `Intro Code: ${introCode}`;
-
-                // Model year map
-                const yearMap = {
-                    'B': '1981 / 2011', 'C': '1982 / 2012', 'D': '1983 / 2013', 'E': '1984 / 2014',
-                    'F': '1985 / 2015', 'G': '1986 / 2016', 'H': '1987 / 2017', 'J': '1988 / 2018',
-                    'K': '1989 / 2019', 'L': '1990 / 2020', 'M': '1991 / 2021', 'N': '1992 / 2022',
-                    'P': '1993 / 2023', 'R': '1994 / 2024', 'S': '1995 / 2025', 'T': '1996 / 2026',
-                    'V': '1997 / 2027', 'W': '1998 / 2028', 'X': '1999 / 2029', 'Y': '2000 / 2030',
-                    '1': '2001 / 2031', '2': '2002 / 2032', '3': '2003 / 2033', '4': '2004 / 2034',
-                    '5': '2005 / 2035', '6': '2006 / 2036', '7': '2007 / 2037', '8': '2008 / 2038',
-                    '9': '2009 / 2039', 'A': '2010 / 2040'
-                };
-                const decodedYear = yearMap[modelYearCode] || `Unknown Year (${modelYearCode})`;
-
-                // Assembly plant map
-                const plantMap = {
-                    'Y': 'York, PA, USA',
-                    'B': 'York, PA, USA',
-                    'T': 'Tomahawk, WI, USA',
-                    'J': 'Milwaukee, WI, USA',
-                    'K': 'Kansas City, MO, USA (Closed 2019)',
-                    'D': 'Manaus, Brazil',
-                    'E': 'East Troy, WI, USA (Buell)',
-                    'N': 'Haryana, India (Bawal District Rewari)',
-                    'L': 'Rayong, Thailand'
-                };
-                const decodedPlant = plantMap[plantCode] || `Plant Code: ${plantCode}`;
-
-                // Build specifications HTML template
-                const checkDigitHtml = isCheckDigitValid
-                    ? `<span class="badge badge-success">✔️ Checksum OK</span>`
-                    : `<span class="badge badge-danger">⚠️ Checksum Error (Expected: ${calculatedCheckDigit})</span>`;
+                const isComplete = (vin.length >= 8 && vin.length <= 10 && /^\d{2}[A-Z]{2,4}\d{4,5}$/.test(vin));
+                const headerBadge = isComplete
+                    ? (parityBadge || `<span class="badge badge-neutral">Vintage Engine Casing</span>`)
+                    : `<span class="badge spec-badge-progress">Progressive: ${vin.length} Chars (Vintage Era)</span>`;
 
                 decodeResult.innerHTML = `
                     <div class="spec-card">
                         <div class="spec-header">
-                            <h3>Modern Era Details (1981-Present)</h3>
-                            ${checkDigitHtml}
+                            <h3>Vintage Case Era Details (1930–1969)</h3>
+                            ${headerBadge}
                         </div>
+                        ${renderVinTapeHtml(vin)}
                         <div class="spec-grid">
-                            <div class="spec-item">
-                                <span class="spec-label">Manufacturer (WMI)</span>
-                                <span class="spec-value">${decodedWmi}</span>
+                            <div class="spec-item" data-char-indices="${yearIndices}">
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Model Year</span>
+                                    <span class="spec-char-tag">Chars 1–2: ${vin.substring(0, 2)}</span>
+                                </div>
+                                <span class="spec-value">${fullYear}</span>
+                            </div>
+                            <div class="spec-item" data-char-indices="${modelIndices || '2'}">
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Model Designation</span>
+                                    <span class="spec-char-tag">${modelPart ? `Chars 3–${2 + modelPart.length}: ${modelPart}` : 'Char 3: -'}</span>
+                                </div>
+                                <span class="spec-value">${modelPart || '<span class="spec-pending">Awaiting model letters...</span>'}</span>
+                            </div>
+                            <div class="spec-item" data-char-indices="${serialIndices || ''}">
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Production Number</span>
+                                    <span class="spec-char-tag">${serialPart ? `Chars ${3 + modelPart.length}–${vin.length}: ${serialPart}` : 'Serial: -'}</span>
+                                </div>
+                                <span class="spec-value">${serialPart ? `${serialPart}${!isNaN(serialNum) ? ` (Numeric: ${serialNum})` : ''}` : '<span class="spec-pending">Awaiting serial digits...</span>'}</span>
                             </div>
                             <div class="spec-item">
-                                <span class="spec-label">Motorcycle Class</span>
-                                <span class="spec-value">${decodedClass}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Model (Series)</span>
-                                <span class="spec-value">${decodedModel}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Engine Family</span>
-                                <span class="spec-value">${decodedEngine}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Introduction Type</span>
-                                <span class="spec-value">${decodedIntro}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Model Year</span>
-                                <span class="spec-value">${decodedYear} <small style="opacity: 0.6; font-size: 0.72rem;">(30-yr repeat)</small></span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Assembly Plant</span>
-                                <span class="spec-value">${decodedPlant}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Serial Number</span>
-                                <span class="spec-value">${serialNumber}</span>
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Historical Period</span>
+                                    <span class="spec-char-tag">Era Format</span>
+                                </div>
+                                <span class="spec-value">1930–1969 Pre-17 Digit Case Era</span>
                             </div>
                         </div>
                     </div>
                 `;
+                setupVinHighlightListeners();
                 return;
             }
 
-            // ERA 2: AMF / Shovelhead Era (9-digit format, 1970–1980)
-            if (vin.length === 9) {
-                const isAmfMatch = /^[A-Z0-9]{2}\d{5}[A-Z0-9]{2}$/i.test(vin);
-                if (!isAmfMatch) {
-                    decodeResult.innerHTML = `
-                        <div class="decode-error">
-                            <span>⚠️ Format Error: 9-digit AMF VIN must have format: 2-char Model, 5-digit Serial, 2-char Year.</span>
-                        </div>`;
-                    return;
-                }
+            // --- Pattern Check 2: AMF / Shovelhead Era (1970–1980, 9-digit format) ---
+            // Identified when input does not start with Modern WMI and matches 2-character AMF model code followed by digits
+            const potentialAmfModel = vin.substring(0, 2);
+            const isAmfPattern = !WMI_MAP[vin.substring(0, 3)] &&
+                MODEL_70_80[potentialAmfModel] &&
+                /^\d/.test(vin[2]);
 
-                const modelCode = vin.substring(0, 2);
-                const serialNum = parseInt(vin.substring(2, 7), 10);
-                const yearCode = vin.substring(7);
+            if (isAmfPattern) {
+                const decodedModel = MODEL_70_80[potentialAmfModel] || `Model Code: ${potentialAmfModel}`;
+                const serialDigits = vin.substring(2, Math.min(vin.length, 7));
+                const yearCode = vin.length >= 8 ? vin.substring(7, Math.min(vin.length, 9)) : '';
+                const decodedYear = YEAR_70_80[yearCode] || (yearCode.length === 2 ? `Year Code: ${yearCode}` : '<span class="spec-pending">Awaiting 8th-9th characters...</span>');
 
-                const model70_80 = {
-                    '1A': 'FL/FLP-1200', '2A': 'FLH-1200', '3A': 'XL/XLH-1000', '4A': 'XLCH-1000',
-                    '5A': 'GE-750', '6A': 'SS-350 Sprint', '7A': 'SX-125', '8A': 'M65-S',
-                    '7B': 'ERS', '8B': 'MSR-100', '2C': 'FX-1200', '3C': 'SX-350 Sprint',
-                    '5C': 'MC-65', '6C': 'SR-100', '1D': 'LE Sidecar', '2D': 'X-90',
-                    '3D': 'Z-90', '4D': 'XLA', '5D': 'SX-175', '6D': 'SX-250',
-                    '7D': 'MX-250', '9D': 'FXE-1200', '4E': 'XLS-1000', '5E': 'FXEF-1200',
-                    '6E': 'FXEF-80', '7E': 'FLHS-1200', '9E': 'SS-250', '2F': 'FXS-1200',
-                    '3F': 'SXT-125', '4F': 'SS-175', '6F': 'SS-125', '7F': 'XLCR-1000',
-                    '2G': 'XLT-1000', '3G': 'FLH-80', '5G': 'FLT-80', '6G': 'FXE-80',
-                    '7G': 'FXS-80', '9G': 'FXWG-80', '1H': 'FXB-80', '2H': 'CLE-80 Sidecar',
-                    '3H': 'FLH-80 Classic', '5H': 'FLHS-80', '6H': 'FL-80', '7H': 'FLH-1200 Police',
-                    '8H': 'FLH-1200 Shrine', '9H': 'FLH-80 Police', '1K': 'FLH-80 Shrine'
-                };
+                // Build index ranges for AMF characters
+                const modelIndices = "0,1";
+                const serialIndicesArr = [];
+                for (let i = 2; i < Math.min(vin.length, 7); i++) serialIndicesArr.push(i);
+                const serialIndices = serialIndicesArr.join(",");
 
-                const year70_80 = {
-                    'H0': '1970', 'H1': '1971', 'H2': '1972', 'H3': '1973', 'H4': '1974',
-                    'H5': '1975', 'H6': '1976', 'H7': '1977', 'H8': '1978', 'H9': '1979',
-                    'J0': '1980'
-                };
+                const yearIndicesArr = [];
+                for (let i = 7; i < Math.min(vin.length, 9); i++) yearIndicesArr.push(i);
+                const yearIndices = yearIndicesArr.join(",");
 
-                const decodedModel = model70_80[modelCode] || `Model Code: ${modelCode}`;
-                const decodedYear = year70_80[yearCode] || `Year Code: ${yearCode}`;
-
-                // Factory mismatch alert for 1979
                 let alertHtml = "";
-                if (yearCode === 'H9' && serialNum >= 43000 && serialNum <= 48199) {
-                    alertHtml = `
-                        <div class="decode-error" style="background: rgba(255, 166, 0, 0.08); border-color: rgba(255, 166, 0, 0.3); color: #ffa600; margin-top: 1rem;">
-                            <span>⚠️ <strong>1979 Warning</strong>: VINs 43000H9 to 48199H9 (built 1/9/1979 to 2/7/1979) may have mismatched frame and engine numbers due to a brief factory variation.</span>
-                        </div>
-                    `;
+                if (yearCode === 'H9' && serialDigits.length === 5) {
+                    const serialInt = parseInt(serialDigits, 10);
+                    if (serialInt >= 43000 && serialInt <= 48199) {
+                        alertHtml = `
+                            <div class="decode-error" style="background: rgba(255, 166, 0, 0.08); border-color: rgba(255, 166, 0, 0.3); color: #ffa600; margin-top: 1rem;">
+                                <span>⚠️ <strong>1979 Warning</strong>: VINs 43000H9 to 48199H9 (built 1/9/1979 to 2/7/1979) may have mismatched frame and engine numbers due to factory variation.</span>
+                            </div>
+                        `;
+                    }
                 }
+
+                const isComplete = (vin.length === 9 && /^[A-Z0-9]{2}\d{5}[A-Z0-9]{2}$/.test(vin));
+                const headerBadge = isComplete
+                    ? `<span class="badge badge-warning">AMF Era 9-Digit</span>`
+                    : `<span class="badge spec-badge-progress">Progressive: ${vin.length}/9 Characters (AMF Era)</span>`;
 
                 decodeResult.innerHTML = `
                     <div class="spec-card">
                         <div class="spec-header">
-                            <h3>AMF / Shovelhead Era Details (1970-1980)</h3>
-                            <span class="badge badge-warning">AMF Era 9-Digit</span>
+                            <h3>AMF / Shovelhead Era Details (1970–1980)</h3>
+                            ${headerBadge}
                         </div>
+                        ${renderVinTapeHtml(vin)}
                         <div class="spec-grid">
-                            <div class="spec-item">
-                                <span class="spec-label">Model Series</span>
+                            <div class="spec-item" data-char-indices="${modelIndices}">
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Model Series</span>
+                                    <span class="spec-char-tag">Chars 1–2: ${potentialAmfModel}</span>
+                                </div>
                                 <span class="spec-value">${decodedModel}</span>
                             </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Production Number</span>
-                                <span class="spec-value">${serialNum}</span>
+                            <div class="spec-item" data-char-indices="${serialIndices}">
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Production Number</span>
+                                    <span class="spec-char-tag">Chars 3–7: ${serialDigits || '-'}</span>
+                                </div>
+                                <span class="spec-value">${serialDigits ? `${serialDigits}${serialDigits.length < 5 ? ` <span class="spec-pending">(${serialDigits.length}/5 digits)</span>` : ''}` : '<span class="spec-pending">Awaiting serial digits...</span>'}</span>
                             </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Model Year</span>
+                            <div class="spec-item" data-char-indices="${yearIndices}">
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Model Year</span>
+                                    <span class="spec-char-tag">Chars 8–9: ${yearCode || '-'}</span>
+                                </div>
                                 <span class="spec-value">${decodedYear}</span>
                             </div>
                             <div class="spec-item">
-                                <span class="spec-label">Historical Period</span>
+                                <div class="spec-item-header">
+                                    <span class="spec-label">Historical Period</span>
+                                    <span class="spec-char-tag">Era Format</span>
+                                </div>
                                 <span class="spec-value">1970–1980 Shovelhead Era</span>
                             </div>
                         </div>
                     </div>
                     ${alertHtml}
                 `;
+                setupVinHighlightListeners();
                 return;
             }
 
-            // ERA 3: Vintage Case Casing Era (8-10 digits, 1930–1969)
-            const isVintageMatch = /^\d{2}[A-Z]{2,4}\d{4}$/i.test(vin);
-            if (isVintageMatch) {
-                const yearPrefix = parseInt(vin.substring(0, 2), 10);
-                const fullYear = (yearPrefix >= 30) ? (1900 + yearPrefix) : (2000 + yearPrefix);
+            // --- Pattern Check 3: Modern Era (1981–Present) ---
+            // Default assumption: newest models first until pattern breaks
 
-                // Extract model letters
-                const modelPart = vin.match(/[A-Z]+/i)[0].toUpperCase();
-                // Extract serial
-                const serialPart = vin.substring(2 + modelPart.length);
-                const serialNum = parseInt(serialPart, 10);
-
-                // Parity check validation for 1962-1969
-                let parityBadge = "";
-                if (fullYear >= 1962 && fullYear <= 1969) {
-                    const isYearOdd = (fullYear % 2 !== 0);
-                    let isParityValid = false;
-
-                    if (serialPart.length === 4) {
-                        const firstDigitOdd = (parseInt(serialPart[0], 10) % 2 !== 0);
-                        isParityValid = (isYearOdd === firstDigitOdd);
-                    } else if (serialPart.length === 5) {
-                        const firstTwoDigits = parseInt(serialPart.substring(0, 2), 10);
-                        const firstTwoOdd = (firstTwoDigits % 2 !== 0);
-                        isParityValid = (isYearOdd === firstTwoOdd);
-                    }
-
-                    parityBadge = isParityValid
-                        ? `<span class="badge badge-success">✔️ Parity OK</span>`
-                        : `<span class="badge badge-danger">⚠️ Parity Mismatch (Parity should match Year)</span>`;
-                }
-
+            // Check for illegal characters in 17-digit format (I, O, Q are prohibited)
+            if (/[IOQ]/.test(vin)) {
                 decodeResult.innerHTML = `
-                    <div class="spec-card">
-                        <div class="spec-header">
-                            <h3>Vintage Case Era Details (1930-1969)</h3>
-                            ${parityBadge || `<span class="badge badge-neutral">Vintage Engine Casing</span>`}
-                        </div>
-                        <div class="spec-grid">
-                            <div class="spec-item">
-                                <span class="spec-label">Model Year</span>
-                                <span class="spec-value">${fullYear}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Model Designation</span>
-                                <span class="spec-value">${modelPart}</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Production Number</span>
-                                <span class="spec-value">${serialPart} (Numeric: ${serialNum})</span>
-                            </div>
-                            <div class="spec-item">
-                                <span class="spec-label">Historical Period</span>
-                                <span class="spec-value">1930–1969 Engine Case Era</span>
-                            </div>
-                        </div>
+                    <div class="decode-error">
+                        <span>⚠️ Format Error: Modern 17-digit VINs do not contain letters I, O, or Q (to prevent confusion with numbers 1 and 0).</span>
                     </div>
                 `;
                 return;
             }
 
-            // Fallback: invalid format
+            // Check for over-length input
+            if (vin.length > 17) {
+                decodeResult.innerHTML = `
+                    <div class="decode-error">
+                        <span>⚠️ Length Error: Entered code is ${vin.length} characters (Standard modern VINs are 17 characters maximum).</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // 1. Manufacturer (WMI) - Characters 1 to 3
+            const wmi = vin.substring(0, 3);
+            const decodedWmi = WMI_MAP[wmi] || `Non-Standard WMI (${wmi})`;
+
+            // 2. Motorcycle Weight Class - Character 4
+            let decodedClass = '<span class="spec-pending">Awaiting 4th character...</span>';
+            const classChar = vin.length >= 4 ? vin[3] : '';
+            if (vin.length >= 4) {
+                decodedClass = CLASS_MAP[classChar] || `Class Code: ${classChar}`;
+            }
+
+            // 3. Model Series - Characters 5 and 6
+            let decodedModel = '<span class="spec-pending">Awaiting characters 5–6...</span>';
+            const modelChars = vin.length >= 6 ? vin.substring(4, 6) : (vin.length === 5 ? vin[4] : '');
+            if (vin.length >= 6) {
+                decodedModel = MODEL_MAP[modelChars] || `Model Code: ${modelChars}`;
+            } else if (vin.length === 5) {
+                decodedModel = `Series Prefix: ${vin[4]} <span class="spec-pending">(Awaiting 6th character)</span>`;
+            }
+
+            // 4. Engine Family - Character 7 (Newest engines listed first)
+            let decodedEngine = '<span class="spec-pending">Awaiting 7th character...</span>';
+            const engineChar = vin.length >= 7 ? vin[6] : '';
+            if (vin.length >= 7) {
+                decodedEngine = ENGINE_MAP[engineChar] || `Engine Code: ${engineChar}`;
+            }
+
+            // 5. Introduction Type - Character 8
+            let decodedIntro = '<span class="spec-pending">Awaiting 8th character...</span>';
+            const introChar = vin.length >= 8 ? vin[7] : '';
+            if (vin.length >= 8) {
+                decodedIntro = INTRO_MAP[introChar] || `Intro Code: ${introChar}`;
+            }
+
+            // 6. Check Digit - Character 9
+            let decodedCheckDigit = '<span class="spec-pending">Awaiting 9th character...</span>';
+            let isCheckDigitValid = false;
+            let calculatedCheckDigit = null;
+            const checkDigitChar = vin.length >= 9 ? vin[8] : '';
+
+            if (vin.length >= 9) {
+                if (vin.length === 17) {
+                    calculatedCheckDigit = calculateVinCheckDigit(vin);
+                    isCheckDigitValid = (calculatedCheckDigit !== null && calculatedCheckDigit === checkDigitChar);
+                    decodedCheckDigit = isCheckDigitValid
+                        ? `${checkDigitChar} <span class="badge badge-success" style="margin-left:0.4rem;">✔️ Verified</span>`
+                        : `${checkDigitChar} <span class="badge badge-danger" style="margin-left:0.4rem;">⚠️ Expected: ${calculatedCheckDigit}</span>`;
+                } else {
+                    decodedCheckDigit = `${checkDigitChar} <span class="spec-pending">(Validated at 17 chars)</span>`;
+                }
+            }
+
+            // 7. Model Year - Character 10 (Newest year cycle assumed first)
+            let decodedYear = '<span class="spec-pending">Awaiting 10th character...</span>';
+            const yearChar = vin.length >= 10 ? vin[9] : '';
+            if (vin.length >= 10) {
+                decodedYear = YEAR_MAP[yearChar] || `Year Code: ${yearChar}`;
+            }
+
+            // 8. Assembly Plant - Character 11
+            let decodedPlant = '<span class="spec-pending">Awaiting 11th character...</span>';
+            const plantChar = vin.length >= 11 ? vin[10] : '';
+            if (vin.length >= 11) {
+                decodedPlant = PLANT_MAP[plantChar] || `Plant Code: ${plantChar}`;
+            }
+
+            // 9. Production Serial Number - Characters 12 to 17
+            let decodedSerial = '<span class="spec-pending">Awaiting characters 12–17...</span>';
+            const serialSub = vin.length >= 12 ? vin.substring(11) : '';
+            const serialIndicesArr = [];
+            for (let i = 11; i < vin.length; i++) serialIndicesArr.push(i);
+            const serialIndices = serialIndicesArr.join(",");
+
+            if (vin.length >= 12) {
+                if (vin.length === 17) {
+                    decodedSerial = `${serialSub} <small style="opacity: 0.7; font-size: 0.75rem;">(Complete 6-digit sequence)</small>`;
+                } else {
+                    const digitsCount = vin.length - 11;
+                    decodedSerial = `${serialSub}... <span class="spec-pending">(${digitsCount} of 6 digits entered)</span>`;
+                }
+            }
+
+            // Header status badge
+            let headerBadge = "";
+            if (vin.length === 17) {
+                headerBadge = isCheckDigitValid
+                    ? `<span class="badge badge-success">✔️ Checksum OK (17-Digit)</span>`
+                    : `<span class="badge badge-danger">⚠️ Checksum Error (Expected: ${calculatedCheckDigit})</span>`;
+            } else {
+                headerBadge = `<span class="badge spec-badge-progress">Progressive: ${vin.length}/17 Characters</span>`;
+            }
+
+            // Render decoded specifications card with interactive character map and tags
             decodeResult.innerHTML = `
-                <div class="decode-error">
-                    <span>⚠️ Length / Format Error: Entered code is not a recognized Harley-Davidson format.</span>
-                    <ul style="margin: 0.5rem 0 0 1rem; padding: 0; font-size: 0.8rem; line-height: 1.4;">
-                        <li><strong>Modern Era</strong>: Exactly 17 legal characters (e.g. 1HD1AAK19BY158126)</li>
-                        <li><strong>AMF/Shovelhead Era (1970-1980)</strong>: 9 characters (e.g. 2A10859H4)</li>
-                        <li><strong>Vintage Casing Era (1930-1969)</strong>: 8-10 characters (e.g. 49FL0001)</li>
-                    </ul>
+                <div class="spec-card">
+                    <div class="spec-header">
+                        <h3>Modern Era Details (1981–Present)</h3>
+                        ${headerBadge}
+                    </div>
+                    ${renderVinTapeHtml(vin)}
+                    <div class="spec-grid">
+                        <div class="spec-item" data-char-indices="0,1,2">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Manufacturer (WMI)</span>
+                                <span class="spec-char-tag">Chars 1–3: ${wmi}</span>
+                            </div>
+                            <span class="spec-value">${decodedWmi}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="3">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Motorcycle Class</span>
+                                <span class="spec-char-tag">Char 4: ${classChar || '-'}</span>
+                            </div>
+                            <span class="spec-value">${decodedClass}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="4,5">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Model (Series)</span>
+                                <span class="spec-char-tag">Chars 5–6: ${modelChars || '--'}</span>
+                            </div>
+                            <span class="spec-value">${decodedModel}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="6">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Engine Family</span>
+                                <span class="spec-char-tag">Char 7: ${engineChar || '-'}</span>
+                            </div>
+                            <span class="spec-value">${decodedEngine}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="7">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Introduction Type</span>
+                                <span class="spec-char-tag">Char 8: ${introChar || '-'}</span>
+                            </div>
+                            <span class="spec-value">${decodedIntro}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="8">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Check Digit</span>
+                                <span class="spec-char-tag">Char 9: ${checkDigitChar || '-'}</span>
+                            </div>
+                            <span class="spec-value">${decodedCheckDigit}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="9">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Model Year</span>
+                                <span class="spec-char-tag">Char 10: ${yearChar || '-'}</span>
+                            </div>
+                            <span class="spec-value">${decodedYear}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="10">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Assembly Plant</span>
+                                <span class="spec-char-tag">Char 11: ${plantChar || '-'}</span>
+                            </div>
+                            <span class="spec-value">${decodedPlant}</span>
+                        </div>
+                        <div class="spec-item" data-char-indices="${serialIndices}" style="grid-column: span 2;">
+                            <div class="spec-item-header">
+                                <span class="spec-label">Serial Number</span>
+                                <span class="spec-char-tag">Chars 12–17: ${serialSub || '------'}</span>
+                            </div>
+                            <span class="spec-value">${decodedSerial}</span>
+                        </div>
+                    </div>
                 </div>
             `;
+            setupVinHighlightListeners();
         }
     </script>
 </body>
