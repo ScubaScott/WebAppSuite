@@ -7,4 +7,5 @@ argument-hint: The inputs this agent expects, e.g., "a task to implement" or "a 
 
 <!-- Tip: Use /create-agent in chat to generate content with agent assistance -->
 
-this initial design of these pages was to be a standalone files that will work without any network requirements. I want the main features of my pages to continue to operate that way. any network related functions that fail, should fail silently.
+-all pages should operate on cache, but should always be network first cache checking.
+-all pages should use a seperate CSS file for all styles, and should be set up to use themes.
