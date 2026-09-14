@@ -31,9 +31,9 @@
             <div>
                 <h2 class="text-lg font-semibold text-white">Time Limit Options</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>Choose one of the preset limits: <strong>12 min</strong>, <strong>20 min</strong>, <strong>35 min</strong>, or <strong>40 min</strong>.</li>
-                    <li>Tap <strong>Manual</strong> to enter a custom time in minutes or <code>mm:ss</code> format.</li>
-                    <li>The timer will use the selected limit and waits for you to start.</li>
+                    <li>Tap a preset limit (<strong>12 min</strong>, <strong>20 min</strong>, <strong>35 min</strong>, or <strong>40 min</strong>) to quickly roll the wheels to that duration.</li>
+                    <li>Fine-tune the time by rolling the minutes or seconds wheels, then tap <strong>Set Time</strong> to apply and close.</li>
+                    <li>The timer will use the selected limit and wait for you to start.</li>
                 </ul>
             </div>
 
@@ -98,9 +98,15 @@
             </div>
         </div>
     </div>
+    <footer class="text-center py-4 text-xs text-gray-500">
+        <p>Version <span id="helpVersion">1.2</span></p>
+    </footer>
     <script>
         // ScoreKeeper help documentation version identifier
-        const VERSION = '1.0';
+        const VERSION = '1.2';
+        const APP_VERSION = VERSION;
+        const versionEl = document.getElementById('helpVersion');
+        if (versionEl) versionEl.textContent = VERSION;
     </script>
 </body>
 </html>

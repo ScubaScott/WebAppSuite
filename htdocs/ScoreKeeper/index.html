@@ -73,16 +73,67 @@
                 </div>
             </div>
 
-            <!-- Time limit selection panel (shown when timer tapped while stopped) -->
-            <div id="adjustment-panel"
-                style="display:none;width:100%;background:rgba(31,41,55,0.85);padding:16px;border-radius:14px;border:1px solid rgba(185,28,28,0.3);flex-direction:column;align-items:center;gap:12px;">
-                <div style="font-size:10px;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Select Time Limit</div>
-                <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;">
-                    <button onclick="setTimeLimitOption(12 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">12 min</button>
-                    <button onclick="setTimeLimitOption(20 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">20 min</button>
-                    <button onclick="setTimeLimitOption(35 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">35 min</button>
-                    <button onclick="setTimeLimitOption(40 * 60 * 1000)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">40 min</button>
-                    <button onclick="chooseManualLimit()" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Manual</button>
+            <!-- Time limit selection panel with presets and interactive dual-wheel roller -->
+            <div id="adjustment-panel" class="time-selector-panel">
+                <div class="time-selector-header">
+                    <span class="time-selector-title">Select Time Limit</span>
+                    <button type="button" class="time-selector-close-x" onclick="toggleAdjustmentPanel(false)" title="Close">&times;</button>
+                </div>
+
+                <!-- Preset options row -->
+                <div class="time-preset-row">
+                    <button type="button" class="time-preset-btn" data-ms="720000" onclick="selectPreset(12 * 60 * 1000)">12 min</button>
+                    <button type="button" class="time-preset-btn" data-ms="1200000" onclick="selectPreset(20 * 60 * 1000)">20 min</button>
+                    <button type="button" class="time-preset-btn" data-ms="2100000" onclick="selectPreset(35 * 60 * 1000)">35 min</button>
+                    <button type="button" class="time-preset-btn" data-ms="2400000" onclick="selectPreset(40 * 60 * 1000)">40 min</button>
+                </div>
+
+                <div class="time-selector-divider">
+                    <span>or roll custom time</span>
+                </div>
+
+                <!-- Dual-wheel roller picker (Minutes : Seconds) -->
+                <div class="roller-picker-wrapper">
+                    <!-- Top control buttons: labels and '+' increment buttons -->
+                    <div class="roller-top-controls">
+                        <div class="roller-col-ctrl">
+                            <span class="roller-unit-label">MIN</span>
+                            <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', 1)" title="Add 1 minute">+</button>
+                        </div>
+                        <div class="roller-colon-spacer"></div>
+                        <div class="roller-col-ctrl">
+                            <span class="roller-unit-label">SEC</span>
+                            <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', 1)" title="Add 1 second">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Middle wheels row: scrollable drums with center selection lens -->
+                    <div class="roller-wheels-row">
+                        <div class="roller-selection-lens"></div>
+                        <div class="roller-fade-top"></div>
+                        <div class="roller-fade-bottom"></div>
+
+                        <div class="roller-column" id="roller-minutes" data-type="minutes"></div>
+                        <div class="roller-colon">:</div>
+                        <div class="roller-column" id="roller-seconds" data-type="seconds"></div>
+                    </div>
+
+                    <!-- Bottom control buttons: '-' decrement buttons -->
+                    <div class="roller-bottom-controls">
+                        <div class="roller-col-ctrl">
+                            <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', -1)" title="Subtract 1 minute">-</button>
+                        </div>
+                        <div class="roller-colon-spacer"></div>
+                        <div class="roller-col-ctrl">
+                            <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', -1)" title="Subtract 1 second">-</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="time-roller-actions">
+                    <button type="button" class="time-set-btn" id="roller-apply-btn" onclick="applyRollerTime()">Set Time (40:00)</button>
+                    <button type="button" class="time-cancel-btn" onclick="toggleAdjustmentPanel(false)">Cancel</button>
                 </div>
             </div>
 
@@ -382,6 +433,9 @@
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const closeSettingsX = document.getElementById('close-settings-x');
         const pauseBtn = document.getElementById('pause-btn');
+        const rollerMinutesEl = document.getElementById('roller-minutes');
+        const rollerSecondsEl = document.getElementById('roller-seconds');
+        const rollerApplyBtn = document.getElementById('roller-apply-btn');
 
         // Timer state and game state variables persisted between reloads.
         let timerInterval = null;
@@ -731,34 +785,205 @@
             saveState();
         }
 
+        // Set the active countdown time limit and hide the adjustment panel.
         function setTimeLimitOption(ms) {
             timeLimit = ms;
             isCountingUp = ms <= 0;
             accumulatedTime = 0;
             startTime = null;
-            // Hide the time limit picker after selection.
-            adjustmentPanel.style.display = 'none';
+            toggleAdjustmentPanel(false);
             if (timerRunning) stopTimer();
             updateTimer();
             saveState();
         }
 
-        function chooseManualLimit() {
-            const input = prompt('Enter time limit in minutes, or mm:ss if you need seconds:', '40');
-            if (!input) return;
-            const trimmed = input.trim();
-            let totalSeconds = 0;
-            if (trimmed.includes(':')) {
-                const parts = trimmed.split(':').map(p => parseInt(p, 10));
-                if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
-                    totalSeconds = parts[0] * 60 + parts[1];
+        // Calculate the item index centered in a roller column.
+        function getRollerIndex(col, maxVal) {
+            const itemHeight = 40;
+            return Math.min(maxVal, Math.max(0, Math.round(col.scrollTop / itemHeight)));
+        }
+
+        // Update active highlight classes on drum items and button label.
+        function updateRollerDisplay() {
+            if (!rollerMinutesEl || !rollerSecondsEl) return;
+            const minIndex = getRollerIndex(rollerMinutesEl, 99);
+            const secIndex = getRollerIndex(rollerSecondsEl, 59);
+
+            const minItems = rollerMinutesEl.children;
+            for (let i = 0; i < minItems.length; i++) {
+                if (i === minIndex) {
+                    minItems[i].classList.add('roller-item-active');
+                } else {
+                    minItems[i].classList.remove('roller-item-active');
                 }
-            } else {
-                const minutes = parseFloat(trimmed);
-                if (Number.isFinite(minutes)) totalSeconds = Math.round(minutes * 60);
             }
-            if (totalSeconds <= 0) return;
-            setTimeLimitOption(totalSeconds * 1000);
+
+            const secItems = rollerSecondsEl.children;
+            for (let i = 0; i < secItems.length; i++) {
+                if (i === secIndex) {
+                    secItems[i].classList.add('roller-item-active');
+                } else {
+                    secItems[i].classList.remove('roller-item-active');
+                }
+            }
+
+            const pad = (n) => n.toString().padStart(2, '0');
+            if (rollerApplyBtn) {
+                rollerApplyBtn.textContent = `Set Time (${pad(minIndex)}:${pad(secIndex)})`;
+            }
+
+            const currentMs = (minIndex * 60 + secIndex) * 1000;
+            document.querySelectorAll('.time-preset-btn').forEach(btn => {
+                const presetMs = parseInt(btn.dataset.ms, 10);
+                if (presetMs === currentMs) {
+                    btn.classList.add('time-preset-active');
+                } else {
+                    btn.classList.remove('time-preset-active');
+                }
+            });
+        }
+
+        // Position a roller column at the requested item index.
+        function scrollRollerToIndex(type, index, smooth = true) {
+            const col = type === 'minutes' ? rollerMinutesEl : rollerSecondsEl;
+            if (!col) return;
+            const maxVal = type === 'minutes' ? 99 : 59;
+            const target = Math.min(maxVal, Math.max(0, index));
+            col.scrollTo({ top: target * 40, behavior: smooth ? 'smooth' : 'auto' });
+        }
+
+        // Synchronize the roller columns to display the given millisecond duration.
+        function syncRollerToMs(ms, smooth = false) {
+            if (!rollerMinutesEl || !rollerSecondsEl) return;
+            if (ms === undefined || ms === null || isNaN(ms)) ms = timeLimit || 0;
+            const totalSec = Math.max(0, Math.floor(ms / 1000));
+            const minutes = Math.min(99, Math.floor(totalSec / 60));
+            const seconds = Math.min(59, totalSec % 60);
+
+            scrollRollerToIndex('minutes', minutes, smooth);
+            scrollRollerToIndex('seconds', seconds, smooth);
+            updateRollerDisplay();
+        }
+
+        // Increment or decrement a roller column by one step.
+        function stepRoller(type, delta) {
+            const col = type === 'minutes' ? rollerMinutesEl : rollerSecondsEl;
+            if (!col) return;
+            const maxVal = type === 'minutes' ? 99 : 59;
+            const currentIndex = getRollerIndex(col, maxVal);
+            const targetIndex = Math.min(maxVal, Math.max(0, currentIndex + delta));
+            scrollRollerToIndex(type, targetIndex, true);
+        }
+
+        // Dial the roller wheels to the selected preset duration without closing the panel.
+        function selectPreset(ms) {
+            syncRollerToMs(ms, true);
+        }
+
+        // Apply the duration currently dialed on the roller wheels as the active time limit.
+        function applyRollerTime() {
+            if (!rollerMinutesEl || !rollerSecondsEl) return;
+            const minutes = getRollerIndex(rollerMinutesEl, 99);
+            const seconds = getRollerIndex(rollerSecondsEl, 59);
+            const totalMs = (minutes * 60 + seconds) * 1000;
+            setTimeLimitOption(totalMs);
+        }
+
+        // Toggle visibility of the time limit adjustment panel.
+        function toggleAdjustmentPanel(show = null) {
+            if (timerRunning) return;
+            const isCurrentlyShown = adjustmentPanel.style.display === 'flex';
+            const nextState = show !== null ? show : !isCurrentlyShown;
+            if (nextState) {
+                adjustmentPanel.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    syncRollerToMs(timeLimit, false);
+                });
+            } else {
+                adjustmentPanel.style.display = 'none';
+            }
+        }
+
+        // Open the roller time selector (fallback for any manual limit actions).
+        function chooseManualLimit() {
+            toggleAdjustmentPanel(true);
+        }
+
+        // Attach mouse drag, wheel, and snapping behavior to a roller column.
+        function initRollerColumn(col, type, maxVal) {
+            if (!col) return;
+            let isDragging = false;
+            let startY = 0;
+            let startScrollTop = 0;
+            let scrollSnapTimer = null;
+
+            col.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.pageY;
+                startScrollTop = col.scrollTop;
+                col.classList.add('roller-dragging');
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                col.scrollTop = startScrollTop - (e.pageY - startY);
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (!isDragging) return;
+                isDragging = false;
+                col.classList.remove('roller-dragging');
+                const nearest = Math.round(col.scrollTop / 40);
+                col.scrollTo({ top: nearest * 40, behavior: 'smooth' });
+            });
+
+            col.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = Math.sign(e.deltaY);
+                const current = getRollerIndex(col, maxVal);
+                const next = Math.min(maxVal, Math.max(0, current + delta));
+                col.scrollTo({ top: next * 40, behavior: 'smooth' });
+            }, { passive: false });
+
+            col.addEventListener('scroll', () => {
+                updateRollerDisplay();
+                clearTimeout(scrollSnapTimer);
+                scrollSnapTimer = setTimeout(() => {
+                    const nearest = Math.round(col.scrollTop / 40);
+                    if (Math.abs(col.scrollTop - nearest * 40) > 1) {
+                        col.scrollTo({ top: nearest * 40, behavior: 'smooth' });
+                    }
+                }, 150);
+            });
+        }
+
+        // Populate items and bind interaction handlers for the roller drum picker.
+        function initRoller() {
+            if (!rollerMinutesEl || !rollerSecondsEl) return;
+            rollerMinutesEl.innerHTML = '';
+            rollerSecondsEl.innerHTML = '';
+
+            for (let m = 0; m <= 99; m++) {
+                const item = document.createElement('div');
+                item.className = 'roller-item';
+                item.textContent = m.toString().padStart(2, '0');
+                const idx = m;
+                item.addEventListener('click', () => scrollRollerToIndex('minutes', idx, true));
+                rollerMinutesEl.appendChild(item);
+            }
+
+            for (let s = 0; s <= 59; s++) {
+                const item = document.createElement('div');
+                item.className = 'roller-item';
+                item.textContent = s.toString().padStart(2, '0');
+                const idx = s;
+                item.addEventListener('click', () => scrollRollerToIndex('seconds', idx, true));
+                rollerSecondsEl.appendChild(item);
+            }
+
+            initRollerColumn(rollerMinutesEl, 'minutes', 99);
+            initRollerColumn(rollerSecondsEl, 'seconds', 59);
+            syncRollerToMs(timeLimit, false);
         }
 
         // Show or hide the elapsed-time adjustment panel while the timer is running.
@@ -794,8 +1019,7 @@
         timerDisplay.addEventListener('click', () => {
             // Toggle time-limit selection panel when tapped while stopped.
             if (!timerRunning) {
-                const isShown = adjustmentPanel.style.display === 'flex';
-                adjustmentPanel.style.display = isShown ? 'none' : 'flex';
+                toggleAdjustmentPanel();
             }
         });
 
@@ -1365,6 +1589,7 @@
                 updateMuteButton();
                 updatePauseButtonVisibility();
             }
+            initRoller();
             saveState();
         };
 
@@ -1381,7 +1606,8 @@
         });
 
         // ScoreKeeper version identifier
-        const VERSION = '1.8';
+        const VERSION = '2.0';
+        const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
 
@@ -1395,7 +1621,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">1.8</span></p>
+        <p>Version <span id="appVersion">2.0</span></p>
     </footer>
 </body>
 

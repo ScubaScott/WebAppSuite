@@ -1,6 +1,6 @@
 /* ============================================================
    ScoreKeeper — scorekeeper.css
-   Version: 1.8
+   Version: 2.0
    All visual styles for the ScoreKeeper application.
    ============================================================ */
 
@@ -590,6 +590,364 @@ body {
 .fab.fab-muted {
     background: #dc2626;
     border-color: #991b1b;
+}
+
+/* ============================================================
+   Time Selector & Roller Picker
+   Cylindrical drum wheel selector for custom time limits
+   with quick preset chips and smooth scroll-snapping.
+   ============================================================ */
+
+.time-selector-panel {
+    display: none;
+    width: 100%;
+    background: rgba(23, 30, 44, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 16px 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.time-selector-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.time-selector-title {
+    font-size: 0.72rem;
+    color: #f87171;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.time-selector-close-x {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.15s ease;
+}
+.time-selector-close-x:hover {
+    color: #ffffff;
+}
+
+/* Preset buttons row */
+.time-preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.time-preset-btn {
+    background: #1f2937;
+    color: #d1d5db;
+    border: 1px solid #374151;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.time-preset-btn:hover {
+    background: #374151;
+    color: #ffffff;
+    border-color: #4b5563;
+    transform: translateY(-1px);
+}
+
+.time-preset-btn:active {
+    transform: translateY(0);
+}
+
+.time-preset-btn.time-preset-active {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+}
+
+/* Section divider */
+.time-selector-divider {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    gap: 10px;
+}
+
+.time-selector-divider::before,
+.time-selector-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(55, 65, 81, 0.8);
+}
+
+/* Roller Picker Container */
+.roller-picker-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #111827;
+    border-radius: 14px;
+    border: 1px solid #374151;
+    padding: 8px 12px;
+    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+}
+
+/* Controls above wheels */
+.roller-top-controls,
+.roller-bottom-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.roller-col-ctrl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 72px;
+}
+
+.roller-colon-spacer {
+    width: 24px;
+}
+
+.roller-unit-label {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #9ca3af;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    user-select: none;
+}
+
+.roller-step-btn {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 1rem;
+    font-weight: 800;
+    width: 48px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    line-height: 1;
+}
+
+.roller-step-btn:hover {
+    background: #374151;
+    color: #ef4444;
+    border-color: #ef4444;
+    transform: scale(1.05);
+}
+
+.roller-step-btn:active {
+    transform: scale(0.95);
+}
+
+/* Middle wheels row: 120px tall housing both columns and the selection lens */
+.roller-wheels-row {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0;
+    overflow: hidden;
+}
+
+/* Selection lens spanning across both active center cells */
+.roller-selection-lens {
+    position: absolute;
+    top: 40px;
+    left: 4px;
+    right: 4px;
+    height: 40px;
+    background: rgba(239, 68, 68, 0.12);
+    border-top: 1.5px solid rgba(239, 68, 68, 0.55);
+    border-bottom: 1.5px solid rgba(239, 68, 68, 0.55);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 1;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.2);
+}
+
+/* 3D Vignette fade gradients at top & bottom */
+.roller-fade-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 38px;
+    background: linear-gradient(to bottom, #111827 25%, rgba(17, 24, 39, 0));
+    pointer-events: none;
+    z-index: 2;
+}
+
+.roller-fade-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 38px;
+    background: linear-gradient(to top, #111827 25%, rgba(17, 24, 39, 0));
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Scroll column */
+.roller-column {
+    width: 72px;
+    height: 120px;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    position: relative;
+    padding-top: 40px;
+    padding-bottom: 40px;
+    box-sizing: border-box;
+    cursor: grab;
+    z-index: 3;
+}
+
+.roller-column::-webkit-scrollbar {
+    display: none;
+}
+
+.roller-column.roller-dragging {
+    cursor: grabbing;
+    scroll-snap-type: none;
+}
+
+.roller-item {
+    height: 40px;
+    line-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: center;
+    font-family: monospace;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #6b7280;
+    opacity: 0.35;
+    transform: scale(0.82);
+    transition: color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+    user-select: none;
+    cursor: pointer;
+}
+
+.roller-item.roller-item-active {
+    color: #ffffff;
+    opacity: 1;
+    transform: scale(1.18);
+    text-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+}
+
+/* Colon divider between minutes & seconds */
+.roller-colon {
+    width: 24px;
+    height: 40px;
+    line-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #ef4444;
+    user-select: none;
+    z-index: 3;
+}
+
+/* Action buttons at bottom of panel */
+.time-roller-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 260px;
+}
+
+.time-set-btn {
+    flex: 2;
+    background: #10b981;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transition: all 0.15s ease;
+}
+
+.time-set-btn:hover {
+    background: #059669;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+    transform: translateY(-1px);
+}
+
+.time-set-btn:active {
+    transform: translateY(0);
+}
+
+.time-cancel-btn {
+    flex: 1;
+    background: #374151;
+    color: #d1d5db;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.time-cancel-btn:hover {
+    background: #4b5563;
+    color: #ffffff;
 }
 
 /* ============================================================
