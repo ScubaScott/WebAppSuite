@@ -1,6 +1,6 @@
 /* ============================================================
    ScoreKeeper — scorekeeper.css
-   Version: 2.0
+   Version: 2.2
    All visual styles for the ScoreKeeper application.
    ============================================================ */
 
@@ -72,6 +72,7 @@ body {
     border-bottom: 1px solid rgba(55, 65, 81, 0.7);
     transition: background-color 0.15s ease;
     white-space: nowrap;
+    cursor: pointer;
 }
 .history-row:hover {
     background-color: rgba(55, 65, 81, 0.45);
@@ -118,6 +119,17 @@ body {
     font-size: clamp(0.68rem, 2.2vw, 0.78rem);
     font-family: monospace;
     color: #9ca3af;
+}
+
+/* History note column cell */
+.history-note-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(0.68rem, 2.2vw, 0.78rem);
+    color: #93c5fd;
+    font-style: italic;
+    padding-right: 6px;
 }
 
 /* Event log row cell */
@@ -951,6 +963,486 @@ body {
 }
 
 /* ============================================================
+   Penalty Cards (Yellow & Red)
+   Optional team foul buttons and card raise animation.
+   ============================================================ */
+
+.penalty-cards-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+    box-sizing: border-box;
+}
+
+.team-cards-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.foul-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 5px 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #d1d5db;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    user-select: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+.foul-card-btn:hover {
+    background: #283548;
+    color: #ffffff;
+    border-color: #4b5563;
+    transform: translateY(-1px);
+}
+
+.foul-card-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+.card-swatch {
+    width: 12px;
+    height: 17px;
+    border-radius: 3px;
+    display: inline-block;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.card-swatch.yellow {
+    background: #facc15;
+    border: 1px solid #ca8a04;
+}
+
+.card-swatch.red {
+    background: #ef4444;
+    border: 1px solid #b91c1c;
+}
+
+.cards-center-label {
+    font-size: 0.62rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    user-select: none;
+}
+
+/* History card foul badge */
+.history-card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 5px;
+    margin-left: 6px;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+}
+
+.history-card-badge.yellow {
+    background: #facc15;
+    color: #713f12;
+    border: 1px solid #ca8a04;
+    box-shadow: 0 0 6px rgba(250, 204, 21, 0.35);
+}
+
+.history-card-badge.red {
+    background: #ef4444;
+    color: #ffffff;
+    border: 1px solid #b91c1c;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.35);
+}
+
+/* ============================================================
+   1-Second Referee Card Raise Animation
+   Simulates raising a yellow or red card above the team score.
+   ============================================================ */
+
+@keyframes raiseCardAnim {
+    0% {
+        transform: translate(-50%, 50px) scale(0.4) rotate(-8deg);
+        opacity: 0;
+    }
+    25% {
+        transform: translate(-50%, -60px) scale(1.18) rotate(4deg);
+        opacity: 1;
+    }
+    55% {
+        transform: translate(-50%, -75px) scale(1.1) rotate(2deg);
+        opacity: 1;
+    }
+    80% {
+        transform: translate(-50%, -80px) scale(1.05) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -100px) scale(0.9) rotate(-3deg);
+        opacity: 0;
+    }
+}
+
+@keyframes cardGlowPulse {
+    0%, 100% {
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 20px var(--card-glow);
+    }
+    50% {
+        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85), 0 0 40px var(--card-glow);
+    }
+}
+
+.card-raise-overlay {
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+.card-raise-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 62px;
+    height: 90px;
+    border-radius: 8px;
+    animation: raiseCardAnim 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    user-select: none;
+}
+
+.card-raise-card.yellow {
+    background: linear-gradient(145deg, #fef08a 0%, #facc15 65%, #eab308 100%);
+    border: 2.5px solid #ca8a04;
+    color: #713f12;
+    --card-glow: rgba(250, 204, 21, 0.65);
+    animation: raiseCardAnim 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards, cardGlowPulse 1.0s ease-in-out;
+}
+
+.card-raise-card.red {
+    background: linear-gradient(145deg, #fca5a5 0%, #ef4444 65%, #b91c1c 100%);
+    border: 2.5px solid #991b1b;
+    color: #ffffff;
+    --card-glow: rgba(239, 68, 68, 0.7);
+    animation: raiseCardAnim 1.0s cubic-bezier(0.16, 1, 0.3, 1) forwards, cardGlowPulse 1.0s ease-in-out;
+}
+
+.card-raise-card-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.card-raise-card-text {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    margin-top: 4px;
+}
+
+/* ============================================================
+   History Row Options Modal & Note Editor
+   ============================================================ */
+
+#history-options-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.history-options-panel {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75);
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    animation: modalPopIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.history-options-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #1f2937;
+    background: #151d2c;
+}
+
+.history-options-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #f3f4f6;
+    letter-spacing: 0.02em;
+}
+
+.history-options-close {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.15s ease;
+}
+
+.history-options-close:hover {
+    color: #ffffff;
+}
+
+.history-preview-box {
+    background: #1a2234;
+    border-bottom: 1px solid #283548;
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-preview-event {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #f9fafb;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-preview-meta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: monospace;
+}
+
+.history-preview-note {
+    font-size: 0.76rem;
+    color: #93c5fd;
+    font-style: italic;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-actions-list {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px 16px;
+    gap: 10px;
+}
+
+.history-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #374151;
+    background: #1f2937;
+    color: #f3f4f6;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.history-action-btn:hover {
+    background: #283548;
+    border-color: #4b5563;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.history-action-btn:active {
+    transform: translateY(0);
+}
+
+.history-action-btn.btn-remove {
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.history-action-btn.btn-remove:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+.history-action-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    width: 24px;
+    display: inline-flex;
+    justify-content: center;
+}
+
+/* 1-line Note Editor View */
+#history-note-editor {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px 16px;
+    gap: 12px;
+}
+
+.history-note-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.history-note-input {
+    width: 100%;
+    background: #1f2937;
+    border: 1px solid #374151;
+    color: #f9fafb;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.history-note-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.history-note-counter {
+    text-align: right;
+    font-size: 0.68rem;
+    color: #6b7280;
+    margin-top: -6px;
+}
+
+.history-note-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.history-note-btn-save {
+    flex: 2;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.history-note-btn-save:hover {
+    background: #1d4ed8;
+}
+
+.history-note-btn-cancel {
+    flex: 1;
+    background: #374151;
+    color: #d1d5db;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.history-note-btn-cancel:hover {
+    background: #4b5563;
+    color: #ffffff;
+}
+
+/* Toast notification */
+#clipboard-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1f2937;
+    border: 1px solid #374151;
+    color: #f9fafb;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#clipboard-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
    Footer version tag
    ============================================================ */
 footer {
@@ -959,3 +1451,4 @@ footer {
     font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.35);
 }
+

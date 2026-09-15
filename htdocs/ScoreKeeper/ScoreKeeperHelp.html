@@ -55,11 +55,26 @@
             </div>
 
             <div>
-                <h2 class="text-lg font-semibold text-white">Score Tracking</h2>
+                <h2 class="text-lg font-semibold text-white">Score Tracking &amp; History Log</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li><strong>Tap a team's score area</strong> to increment that team's score. The big red/blue score tiles are tappable.</li>
-                    <li>Each score entry is saved in the history with the team name, score snapshot (e.g. <em>2-1</em>), and a timestamped elapsed label.</li>
-                    <li>Tap the ✕ icon on a history row to remove that entry; removing a score will decrement the associated team's total.</li>
+                    <li>Each score entry is logged in the Score History with three columns: <strong>Team (Score)</strong>, <strong>Note</strong>, and <strong>Time</strong>.</li>
+                    <li><strong>Tap any history row</strong> to open its options menu:
+                        <ul class="list-disc list-inside ml-5 mt-1 space-y-1 text-gray-400">
+                            <li><strong>Add Note / Edit Note:</strong> Attach a custom single-line note (up to 60 characters) to that event (e.g., penalty kick, player name).</li>
+                            <li><strong>Share:</strong> Copy a clean, formatted text message to your clipboard ready to paste into an SMS to update friends and family.</li>
+                            <li><strong>Remove:</strong> Replaces the old direct ✕ action. Deletes the selected entry and decrements the associated team's score total.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Penalty Cards (Fouls)</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>Enable <strong>Show Penalty Cards</strong> in Settings to display Yellow and Red card buttons below each team's score.</li>
+                    <li>Tapping a card button logs the foul to the score history (team, card degree, and elapsed game time) and plays a 1-second card-raising animation.</li>
+                    <li>Foul card entries can be tapped in the history list to add/edit notes, share the card event, or remove accidental entries without altering scores.</li>
                 </ul>
             </div>
 
@@ -99,11 +114,11 @@
         </div>
     </div>
     <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">1.2</span></p>
+        <p>Version <span id="helpVersion">1.4</span></p>
     </footer>
     <script>
         // ScoreKeeper help documentation version identifier
-        const VERSION = '1.2';
+        const VERSION = '1.4';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;

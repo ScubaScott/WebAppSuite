@@ -16,200 +16,273 @@
 <body style="margin:0;padding:0;">
 
     <!-- Main scoreboard content, vertically centered -->
-    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
-    <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
-        <a href="../" class="back-link" style="align-self:flex-start;">← Back to Apps</a>
-        <div style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
+    <div
+        style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
+        <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+            <a href="../" class="back-link" style="align-self:flex-start;">← Back to Apps</a>
+            <div
+                style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
 
-            <!-- Score row: Home | Period | Away -->
-            <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
-                <!-- Home team -->
-                <div style="display:flex;flex-direction:column;align-items:center;">
-                    <div id="home-team-name"
-                        style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
-                        Us</div>
-                    <div id="score-home"
-                        class="interactive-box"
-                        style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
-                        0</div>
-                </div>
-
-                <!-- Period -->
-                <div style="display:flex;flex-direction:column;align-items:center;">
-                    <div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">Period</div>
-                    <div id="period-display"
-                        class="interactive-box"
-                        style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;transition:background 0.15s;">
-                        P1</div>
-                </div>
-
-                <!-- Away team -->
-                <div style="display:flex;flex-direction:column;align-items:center;">
-                    <div id="away-team-name"
-                        style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
-                        Them</div>
-                    <div id="score-away"
-                        class="interactive-box"
-                        style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
-                        0</div>
-                </div>
-            </div>
-
-            <!-- Timer displays -->
-            <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:24px;">
-                <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-                    <div style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">Remaining</div>
-                    <div id="timer-display"
-                        class="interactive-box"
-                        style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;"
-                        title="Tap while stopped to choose a time limit">00:40:00.0</div>
-                </div>
-
-                <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-                    <div style="font-size:0.75rem;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">Elapsed</div>
-                    <div id="elapsed-time-display"
-                        class="interactive-box"
-                        style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">00:00:00.0</div>
-                </div>
-            </div>
-
-            <!-- Time limit selection panel with presets and interactive dual-wheel roller -->
-            <div id="adjustment-panel" class="time-selector-panel">
-                <div class="time-selector-header">
-                    <span class="time-selector-title">Select Time Limit</span>
-                    <button type="button" class="time-selector-close-x" onclick="toggleAdjustmentPanel(false)" title="Close">&times;</button>
-                </div>
-
-                <!-- Preset options row -->
-                <div class="time-preset-row">
-                    <button type="button" class="time-preset-btn" data-ms="720000" onclick="selectPreset(12 * 60 * 1000)">12 min</button>
-                    <button type="button" class="time-preset-btn" data-ms="1200000" onclick="selectPreset(20 * 60 * 1000)">20 min</button>
-                    <button type="button" class="time-preset-btn" data-ms="2100000" onclick="selectPreset(35 * 60 * 1000)">35 min</button>
-                    <button type="button" class="time-preset-btn" data-ms="2400000" onclick="selectPreset(40 * 60 * 1000)">40 min</button>
-                </div>
-
-                <div class="time-selector-divider">
-                    <span>or roll custom time</span>
-                </div>
-
-                <!-- Dual-wheel roller picker (Minutes : Seconds) -->
-                <div class="roller-picker-wrapper">
-                    <!-- Top control buttons: labels and '+' increment buttons -->
-                    <div class="roller-top-controls">
-                        <div class="roller-col-ctrl">
-                            <span class="roller-unit-label">MIN</span>
-                            <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', 1)" title="Add 1 minute">+</button>
-                        </div>
-                        <div class="roller-colon-spacer"></div>
-                        <div class="roller-col-ctrl">
-                            <span class="roller-unit-label">SEC</span>
-                            <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', 1)" title="Add 1 second">+</button>
-                        </div>
+                <!-- Score row: Home | Period | Away -->
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
+                    <!-- Home team -->
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <div id="home-team-name"
+                            style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                            Us</div>
+                        <div id="score-home" class="interactive-box"
+                            style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
+                            0</div>
                     </div>
 
-                    <!-- Middle wheels row: scrollable drums with center selection lens -->
-                    <div class="roller-wheels-row">
-                        <div class="roller-selection-lens"></div>
-                        <div class="roller-fade-top"></div>
-                        <div class="roller-fade-bottom"></div>
-
-                        <div class="roller-column" id="roller-minutes" data-type="minutes"></div>
-                        <div class="roller-colon">:</div>
-                        <div class="roller-column" id="roller-seconds" data-type="seconds"></div>
+                    <!-- Period -->
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <div
+                            style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">
+                            Period</div>
+                        <div id="period-display" class="interactive-box"
+                            style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;transition:background 0.15s;">
+                            P1</div>
                     </div>
 
-                    <!-- Bottom control buttons: '-' decrement buttons -->
-                    <div class="roller-bottom-controls">
-                        <div class="roller-col-ctrl">
-                            <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', -1)" title="Subtract 1 minute">-</button>
-                        </div>
-                        <div class="roller-colon-spacer"></div>
-                        <div class="roller-col-ctrl">
-                            <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', -1)" title="Subtract 1 second">-</button>
+                    <!-- Away team -->
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <div id="away-team-name"
+                            style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                            Them</div>
+                        <div id="score-away" class="interactive-box"
+                            style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
+                            0</div>
+                    </div>
+                </div>
+
+                <!-- Penalty cards row (optional, configured in settings) -->
+                <div id="penalty-cards-row" class="penalty-cards-container hidden">
+                    <!-- Home team cards -->
+                    <div class="team-cards-group" id="home-cards-group">
+                        <button type="button" id="btn-card-home-yellow" class="foul-card-btn"
+                            onclick="recordFoulCard('home', 'yellow')" title="Home Team: Yellow Card">
+                            <span class="card-swatch yellow"></span>
+                            <span>Yellow</span>
+                        </button>
+                        <button type="button" id="btn-card-home-red" class="foul-card-btn"
+                            onclick="recordFoulCard('home', 'red')" title="Home Team: Red Card">
+                            <span class="card-swatch red"></span>
+                            <span>Red</span>
+                        </button>
+                    </div>
+
+                    <!-- Center label -->
+                    <div class="cards-center-label">Cards</div>
+
+                    <!-- Away team cards -->
+                    <div class="team-cards-group" id="away-cards-group">
+                        <button type="button" id="btn-card-away-yellow" class="foul-card-btn"
+                            onclick="recordFoulCard('away', 'yellow')" title="Away Team: Yellow Card">
+                            <span class="card-swatch yellow"></span>
+                            <span>Yellow</span>
+                        </button>
+                        <button type="button" id="btn-card-away-red" class="foul-card-btn"
+                            onclick="recordFoulCard('away', 'red')" title="Away Team: Red Card">
+                            <span class="card-swatch red"></span>
+                            <span>Red</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timer displays -->
+                <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:24px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                        <div
+                            style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                            Remaining</div>
+                        <div id="timer-display" class="interactive-box"
+                            style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;"
+                            title="Tap while stopped to choose a time limit">00:40:00.0</div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                        <div
+                            style="font-size:0.75rem;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                            Elapsed</div>
+                        <div id="elapsed-time-display" class="interactive-box"
+                            style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">00:00:00.0
                         </div>
                     </div>
                 </div>
 
-                <!-- Action buttons -->
-                <div class="time-roller-actions">
-                    <button type="button" class="time-set-btn" id="roller-apply-btn" onclick="applyRollerTime()">Set Time (40:00)</button>
-                    <button type="button" class="time-cancel-btn" onclick="toggleAdjustmentPanel(false)">Cancel</button>
+                <!-- Time limit selection panel with presets and interactive dual-wheel roller -->
+                <div id="adjustment-panel" class="time-selector-panel">
+                    <div class="time-selector-header">
+                        <span class="time-selector-title">Select Time Limit</span>
+                        <button type="button" class="time-selector-close-x" onclick="toggleAdjustmentPanel(false)"
+                            title="Close">&times;</button>
+                    </div>
+
+                    <!-- Preset options row -->
+                    <div class="time-preset-row">
+                        <button type="button" class="time-preset-btn" data-ms="720000"
+                            onclick="selectPreset(12 * 60 * 1000)">12 min</button>
+                        <button type="button" class="time-preset-btn" data-ms="1200000"
+                            onclick="selectPreset(20 * 60 * 1000)">20 min</button>
+                        <button type="button" class="time-preset-btn" data-ms="2100000"
+                            onclick="selectPreset(35 * 60 * 1000)">35 min</button>
+                        <button type="button" class="time-preset-btn" data-ms="2400000"
+                            onclick="selectPreset(40 * 60 * 1000)">40 min</button>
+                    </div>
+
+                    <div class="time-selector-divider">
+                        <span>or roll custom time</span>
+                    </div>
+
+                    <!-- Dual-wheel roller picker (Minutes : Seconds) -->
+                    <div class="roller-picker-wrapper">
+                        <!-- Top control buttons: labels and '+' increment buttons -->
+                        <div class="roller-top-controls">
+                            <div class="roller-col-ctrl">
+                                <span class="roller-unit-label">MIN</span>
+                                <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', 1)"
+                                    title="Add 1 minute">+</button>
+                            </div>
+                            <div class="roller-colon-spacer"></div>
+                            <div class="roller-col-ctrl">
+                                <span class="roller-unit-label">SEC</span>
+                                <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', 1)"
+                                    title="Add 1 second">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Middle wheels row: scrollable drums with center selection lens -->
+                        <div class="roller-wheels-row">
+                            <div class="roller-selection-lens"></div>
+                            <div class="roller-fade-top"></div>
+                            <div class="roller-fade-bottom"></div>
+
+                            <div class="roller-column" id="roller-minutes" data-type="minutes"></div>
+                            <div class="roller-colon">:</div>
+                            <div class="roller-column" id="roller-seconds" data-type="seconds"></div>
+                        </div>
+
+                        <!-- Bottom control buttons: '-' decrement buttons -->
+                        <div class="roller-bottom-controls">
+                            <div class="roller-col-ctrl">
+                                <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', -1)"
+                                    title="Subtract 1 minute">-</button>
+                            </div>
+                            <div class="roller-colon-spacer"></div>
+                            <div class="roller-col-ctrl">
+                                <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', -1)"
+                                    title="Subtract 1 second">-</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="time-roller-actions">
+                        <button type="button" class="time-set-btn" id="roller-apply-btn" onclick="applyRollerTime()">Set
+                            Time (40:00)</button>
+                        <button type="button" class="time-cancel-btn"
+                            onclick="toggleAdjustmentPanel(false)">Cancel</button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Elapsed-time adjustment panel (shown while clock is running) -->
-            <div id="elapsed-adjust-panel"
-                style="display:none;width:100%;background:rgba(31,41,55,0.85);padding:16px;border-radius:14px;border:1px solid rgba(29,78,216,0.3);flex-direction:column;align-items:center;gap:12px;">
-                <div style="font-size:10px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Adjust elapsed time</div>
-                <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;">
-                    <button onclick="adjustElapsedMinutes(1)"  style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+1 min</button>
-                    <button onclick="adjustElapsedMinutes(-1)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-1 min</button>
-                    <button onclick="adjustElapsedMinutes(5)"  style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+5 min</button>
-                    <button onclick="adjustElapsedMinutes(-5)" style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-5 min</button>
-                    <button onclick="hideElapsedAdjustPanel()" style="background:#b91c1c;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Close</button>
+                <!-- Elapsed-time adjustment panel (shown while clock is running) -->
+                <div id="elapsed-adjust-panel"
+                    style="display:none;width:100%;background:rgba(31,41,55,0.85);padding:16px;border-radius:14px;border:1px solid rgba(29,78,216,0.3);flex-direction:column;align-items:center;gap:12px;">
+                    <div
+                        style="font-size:10px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">
+                        Adjust elapsed time</div>
+                    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;">
+                        <button onclick="adjustElapsedMinutes(1)"
+                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+1
+                            min</button>
+                        <button onclick="adjustElapsedMinutes(-1)"
+                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-1
+                            min</button>
+                        <button onclick="adjustElapsedMinutes(5)"
+                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+5
+                            min</button>
+                        <button onclick="adjustElapsedMinutes(-5)"
+                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-5
+                            min</button>
+                        <button onclick="hideElapsedAdjustPanel()"
+                            style="background:#b91c1c;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Close</button>
+                    </div>
+                    <div style="font-size:10px;color:#6b7280;text-align:center;">Tap elapsed time during a running clock
+                        to correct early/late starts.</div>
                 </div>
-                <div style="font-size:10px;color:#6b7280;text-align:center;">Tap elapsed time during a running clock to correct early/late starts.</div>
-            </div>
 
-            <!-- Start / Pause / New Game buttons -->
-            <div style="width:100%;display:flex;justify-content:center;gap:8px;">
-                <button id="start-stop-btn"
-                    style="flex:1;background:#10b981;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
-                    onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">Start</button>
-                <button id="pause-btn"
-                    style="flex:1;background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
-                    class="hidden"
-                    onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">Pause</button>
-                <button id="reset-btn"
-                    style="flex:1;background:#374151;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
-                    onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">New Game</button>
-            </div>
-
-            <!-- Score History table -->
-            <div style="width:100%;background:#1f2937;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:1px solid #374151;">
-                <div style="background:#374151;padding:8px 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#d1d5db;">Score History</div>
-                <div class="history-table" style="max-height:192px;overflow-y:auto;">
-                    <table style="width:100%;text-align:left;font-size:0.875rem;table-layout:fixed;">
-                        <colgroup>
-                            <col style="width:52%;">
-                            <col style="width:34%;">
-                            <col style="width:14%;">
-                        </colgroup>
-                        <thead style="background:#1f2937;position:sticky;top:0;z-index:2;">
-                            <tr style="color:#6b7280;font-size:10px;text-transform:uppercase;white-space:nowrap;">
-                                <th style="padding:8px 10px 8px 12px;">Team (Score)</th>
-                                <th style="padding:8px 6px;">Elapsed</th>
-                                <th style="padding:8px 12px 8px 6px;text-align:right;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-body"></tbody>
-                    </table>
+                <!-- Start / Pause / New Game buttons -->
+                <div style="width:100%;display:flex;justify-content:center;gap:8px;">
+                    <button id="start-stop-btn"
+                        style="flex:1;background:#10b981;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                        onmousedown="this.style.transform='scale(0.95)'"
+                        onmouseup="this.style.transform='scale(1)'">Start</button>
+                    <button id="pause-btn"
+                        style="flex:1;background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                        class="hidden" onmousedown="this.style.transform='scale(0.95)'"
+                        onmouseup="this.style.transform='scale(1)'">Pause</button>
+                    <button id="reset-btn"
+                        style="flex:1;background:#374151;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                        onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">New
+                        Game</button>
                 </div>
-            </div>
 
-            <!-- Links -->
-            <div style="width:100%;text-align:center;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
-                <a href="ScoreKeeperActiveGames.html" style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active Games</a>
-                <a href="ScoreKeeperHelp.html" style="font-size:0.875rem;font-weight:700;color:#60a5fa;text-decoration:underline;">help!</a>
-            </div>
+                <!-- Score History table -->
+                <div
+                    style="width:100%;background:#1f2937;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:1px solid #374151;">
+                    <div
+                        style="background:#374151;padding:8px 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#d1d5db;">
+                        Score History</div>
+                    <div class="history-table" style="max-height:192px;overflow-y:auto;">
+                        <table style="width:100%;text-align:left;font-size:0.875rem;table-layout:fixed;">
+                            <colgroup>
+                                <col style="width:42%;">
+                                <col style="width:34%;">
+                                <col style="width:24%;">
+                            </colgroup>
+                            <thead style="background:#1f2937;position:sticky;top:0;z-index:2;">
+                                <tr style="color:#6b7280;font-size:10px;text-transform:uppercase;white-space:nowrap;">
+                                    <th style="padding:8px 10px 8px 12px;">Team (Score)</th>
+                                    <th style="padding:8px 6px;">Note</th>
+                                    <th style="padding:8px 12px 8px 6px;text-align:right;">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                    </div>
+                </div>
 
-        </div><!-- end card -->
-    </div><!-- end max-width wrapper -->
+                <!-- Links -->
+                <div style="width:100%;text-align:center;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
+                    <a href="ScoreKeeperActiveGames.html"
+                        style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active
+                        Games</a>
+                    <a href="ScoreKeeperHelp.html"
+                        style="font-size:0.875rem;font-weight:700;color:#60a5fa;text-decoration:underline;">help!</a>
+                </div>
+
+            </div><!-- end card -->
+        </div><!-- end max-width wrapper -->
     </div><!-- end min-height centering wrapper -->
 
     <!-- Floating action buttons (fixed position, bottom corners) -->
     <div style="position:fixed;right:16px;bottom:16px;">
         <button id="mute-btn" class="fab" title="Mute / unmute sound">
-            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:24px;height:24px;" fill="currentColor">
-                <path d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
+            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:24px;height:24px;"
+                fill="currentColor">
+                <path
+                    d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
             </svg>
         </button>
     </div>
 
     <div style="position:fixed;left:16px;bottom:16px;">
         <button id="settings-btn" class="fab" title="Settings">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:24px;height:24px;" fill="currentColor">
-                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:24px;height:24px;"
+                fill="currentColor">
+                <path
+                    d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
             </svg>
         </button>
     </div>
@@ -224,8 +297,10 @@
             <!-- Sticky header -->
             <div class="settings-header">
                 <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:20px;height:20px;color:#9ca3af;" fill="currentColor">
-                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                        style="width:20px;height:20px;color:#9ca3af;" fill="currentColor">
+                        <path
+                            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
                     </svg>
                     Settings
                 </h3>
@@ -284,29 +359,37 @@
                 <div class="theme-grid" id="theme-grid">
 
                     <!-- Theme: Saber Dark -->
-                    <div class="theme-card" id="theme-saber-dark" data-theme="saber-dark" onclick="applyTheme('saber-dark')">
+                    <div class="theme-card" id="theme-saber-dark" data-theme="saber-dark"
+                        onclick="applyTheme('saber-dark')">
                         <div class="theme-preview" style="background-image:url('./media/bgimages/saber.png');"></div>
                         <div class="theme-name">Saber Dark</div>
                         <div class="theme-check">✓</div>
                     </div>
 
                     <!-- Theme: Saber Intense — saber bg with deep crimson accent -->
-                    <div class="theme-card" id="theme-saber-intense" data-theme="saber-intense" onclick="applyTheme('saber-intense')">
-                        <div class="theme-preview" style="background-image:url('./media/bgimages/saber.png');filter:saturate(1.6) brightness(0.75);"></div>
+                    <div class="theme-card" id="theme-saber-intense" data-theme="saber-intense"
+                        onclick="applyTheme('saber-intense')">
+                        <div class="theme-preview"
+                            style="background-image:url('./media/bgimages/saber.png');filter:saturate(1.6) brightness(0.75);">
+                        </div>
                         <div class="theme-name">Saber Intense</div>
                         <div class="theme-check">✓</div>
                     </div>
 
                     <!-- Theme: Chill Ice -->
-                    <div class="theme-card" id="theme-chill-ice" data-theme="chill-ice" onclick="applyTheme('chill-ice')">
+                    <div class="theme-card" id="theme-chill-ice" data-theme="chill-ice"
+                        onclick="applyTheme('chill-ice')">
                         <div class="theme-preview" style="background-image:url('./media/bgimages/chill.png');"></div>
                         <div class="theme-name">Chill Ice</div>
                         <div class="theme-check">✓</div>
                     </div>
 
                     <!-- Theme: Chill Night — chill bg darkened for night play -->
-                    <div class="theme-card" id="theme-chill-night" data-theme="chill-night" onclick="applyTheme('chill-night')">
-                        <div class="theme-preview" style="background-image:url('./media/bgimages/chill.png');filter:hue-rotate(200deg) brightness(0.55) saturate(1.4);"></div>
+                    <div class="theme-card" id="theme-chill-night" data-theme="chill-night"
+                        onclick="applyTheme('chill-night')">
+                        <div class="theme-preview"
+                            style="background-image:url('./media/bgimages/chill.png');filter:hue-rotate(200deg) brightness(0.55) saturate(1.4);">
+                        </div>
                         <div class="theme-name">Chill Night</div>
                         <div class="theme-check">✓</div>
                     </div>
@@ -388,6 +471,18 @@
                     </label>
                 </div>
 
+                <!-- Show Penalty Cards toggle -->
+                <div class="settings-row">
+                    <div class="settings-row-text">
+                        <strong>Show Penalty Cards</strong>
+                        <span>Displays Yellow and Red foul cards below the score boxes for each team.</span>
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setting-show-cards">
+                        <div class="toggle-track"></div>
+                    </label>
+                </div>
+
             </div><!-- end settings-body -->
 
             <!-- Sticky footer -->
@@ -397,6 +492,52 @@
 
         </div><!-- end settings-panel -->
     </div><!-- end settings-modal -->
+
+    <!-- History Row Options Modal -->
+    <div id="history-options-modal" class="hidden">
+        <div class="history-options-panel">
+            <div class="history-options-header">
+                <span class="history-options-title" id="history-modal-title">Event Options</span>
+                <button type="button" class="history-options-close" onclick="closeHistoryOptions()"
+                    aria-label="Close">✕</button>
+            </div>
+            <div class="history-preview-box" id="history-preview-box">
+                <div class="history-preview-event" id="history-preview-event"></div>
+                <div class="history-preview-meta" id="history-preview-meta"></div>
+                <div class="history-preview-note" id="history-preview-note"></div>
+            </div>
+            <div class="history-actions-list" id="history-actions-menu">
+                <button type="button" class="history-action-btn" onclick="showNoteEditor()">
+                    <span class="history-action-icon">📝</span>
+                    <span id="history-note-btn-text">Add Note</span>
+                </button>
+                <button type="button" class="history-action-btn" onclick="shareHistoryEntry()">
+                    <span class="history-action-icon">📤</span>
+                    <span>Share</span>
+                </button>
+                <button type="button" class="history-action-btn btn-remove" onclick="removeSelectedHistoryEntry()">
+                    <span class="history-action-icon">🗑️</span>
+                    <span>Remove</span>
+                </button>
+            </div>
+            <div id="history-note-editor" class="hidden">
+                <label class="history-note-label" for="history-note-input">Note (1 line, max 60 chars):</label>
+                <input type="text" id="history-note-input" class="history-note-input" maxlength="60"
+                    placeholder="e.g. Header goal, Free kick, Unsportsmanlike">
+                <div class="history-note-counter" id="history-note-counter">0 / 60</div>
+                <div class="history-note-actions">
+                    <button type="button" class="history-note-btn-cancel" onclick="cancelNoteEditor()">Cancel</button>
+                    <button type="button" class="history-note-btn-save" onclick="saveHistoryNote()">Save Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification for Share / Copy -->
+    <div id="clipboard-toast">
+        <span>✓ Copied to clipboard for SMS</span>
+    </div>
+
     <audio id="whistle-sound" src="media/whistle.mp3" preload="auto"></audio>
 
     <script>
@@ -436,6 +577,19 @@
         const rollerMinutesEl = document.getElementById('roller-minutes');
         const rollerSecondsEl = document.getElementById('roller-seconds');
         const rollerApplyBtn = document.getElementById('roller-apply-btn');
+        const settingShowCards = document.getElementById('setting-show-cards');
+        const penaltyCardsRow = document.getElementById('penalty-cards-row');
+        const historyOptionsModal = document.getElementById('history-options-modal');
+        const historyActionsMenu = document.getElementById('history-actions-menu');
+        const historyNoteEditor = document.getElementById('history-note-editor');
+        const historyNoteInput = document.getElementById('history-note-input');
+        const historyNoteCounter = document.getElementById('history-note-counter');
+        const historyPreviewEvent = document.getElementById('history-preview-event');
+        const historyPreviewMeta = document.getElementById('history-preview-meta');
+        const historyPreviewNote = document.getElementById('history-preview-note');
+        const historyNoteBtnText = document.getElementById('history-note-btn-text');
+        const clipboardToast = document.getElementById('clipboard-toast');
+        let activeHistoryIndex = -1;
 
         // Timer state and game state variables persisted between reloads.
         let timerInterval = null;
@@ -461,6 +615,7 @@
         let logPeriodStartStop = true;
         let splashOnHome = true;   // Show celebration splash when home team scores
         let splashOnAway = true;   // Show celebration splash when away team scores
+        let showPenaltyCards = false; // Optional penalty cards area below score boxes
         let activeGameId = null;
         let activeGameStarted = false;
         let selectedTheme = 'saber-dark'; // Active theme name persisted to localStorage
@@ -719,6 +874,7 @@
                 addPauseButton, pauseOnScore, isPaused,
                 logPauseResume, logPeriodStartStop,
                 splashOnHome, splashOnAway,
+                showPenaltyCards,
                 activeGameId, activeGameStarted,
                 selectedTheme,
                 lastSavedAt: Date.now()
@@ -1033,37 +1189,238 @@
             saveState();
         }
 
+        // Safely escape characters for HTML insertion.
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Render the 3-column score history table: Team (Score), Note, Time.
+        // Tapping any row opens the event options modal (Add Note, Share, Remove).
         function renderHistory() {
             historyBody.innerHTML = '';
             scoreHistory.forEach((entry, index) => {
                 const row = document.createElement('tr');
                 row.className = "history-row";
+                row.onclick = () => openHistoryOptions(index);
+
+                const noteText = entry.note || '';
+                const noteDisplay = noteText ? escapeHtml(noteText) : '—';
+                const noteTitle = noteText ? escapeHtml(noteText) : 'Tap to add note';
+
                 if (entry.type === 'event') {
+                    const displayTime = entry.timestamp || '';
                     row.innerHTML = `
-                        <td style="padding:6px 6px 6px 12px;" colspan="2" class="history-event-cell" title="${entry.text}">${entry.text}</td>
-                        <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;">
-                            <button onclick="deleteScore(${index})" class="history-delete-btn" title="Remove entry">✕</button>
+                        <td style="padding:6px 6px 6px 12px;vertical-align:middle;" class="history-event-cell" title="${escapeHtml(entry.text)}">${escapeHtml(entry.text)}</td>
+                        <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
+                        <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
+                    `;
+                } else if (entry.type === 'card') {
+                    const isYellow = entry.cardType === 'yellow';
+                    const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
+                    const displayTime = (entry.gameTime || '').replace(/^P(\d+)\s*-\s*/, 'P$1:');
+                    const degreeLabel = entry.degree || (isYellow ? 'Yellow Card' : 'Red Card');
+                    row.innerHTML = `
+                        <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
+                            <div class="history-team-cell" title="${escapeHtml(entry.teamName)} - ${escapeHtml(degreeLabel)}">
+                                <span class="history-dot" style="background:${color};"></span>
+                                <span class="history-team-name" style="color:${color};">${escapeHtml(entry.teamName)}</span>
+                                <span class="history-card-badge ${isYellow ? 'yellow' : 'red'}">
+                                    ${isYellow ? '🟨' : '🟥'} ${escapeHtml(degreeLabel)}
+                                </span>
+                            </div>
                         </td>
+                        <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
+                        <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
                     `;
                 } else {
                     const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
-                    // Compact format for legacy timestamps if any exist in stored state
                     const displayTime = (entry.gameTime || '').replace(/^P(\d+)\s*-\s*/, 'P$1:');
                     row.innerHTML = `
                         <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
-                            <div class="history-team-cell" title="${entry.teamName} (${entry.currentScore})">
+                            <div class="history-team-cell" title="${escapeHtml(entry.teamName)} (${entry.currentScore})">
                                 <span class="history-dot" style="background:${color};"></span>
-                                <span class="history-team-name" style="color:${color};">${entry.teamName}</span>
+                                <span class="history-team-name" style="color:${color};">${escapeHtml(entry.teamName)}</span>
                                 <span class="history-score-tag">(${entry.currentScore})</span>
                             </div>
                         </td>
-                        <td style="padding:6px 6px;vertical-align:middle;" class="history-time-cell" title="${displayTime}">${displayTime}</td>
-                        <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;">
-                            <button onclick="deleteScore(${index})" class="history-delete-btn" title="Remove entry">✕</button>
-                        </td>
+                        <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
+                        <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
                     `;
                 }
                 historyBody.prepend(row);
+            });
+        }
+
+        // Open the modal for the clicked history entry.
+        function openHistoryOptions(index) {
+            const entry = scoreHistory[index];
+            if (!entry) return;
+            activeHistoryIndex = index;
+
+            if (entry.type === 'score') {
+                const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
+                historyPreviewEvent.innerHTML = `<span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)} (${entry.currentScore})</span>`;
+                historyPreviewMeta.textContent = `Game Time: ${entry.gameTime || 'N/A'}`;
+            } else if (entry.type === 'card') {
+                const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
+                const isYellow = entry.cardType === 'yellow';
+                const degreeLabel = entry.degree || (isYellow ? 'Yellow Card' : 'Red Card');
+                historyPreviewEvent.innerHTML = `<span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)} - ${isYellow ? '🟨' : '🟥'} ${escapeHtml(degreeLabel)}</span>`;
+                historyPreviewMeta.textContent = `Game Time: ${entry.gameTime || 'N/A'}`;
+            } else {
+                historyPreviewEvent.innerHTML = `<span>${escapeHtml(entry.text)}</span>`;
+                historyPreviewMeta.textContent = `Time: ${entry.timestamp || 'N/A'}`;
+            }
+
+            if (entry.note) {
+                historyPreviewNote.textContent = `Note: "${entry.note}"`;
+                historyPreviewNote.style.display = 'block';
+                historyNoteBtnText.textContent = 'Edit Note';
+            } else {
+                historyPreviewNote.textContent = '';
+                historyPreviewNote.style.display = 'none';
+                historyNoteBtnText.textContent = 'Add Note';
+            }
+
+            // Ensure actions view is visible and editor view is hidden
+            historyActionsMenu.classList.remove('hidden');
+            historyNoteEditor.classList.add('hidden');
+            historyOptionsModal.classList.remove('hidden');
+        }
+
+        // Close the history row options modal.
+        function closeHistoryOptions() {
+            historyOptionsModal.classList.add('hidden');
+            activeHistoryIndex = -1;
+        }
+
+        // Display the 1-line note editor within the options modal.
+        function showNoteEditor() {
+            if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
+            const currentNote = scoreHistory[activeHistoryIndex].note || '';
+            historyNoteInput.value = currentNote;
+            historyNoteCounter.textContent = `${currentNote.length} / 60`;
+            historyActionsMenu.classList.add('hidden');
+            historyNoteEditor.classList.remove('hidden');
+            historyNoteInput.focus();
+        }
+
+        // Cancel note editing and return to the main options view.
+        function cancelNoteEditor() {
+            historyNoteEditor.classList.add('hidden');
+            historyActionsMenu.classList.remove('hidden');
+        }
+
+        // Save note entered for the active history entry.
+        function saveHistoryNote() {
+            if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
+            const text = historyNoteInput.value.trim();
+            if (text) {
+                scoreHistory[activeHistoryIndex].note = text;
+            } else {
+                delete scoreHistory[activeHistoryIndex].note;
+            }
+            saveState();
+            renderHistory();
+            closeHistoryOptions();
+            showToast('Note saved');
+        }
+
+        // Remove the selected history entry, decrementing score if applicable.
+        function removeSelectedHistoryEntry() {
+            if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
+            const idx = activeHistoryIndex;
+            closeHistoryOptions();
+            deleteScore(idx);
+            showToast('Entry removed');
+        }
+
+        // Copy a concise, SMS-ready description of the event to the clipboard.
+        function shareHistoryEntry() {
+            if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
+            const entry = scoreHistory[activeHistoryIndex];
+            let shareText = '';
+            const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
+
+            if (entry.type === 'score') {
+                shareText = `${entry.teamName} scored (${entry.currentScore}) at ${entry.gameTime || ''}${noteSuffix}`;
+            } else if (entry.type === 'card') {
+                const degree = entry.degree || (entry.cardType === 'yellow' ? 'Yellow Card' : 'Red Card');
+                shareText = `${entry.teamName} foul - ${degree} at ${entry.gameTime || ''}${noteSuffix}`;
+            } else {
+                shareText = `${entry.text}${noteSuffix}`;
+            }
+
+            copyTextToClipboard(shareText);
+            closeHistoryOptions();
+        }
+
+        // Copy text to clipboard with modern API and fallback support.
+        function copyTextToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('✓ Copied to clipboard for SMS');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        // Fallback clipboard copying using textarea selection.
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('✓ Copied to clipboard for SMS');
+            } catch (err) {
+                showToast('Could not copy to clipboard');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Show brief floating toast notification.
+        let toastTimeout = null;
+        function showToast(message) {
+            if (!clipboardToast) return;
+            clipboardToast.textContent = message;
+            clipboardToast.classList.add('show');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                clipboardToast.classList.remove('show');
+            }, 2200);
+        }
+
+        // Setup input event listeners for note editor
+        if (historyNoteInput) {
+            historyNoteInput.addEventListener('input', () => {
+                historyNoteCounter.textContent = `${historyNoteInput.value.length} / 60`;
+            });
+            historyNoteInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveHistoryNote();
+                }
+            });
+        }
+
+        if (historyOptionsModal) {
+            historyOptionsModal.addEventListener('click', (e) => {
+                if (e.target === historyOptionsModal) closeHistoryOptions();
             });
         }
 
@@ -1092,8 +1449,8 @@
             const overlay = document.createElement('div');
             overlay.className = 'score-splash-overlay';
             overlay.style.left = cx + 'px';
-            overlay.style.top  = cy + 'px';
-            overlay.style.width  = '0';
+            overlay.style.top = cy + 'px';
+            overlay.style.width = '0';
             overlay.style.height = '0';
             document.body.appendChild(overlay);
 
@@ -1148,6 +1505,62 @@
             setTimeout(() => {
                 if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
             }, 1100);
+        }
+
+        // Trigger a 1-second simulated card-raising animation anchored above the team score.
+        function triggerCardRaiseAnimation(teamId, cardType) {
+            const anchor = teamId === 'home' ? scoreHomeEl : scoreAwayEl;
+            if (!anchor) return;
+            const rect = anchor.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'card-raise-overlay';
+            overlay.style.left = cx + 'px';
+            overlay.style.top = cy + 'px';
+
+            const card = document.createElement('div');
+            card.className = `card-raise-card ${cardType}`;
+
+            const icon = document.createElement('div');
+            icon.className = 'card-raise-card-icon';
+            icon.textContent = cardType === 'yellow' ? '🟨' : '🟥';
+
+            const text = document.createElement('div');
+            text.className = 'card-raise-card-text';
+            text.textContent = cardType === 'yellow' ? 'Yellow' : 'Red';
+
+            card.appendChild(icon);
+            card.appendChild(text);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+
+            setTimeout(() => {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }, 1050);
+        }
+
+        // Record a yellow or red penalty card foul for the designated team in the history log.
+        function recordFoulCard(teamId, cardType) {
+            const teamName = teamId === 'home' ? homeTeamName : awayTeamName;
+            const teamColor = teamId === 'home' ? homeTeamColor : awayTeamColor;
+            const degree = cardType === 'yellow' ? 'Yellow Card' : 'Red Card';
+
+            scoreHistory.push({
+                type: 'card',
+                teamId,
+                teamName,
+                teamColor,
+                cardType,
+                degree,
+                gameTime: getElapsedStamp(),
+                timestamp: new Date().toISOString()
+            });
+
+            renderHistory();
+            triggerCardRaiseAnimation(teamId, cardType);
+            saveState();
         }
 
         function addScore(teamId) {
@@ -1320,6 +1733,16 @@
             pauseBtn.disabled = !timerRunning;
         }
 
+        // Update visibility of the penalty cards area based on the settings toggle.
+        function updatePenaltyCardsVisibility() {
+            if (!penaltyCardsRow) return;
+            if (showPenaltyCards) {
+                penaltyCardsRow.classList.remove('hidden');
+            } else {
+                penaltyCardsRow.classList.add('hidden');
+            }
+        }
+
         function openSettings() {
             // Populate timer toggle states
             settingAddPause.checked = addPauseButton;
@@ -1328,6 +1751,7 @@
             settingLogPeriodStartStop.checked = logPeriodStartStop;
             if (settingSplashHome) settingSplashHome.checked = splashOnHome;
             if (settingSplashAway) settingSplashAway.checked = splashOnAway;
+            if (settingShowCards) settingShowCards.checked = showPenaltyCards;
             // Populate team card inputs with current values
             if (homeNameInput) homeNameInput.value = homeTeamName;
             if (homeColorSelect) homeColorSelect.value = homeTeamColor;
@@ -1421,6 +1845,14 @@
         if (settingSplashAway) {
             settingSplashAway.addEventListener('change', () => {
                 splashOnAway = settingSplashAway.checked;
+                saveState();
+            });
+        }
+
+        if (settingShowCards) {
+            settingShowCards.addEventListener('change', () => {
+                showPenaltyCards = settingShowCards.checked;
+                updatePenaltyCardsVisibility();
                 saveState();
             });
         }
@@ -1581,13 +2013,16 @@
                 selectedTheme = saved.selectedTheme || 'saber-dark';
                 applyTheme(selectedTheme);
                 updateMuteButton();
+                showPenaltyCards = !!saved.showPenaltyCards;
                 updatePauseButtonVisibility();
+                updatePenaltyCardsVisibility();
             } else {
                 // No saved state: apply the default theme
                 applyTheme(selectedTheme);
                 updateTimer();
                 updateMuteButton();
                 updatePauseButtonVisibility();
+                updatePenaltyCardsVisibility();
             }
             initRoller();
             saveState();
@@ -1606,7 +2041,7 @@
         });
 
         // ScoreKeeper version identifier
-        const VERSION = '2.0';
+        const VERSION = '2.2';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
@@ -1621,7 +2056,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.0</span></p>
+        <p>Version <span id="appVersion">2.2</span></p>
     </footer>
 </body>
 
