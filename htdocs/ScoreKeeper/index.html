@@ -1352,7 +1352,7 @@
                 shareText = `${entry.teamName} scored (${entry.currentScore}) at ${entry.gameTime || ''}${noteSuffix}`;
             } else if (entry.type === 'card') {
                 const degree = entry.degree || (entry.cardType === 'yellow' ? 'Yellow Card' : 'Red Card');
-                shareText = `${entry.teamName} foul - ${degree} at ${entry.gameTime || ''}${noteSuffix}`;
+                shareText = `${entry.teamName} ${degree} at ${entry.gameTime || ''}${noteSuffix}`;
             } else {
                 shareText = `${entry.text}${noteSuffix}`;
             }
