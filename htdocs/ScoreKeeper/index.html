@@ -1342,6 +1342,7 @@
         }
 
         // Copy a concise, SMS-ready description of the event to the clipboard.
+        // Copy a concise, SMS-ready description of the event and open native share sheet if supported.
         function shareHistoryEntry() {
             if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
             const entry = scoreHistory[activeHistoryIndex];
@@ -1357,8 +1358,26 @@
                 shareText = `${entry.text}${noteSuffix}`;
             }
 
-            copyTextToClipboard(shareText);
             closeHistoryOptions();
+            shareTextWithNativeSheet(shareText);
+        }
+
+        // Trigger native mobile share sheet (Android / iOS) and back up to clipboard.
+        function shareTextWithNativeSheet(text) {
+            // First copy to clipboard so the text is immediately available if pasted
+            copyTextToClipboard(text);
+
+            // Pop native Android or iOS share dialog showing recent contacts and messaging apps
+            if (navigator.share) {
+                navigator.share({
+                    text: text
+                }).catch((err) => {
+                    // AbortError is expected when the user dismisses the native share modal
+                    if (err.name !== 'AbortError') {
+                        console.warn('Native share dialog error:', err);
+                    }
+                });
+            }
         }
 
         // Copy text to clipboard with modern API and fallback support.
@@ -2041,7 +2060,7 @@
         });
 
         // ScoreKeeper version identifier
-        const VERSION = '2.2';
+        const VERSION = '2.3';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
@@ -2056,7 +2075,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.2</span></p>
+        <p>Version <span id="appVersion">2.3</span></p>
     </footer>
 </body>
 
