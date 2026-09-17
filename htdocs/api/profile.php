@@ -3,7 +3,7 @@
 // Handles profile authentication, password management, and app settings synchronization.
 
 // API endpoint version identifier
-$API_VERSION = '1.0';
+$API_VERSION = '1.1';
 
 require_once __DIR__ . '/config.php';
 
@@ -28,17 +28,37 @@ if (!$pdo) {
 }
 
 /**
- * Extracts bearer token from Authorization header or GET/POST parameters.
+ * Extracts bearer token from query string, JSON payload, or Authorization headers.
+ * Ensures compatibility across Apache FastCGI environments where Authorization header may be stripped.
  *
+ * @param array|null $payload Optional decoded request body
  * @return string|null
  */
-function getAuthToken() {
-    $headers = getallheaders();
-    if (!empty($headers['Authorization']) && preg_match('/Bearer\s+(\S+)/i', $headers['Authorization'], $m)) {
-        return $m[1];
+function getAuthToken($payload = null) {
+    if (is_array($payload) && !empty($payload['token'])) {
+        return trim($payload['token']);
     }
     if (!empty($_GET['token'])) {
         return trim($_GET['token']);
+    }
+    if (!empty($_POST['token'])) {
+        return trim($_POST['token']);
+    }
+    if (!empty($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $m)) {
+        return $m[1];
+    }
+    if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(\S+)/i', $_SERVER['REDIRECT_HTTP_AUTHORIZATION'], $m)) {
+        return $m[1];
+    }
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $key => $val) {
+                if (strcasecmp($key, 'Authorization') === 0 && preg_match('/Bearer\s+(\S+)/i', $val, $m)) {
+                    return $m[1];
+                }
+            }
+        }
     }
     return null;
 }
@@ -151,7 +171,9 @@ if ($action === 'auth') {
 
 // 3. Set or Update Password for Authenticated Profile
 if ($action === 'set_password') {
-    $token = getAuthToken();
+    $rawInput = file_get_contents('php://input');
+    $payload = json_decode($rawInput, true) ?: [];
+    $token = getAuthToken($payload);
     $user = authenticateUser($pdo, $token);
     if (!$user) {
         http_response_code(401);
@@ -159,8 +181,6 @@ if ($action === 'set_password') {
         exit;
     }
 
-    $rawInput = file_get_contents('php://input');
-    $payload = json_decode($rawInput, true) ?: [];
     $newPassword = isset($payload['newPassword']) ? trim($payload['newPassword']) : '';
 
     if (empty($newPassword) || strlen($newPassword) < 3) {
@@ -219,7 +239,9 @@ if ($action === 'load') {
 
 // 5. Save App Data
 if ($action === 'save') {
-    $token = getAuthToken();
+    $rawInput = file_get_contents('php://input');
+    $payload = json_decode($rawInput, true) ?: [];
+    $token = getAuthToken($payload);
     $user = authenticateUser($pdo, $token);
     if (!$user) {
         http_response_code(401);
@@ -233,9 +255,6 @@ if ($action === 'save') {
         echo json_encode(['success' => false, 'error' => 'Missing app identifier.']);
         exit;
     }
-
-    $rawInput = file_get_contents('php://input');
-    $payload = json_decode($rawInput, true);
 
     if (!isset($payload['data'])) {
         http_response_code(400);

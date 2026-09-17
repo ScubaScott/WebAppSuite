@@ -868,8 +868,11 @@
             }
         }
 
+        let isInitializingScorekeeper = true;
+
         // Persist the timer state to localStorage for page reloads.
         function saveState() {
+            if (isInitializingScorekeeper) return;
             const state = {
                 startTime, accumulatedTime, timeLimit, isCountingUp,
                 running: timerRunning, homeScore, awayScore,
@@ -1983,8 +1986,34 @@
 
 
         // Initialize the page from saved state when the browser loads.
-        window.onload = function () {
-            const saved = loadState();
+        window.onload = async function () {
+            isInitializingScorekeeper = true;
+
+            // Render footer indicator
+            if (window.SuiteProfile) {
+                SuiteProfile.renderFooterIndicator(document.querySelector('footer p'));
+            }
+
+            // Always check if there are new DB settings first if logged in
+            let cloudState = null;
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                try {
+                    cloudState = await Promise.race([
+                        SuiteProfile.loadAppData('scorekeeper'),
+                        new Promise(resolve => setTimeout(() => resolve(null), 3000))
+                    ]);
+                } catch (e) {
+                    console.warn('DB settings check failed, falling back to local:', e);
+                }
+            }
+
+            let saved = loadState();
+            // If cloud state exists and is newer or local is empty, adopt cloud state
+            if (cloudState && (!saved || (cloudState.lastSavedAt && cloudState.lastSavedAt > (saved.lastSavedAt || 0)))) {
+                saved = cloudState;
+                safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
+            }
+
             if (saved) {
                 homeScore = saved.homeScore || saved.redScore || 0;
                 awayScore = saved.awayScore || saved.blueScore || 0;
@@ -2051,24 +2080,11 @@
                 updatePenaltyCardsVisibility();
             }
             initRoller();
-            saveState();
+            isInitializingScorekeeper = false;
 
-            // Initialize subtle footer indicator for guest vs logged-in profile
-            if (window.SuiteProfile) {
-                SuiteProfile.renderFooterIndicator(document.querySelector('footer p'));
-                if (!SuiteProfile.isGuest()) {
-                    SuiteProfile.loadAppData('scorekeeper').then(cloudState => {
-                        if (cloudState && (!saved || (cloudState.lastSavedAt && cloudState.lastSavedAt > (saved.lastSavedAt || 0)))) {
-                            if (cloudState.selectedTheme && cloudState.selectedTheme !== selectedTheme) {
-                                applyTheme(cloudState.selectedTheme);
-                            }
-                            if (typeof cloudState.muted !== 'undefined' && cloudState.muted !== muted) {
-                                muted = !!cloudState.muted;
-                                updateMuteButton();
-                            }
-                        }
-                    }).catch(() => {});
-                }
+            // If logged in and DB had no settings yet, seed DB with local settings
+            if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudState && saved) {
+                SuiteProfile.saveAppData('scorekeeper', saved);
             }
         };
 
@@ -2085,7 +2101,7 @@
         });
 
         // ScoreKeeper version identifier
-        const VERSION = '2.4';
+        const VERSION = '2.5';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
@@ -2100,7 +2116,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.4</span></p>
+        <p>Version <span id="appVersion">2.5</span></p>
     </footer>
 </body>
 

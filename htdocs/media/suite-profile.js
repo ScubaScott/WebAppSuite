@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.0';
+const SUITE_PROFILE_VERSION = '1.1';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -123,14 +123,14 @@ const SUITE_PROFILE_VERSION = '1.0';
             throw new Error('You must be logged in to set a password.');
         }
 
-        const url = getApiUrl('profile.php') + '?action=set_password';
+        const url = getApiUrl('profile.php') + '?action=set_password&token=' + encodeURIComponent(user.token);
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + user.token
             },
-            body: JSON.stringify({ newPassword })
+            body: JSON.stringify({ token: user.token, newPassword })
         });
 
         const data = await response.json();
@@ -156,7 +156,7 @@ const SUITE_PROFILE_VERSION = '1.0';
         }
 
         try {
-            const url = getApiUrl('profile.php') + '?action=load&app=' + encodeURIComponent(appId);
+            const url = getApiUrl('profile.php') + '?action=load&app=' + encodeURIComponent(appId) + '&token=' + encodeURIComponent(user.token);
             const res = await fetch(url, {
                 headers: { 'Authorization': 'Bearer ' + user.token }
             });
@@ -174,9 +174,9 @@ const SUITE_PROFILE_VERSION = '1.0';
      *
      * @param {string} appId
      * @param {Object} data
-     * @param {number} [delayMs=1200]
+     * @param {number} [delayMs=1000]
      */
-    function saveAppData(appId, data, delayMs = 1200) {
+    function saveAppData(appId, data, delayMs = 1000) {
         const user = getUser();
         if (!user || !user.token || !navigator.onLine) {
             return;
@@ -190,14 +190,14 @@ const SUITE_PROFILE_VERSION = '1.0';
 
         saveTimeout = setTimeout(async () => {
             try {
-                const url = getApiUrl('profile.php') + '?action=save&app=' + encodeURIComponent(appId);
+                const url = getApiUrl('profile.php') + '?action=save&app=' + encodeURIComponent(appId) + '&token=' + encodeURIComponent(user.token);
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + user.token
                     },
-                    body: JSON.stringify({ data })
+                    body: JSON.stringify({ token: user.token, data })
                 });
                 const result = await res.json();
                 if (res.ok && result.success) {

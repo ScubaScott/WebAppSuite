@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.7';
+const VERSION = '3.8';
 
 
 // ============================================================
@@ -1542,14 +1542,11 @@ if (cardSizeSlider) {
 setInputMode(inputMode || "number");
 applyDauberSettings();
 renderDauberPalette();
-updateUI();
-loadGames();
-initTheme();
-initFlashboardConfig();
-initCardSize();
+let isInitializingSettings = true;
 
 // Synchronizes bingo preferences with user profile if authenticated
 function syncBingoSettings() {
+    if (isInitializingSettings) return;
     if (window.SuiteProfile && !SuiteProfile.isGuest()) {
         const payload = {
             theme: localStorage.getItem("bingoTheme") || "basic",
@@ -1561,24 +1558,59 @@ function syncBingoSettings() {
     }
 }
 
-// Initialize subtle footer indicator for profile status and restore cloud settings if available
-if (window.SuiteProfile) {
-    SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
-    if (!SuiteProfile.isGuest()) {
-        SuiteProfile.loadAppData('bingo').then(cloudData => {
-            if (cloudData) {
-                if (cloudData.theme && THEMES.includes(cloudData.theme)) {
-                    applyTheme(cloudData.theme);
-                }
-                if (cloudData.flashboardConfig) {
-                    flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG, ...cloudData.flashboardConfig };
-                    applyFlashboardConfig();
-                }
-                if (cloudData.cardSize !== null && typeof cloudData.cardSize !== 'undefined') {
-                    cardSizeValue = parseInt(cloudData.cardSize, 10);
-                    applyCardSize();
-                }
-            }
-        }).catch(() => {});
+// Check database settings first on app load, fall back to local or defaults if not found
+async function initBingoSettings() {
+    isInitializingSettings = true;
+
+    // Render footer indicator
+    if (window.SuiteProfile) {
+        SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+    }
+
+    let cloudData = null;
+    // Always check if there are new DB settings first if logged in
+    if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+        try {
+            cloudData = await Promise.race([
+                SuiteProfile.loadAppData('bingo'),
+                new Promise(resolve => setTimeout(() => resolve(null), 3000))
+            ]);
+        } catch (err) {
+            console.warn('Failed to load DB settings:', err);
+        }
+    }
+
+    // If DB settings exist, adopt them into localStorage before applying
+    if (cloudData) {
+        if (cloudData.theme && THEMES.includes(cloudData.theme)) {
+            localStorage.setItem("bingoTheme", cloudData.theme);
+        }
+        if (cloudData.flashboardConfig) {
+            flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG, ...cloudData.flashboardConfig };
+            localStorage.setItem("bingoFlashboardConfig", JSON.stringify(flashboardConfig));
+        }
+        if (cloudData.cardSize !== null && typeof cloudData.cardSize !== 'undefined') {
+            cardSizeValue = parseInt(cloudData.cardSize, 10);
+            localStorage.setItem("bingoCardSize", cardSizeValue);
+        }
+    }
+
+    // Render base UI and load games
+    updateUI();
+    loadGames();
+
+    // Apply active settings to DOM and UI
+    initTheme();
+    initFlashboardConfig();
+    initCardSize();
+
+    // Initialization complete: future user changes are allowed to sync
+    isInitializingSettings = false;
+
+    // If logged in and DB had no settings yet, seed DB with this device's current settings
+    if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
+        syncBingoSettings();
     }
 }
+
+initBingoSettings();
