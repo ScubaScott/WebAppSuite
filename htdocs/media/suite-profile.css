@@ -1,0 +1,258 @@
+/* WebAppSuite Profile & Sync Styles */
+/* Styles for main launcher floating profile button, modal dialog, and sub-app footer badges. */
+
+/* Launcher Floating Profile Widget in Header */
+.suite-profile-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #f1f3f4;
+    color: #202124;
+    border: 1px solid #dadce0;
+    border-radius: 24px;
+    padding: 6px 14px 6px 10px;
+    font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.suite-profile-btn:hover {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border-color: #1a73e8;
+    box-shadow: 0 1px 4px rgba(26, 115, 232, 0.2);
+}
+
+.suite-profile-btn.logged-in {
+    background-color: #e6f4ea;
+    border-color: #34a853;
+    color: #137333;
+}
+
+.suite-profile-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background-color: #e8eaed;
+    color: #5f6368;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.suite-profile-btn.logged-in .suite-profile-avatar {
+    background-color: #34a853;
+    color: #ffffff;
+}
+
+.suite-profile-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #9aa0a6;
+}
+
+.suite-profile-btn.logged-in .suite-profile-status-dot {
+    background-color: #34a853;
+}
+
+/* Profile Modal Dialog */
+.suite-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 16px;
+    box-sizing: border-box;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.suite-modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.suite-modal {
+    background-color: #ffffff;
+    color: #202124;
+    border-radius: 12px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    transform: translateY(16px);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.suite-modal-backdrop.open .suite-modal {
+    transform: translateY(0);
+}
+
+.suite-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.suite-modal-header h3 {
+    margin: 0;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: #202124;
+}
+
+.suite-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: #5f6368;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.suite-modal-close:hover {
+    background-color: #f1f3f4;
+    color: #202124;
+}
+
+.suite-modal-body {
+    padding: 20px;
+}
+
+.suite-form-group {
+    margin-bottom: 16px;
+}
+
+.suite-form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #3c4043;
+}
+
+.suite-form-group input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.suite-form-group input:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.suite-form-help {
+    font-size: 12px;
+    color: #70757a;
+    margin-top: 4px;
+}
+
+.suite-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px 20px;
+}
+
+.suite-btn-primary {
+    background-color: #1a73e8;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suite-btn-primary:hover {
+    background-color: #1557b0;
+}
+
+.suite-btn-secondary {
+    background-color: #f1f3f4;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suite-btn-secondary:hover {
+    background-color: #e8eaed;
+}
+
+.suite-modal-msg {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+}
+
+.suite-modal-msg.error {
+    display: block;
+    background-color: #fce8e6;
+    color: #c5221f;
+    border: 1px solid #fad2cf;
+}
+
+.suite-modal-msg.success {
+    display: block;
+    background-color: #e6f4ea;
+    color: #137333;
+    border: 1px solid #ceead6;
+}
+
+/* Sub-App Footer Indicator */
+.suite-footer-profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: inherit;
+    opacity: 0.85;
+    margin-left: 10px;
+    padding-left: 10px;
+    border-left: 1px solid currentColor;
+}
+
+.suite-footer-profile .suite-cloud-icon {
+    font-size: 0.95em;
+    filter: drop-shadow(0 0 1px rgba(0,0,0,0.3));
+}
+
+.suite-footer-profile .suite-sync-state-ok {
+    color: #34a853;
+}
+
+.suite-footer-profile .suite-sync-state-guest {
+    opacity: 0.75;
+}

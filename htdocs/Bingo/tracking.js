@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.6';
+const VERSION = '3.7';
 
 
 // ============================================================
@@ -1304,6 +1304,7 @@ function applyTheme(name) {
     document.documentElement.setAttribute("data-theme", name);
     localStorage.setItem("bingoTheme", name);
     updateThemeCards(name);
+    syncBingoSettings();
 }
 
 // Update the aria-pressed state and checkmark visibility on theme picker cards
@@ -1415,6 +1416,7 @@ function applyFlashboardConfig() {
     if (cfgHOffsetVal) cfgHOffsetVal.textContent = `${flashboardConfig.hOffset}px`;
 
     localStorage.setItem("bingoFlashboardConfig", JSON.stringify(flashboardConfig));
+    syncBingoSettings();
 }
 
 // Load saved flashboard configuration or fall back to defaults
@@ -1512,6 +1514,7 @@ function applyCardSize() {
 
     // Re-render cards to reflect updated column/scale classes
     renderAllCards();
+    syncBingoSettings();
 }
 
 // Load saved card size or fall back to default
@@ -1544,3 +1547,38 @@ loadGames();
 initTheme();
 initFlashboardConfig();
 initCardSize();
+
+// Synchronizes bingo preferences with user profile if authenticated
+function syncBingoSettings() {
+    if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+        const payload = {
+            theme: localStorage.getItem("bingoTheme") || "basic",
+            flashboardConfig: flashboardConfig,
+            cardSize: localStorage.getItem("bingoCardSize") || null,
+            updatedAt: Date.now()
+        };
+        SuiteProfile.saveAppData('bingo', payload);
+    }
+}
+
+// Initialize subtle footer indicator for profile status and restore cloud settings if available
+if (window.SuiteProfile) {
+    SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+    if (!SuiteProfile.isGuest()) {
+        SuiteProfile.loadAppData('bingo').then(cloudData => {
+            if (cloudData) {
+                if (cloudData.theme && THEMES.includes(cloudData.theme)) {
+                    applyTheme(cloudData.theme);
+                }
+                if (cloudData.flashboardConfig) {
+                    flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG, ...cloudData.flashboardConfig };
+                    applyFlashboardConfig();
+                }
+                if (cloudData.cardSize !== null && typeof cloudData.cardSize !== 'undefined') {
+                    cardSizeValue = parseInt(cloudData.cardSize, 10);
+                    applyCardSize();
+                }
+            }
+        }).catch(() => {});
+    }
+}

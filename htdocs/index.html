@@ -29,6 +29,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="./media/suite-profile.css">
     <style>
         :root {
             --md-surface: #f8f9fa;
@@ -228,8 +229,8 @@
         <div class="header-left">
             <span class="header-title">App Suite</span>
         </div>
-        <div class="profile-container">
-            <img src="./media/scuba.png" alt="User Profile" class="profile-thumb">
+        <div class="profile-container" id="profileContainer">
+            <!-- Dynamic profile action button mounted by SuiteProfile -->
         </div>
     </header>
 
@@ -331,13 +332,22 @@
             Force Refresh & Update App
         </button>
         <div id="refreshStatus" class="refresh-status" aria-live="polite"></div>
-        <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span id="footerVersion">1.0</span></p>
+        <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span id="footerVersion">1.2</span></p>
     </footer>
+
+    <!-- Shared Suite Profile and Cloud Sync Manager -->
+    <script src="./media/suite-profile.js"></script>
 
     <script>
         // Main application suite version identifier
-        const VERSION = '1.1';
+        const VERSION = '1.2';
         document.getElementById('footerVersion').textContent = VERSION;
+
+        // Initialize user profile launcher widget and footer indicator
+        if (window.SuiteProfile) {
+            SuiteProfile.mountLauncherProfileButton(document.getElementById('profileContainer'));
+            SuiteProfile.renderFooterIndicator(document.querySelector('.app-version'));
+        }
 
         // Register the service worker for PWA offline support
         if ('serviceWorker' in navigator) {

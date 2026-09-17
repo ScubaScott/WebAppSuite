@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo Number Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../media/suite-profile.css">
+    <script src="../media/suite-profile.js" defer></script>
     <script src="tracking.js" defer></script>
 </head>
 
@@ -249,12 +251,12 @@
     </div>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">3.6</span></p>
+        <p>Version <span id="appVersion">3.7</span></p>
     </footer>
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '3.6';
+        const INDEX_VERSION = '3.7';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;

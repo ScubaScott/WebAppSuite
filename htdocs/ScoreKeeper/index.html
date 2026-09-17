@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="scorekeeper.css">
+    <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 
 <body style="margin:0;padding:0;">
@@ -540,6 +541,9 @@
 
     <audio id="whistle-sound" src="media/whistle.mp3" preload="auto"></audio>
 
+    <!-- Shared Suite Profile and Cloud Sync Manager -->
+    <script src="../media/suite-profile.js"></script>
+
     <script>
         // DOM references for the visible timer, score, and control elements.
         const timerDisplay = document.getElementById('timer-display');
@@ -881,6 +885,9 @@
             };
             safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
             publishActiveGameState();
+            if (window.SuiteProfile) {
+                SuiteProfile.saveAppData('scorekeeper', state);
+            }
         }
 
         // Restore the timer state from localStorage when the page loads.
@@ -2045,6 +2052,24 @@
             }
             initRoller();
             saveState();
+
+            // Initialize subtle footer indicator for guest vs logged-in profile
+            if (window.SuiteProfile) {
+                SuiteProfile.renderFooterIndicator(document.querySelector('footer p'));
+                if (!SuiteProfile.isGuest()) {
+                    SuiteProfile.loadAppData('scorekeeper').then(cloudState => {
+                        if (cloudState && (!saved || (cloudState.lastSavedAt && cloudState.lastSavedAt > (saved.lastSavedAt || 0)))) {
+                            if (cloudState.selectedTheme && cloudState.selectedTheme !== selectedTheme) {
+                                applyTheme(cloudState.selectedTheme);
+                            }
+                            if (typeof cloudState.muted !== 'undefined' && cloudState.muted !== muted) {
+                                muted = !!cloudState.muted;
+                                updateMuteButton();
+                            }
+                        }
+                    }).catch(() => {});
+                }
+            }
         };
 
         window.addEventListener('beforeunload', () => {
@@ -2060,7 +2085,7 @@
         });
 
         // ScoreKeeper version identifier
-        const VERSION = '2.3';
+        const VERSION = '2.4';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
@@ -2075,7 +2100,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.3</span></p>
+        <p>Version <span id="appVersion">2.4</span></p>
     </footer>
 </body>
 
