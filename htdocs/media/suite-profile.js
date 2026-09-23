@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.4';
+const SUITE_PROFILE_VERSION = '1.5';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -15,7 +15,13 @@ const SUITE_PROFILE_VERSION = '1.4';
 }(typeof self !== 'undefined' ? self : this, function () {
     const STORAGE_KEY = 'webappsuite_profile_session';
     const PENDING_SYNC_KEY = 'webappsuite_pending_sync';
-    let saveTimeout = null;
+    const GAME_PENDING_SYNC_KEY = 'webappsuite_pending_game_sync';
+
+    // Per-app and per-game debounce timers and local revision tracking
+    const saveTimeouts = {};
+    const gameSyncTimeouts = {};
+    const localGameRevs = {};
+    let isSessionExpired = false;
 
     // List of known application storage keys to clear when logging out
     const SUITE_APP_KEYS = [
@@ -137,6 +143,10 @@ const SUITE_PROFILE_VERSION = '1.4';
                     },
                     body: JSON.stringify({ token: user.token, data: item.data })
                 });
+                if (res.status === 401) {
+                    setSession(null, 'expired');
+                    break;
+                }
                 const result = await res.json();
                 if (res.ok && result.success) {
                     delete queue[appId];
@@ -162,18 +172,26 @@ const SUITE_PROFILE_VERSION = '1.4';
 
     /**
      * Saves user session to localStorage and triggers profile change event.
+     * When action is 'expired', clears session credentials while preserving local app data.
      *
      * @param {Object|null} session
      * @param {string} action
      */
     function setSession(session, action = 'change') {
         if (session) {
+            isSessionExpired = false;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-        } else {
+        } else if (action === 'expired') {
+            isSessionExpired = true;
             localStorage.removeItem(STORAGE_KEY);
-            // Clear pending offline queue when logging out
             localStorage.removeItem(PENDING_SYNC_KEY);
-            // Clear local cached data for all suite apps
+            // Non-destructive: do NOT delete SUITE_APP_KEYS on expired session
+        } else {
+            isSessionExpired = false;
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(PENDING_SYNC_KEY);
+            localStorage.removeItem(GAME_PENDING_SYNC_KEY);
+            // Clear local cached data for all suite apps when explicitly logging out
             for (const key of SUITE_APP_KEYS) {
                 try {
                     localStorage.removeItem(key);
@@ -272,6 +290,10 @@ const SUITE_PROFILE_VERSION = '1.4';
             const res = await fetch(url, {
                 headers: { 'Authorization': 'Bearer ' + user.token }
             });
+            if (res.status === 401) {
+                setSession(null, 'expired');
+                return null;
+            }
             if (!res.ok) return null;
             const payload = await res.json();
             return payload.success ? payload.data : null;
@@ -282,7 +304,7 @@ const SUITE_PROFILE_VERSION = '1.4';
     }
 
     /**
-     * Saves app data payload to cloud with debouncing if logged in.
+     * Saves app data payload to cloud with per-appId debouncing if logged in.
      * If user is offline or fetch fails, queues payload for later synchronization.
      *
      * @param {string} appId
@@ -308,9 +330,9 @@ const SUITE_PROFILE_VERSION = '1.4';
 
         window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'syncing', app: appId } }));
 
-        if (saveTimeout) {
-            clearTimeout(saveTimeout);
-            saveTimeout = null;
+        if (saveTimeouts[appId]) {
+            clearTimeout(saveTimeouts[appId]);
+            delete saveTimeouts[appId];
         }
 
         const executeSave = async () => {
@@ -324,6 +346,10 @@ const SUITE_PROFILE_VERSION = '1.4';
                     },
                     body: JSON.stringify({ token: user.token, data })
                 });
+                if (res.status === 401) {
+                    setSession(null, 'expired');
+                    return;
+                }
                 const result = await res.json();
                 if (res.ok && result.success) {
                     // Remove item from pending queue if present
@@ -338,13 +364,15 @@ const SUITE_PROFILE_VERSION = '1.4';
                 }
             } catch (e) {
                 queuePendingSync(appId, data);
+            } finally {
+                delete saveTimeouts[appId];
             }
         };
 
         if (delayMs <= 0) {
             executeSave();
         } else {
-            saveTimeout = setTimeout(executeSave, delayMs);
+            saveTimeouts[appId] = setTimeout(executeSave, delayMs);
         }
     }
 
@@ -364,6 +392,11 @@ const SUITE_PROFILE_VERSION = '1.4';
         }
 
         function updateBadge(syncStatus = null) {
+            if (isSessionExpired) {
+                badge.innerHTML = `<span class="suite-sync-state-offline" title="Session expired. Please sign in on the main launcher page.">⚠️ Session expired (sign in on main page)</span>`;
+                return;
+            }
+
             const user = getUser();
             if (user && user.token) {
                 const queue = getPendingSyncQueue();
@@ -385,7 +418,14 @@ const SUITE_PROFILE_VERSION = '1.4';
         }
 
         updateBadge();
-        window.addEventListener('suite-profile-changed', () => updateBadge());
+        window.addEventListener('suite-profile-changed', (e) => {
+            if (e.detail && e.detail.action === 'expired') {
+                isSessionExpired = true;
+            } else if (e.detail && (e.detail.action === 'login' || e.detail.action === 'change')) {
+                isSessionExpired = false;
+            }
+            updateBadge();
+        });
         window.addEventListener('suite-sync-state', (e) => {
             updateBadge(e.detail ? e.detail.state : null);
         });
@@ -591,6 +631,313 @@ const SUITE_PROFILE_VERSION = '1.4';
             .replace(/'/g, '&#039;');
     }
 
+    /**
+     * Retrieves offline game sync queue from localStorage.
+     *
+     * @returns {Object}
+     */
+    function getPendingGameQueue() {
+        try {
+            const raw = localStorage.getItem(GAME_PENDING_SYNC_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    /**
+     * Queues a game sync payload for offline background retry.
+     *
+     * @param {Object} payload
+     */
+    function queuePendingGameSync(payload) {
+        if (!payload || !payload.game_id) return;
+        const queue = getPendingGameQueue();
+        queue[payload.game_id] = { payload, queuedAt: Date.now() };
+        try {
+            localStorage.setItem(GAME_PENDING_SYNC_KEY, JSON.stringify(queue));
+        } catch (e) {}
+    }
+
+    /**
+     * Flushes queued game syncs when network connectivity is restored.
+     */
+    async function flushPendingGameSyncQueue() {
+        if (!navigator.onLine) return;
+        const queue = getPendingGameQueue();
+        const gameIds = Object.keys(queue);
+        if (gameIds.length === 0) return;
+
+        for (const id of gameIds) {
+            const item = queue[id];
+            if (!item || !item.payload) continue;
+            try {
+                const res = await syncGame(item.payload, 0);
+                if (res && res.success) {
+                    delete queue[id];
+                    try {
+                        localStorage.setItem(GAME_PENDING_SYNC_KEY, JSON.stringify(queue));
+                    } catch (e) {}
+                }
+            } catch (err) {
+                break;
+            }
+        }
+    }
+
+    window.addEventListener('online', () => {
+        flushPendingGameSyncQueue();
+    });
+
+    /**
+     * Synchronizes a game snapshot with the server.
+     * Operates for both guests and authenticated accounts.
+     *
+     * @param {Object} payload Snapshot and metadata payload
+     * @param {number} [delayMs=0] Debounce delay in ms
+     * @returns {Promise<Object>}
+     */
+    function syncGame(payload, delayMs = 0) {
+        if (!payload || !payload.game_id) {
+            return Promise.resolve({ success: false, error: 'Missing game_id' });
+        }
+
+        const gameId = payload.game_id;
+
+        // Attach session token if authenticated
+        const user = getUser();
+        if (user && user.token && !payload.token) {
+            payload.token = user.token;
+        }
+
+        // Maintain local revision counter
+        if (typeof payload.rev !== 'number') {
+            localGameRevs[gameId] = (localGameRevs[gameId] || 0) + 1;
+            payload.rev = localGameRevs[gameId];
+        } else {
+            localGameRevs[gameId] = Math.max(localGameRevs[gameId] || 0, payload.rev);
+        }
+
+        if (gameSyncTimeouts[gameId]) {
+            clearTimeout(gameSyncTimeouts[gameId]);
+            delete gameSyncTimeouts[gameId];
+        }
+
+        const executeSync = async () => {
+            if (!navigator.onLine) {
+                queuePendingGameSync(payload);
+                return { success: false, offline: true };
+            }
+
+            try {
+                const url = getApiUrl('games.php') + '?action=sync';
+                const headers = { 'Content-Type': 'application/json' };
+                if (user && user.token) {
+                    headers['Authorization'] = 'Bearer ' + user.token;
+                }
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.status === 401) {
+                    setSession(null, 'expired');
+                    return { success: false, error: 'Session expired' };
+                }
+
+                const data = await res.json();
+
+                if (res.status === 409) {
+                    // Revision conflict: server has equal or newer revision
+                    const serverRev = data.rev || payload.rev;
+                    localGameRevs[gameId] = Math.max(localGameRevs[gameId] || 0, serverRev);
+                    if (data.status === 'final') {
+                        return { success: false, conflict: true, stopped: true, status: 'final' };
+                    }
+                    return { success: false, conflict: true, rev: serverRev };
+                }
+
+                if (res.ok && data.success) {
+                    // Remove from pending offline queue on success
+                    const queue = getPendingGameQueue();
+                    if (queue[gameId]) {
+                        delete queue[gameId];
+                        try {
+                            localStorage.setItem(GAME_PENDING_SYNC_KEY, JSON.stringify(queue));
+                        } catch (e) {}
+                    }
+                    return data;
+                }
+
+                queuePendingGameSync(payload);
+                return data;
+            } catch (err) {
+                queuePendingGameSync(payload);
+                return { success: false, error: err.message };
+            }
+        };
+
+        if (delayMs <= 0) {
+            return executeSync();
+        }
+
+        return new Promise((resolve) => {
+            gameSyncTimeouts[gameId] = setTimeout(async () => {
+                const result = await executeSync();
+                resolve(result);
+            }, delayMs);
+        });
+    }
+
+    /**
+     * Retrieves active public games directory from server.
+     *
+     * @returns {Promise<Object>}
+     */
+    async function listPublicGames() {
+        const url = getApiUrl('games.php') + '?action=list_public';
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error('Failed to load active games (' + res.status + ')');
+        }
+        return await res.json();
+    }
+
+    /**
+     * Retrieves a single game by ID. Uses authenticated POST if signed in (allowing private game viewing).
+     *
+     * @param {string} gameId
+     * @returns {Promise<Object>}
+     */
+    async function getGame(gameId) {
+        const user = getUser();
+        const url = getApiUrl('games.php') + '?action=get';
+
+        if (user && user.token) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + user.token
+                },
+                body: JSON.stringify({ id: gameId, token: user.token })
+            });
+            if (res.status === 401) {
+                setSession(null, 'expired');
+            }
+            if (!res.ok) {
+                throw new Error('Game not found or unavailable (' + res.status + ')');
+            }
+            return await res.json();
+        } else {
+            const res = await fetch(url + '&id=' + encodeURIComponent(gameId));
+            if (!res.ok) {
+                throw new Error('Game not found or unavailable (' + res.status + ')');
+            }
+            return await res.json();
+        }
+    }
+
+    /**
+     * Retrieves paginated list of games owned by authenticated user.
+     *
+     * @param {number} [limit=20]
+     * @param {number} [offset=0]
+     * @returns {Promise<Object>}
+     */
+    async function listMyGames(limit = 20, offset = 0) {
+        const user = getUser();
+        if (!user || !user.token) {
+            throw new Error('You must be signed in to view your saved games.');
+        }
+
+        const url = getApiUrl('games.php') + '?action=list_mine';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ token: user.token, limit, offset })
+        });
+
+        if (res.status === 401) {
+            setSession(null, 'expired');
+            throw new Error('Session expired. Please sign in again.');
+        }
+        if (!res.ok) {
+            throw new Error('Failed to load games archive (' + res.status + ')');
+        }
+        return await res.json();
+    }
+
+    /**
+     * Updates visibility ('public' or 'private') for an owned game.
+     *
+     * @param {string} gameId
+     * @param {string} visibility
+     * @returns {Promise<Object>}
+     */
+    async function setGameVisibility(gameId, visibility) {
+        const user = getUser();
+        if (!user || !user.token) {
+            throw new Error('You must be signed in to change game visibility.');
+        }
+
+        const url = getApiUrl('games.php') + '?action=set_visibility';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ token: user.token, game_id: gameId, visibility })
+        });
+
+        if (res.status === 401) {
+            setSession(null, 'expired');
+            throw new Error('Session expired. Please sign in again.');
+        }
+        if (!res.ok) {
+            throw new Error('Failed to update game visibility.');
+        }
+        return await res.json();
+    }
+
+    /**
+     * Permanently deletes an owned game record from the server.
+     *
+     * @param {string} gameId
+     * @returns {Promise<Object>}
+     */
+    async function removeGame(gameId) {
+        const user = getUser();
+        if (!user || !user.token) {
+            throw new Error('You must be signed in to delete games.');
+        }
+
+        const url = getApiUrl('games.php') + '?action=delete';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ token: user.token, game_id: gameId })
+        });
+
+        if (res.status === 401) {
+            setSession(null, 'expired');
+            throw new Error('Session expired. Please sign in again.');
+        }
+        if (!res.ok) {
+            throw new Error('Failed to delete game.');
+        }
+        return await res.json();
+    }
+
     return {
         VERSION: SUITE_PROFILE_VERSION,
         getUser,
@@ -601,6 +948,14 @@ const SUITE_PROFILE_VERSION = '1.4';
         loadAppData,
         saveAppData,
         renderFooterIndicator,
-        mountLauncherProfileButton
+        mountLauncherProfileButton,
+        games: {
+            sync: syncGame,
+            get: getGame,
+            listPublic: listPublicGames,
+            listMine: listMyGames,
+            setVisibility: setGameVisibility,
+            remove: removeGame
+        }
     };
 }));

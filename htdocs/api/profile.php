@@ -3,9 +3,10 @@
 // Handles profile authentication, password management, and app settings synchronization.
 
 // API endpoint version identifier
-$API_VERSION = '1.1';
+$API_VERSION = '1.2';
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -25,66 +26,6 @@ if (!$pdo) {
         'dbAvailable' => false
     ]);
     exit;
-}
-
-/**
- * Extracts bearer token from query string, JSON payload, or Authorization headers.
- * Ensures compatibility across Apache FastCGI environments where Authorization header may be stripped.
- *
- * @param array|null $payload Optional decoded request body
- * @return string|null
- */
-function getAuthToken($payload = null) {
-    if (is_array($payload) && !empty($payload['token'])) {
-        return trim($payload['token']);
-    }
-    if (!empty($_GET['token'])) {
-        return trim($_GET['token']);
-    }
-    if (!empty($_POST['token'])) {
-        return trim($_POST['token']);
-    }
-    if (!empty($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $m)) {
-        return $m[1];
-    }
-    if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(\S+)/i', $_SERVER['REDIRECT_HTTP_AUTHORIZATION'], $m)) {
-        return $m[1];
-    }
-    if (function_exists('getallheaders')) {
-        $headers = getallheaders();
-        if (is_array($headers)) {
-            foreach ($headers as $key => $val) {
-                if (strcasecmp($key, 'Authorization') === 0 && preg_match('/Bearer\s+(\S+)/i', $val, $m)) {
-                    return $m[1];
-                }
-            }
-        }
-    }
-    return null;
-}
-
-/**
- * Authenticates request using session auth token.
- *
- * @param PDO $pdo
- * @param string|null $token
- * @return array|null User record if valid, null otherwise
- */
-function authenticateUser($pdo, $token) {
-    if (empty($token)) {
-        return null;
-    }
-    $stmt = $pdo->prepare('SELECT id, username, password_hash, auth_token, token_expires FROM suite_users WHERE auth_token = ? LIMIT 1');
-    $stmt->execute([$token]);
-    $user = $stmt->fetch();
-    if (!$user) {
-        return null;
-    }
-    // Check if token expiration is enforced (if set)
-    if (!empty($user['token_expires']) && strtotime($user['token_expires']) < time()) {
-        return null;
-    }
-    return $user;
 }
 
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
@@ -108,6 +49,12 @@ if ($action === 'status') {
 // 2. Authenticate or Register Profile
 if ($action === 'auth') {
     $rawInput = file_get_contents('php://input');
+    if (strlen($rawInput) > 262144) {
+        http_response_code(413);
+        echo json_encode(['success' => false, 'error' => 'Request body exceeds 256 KB limit.']);
+        exit;
+    }
+
     $payload = json_decode($rawInput, true) ?: [];
     $username = isset($payload['username']) ? trim($payload['username']) : '';
     $password = isset($payload['password']) ? trim($payload['password']) : '';
@@ -137,10 +84,15 @@ if ($action === 'auth') {
             }
         }
 
-        // Issue new auth token
+        // Issue new per-device session token and record hash in suite_sessions
         $token = bin2hex(random_bytes(32));
-        $update = $pdo->prepare('UPDATE suite_users SET auth_token = ?, last_login = NOW() WHERE id = ?');
-        $update->execute([$token, $existing['id']]);
+        $tokenHash = hash('sha256', $token);
+        $insertSession = $pdo->prepare('INSERT INTO suite_sessions (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 DAY))');
+        $insertSession->execute([$existing['id'], $tokenHash]);
+
+        // Touch last_login on user profile
+        $update = $pdo->prepare('UPDATE suite_users SET last_login = NOW() WHERE id = ?');
+        $update->execute([$existing['id']]);
 
         echo json_encode([
             'success' => true,
@@ -153,10 +105,15 @@ if ($action === 'auth') {
     } else {
         // New user: register profile
         $passwordHash = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : null;
-        $token = bin2hex(random_bytes(32));
+        $insertUser = $pdo->prepare('INSERT INTO suite_users (username, password_hash) VALUES (?, ?)');
+        $insertUser->execute([$username, $passwordHash]);
+        $newUserId = (int)$pdo->lastInsertId();
 
-        $insert = $pdo->prepare('INSERT INTO suite_users (username, password_hash, auth_token) VALUES (?, ?, ?)');
-        $insert->execute([$username, $passwordHash, $token]);
+        // Issue new per-device session token in suite_sessions
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        $insertSession = $pdo->prepare('INSERT INTO suite_sessions (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 DAY))');
+        $insertSession->execute([$newUserId, $tokenHash]);
 
         echo json_encode([
             'success' => true,
@@ -208,9 +165,9 @@ if ($action === 'load') {
     }
 
     $appId = isset($_GET['app']) ? trim($_GET['app']) : '';
-    if (empty($appId)) {
+    if (empty($appId) || strlen($appId) > 32 || !preg_match('/^[a-zA-Z0-9_\-]{1,32}$/', $appId)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Missing app identifier.']);
+        echo json_encode(['success' => false, 'error' => 'Invalid or missing app identifier (max 32 chars).']);
         exit;
     }
 
@@ -240,6 +197,12 @@ if ($action === 'load') {
 // 5. Save App Data
 if ($action === 'save') {
     $rawInput = file_get_contents('php://input');
+    if (strlen($rawInput) > 262144) {
+        http_response_code(413);
+        echo json_encode(['success' => false, 'error' => 'Payload exceeds 256 KB limit.']);
+        exit;
+    }
+
     $payload = json_decode($rawInput, true) ?: [];
     $token = getAuthToken($payload);
     $user = authenticateUser($pdo, $token);
@@ -250,9 +213,9 @@ if ($action === 'save') {
     }
 
     $appId = isset($_GET['app']) ? trim($_GET['app']) : '';
-    if (empty($appId)) {
+    if (empty($appId) || strlen($appId) > 32 || !preg_match('/^[a-zA-Z0-9_\-]{1,32}$/', $appId)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Missing app identifier.']);
+        echo json_encode(['success' => false, 'error' => 'Invalid or missing app identifier (max 32 chars).']);
         exit;
     }
 

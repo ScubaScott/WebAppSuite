@@ -15,9 +15,10 @@
             background: radial-gradient(circle at top, #29395f 0%, #090d18 40%, #02040b 100%);
             color: #eef2ff;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
             padding: 16px;
+            box-sizing: border-box;
         }
         .scoreboard {
             width: min(100%, 980px);
@@ -49,11 +50,21 @@
             margin: 0;
             color: #94a3b8;
             font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .back-link {
             color: #7dd3fc;
             text-decoration: none;
             font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(125,211,252,0.1);
+            transition: background 0.15s ease;
+        }
+        .back-link:hover {
+            background: rgba(125,211,252,0.2);
         }
         .court {
             display: flex;
@@ -71,8 +82,9 @@
             border: 1px solid rgba(148,163,184,0.12);
         }
         .team-name {
-            font-size: 0.95rem;
-            letter-spacing: 0.2em;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
             text-transform: uppercase;
             color: #a5b4fc;
             margin-bottom: 10px;
@@ -108,6 +120,7 @@
             color: #c7d2fe;
             letter-spacing: 0.18em;
             text-transform: uppercase;
+            font-weight: 700;
         }
         .history-section {
             margin: 0 18px 18px;
@@ -134,7 +147,7 @@
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 10px;
-            align-items: start;
+            align-items: center;
             padding: 14px 18px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
@@ -147,6 +160,9 @@
         .entry-label strong {
             color: #f8fafc;
             font-size: 0.98rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .entry-label span {
             color: #94a3b8;
@@ -157,6 +173,27 @@
             font-size: 0.82rem;
             white-space: nowrap;
         }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .status-live { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
+        .status-paused { background: rgba(234,179,8,0.2); color: #facc15; border: 1px solid rgba(234,179,8,0.4); }
+        .status-stalled { background: rgba(249,115,22,0.2); color: #fb923c; border: 1px solid rgba(249,115,22,0.4); }
+        .status-final { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4); }
+
+        .app-footer {
+            margin-top: 24px;
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: 12px;
@@ -219,7 +256,7 @@
     <div class="header-row">
         <div class="header-info">
             <h1 class="title" id="title">Game Viewer</h1>
-            <p class="meta" id="meta">Loading…</p>
+            <p class="meta" id="meta">Connecting to live feed…</p>
         </div>
         <a class="back-link" href="ScoreBoardActiveGames.html">← Active Games</a>
     </div>
@@ -243,11 +280,15 @@
     </section>
 </div>
 
+<!-- Shared Suite Profile and Games Client -->
+<script src="../media/suite-profile.js"></script>
+
 <script>
-    const SERVER = './active-games.php';
+    // Extract query parameter helper
     function qs(name) { return new URLSearchParams(location.search).get(name); }
     const gameId = qs('id');
 
+    // DOM element references
     const homeNameEl = document.getElementById('homeName');
     const awayNameEl = document.getElementById('awayName');
     const homeScoreEl = document.getElementById('homeScore');
@@ -260,7 +301,9 @@
 
     let current = null;
     let tickInterval = null;
+    let pollInterval = null;
 
+    // Millisecond clock time formatter
     function formatTimeMs(ms) {
         const totalSeconds = Math.floor(Math.abs(ms) / 1000);
         const minutes = Math.floor(totalSeconds / 60);
@@ -269,28 +312,72 @@
         return `${minutes}:${String(seconds).padStart(2,'0')}.${tenths}`;
     }
 
-    function formatAge(ts) {
-        if (!ts) return 'unknown';
-        const diff = Date.now() - ts;
-        const seconds = Math.round(diff / 1000);
+    // Relative age formatter
+    function formatAgeMs(ms) {
+        const seconds = Math.floor(ms / 1000);
         if (seconds < 10) return 'just now';
         if (seconds < 60) return `${seconds}s ago`;
-        const minutes = Math.round(seconds / 60);
+        const minutes = Math.floor(seconds / 60);
         return `${minutes}m ago`;
     }
 
+    // Render scoreboard presentation from current snapshot
     function render() {
         if (!current) return;
+
+        // Team names and scores
         homeNameEl.textContent = current.homeTeamName || 'Home';
         awayNameEl.textContent = current.awayTeamName || 'Away';
         homeScoreEl.textContent = current.homeScore || 0;
         awayScoreEl.textContent = current.awayScore || 0;
-        periodEl.textContent = `P${current.currentPeriod || 1}`;
-        titleEl.textContent = current.gameTitle || `${homeNameEl.textContent} vs ${awayNameEl.textContent}`;
-        metaEl.textContent = `Last update: ${formatAge(current.lastUpdate)}`;
 
+        // Optional custom colors
+        if (current.homeTeamColor) {
+            homeNameEl.style.color = current.homeTeamColor;
+            homeScoreEl.style.color = current.homeTeamColor;
+        }
+        if (current.awayTeamColor) {
+            awayNameEl.style.color = current.awayTeamColor;
+            awayScoreEl.style.color = current.awayTeamColor;
+        }
+
+        periodEl.textContent = `P${current.currentPeriod || 1}`;
+        titleEl.textContent = `${homeNameEl.textContent} vs ${awayNameEl.textContent}`;
+
+        renderMeta();
+        renderHistory();
+    }
+
+    // Update status badge and age indicator
+    function renderMeta() {
+        if (!current) return;
+        const now = Date.now();
+        const effectiveAge = (current.age_ms || 0) + (now - (current.fetchTime || now));
+
+        if (current.status === 'final') {
+            metaEl.innerHTML = '<span class="status-badge status-final">Final</span> <span>Game concluded</span>';
+        } else if (current.isPaused) {
+            metaEl.innerHTML = `<span class="status-badge status-paused">Paused</span> <span>Last update ${formatAgeMs(effectiveAge)}</span>`;
+        } else if ((current.age_ms || 0) >= 60000) {
+            metaEl.innerHTML = `<span class="status-badge status-stalled">Stalled</span> <span>Last update ${formatAgeMs(effectiveAge)}</span>`;
+        } else {
+            metaEl.innerHTML = `<span class="status-badge status-live">Live</span> <span>Updated ${formatAgeMs(effectiveAge)}</span>`;
+        }
+    }
+
+    // Render activity history log with penalty card and scoring distinctions
+    function renderHistory() {
         historyList.innerHTML = '';
         const hist = Array.isArray(current.scoreHistory) ? current.scoreHistory.slice().reverse() : [];
+        if (hist.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'history-item';
+            empty.style.color = '#94a3b8';
+            empty.textContent = 'No recorded events yet.';
+            historyList.appendChild(empty);
+            return;
+        }
+
         hist.forEach(entry => {
             const item = document.createElement('div');
             item.className = 'history-item';
@@ -303,10 +390,16 @@
             if (entry.type === 'event') {
                 entryTitle.textContent = entry.text || '';
                 entrySub.textContent = entry.timestamp || entry.time || '';
+            } else if (entry.type === 'card') {
+                const isYellow = entry.cardType === 'yellow';
+                const teamName = entry.teamName || (entry.teamId === 'home' ? (current.homeTeamName || 'Home') : (current.awayTeamName || 'Away'));
+                const degreeLabel = entry.degree || (isYellow ? 'Yellow Card' : 'Red Card');
+                entryTitle.textContent = `${isYellow ? '🟨' : '🟥'} ${teamName} — ${degreeLabel}`;
+                entrySub.textContent = entry.gameTime || (entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
             } else {
-                const teamName = entry.teamName || (entry.teamId === 'home' ? 'Home' : 'Away');
+                const teamName = entry.teamName || (entry.teamId === 'home' ? (current.homeTeamName || 'Home') : (current.awayTeamName || 'Away'));
                 entryTitle.textContent = `${teamName} scored`;
-                entrySub.textContent = `${entry.currentScore || ''} • ${entry.gameTime || entry.timestamp || ''}`;
+                entrySub.textContent = `${entry.currentScore !== undefined ? entry.currentScore : ''} • ${entry.gameTime || (entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '')}`;
             }
 
             entryLabel.appendChild(entryTitle);
@@ -314,7 +407,9 @@
 
             const timeEl = document.createElement('div');
             timeEl.className = 'entry-time';
-            timeEl.textContent = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            if (entry.timestamp) {
+                timeEl.textContent = new Date(entry.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            }
 
             item.appendChild(entryLabel);
             if (timeEl.textContent) item.appendChild(timeEl);
@@ -322,55 +417,95 @@
         });
     }
 
+    // High frequency ticker for skew-free smooth clock display
     function startTicker() {
         if (tickInterval) clearInterval(tickInterval);
         tickInterval = setInterval(() => {
             if (!current) return;
             const now = Date.now();
-            let displayMs = Number(current.elapsedMs) || 0;
-            if (current.timerRunning && Number(current.lastUpdate)) {
-                displayMs += now - Number(current.lastUpdate);
+            let elapsed = Number(current.elapsedMs) || 0;
+            const isLive = (current.status === 'live');
+            const isStalled = isLive && (current.age_ms >= 60000);
+
+            // Extrapolate time only when live, running, unpaused, and sync is active (< 60s age)
+            if (isLive && current.timerRunning && !current.isPaused && !isStalled) {
+                const timeSinceFetch = Math.max(0, now - (current.fetchTime || now));
+                elapsed += (current.age_ms || 0) + timeSinceFetch;
             }
+
+            let displayMs = elapsed;
+            if (current.isCountingUp === false && current.timeLimit > 0) {
+                displayMs = Math.max(0, current.timeLimit - elapsed);
+            }
+
             timerEl.textContent = formatTimeMs(displayMs);
+            renderMeta();
         }, 100);
     }
 
+    // Fetch latest game snapshot from API
     async function loadGame() {
         if (!gameId) {
-            document.body.innerHTML = '<div style="padding:20px; color:#fff;">Missing game id</div>';
+            document.body.innerHTML = '<div style="padding:24px; color:#fff; text-align:center;"><h2>Missing Game ID</h2><p><a href="ScoreBoardActiveGames.html" style="color:#7dd3fc;">← View Active Games</a></p></div>';
             return;
         }
+
         try {
-            const resp = await fetch(`${SERVER}?id=${encodeURIComponent(gameId)}`);
-            if (!resp.ok) throw new Error('server');
-            const payload = await resp.json();
-            current = payload.game || null;
-            if (!current) {
-                document.body.innerHTML = '<div style="padding:20px; color:#fff;">Game not found or expired.</div>';
+            let res = null;
+            if (window.SuiteProfile && SuiteProfile.games) {
+                res = await SuiteProfile.games.get(gameId);
+            } else {
+                const fetchRes = await fetch(`../api/games.php?action=get&id=${encodeURIComponent(gameId)}`);
+                res = await fetchRes.json();
+            }
+
+            if (!res || !res.success || !res.game) {
+                if (!current) {
+                    document.body.innerHTML = '<div style="padding:24px; color:#fff; text-align:center;"><h2>Game Not Found</h2><p>This game may be private, expired, or removed.</p><p><a href="ScoreBoardActiveGames.html" style="color:#7dd3fc;">← View Active Games</a></p></div>';
+                }
                 return;
             }
-            current.homeScore = Number(current.homeScore) || 0;
-            current.awayScore = Number(current.awayScore) || 0;
-            current.elapsedMs = Number(current.elapsedMs) || 0;
-            current.lastUpdate = Number(current.lastUpdate) || Date.now();
+
+            const snap = game.snapshot || game;
+
+            current = {
+                ...game,
+                ...snap,
+                status: game.status,
+                age_ms: typeof res.age_ms === 'number' ? res.age_ms : (typeof game.age_ms === 'number' ? game.age_ms : 0),
+                fetchTime: Date.now(),
+                ended_by: game.ended_by
+            };
+
             render();
             startTicker();
+
+            // Stop polling when game is final
+            if (current.status === 'final' && pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
         } catch (e) {
-            document.body.innerHTML = '<div style="padding:20px; color:#fff;">Unable to fetch game.</div>';
+            // Keep existing display if temporary fetch error occurs
         }
     }
 
-    setInterval(loadGame, 4000);
-    loadGame();
-
     // Viewer tool version identifier
-    const VERSION = '1.1';
+    const VERSION = '1.2';
     const APP_VERSION = VERSION;
-    const versionEl = document.getElementById('viewerVersion');
-    if (versionEl) versionEl.textContent = VERSION;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const versionEl = document.getElementById('viewerVersion');
+        if (versionEl) versionEl.textContent = VERSION;
+    });
+
+    // Start polling and load initial state
+    pollInterval = setInterval(loadGame, 4000);
+    loadGame();
 </script>
-<footer style="margin-top: 16px; font-size: 0.75rem; color: #64748b; text-align: center;">
-    <p>Version <span id="viewerVersion">1.1</span></p>
+
+<footer class="app-footer">
+    <p>Version <span id="viewerVersion">1.2</span></p>
 </footer>
 </body>
 </html>

@@ -213,18 +213,22 @@
                         to correct early/late starts.</div>
                 </div>
 
-                <!-- Start / Pause / New Game buttons -->
-                <div style="width:100%;display:flex;justify-content:center;gap:8px;">
+                <!-- Start / Pause / End / New Game buttons -->
+                <div style="width:100%;display:flex;justify-content:center;gap:6px;">
                     <button id="start-stop-btn"
-                        style="flex:1;background:#10b981;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                        style="flex:1;background:#10b981;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:0.9rem;"
                         onmousedown="this.style.transform='scale(0.95)'"
                         onmouseup="this.style.transform='scale(1)'">Start</button>
                     <button id="pause-btn"
-                        style="flex:1;background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                        style="flex:1;background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:0.9rem;"
                         class="hidden" onmousedown="this.style.transform='scale(0.95)'"
                         onmouseup="this.style.transform='scale(1)'">Pause</button>
+                    <button id="end-game-btn"
+                        style="flex:1;background:#7f1d1d;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:0.9rem;"
+                        title="Finalize game score without resetting the board"
+                        onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">End Game</button>
                     <button id="reset-btn"
-                        style="flex:1;background:#374151;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
+                        style="flex:1;background:#374151;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:0.9rem;"
                         onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">New
                         Game</button>
                 </div>
@@ -256,9 +260,12 @@
 
                 <!-- Links -->
                 <div style="width:100%;text-align:center;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
-                    <a href="ScoreBoardActiveGames.html"
-                        style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active
-                        Games</a>
+                    <div style="display:flex;justify-content:center;gap:16px;align-items:center;">
+                        <a href="ScoreBoardActiveGames.html"
+                            style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active Games</a>
+                        <a href="ScoreBoardMyGames.html" id="link-my-games" class="hidden"
+                            style="font-size:0.875rem;font-weight:700;color:#a78bfa;text-decoration:underline;">My Games</a>
+                    </div>
                     <a href="ScoreBoardHelp.html"
                         style="font-size:0.875rem;font-weight:700;color:#60a5fa;text-decoration:underline;">help!</a>
                 </div>
@@ -484,6 +491,22 @@
                     </label>
                 </div>
 
+                <!-- ── SHARING & PRIVACY (Signed-in only) ───────────── -->
+                <div id="settings-sharing-section" class="hidden">
+                    <div class="settings-section-label">Sharing &amp; Privacy</div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-text">
+                            <strong>Share on Active Games list</strong>
+                            <span>Shows this match in the public Active Games board. Turn off to keep private in your account.</span>
+                        </div>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="setting-share-public" checked>
+                            <div class="toggle-track"></div>
+                        </label>
+                    </div>
+                </div>
+
             </div><!-- end settings-body -->
 
             <!-- Sticky footer -->
@@ -493,6 +516,22 @@
 
         </div><!-- end settings-panel -->
     </div><!-- end settings-modal -->
+
+    <!-- Stale Game Resume Confirmation Modal -->
+    <div id="stale-resume-modal" class="modal-backdrop hidden"
+        style="position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <div style="background:#1f2937;border:1px solid #374151;border-radius:18px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.7);text-align:center;">
+            <div style="font-size:2rem;margin-bottom:8px;">⏳</div>
+            <h3 style="margin:0 0 8px;color:#f3f4f6;font-size:1.25rem;">Finish Last Game?</h3>
+            <p style="color:#9ca3af;font-size:0.875rem;line-height:1.5;margin:0 0 20px;">This game was left running over 3 hours ago. Would you like to finalize and archive it, or resume the clock?</p>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button type="button" id="btn-stale-finish"
+                    style="flex:1;background:#dc2626;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Finish Game</button>
+                <button type="button" id="btn-stale-resume"
+                    style="flex:1;background:#374151;color:#fff;border:1px solid #4b5563;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Resume Clock</button>
+            </div>
+        </div>
+    </div>
 
     <!-- History Row Options Modal -->
     <div id="history-options-modal" class="hidden">
@@ -578,6 +617,13 @@
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const closeSettingsX = document.getElementById('close-settings-x');
         const pauseBtn = document.getElementById('pause-btn');
+        const endGameBtn = document.getElementById('end-game-btn');
+        const linkMyGames = document.getElementById('link-my-games');
+        const settingsSharingSection = document.getElementById('settings-sharing-section');
+        const settingSharePublic = document.getElementById('setting-share-public');
+        const staleResumeModal = document.getElementById('stale-resume-modal');
+        const btnStaleFinish = document.getElementById('btn-stale-finish');
+        const btnStaleResume = document.getElementById('btn-stale-resume');
         const rollerMinutesEl = document.getElementById('roller-minutes');
         const rollerSecondsEl = document.getElementById('roller-seconds');
         const rollerApplyBtn = document.getElementById('roller-apply-btn');
@@ -621,8 +667,48 @@
         let splashOnAway = true;   // Show celebration splash when away team scores
         let showPenaltyCards = false; // Optional penalty cards area below score boxes
         let activeGameId = null;
+        let activeGameWriteToken = null;
+        let activeGameRev = 0;
+        let activeGameVisibility = 'public';
         let activeGameStarted = false;
+        let activeGameEnded = false;
+        let activeGameStartedAt = null;
         let selectedTheme = 'saber-dark'; // Active theme name persisted to localStorage
+
+        /**
+         * Generates a standard RFC4122 version 4 UUID.
+         * Falls back to pseudo-random generation if crypto.randomUUID is unavailable.
+         *
+         * @returns {string}
+         */
+        function generateUuidV4() {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        /**
+         * Generates a 32-byte (64-character hex) cryptographic secret write token.
+         *
+         * @returns {string}
+         */
+        function generateWriteToken() {
+            if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                const buf = new Uint8Array(32);
+                crypto.getRandomValues(buf);
+                return Array.from(buf, b => b.toString(16).padStart(2, '0')).join('');
+            }
+            let token = '';
+            for (let i = 0; i < 64; i++) {
+                token += Math.floor(Math.random() * 16).toString(16);
+            }
+            return token;
+        }
 
         // Theme definitions: background image and body background-color fallback.
         // Each theme maps to a bg image file and an accent color for the page overlay.
@@ -768,11 +854,12 @@
             return games;
         }
 
-        function updateActiveGameEntry() {
+        function updateActiveGameEntry(statusOverride = null) {
             if (!activeGameId || !activeGameStarted) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             const games = pruneStaleActiveGames(getActiveGames());
+            const effectiveStatus = statusOverride || (activeGameEnded ? 'game_over' : (timerRunning ? 'running' : (isPaused ? 'paused' : 'stopped')));
             games[activeGameId] = {
                 id: activeGameId,
                 homeTeamName,
@@ -786,7 +873,8 @@
                 timeLimit,
                 elapsedMs: elapsed,
                 lastUpdate: now,
-                expiresAt: now + 3 * 60 * 1000,
+                expiresAt: now + 24 * 60 * 60 * 1000,
+                status: effectiveStatus,
                 gameTitle: `${homeTeamName} vs ${awayTeamName}`
             };
             setActiveGames(games);
@@ -803,69 +891,117 @@
 
         function loadOrCreateActiveGameId() {
             let id = safeLocalStorageGet(ACTIVE_GAME_ID_KEY) || safeLocalStorageGet('scoreKeeperCurrentGameIdV1');
-            if (!id) {
-                id = `scoreboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            if (!id || id.indexOf('scoreboard-') === 0) {
+                id = generateUuidV4();
                 safeLocalStorageSet(ACTIVE_GAME_ID_KEY, id);
             }
             return id;
         }
 
-        async function publishActiveGameStateServer() {
+        function loadOrCreateWriteToken() {
+            let token = safeLocalStorageGet(ACTIVE_GAME_WRITE_TOKEN_KEY);
+            if (!token || token.length !== 64) {
+                token = generateWriteToken();
+                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, token);
+            }
+            return token;
+        }
+
+        // Synchronize active game snapshot with database through SuiteProfile.games.sync
+        async function syncActiveGameWithServer(statusOverride = null, endedByOverride = null) {
             if (!activeGameId || !activeGameStarted) return;
+            const now = Date.now();
+            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+            activeGameRev = (activeGameRev || 0) + 1;
+
+            const effectiveStatus = statusOverride || (activeGameEnded ? 'final' : (timerRunning ? 'live' : 'live'));
+            const effectiveEndedBy = endedByOverride || (activeGameEnded ? 'user' : null);
+
             const payload = {
-                id: activeGameId,
-                homeTeamName,
-                awayTeamName,
-                homeScore,
-                awayScore,
-                currentPeriod,
-                timerRunning,
-                isPaused,
-                isCountingUp,
-                timeLimit,
-                // include full score history so viewers can render exact local timestamps
-                scoreHistory: scoreHistory || [],
-                // elapsedMs is the cumulative elapsed time at the moment of publish
-                elapsedMs: accumulatedTime + (startTime ? Date.now() - startTime : 0),
-                lastUpdate: Date.now(),
-                // 24 hours expiry to keep games visible when users return later
-                expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-                gameTitle: `${homeTeamName} vs ${awayTeamName}`
+                game_id: activeGameId,
+                write_token: activeGameWriteToken || loadOrCreateWriteToken(),
+                rev: activeGameRev,
+                visibility: activeGameVisibility || 'public',
+                status: effectiveStatus,
+                ended_by: effectiveEndedBy,
+                snapshot: {
+                    homeTeamName,
+                    awayTeamName,
+                    homeScore,
+                    awayScore,
+                    currentPeriod,
+                    timerRunning,
+                    isPaused,
+                    isCountingUp,
+                    timeLimit,
+                    scoreHistory: scoreHistory || [],
+                    elapsedMs: elapsed,
+                    startedAt: activeGameStartedAt || now,
+                    homeTeamColor,
+                    awayTeamColor
+                }
+            };
+
+            if (window.SuiteProfile && SuiteProfile.games) {
+                try {
+                    const res = await SuiteProfile.games.sync(payload, 2000);
+                    if (res && res.conflict) {
+                        if (res.rev) activeGameRev = Math.max(activeGameRev, res.rev);
+                        if (res.stopped) activeGameEnded = true;
+                    }
+                } catch (e) {
+                    // Fail silently in offline mode
+                }
+            }
+        }
+
+        // Flush game state immediately using sendBeacon on page unload/visibilitychange
+        function flushBeaconSync(statusOverride = null, endedByOverride = null) {
+            if (!activeGameId || !activeGameStarted || !navigator.sendBeacon) return;
+            const now = Date.now();
+            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+            activeGameRev = (activeGameRev || 0) + 1;
+
+            const user = (window.SuiteProfile && !SuiteProfile.isGuest()) ? SuiteProfile.getUser() : null;
+            const payload = {
+                game_id: activeGameId,
+                write_token: activeGameWriteToken || loadOrCreateWriteToken(),
+                token: user ? user.token : null,
+                rev: activeGameRev,
+                visibility: activeGameVisibility || 'public',
+                status: statusOverride || (activeGameEnded ? 'final' : 'live'),
+                ended_by: endedByOverride || (activeGameEnded ? 'user' : null),
+                snapshot: {
+                    homeTeamName,
+                    awayTeamName,
+                    homeScore,
+                    awayScore,
+                    currentPeriod,
+                    timerRunning,
+                    isPaused,
+                    isCountingUp,
+                    timeLimit,
+                    scoreHistory: scoreHistory || [],
+                    elapsedMs: elapsed,
+                    startedAt: activeGameStartedAt || now,
+                    homeTeamColor,
+                    awayTeamColor
+                }
             };
 
             try {
-                await fetch('./active-games.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                    keepalive: true
-                });
-            } catch (error) {
-                // Fail silently if the server is unavailable.
-            }
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                navigator.sendBeacon('../api/games.php?action=sync', blob);
+            } catch (e) {}
         }
 
-        function publishActiveGameState() {
+        function publishActiveGameState(statusOverride = null, endedByOverride = null) {
             try {
-                updateActiveGameEntry();
+                updateActiveGameEntry(statusOverride);
             } catch (error) {
                 // Fail silently if local active game publishing is unavailable.
             }
-            publishActiveGameStateServer();
-        }
-
-        async function removeActiveGameFromServer() {
-            if (!activeGameId) return;
-            try {
-                await fetch('./active-games.php', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: activeGameId }),
-                    keepalive: true
-                });
-            } catch (error) {
-                // Fail silently.
-            }
+            syncActiveGameWithServer(statusOverride, endedByOverride);
         }
 
         let isInitializingScoreboard = true;
@@ -882,7 +1018,9 @@
                 logPauseResume, logPeriodStartStop,
                 splashOnHome, splashOnAway,
                 showPenaltyCards,
-                activeGameId, activeGameStarted,
+                activeGameId, activeGameWriteToken, activeGameRev,
+                activeGameVisibility, activeGameStarted, activeGameEnded,
+                activeGameStartedAt,
                 selectedTheme,
                 lastSavedAt: Date.now()
             };
@@ -1676,10 +1814,15 @@
 
         // Start the timer and optionally add a history note for the period start.
         function startTimer(logStart = true) {
-            if (!activeGameStarted && currentPeriod === 1) {
+            if (!activeGameStarted) {
                 activeGameId = loadOrCreateActiveGameId();
+                activeGameWriteToken = loadOrCreateWriteToken();
+                activeGameRev = activeGameRev || 1;
                 activeGameStarted = true;
+                activeGameEnded = false;
+                activeGameStartedAt = activeGameStartedAt || Date.now();
                 safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
+                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, activeGameWriteToken);
             }
             if (!startTime) startTime = Date.now();
             if (logStart) {
@@ -1781,6 +1924,7 @@
             if (settingSplashHome) settingSplashHome.checked = splashOnHome;
             if (settingSplashAway) settingSplashAway.checked = splashOnAway;
             if (settingShowCards) settingShowCards.checked = showPenaltyCards;
+            if (settingSharePublic) settingSharePublic.checked = (activeGameVisibility !== 'private');
             // Populate team card inputs with current values
             if (homeNameInput) homeNameInput.value = homeTeamName;
             if (homeColorSelect) homeColorSelect.value = homeTeamColor;
@@ -1886,6 +2030,13 @@
             });
         }
 
+        if (settingSharePublic) {
+            settingSharePublic.addEventListener('change', () => {
+                activeGameVisibility = settingSharePublic.checked ? 'public' : 'private';
+                saveState();
+            });
+        }
+
         periodDisplay.addEventListener('click', () => {
             if (!timerRunning) cyclePeriod();
         });
@@ -1911,54 +2062,48 @@
             });
         }
 
-        // Publish the current game as "game over" so it remains on the active games
-        // board with the final score and a "Game Over" status, then resets local state
-        // for a brand-new game with a fresh game ID.
+        // Finalize the current active game without resetting scores or timer
+        async function endCurrentGame() {
+            if (!confirm("End this game?\n\nThe final score and period will be frozen and saved as 'Final'.")) return;
+            if (timerRunning) {
+                stopTimer();
+            }
+            activeGameEnded = true;
+            publishActiveGameState('final', 'user');
+            saveState();
+        }
+
+        if (endGameBtn) {
+            endGameBtn.addEventListener('click', endCurrentGame);
+        }
+
+        // Publish final state and reset local state for a fresh game session
         async function endCurrentGameAndStartNew() {
-            if (!confirm("Start a New Game?\n\nThe current game will be saved with 'Game Over' status on the Active Games screen.")) return;
-
-            // Stop the timer if running.
-            clearInterval(timerInterval);
-            if (startTime) accumulatedTime += Date.now() - startTime;
-
-            // Publish the current game one final time with game_over status.
-            if (activeGameId && activeGameStarted) {
-                const finalPayload = {
-                    id: activeGameId,
-                    homeTeamName,
-                    awayTeamName,
-                    homeScore,
-                    awayScore,
-                    currentPeriod,
-                    timerRunning: false,
-                    isPaused: false,
-                    isCountingUp,
-                    timeLimit,
-                    scoreHistory: scoreHistory || [],
-                    elapsedMs: accumulatedTime,
-                    lastUpdate: Date.now(),
-                    // Keep the game visible for 24 hours after it ends.
-                    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-                    gameTitle: `${homeTeamName} vs ${awayTeamName}`,
-                    // Mark this game as finished so the board shows "Game Over".
-                    status: 'game_over'
-                };
-                try {
-                    await fetch('./active-games.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(finalPayload),
-                        keepalive: true
-                    });
-                } catch (e) { /* Fail silently. */ }
+            if (activeGameStarted && !activeGameEnded) {
+                if (!confirm("Start a New Game?\n\nThe current game will be saved with 'Final' status on the Active Games screen.")) return;
+                if (timerRunning) {
+                    stopTimer();
+                }
+                activeGameEnded = true;
+                publishActiveGameState('final', 'new_game');
+            } else {
+                if (!confirm("Reset scoreboard and start a new game?")) return;
+                if (timerRunning) {
+                    stopTimer();
+                }
             }
 
-            // Generate a new game ID so this session is tracked independently.
-            activeGameId = `scoreboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            // Generate a fresh game ID and write token for the new session
+            activeGameId = generateUuidV4();
+            activeGameWriteToken = generateWriteToken();
+            activeGameRev = 0;
             activeGameStarted = false;
+            activeGameEnded = false;
+            activeGameStartedAt = null;
             safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
+            safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, activeGameWriteToken);
 
-            // Reset all local game state for the new game.
+            // Reset all local game state for the new game
             startTime = null;
             accumulatedTime = 0;
             timerRunning = false;
@@ -1968,7 +2113,7 @@
             currentPeriod = 1;
             scoreHistory = [];
 
-            // Refresh the visible UI.
+            // Refresh the visible UI
             scoreHomeEl.textContent = '0';
             scoreAwayEl.textContent = '0';
             periodDisplay.textContent = 'P1';
@@ -1978,20 +2123,45 @@
             adjustmentPanel.style.display = 'none';
             if (pauseBtn) pauseBtn.disabled = true;
 
-            // Persist the fresh state.
+            // Persist the fresh state
             saveState();
         }
 
         resetBtn.addEventListener('click', endCurrentGameAndStartNew);
 
+        // Stale Game Resume / Finalize actions
+        if (btnStaleFinish) {
+            btnStaleFinish.addEventListener('click', () => {
+                if (staleResumeModal) staleResumeModal.classList.add('hidden');
+                activeGameEnded = true;
+                publishActiveGameState('final', 'abandoned');
+                saveState();
+            });
+        }
+        if (btnStaleResume) {
+            btnStaleResume.addEventListener('click', () => {
+                if (staleResumeModal) staleResumeModal.classList.add('hidden');
+                startTimer(false);
+                saveState();
+            });
+        }
 
-        // Initialize the page from saved state when the browser loads.
+        // Initialize the page from saved state when the browser loads
         window.onload = async function () {
             isInitializingScoreboard = true;
 
             // Render footer indicator
             if (window.SuiteProfile) {
                 SuiteProfile.renderFooterIndicator(document.querySelector('footer p'));
+            }
+
+            // Toggle My Games link and Public Share setting based on auth state
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                if (linkMyGames) linkMyGames.style.display = 'inline-block';
+                if (settingsSharingSection) settingsSharingSection.style.display = 'block';
+            } else {
+                if (linkMyGames) linkMyGames.style.display = 'none';
+                if (settingsSharingSection) settingsSharingSection.style.display = 'none';
             }
 
             // Always check if there are new DB settings first if logged in
@@ -2011,18 +2181,34 @@
             }
 
             let saved = null;
-            // When logged in: cloud state strictly overwrites local state.
-            // If logged in and cloud state exists, use it. If logged in but no cloud state, start clean defaults.
+            const localSaved = loadState();
+
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
                 if (cloudState) {
+                    // Finalize any distinct active local game before adopting cloud state
+                    if (localSaved && localSaved.activeGameStarted && !localSaved.activeGameEnded && localSaved.activeGameId !== cloudState.activeGameId) {
+                        try {
+                            SuiteProfile.games.sync({
+                                game_id: localSaved.activeGameId,
+                                write_token: localSaved.activeGameWriteToken,
+                                rev: (localSaved.activeGameRev || 0) + 1,
+                                status: 'final',
+                                ended_by: 'new_game',
+                                snapshot: localSaved
+                            });
+                        } catch (e) {}
+                    }
                     saved = cloudState;
                     safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
                 } else {
-                    saved = null;
-                    safeLocalStorageRemove(STORAGE_KEY);
+                    // Preserve guest state upon login so it is claimed instead of wiped
+                    saved = localSaved;
+                    if (saved) {
+                        SuiteProfile.saveAppData('scoreboard', saved);
+                    }
                 }
             } else {
-                saved = loadState();
+                saved = localSaved;
             }
 
             if (saved) {
@@ -2039,11 +2225,16 @@
                 isPaused = !!saved.isPaused;
                 logPauseResume = !!saved.logPauseResume;
                 logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
-                // Default splash to true if not yet stored (first run after update)
                 splashOnHome = saved.splashOnHome !== undefined ? !!saved.splashOnHome : true;
                 splashOnAway = saved.splashOnAway !== undefined ? !!saved.splashOnAway : true;
                 activeGameStarted = !!saved.activeGameStarted;
                 activeGameId = activeGameStarted ? saved.activeGameId || null : null;
+                activeGameWriteToken = saved.activeGameWriteToken || null;
+                activeGameRev = saved.activeGameRev || 0;
+                activeGameVisibility = saved.activeGameVisibility || 'public';
+                activeGameEnded = !!saved.activeGameEnded;
+                activeGameStartedAt = saved.activeGameStartedAt || null;
+
                 homeTeamName = saved.homeTeamName || saved.redTeamName || homeTeamName;
                 awayTeamName = saved.awayTeamName || saved.blueTeamName || awayTeamName;
                 homeTeamColor = saved.homeTeamColor || saved.redTeamColor || homeTeamColor;
@@ -2067,10 +2258,18 @@
                 if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
                 if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
 
+                // Handle timer recovery and stale resume checking
                 if (saved.running && saved.startTime) {
-                    const drift = Date.now() - saved.lastSavedAt;
-                    accumulatedTime += drift;
-                    startTimer(false);
+                    const drift = Date.now() - (saved.lastSavedAt || saved.startTime);
+                    if (drift >= 3 * 3600 * 1000) {
+                        // Unfinished game left running > 3 hours ago: prompt operator
+                        if (staleResumeModal) staleResumeModal.classList.remove('hidden');
+                        updateStartStopButton();
+                        updateTimer();
+                    } else {
+                        accumulatedTime += drift;
+                        startTimer(false);
+                    }
                 } else {
                     updateStartStopButton();
                     updateTimer();
@@ -2083,7 +2282,7 @@
                 updatePauseButtonVisibility();
                 updatePenaltyCardsVisibility();
             } else {
-                // No saved state or brand-new user: apply the default theme and clean defaults
+                // No saved state or brand-new user: apply default theme and clean defaults
                 homeScore = 0;
                 awayScore = 0;
                 currentPeriod = 1;
@@ -2092,6 +2291,11 @@
                 isPaused = false;
                 activeGameStarted = false;
                 activeGameId = null;
+                activeGameWriteToken = null;
+                activeGameRev = 0;
+                activeGameVisibility = 'public';
+                activeGameEnded = false;
+                activeGameStartedAt = null;
                 homeNameEl.textContent = homeTeamName;
                 awayNameEl.textContent = awayTeamName;
                 scoreHomeEl.textContent = 0;
@@ -2107,6 +2311,10 @@
             }
             initRoller();
             isInitializingScoreboard = false;
+
+            // Ensure footer version is updated
+            const verEl = document.getElementById('appVersion');
+            if (verEl) verEl.textContent = VERSION;
         };
 
         // React to user profile authentication lifecycle events
@@ -2118,9 +2326,18 @@
         });
 
         window.addEventListener('beforeunload', () => {
-            // Save local state when unloading. Do NOT remove server entry here so
-            // a game left running will remain discoverable for up to 24 hours.
             saveState();
+            flushBeaconSync();
+        });
+
+        window.addEventListener('pagehide', () => {
+            flushBeaconSync();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                flushBeaconSync();
+            }
         });
 
         window.addEventListener('storage', (event) => {
@@ -2130,22 +2347,22 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '2.7';
+        const VERSION = '2.8';
         const APP_VERSION = VERSION;
-        const versionEl = document.getElementById('appVersion');
-        if (versionEl) versionEl.textContent = VERSION;
 
-        // Heartbeat: ensure server copy is refreshed while the page is open.
+        // Heartbeat: ping server every 20 seconds ONLY while timer is running
         try {
             setInterval(() => {
-                publishActiveGameStateServer().catch(() => { });
+                if (timerRunning && activeGameId && activeGameStarted) {
+                    publishActiveGameState();
+                }
             }, 20 * 1000);
         } catch (e) { }
     </script>
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.6</span></p>
+        <p>Version <span id="appVersion">2.8</span></p>
     </footer>
 </body>
 
