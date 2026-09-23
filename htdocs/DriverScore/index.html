@@ -116,6 +116,11 @@
     <div class="log" id="txtLog">System ready. Select profiles to begin.</div>
 </div>
 
+<!-- Footer displaying application version and profile sync status -->
+<footer class="app-footer">
+    <p>Version <span id="appVersion">1.6</span></p>
+</footer>
+
 <!-- Suite profile cloud sync library — must load before main script block -->
 <script src="../media/suite-profile.js"></script>
 
@@ -699,8 +704,12 @@
     });
 
     // DriveScore application version identifier
-    const VERSION = '1.5';
-    document.getElementById('appVersion').textContent = VERSION;
+    const VERSION = '1.6';
+    const APP_VERSION = VERSION;
+    const versionEl = document.getElementById('appVersion');
+    if (versionEl) {
+        versionEl.textContent = VERSION;
+    }
 
     // Suite profile cloud sync library must be loaded before this script block
     // Async init: loads cloud garage profiles then renders dropdowns
@@ -756,11 +765,7 @@
         }
     }
 
-    initDriveScore();</script>
-
-<!-- Footer displaying application version and profile sync status -->
-<footer class="app-footer">
-    <p>Version <span id="appVersion">1.5</span></p>
-</footer>
+    initDriveScore();
+</script>
 </body>
 </html>

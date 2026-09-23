@@ -1,41 +1,11 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "1.1";
+    --version: "1.2";
 }
 
-/* CSS Theme Definitions & Custom Properties */
-body[data-theme="dark"] {
-    --bg-main: #0f172a;
-    --card-bg: #1e293b;
-    --card-border: #334155;
-    --text-main: #f8fafc;
-    --text-subtle: #94a3b8;
-    --red-team: #ef4444;
-    --blue-team: #3b82f6;
-    --team-box-bg: rgba(15, 23, 42, 0.4);
-    --team-box-hover: rgba(51, 65, 85, 0.6);
-    --tally-bg: rgba(15, 23, 42, 0.7);
-    --tally-border: rgba(255, 255, 255, 0.08);
-    --tally-text: #e2e8f0;
-    --badge-bg: rgba(0, 0, 0, 0.3);
-    --badge-text: #94a3b8;
-    --turn-bg: #1e293b;
-    --turn-border: #334155;
-    --input-bg: #0f172a;
-    --input-field-bg: #1e293b;
-    --input-border: #334155;
-    --back-link-color: #cbd5e1;
-    --back-link-hover: #ffffff;
-    --modal-bg: #1e293b;
-    --modal-overlay: rgba(0, 0, 0, 0.65);
-    --modal-text: #f8fafc;
-    --modal-subtle: #94a3b8;
-    --header-subtitle: #94a3b8;
-
-    background-color: var(--bg-main);
-    background-image: none;
-}
-
+/* CSS Theme Definitions & Custom Properties: Default to Grass theme */
+:root,
+body,
 body[data-theme="grass"] {
     --bg-main: #256d2b;
     --card-bg: #ffffff;
@@ -68,6 +38,38 @@ body[data-theme="grass"] {
     background-image: 
         radial-gradient(ellipse at 50% 0%, rgba(254, 240, 138, 0.35) 0%, transparent 60%),
         repeating-linear-gradient(90deg, #1b5e20 0px, #1b5e20 45px, #2e7d32 45px, #2e7d32 90px);
+}
+
+body[data-theme="dark"] {
+    --bg-main: #0f172a;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text-main: #f8fafc;
+    --text-subtle: #94a3b8;
+    --red-team: #ef4444;
+    --blue-team: #3b82f6;
+    --team-box-bg: rgba(15, 23, 42, 0.4);
+    --team-box-hover: rgba(51, 65, 85, 0.6);
+    --tally-bg: rgba(15, 23, 42, 0.7);
+    --tally-border: rgba(255, 255, 255, 0.08);
+    --tally-text: #e2e8f0;
+    --badge-bg: rgba(0, 0, 0, 0.3);
+    --badge-text: #94a3b8;
+    --turn-bg: #1e293b;
+    --turn-border: #334155;
+    --input-bg: #0f172a;
+    --input-field-bg: #1e293b;
+    --input-border: #334155;
+    --back-link-color: #cbd5e1;
+    --back-link-hover: #ffffff;
+    --modal-bg: #1e293b;
+    --modal-overlay: rgba(0, 0, 0, 0.65);
+    --modal-text: #f8fafc;
+    --modal-subtle: #94a3b8;
+    --header-subtitle: #94a3b8;
+
+    background-color: var(--bg-main);
+    background-image: none;
 }
 
 /* Base resets and page layout */

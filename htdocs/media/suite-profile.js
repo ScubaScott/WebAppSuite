@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.1';
+const SUITE_PROFILE_VERSION = '1.2';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -186,9 +186,10 @@ const SUITE_PROFILE_VERSION = '1.1';
 
         if (saveTimeout) {
             clearTimeout(saveTimeout);
+            saveTimeout = null;
         }
 
-        saveTimeout = setTimeout(async () => {
+        const executeSave = async () => {
             try {
                 const url = getApiUrl('profile.php') + '?action=save&app=' + encodeURIComponent(appId) + '&token=' + encodeURIComponent(user.token);
                 const res = await fetch(url, {
@@ -208,7 +209,13 @@ const SUITE_PROFILE_VERSION = '1.1';
             } catch (e) {
                 window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'error', app: appId } }));
             }
-        }, delayMs);
+        };
+
+        if (delayMs <= 0) {
+            executeSave();
+        } else {
+            saveTimeout = setTimeout(executeSave, delayMs);
+        }
     }
 
     /**

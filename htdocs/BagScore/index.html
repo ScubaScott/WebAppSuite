@@ -9,7 +9,7 @@
     <!-- Suite profile styles for footer sync indicator -->
     <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
-<body>
+<body data-theme="grass">
 
     <!-- Notification Toast for Limit Reached Alert -->
     <div id="limitToast" class="limit-toast">Max bags reached for this team!</div>
@@ -138,6 +138,11 @@
         </div>
     </div>
 
+    <!-- Footer displaying application version and profile sync status -->
+    <footer class="app-footer">
+        <p>Version <span id="appVersion">1.6</span></p>
+    </footer>
+
     <!-- Application JavaScript Logic -->
     <!-- Suite profile cloud sync library for user preferences -->
     <script src="../media/suite-profile.js"></script>
@@ -212,8 +217,9 @@
                 SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
             }
 
-            // Load local state first as baseline
+            // Load local state and apply theme immediately
             loadLocalGame();
+            applyTheme();
 
             // If logged in, try to fetch cloud preferences (3-second timeout)
             let cloudPrefs = null;
@@ -231,11 +237,11 @@
             // If cloud prefs found, apply them (overrides local preference settings only)
             if (cloudPrefs) {
                 applyPrefs(cloudPrefs);
+                applyTheme();
                 // Write merged prefs back to localStorage so offline works correctly
                 localStorage.setItem('beanBagScoreState', JSON.stringify(gameState));
             }
 
-            applyTheme();
             syncModalFields();
             updateUI();
 
@@ -251,11 +257,11 @@
         }
 
         // Save current game state to browser localStorage and sync preferences to cloud
-        function saveGame() {
+        function saveGame(immediate = false) {
             localStorage.setItem('beanBagScoreState', JSON.stringify(gameState));
             // Sync user preference fields to cloud profile if logged in
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
-                SuiteProfile.saveAppData('bagscore', buildPrefsPayload());
+                SuiteProfile.saveAppData('bagscore', buildPrefsPayload(), immediate ? 0 : 1000);
             }
         }
 
@@ -264,7 +270,7 @@
             gameState.theme = themeName;
             applyTheme();
             syncModalFields();
-            saveGame();
+            saveGame(true);
         }
 
         // Synchronize modal input values with active game state
@@ -530,17 +536,27 @@
             }
         });
 
-        // Application version identifier
-        const VERSION = '1.5';
-        document.getElementById('appVersion').textContent = VERSION;
+        // Flush pending cloud saves before page unload if logged in
+        window.addEventListener('beforeunload', () => {
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                SuiteProfile.saveAppData('bagscore', buildPrefsPayload(), 0);
+            }
+        });
 
-        // Initialize application state on page load (async to support cloud sync)
+        // Application version identifier
+        const VERSION = '1.6';
+        const APP_VERSION = VERSION;
+        const versionEl = document.getElementById('appVersion');
+        if (versionEl) {
+            versionEl.textContent = VERSION;
+        }
+
+        // Immediately apply local theme synchronously to prevent visual flash
+        loadLocalGame();
+        applyTheme();
+
+        // Initialize application state and cloud sync on page load
         initBagScore();
     </script>
-
-    <!-- Footer displaying application version and profile sync status -->
-    <footer class="app-footer">
-        <p>Version <span id="appVersion">1.5</span></p>
-    </footer>
 </body>
 </html>
