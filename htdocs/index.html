@@ -9,7 +9,7 @@
     <!-- Apple-specific home screen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Farkle" />
+    <meta name="apple-mobile-web-app-title" content="Scuba's App Suite" />
     <link rel="apple-touch-icon" href="./media/scuba_apple.png" />
 
 
@@ -318,6 +318,11 @@
             </a>
         </div>
         <div class="header-right">
+            <button id="installAppBtn" class="icon-btn install-btn" type="button" aria-label="Install App" title="Install App" style="display: none;">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+                </svg>
+            </button>
             <a href="./about.html" class="icon-btn about-btn" aria-label="About App Suite" title="About App Suite">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 .88-.36 1.68-.93 2.25z"/>
@@ -432,7 +437,7 @@
             Force Refresh & Update App
         </button>
         <div id="refreshStatus" class="refresh-status" aria-live="polite"></div>
-        <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span id="footerVersion">1.9</span></p>
+        <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span id="footerVersion">2.0</span></p>
     </footer>
 
     <!-- Feedback toast for link copying -->
@@ -443,7 +448,7 @@
 
     <script>
         // Main application suite version identifier
-        const VERSION = '1.9';
+        const VERSION = '2.0';
         document.getElementById('footerVersion').textContent = VERSION;
 
         // Share button interaction using Web Share API with clipboard fallback
@@ -540,6 +545,39 @@
                 }
             });
         }
+
+        // Install prompt interaction: captures beforeinstallprompt for standalone app installation
+        let deferredPrompt = null;
+        const installAppBtn = document.getElementById('installAppBtn');
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent default browser banner and present custom in-app action
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installAppBtn && !isStandalone) {
+                installAppBtn.style.display = 'inline-flex';
+            }
+        });
+
+        if (installAppBtn) {
+            installAppBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const choiceResult = await deferredPrompt.userChoice;
+                if (choiceResult && choiceResult.outcome === 'accepted') {
+                    installAppBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (installAppBtn) {
+                installAppBtn.style.display = 'none';
+            }
+            showToast('App installed successfully!');
+        });
 
         // Initialize user profile launcher widget and footer indicator
         if (window.SuiteProfile) {
