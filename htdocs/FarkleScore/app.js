@@ -1,5 +1,5 @@
 // Farkle application version identifier
-const VERSION = '1.0';
+const VERSION = '1.1';
 
 // ─── Storage keys ────────────────────────────────────────────────────────────
 const STORAGE_KEYS = {
@@ -102,6 +102,14 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.players,  JSON.stringify(players));
   localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
   localStorage.setItem(STORAGE_KEYS.game,     JSON.stringify(game));
+  // Sync player roster and scoring settings to cloud profile if logged in
+  if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+    SuiteProfile.saveAppData('farkle', {
+      players,
+      settings,
+      updatedAt: Date.now()
+    });
+  }
 }
 
 // ─── Event binding ───────────────────────────────────────────────────────────
@@ -824,4 +832,46 @@ function dieSVG(value) {
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
-init();
+
+// Initializes the app with cloud sync: loads players and settings from cloud
+// profile if logged in, falls back to localStorage if offline or guest
+async function initWithCloud() {
+  // Render footer profile/sync indicator on whichever page is active
+  if (window.SuiteProfile) {
+    const footerP = document.querySelector('.app-footer p');
+    if (footerP) SuiteProfile.renderFooterIndicator(footerP);
+  }
+
+  // Try to load cloud data if user is logged in (3-second timeout)
+  let cloudData = null;
+  if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+    try {
+      cloudData = await Promise.race([
+        SuiteProfile.loadAppData('farkle'),
+        new Promise(resolve => setTimeout(() => resolve(null), 3000))
+      ]);
+    } catch (err) {
+      console.warn('Could not load cloud Farkle data, using local:', err);
+    }
+  }
+
+  // If cloud data exists, apply players and settings before init() reads localStorage
+  if (cloudData) {
+    if (Array.isArray(cloudData.players) && cloudData.players.length) {
+      localStorage.setItem(STORAGE_KEYS.players, JSON.stringify(cloudData.players));
+    }
+    if (cloudData.settings && typeof cloudData.settings === 'object') {
+      localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloudData.settings));
+    }
+  }
+
+  // Run standard initialization (reads localStorage, binds events, renders page)
+  init();
+
+  // If logged in but no cloud record found yet, seed cloud with local data
+  if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
+    SuiteProfile.saveAppData('farkle', { players, settings, updatedAt: Date.now() });
+  }
+}
+
+initWithCloud();

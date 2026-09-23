@@ -1,0 +1,211 @@
+/* About Page Stylesheet - Scuba's App Suite */
+
+:root {
+    --md-surface: #f8f9fa;
+    --md-primary: #1a73e8;
+    --md-primary-hover: #1557b0;
+    --md-text-main: #202124;
+    --md-text-sub: #5f6368;
+    --md-card-bg: #ffffff;
+    --md-border: #dadce0;
+    --md-accent-gold: #f9ab00;
+    --md-beer-bg: #fffbf0;
+    --md-beer-border: #fce8b2;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--md-surface);
+    color: var(--md-text-main);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header Navigation */
+header {
+    background-color: var(--md-card-bg);
+    border-bottom: 1px solid var(--md-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 24px;
+    min-height: 56px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--md-primary);
+    font-family: 'Google Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 20px;
+    transition: background-color 0.2s ease;
+    min-height: 44px;
+}
+
+.back-link:hover {
+    background-color: #e8f0fe;
+}
+
+.header-title {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--md-text-main);
+}
+
+/* Main Content Layout */
+main {
+    max-width: 680px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 32px 20px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Hero Profile Card */
+.hero-card {
+    background-color: var(--md-card-bg);
+    border: 1px solid var(--md-border);
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
+}
+
+.hero-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--md-border);
+    object-fit: cover;
+    margin: 0 auto 16px;
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hero-title {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 26px;
+    font-weight: 500;
+    margin: 0 0 6px;
+    color: var(--md-text-main);
+}
+
+.hero-subtitle {
+    font-size: 15px;
+    color: var(--md-text-sub);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Content Information Cards */
+.content-card {
+    background-color: var(--md-card-bg);
+    border: 1px solid var(--md-border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
+}
+
+.content-card h2 {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--md-text-main);
+}
+
+.card-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.content-card p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--md-text-sub);
+    margin: 0 0 16px;
+}
+
+.content-card p:last-child {
+    margin-bottom: 0;
+}
+
+/* Donation Card Specific Styling */
+.beer-card {
+    background-color: var(--md-beer-bg);
+    border-color: var(--md-beer-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.beer-card h2 {
+    color: #794a00;
+}
+
+.beer-card p {
+    color: #5c3800;
+    font-size: 15px;
+}
+
+/* PayPal Button Container */
+.paypal-wrapper {
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#paypal-container-WQW67N7M7JD4G {
+    width: 100%;
+    max-width: 300px;
+    min-width: 250px;
+    min-height: 180px;
+    margin: 0 auto;
+    display: block;
+}
+
+#paypal-container-WQW67N7M7JD4G iframe {
+    width: 100% !important;
+    min-width: 250px !important;
+    max-width: 100% !important;
+}
+
+/* Footer Section */
+footer {
+    margin-top: auto;
+    padding: 24px;
+    text-align: center;
+    border-top: 1px solid var(--md-border);
+    background-color: var(--md-card-bg);
+}
+
+.app-footer-text {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: var(--md-text-sub);
+}
+
+.app-footer-version {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #a1a1aa;
+}

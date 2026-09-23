@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Farkle Scoreboard</title>
     <link rel="stylesheet" href="styles.css" />
+    <!-- Suite profile styles for footer sync indicator -->
+    <link rel="stylesheet" href="../media/suite-profile.css" />
   </head>
   <body data-page="game">
     <div class="page-shell">
@@ -101,9 +103,11 @@
     <div id="lastRoundBanner" class="last-round-banner hidden"></div>
 
     <footer class="app-footer">
-      <p>Version <span id="appVersion">1.0</span></p>
+      <p>Version <span id="appVersion">1.1</span></p>
     </footer>
 
+    <!-- Suite profile cloud sync library for user preferences -->
+    <script src="../media/suite-profile.js"></script>
     <script src="app.js"></script>
     <script>
       // Display version identifier in footer

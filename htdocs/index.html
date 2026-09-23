@@ -75,17 +75,103 @@
             color: var(--md-text-main);
         }
 
+        .header-brand-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            text-decoration: none;
+            padding: 0;
+            background-color: transparent;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .header-brand-btn:hover {
+            background-color: #f1f3f4;
+        }
+
+        .header-brand-btn:active {
+            transform: scale(0.95);
+        }
+
+        .header-brand-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--md-border);
+            display: block;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: transparent;
+            color: var(--md-text-sub);
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+            padding: 0;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .icon-btn:hover {
+            background-color: #f1f3f4;
+            color: var(--md-primary);
+        }
+
+        .icon-btn:active {
+            background-color: #e8f0fe;
+            transform: scale(0.95);
+        }
+
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
         .profile-container {
             display: flex;
             align-items: center;
         }
 
-        .profile-thumb {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--md-border);
+        /* Toast notification feedback for link copying */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #323232;
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-family: 'Roboto', sans-serif;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+            opacity: 0;
+            transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.25s ease;
+            z-index: 10000;
+        }
+
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
         }
 
         /* Main Layout */
@@ -227,10 +313,24 @@
 
     <header>
         <div class="header-left">
-            <span class="header-title">App Suite</span>
+            <a href="./about.html" class="header-brand-btn" title="About Scuba's App Suite" aria-label="About Scuba's App Suite">
+                <img src="./media/scuba.png" alt="App Suite Logo" class="header-brand-logo">
+            </a>
         </div>
-        <div class="profile-container" id="profileContainer">
-            <!-- Dynamic profile action button mounted by SuiteProfile -->
+        <div class="header-right">
+            <a href="./about.html" class="icon-btn about-btn" aria-label="About App Suite" title="About App Suite">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 .88-.36 1.68-.93 2.25z"/>
+                </svg>
+            </a>
+            <button id="shareAppBtn" class="icon-btn share-btn" type="button" aria-label="Share App Suite" title="Share App Suite">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
+                </svg>
+            </button>
+            <div class="profile-container" id="profileContainer">
+                <!-- Dynamic profile action button mounted by SuiteProfile -->
+            </div>
         </div>
     </header>
 
@@ -332,16 +432,114 @@
             Force Refresh & Update App
         </button>
         <div id="refreshStatus" class="refresh-status" aria-live="polite"></div>
-        <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span id="footerVersion">1.3</span></p>
+        <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span id="footerVersion">1.7</span></p>
     </footer>
+
+    <!-- Feedback toast for link copying -->
+    <div id="toastNotification" class="toast-notification" aria-live="polite"></div>
 
     <!-- Shared Suite Profile and Cloud Sync Manager -->
     <script src="./media/suite-profile.js"></script>
 
     <script>
         // Main application suite version identifier
-        const VERSION = '1.3';
+        const VERSION = '1.7';
         document.getElementById('footerVersion').textContent = VERSION;
+
+        // Share button interaction using Web Share API with clipboard fallback
+        const shareAppBtn = document.getElementById('shareAppBtn');
+        const toastNotification = document.getElementById('toastNotification');
+        let toastTimeout = null;
+
+        // Display brief toast message
+        function showToast(message) {
+            if (!toastNotification) return;
+            toastNotification.textContent = message;
+            toastNotification.classList.add('show');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastNotification.classList.remove('show');
+            }, 2500);
+        }
+
+        // Resolves canonical URL for sharing
+        function getShareUrl() {
+            if (window.location.protocol.startsWith('http')) {
+                return window.location.origin + window.location.pathname;
+            }
+            return window.location.href.split(/[?#]/)[0];
+        }
+
+        // Copy canonical URL to user clipboard
+        async function copyShareUrl(url) {
+            let copied = false;
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(url);
+                    copied = true;
+                }
+            } catch (err) {
+                copied = false;
+            }
+
+            if (!copied) {
+                try {
+                    const tempInput = document.createElement('textarea');
+                    tempInput.value = url;
+                    tempInput.setAttribute('readonly', '');
+                    tempInput.style.position = 'fixed';
+                    tempInput.style.left = '-9999px';
+                    tempInput.style.opacity = '0';
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    copied = document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+                } catch (e) {
+                    copied = false;
+                }
+            }
+
+            if (copied) {
+                showToast('Link copied to clipboard!');
+            } else {
+                showToast('Share: ' + url);
+            }
+        }
+
+        // Trigger native mobile share sheet or clipboard fallback
+        if (shareAppBtn) {
+            shareAppBtn.addEventListener('click', async () => {
+                const shareUrl = getShareUrl();
+                const shareData = {
+                    title: "Scuba's App Suite",
+                    text: "Check out Scuba's App Suite - mobile-friendly utilities and trackers!",
+                    url: shareUrl
+                };
+
+                // Check Web Share API capability
+                let canShare = false;
+                try {
+                    if (navigator.share) {
+                        canShare = typeof navigator.canShare === 'function' ? navigator.canShare(shareData) : true;
+                    }
+                } catch (e) {
+                    canShare = false;
+                }
+
+                if (canShare) {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (err) {
+                        // User cancelling the share sheet triggers AbortError
+                        if (err && err.name !== 'AbortError') {
+                            await copyShareUrl(shareUrl);
+                        }
+                    }
+                } else {
+                    await copyShareUrl(shareUrl);
+                }
+            });
+        }
 
         // Initialize user profile launcher widget and footer indicator
         if (window.SuiteProfile) {

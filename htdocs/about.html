@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Scuba's App Suite</title>
+
+    <!-- Web App & Icon Metadata -->
+    <link rel="icon" type="image/png" href="./media/scuba.png">
+    <link rel="apple-touch-icon" href="./media/scuba_apple.png">
+    <meta name="theme-color" content="#3d2210">
+
+    <!-- Fonts & External Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./about.css">
+
+    <!-- PayPal SDK Script for Hosted Donation Button -->
+    <script src="https://www.paypal.com/sdk/js?client-id=BAATtdFPzWSYljLKaIVhXu3Y7p3L12df2rWXayvEz1x3OvAp5q9AKIvFIJFjBIgSc67Zx1KiFFZnHhbxuM&components=hosted-buttons&enable-funding=venmo&currency=USD"></script>
+</head>
+
+<body>
+
+    <header>
+        <a href="./index.html" class="back-link" aria-label="Back to Apps">
+            &#8592; Back to Apps
+        </a>
+        <span class="header-title">About App Suite</span>
+    </header>
+
+    <main>
+        <!-- Hero Introduction Card -->
+        <section class="hero-card">
+            <img src="./media/scuba.png" alt="Scuba's App Suite Logo" class="hero-avatar">
+            <h1 class="hero-title">Scuba's App Suite</h1>
+            <p class="hero-subtitle">Fast, lightweight web utilities and game scorekeepers crafted for friends and family.</p>
+        </section>
+
+        <!-- Free & Open Philosophy Card -->
+        <section class="content-card">
+            <h2>
+                <span class="card-icon" aria-hidden="true">&#9881;</span>
+                100% Free &amp; Unrestricted
+            </h2>
+            <p>Every tool and game tracker in this suite was built to solve practical needs cleanly, without clutter. Everything is provided completely free of charge.</p>
+            <p>There are no paywalls, no monthly subscription fees, and no gated "pro" features. You get full, unrestricted access to every utility on any phone, tablet, or computer.</p>
+        </section>
+
+        <!-- Buy Me a Beer Donation Card -->
+        <section class="content-card beer-card">
+            <h2>
+                <span class="card-icon" aria-hidden="true">&#127866;</span>
+                Buy Me a Beer!
+            </h2>
+            <p>If you like and enjoy these tools, consider buying me a beer! Your support helps cover hosting and domain fees and keeps every app free and open for everyone.</p>
+
+            <div class="paypal-wrapper">
+                <!-- PayPal hosted donation button container -->
+                <div id="paypal-container-WQW67N7M7JD4G"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p class="app-footer-text">Built with pride for good times and easy scoring.</p>
+        <small class="app-footer-version">v<span id="footerVersion">1.1</span></small>
+    </footer>
+
+    <script>
+        // About page application version identifier
+        const VERSION = '1.1';
+        document.getElementById('footerVersion').textContent = VERSION;
+
+        // Render PayPal hosted donation button when SDK is available
+        if (window.paypal && typeof window.paypal.HostedButtons === 'function') {
+            paypal.HostedButtons({
+                hostedButtonId: "WQW67N7M7JD4G",
+            }).render("#paypal-container-WQW67N7M7JD4G");
+        }
+    </script>
+</body>
+
+</html>

@@ -6,6 +6,8 @@
     <title>DriveScore Pro - Telematics Tracker</title>
     <!-- External stylesheet reference for UI components and theme styling -->
     <link rel="stylesheet" href="style.css">
+    <!-- Suite profile styles for footer sync indicator -->
+    <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 <body>
 
@@ -113,6 +115,9 @@
     <!-- Real-time operational console log window -->
     <div class="log" id="txtLog">System ready. Select profiles to begin.</div>
 </div>
+
+<!-- Suite profile cloud sync library — must load before main script block -->
+<script src="../media/suite-profile.js"></script>
 
 <script>
     // Penalty indicator heat levels — 0.0 (idle) to 1.0 (max red); decay over time
@@ -231,6 +236,14 @@
                 if (clean && clean !== "__ADD_NEW__" && !driverProfiles[clean]) {
                     driverProfiles[clean] = { totalDrives: 0, averageScore: 100 };
                     localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+                    // Sync updated driver garage to cloud if logged in
+                    if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                        SuiteProfile.saveAppData('driverscore', {
+                            driver_profiles: driverProfiles,
+                            vehicle_profiles: vehicleProfiles,
+                            updatedAt: Date.now()
+                        });
+                    }
                     renderDriverDropdown();
                     ddlDriver.value = clean;
                 } else {
@@ -642,6 +655,14 @@
             p.averageScore = ((p.averageScore * p.totalDrives) + score) / (p.totalDrives + 1);
             p.totalDrives += 1;
             localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+        // Sync updated driver average score to cloud if logged in
+        if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+            SuiteProfile.saveAppData('driverscore', {
+                driver_profiles: driverProfiles,
+                vehicle_profiles: vehicleProfiles,
+                updatedAt: Date.now()
+            });
+        }
             renderDriverDropdown();
             ddlDriver.value = activeDriverName;
         }
@@ -678,24 +699,68 @@
     });
 
     // DriveScore application version identifier
-    const VERSION = '1.4';
+    const VERSION = '1.5';
     document.getElementById('appVersion').textContent = VERSION;
 
-    // Initial page load initialization steps
-    renderDriverDropdown();
-    renderVehicleDropdown();
-    currentDriverSelection = ddlDriver.value;
-    if(ddlVehicle.options.length > 1) {
-        ddlVehicle.selectedIndex = 0;
-        currentVehicleSelection = ddlVehicle.value;
-    }
-    updateActiveConfigurationUI();
-    updateScoreUI();
-</script>
+    // Suite profile cloud sync library must be loaded before this script block
+    // Async init: loads cloud garage profiles then renders dropdowns
+    async function initDriveScore() {
+        // Render footer sync/profile indicator
+        if (window.SuiteProfile) {
+            SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+        }
 
-<!-- Footer displaying application version -->
+        // If logged in, fetch cloud garage profiles (3-second timeout)
+        let cloudData = null;
+        if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+            try {
+                cloudData = await Promise.race([
+                    SuiteProfile.loadAppData('driverscore'),
+                    new Promise(resolve => setTimeout(() => resolve(null), 3000))
+                ]);
+            } catch (err) {
+                console.warn('Could not load cloud DriveScore profiles, using local:', err);
+            }
+        }
+
+        // If cloud garage data found, merge into in-memory vars and localStorage
+        if (cloudData) {
+            if (cloudData.driver_profiles && typeof cloudData.driver_profiles === 'object') {
+                driverProfiles = { ...driverProfiles, ...cloudData.driver_profiles };
+                localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+            }
+            if (cloudData.vehicle_profiles && typeof cloudData.vehicle_profiles === 'object') {
+                vehicleProfiles = { ...vehicleProfiles, ...cloudData.vehicle_profiles };
+                localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
+            }
+        }
+
+        // Render initial dropdowns and configure active selections
+        renderDriverDropdown();
+        renderVehicleDropdown();
+        currentDriverSelection = ddlDriver.value;
+        if (ddlVehicle.options.length > 1) {
+            ddlVehicle.selectedIndex = 0;
+            currentVehicleSelection = ddlVehicle.value;
+        }
+        updateActiveConfigurationUI();
+        updateScoreUI();
+
+        // If logged in but no cloud data yet, seed cloud with current local garage
+        if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
+            SuiteProfile.saveAppData('driverscore', {
+                driver_profiles: driverProfiles,
+                vehicle_profiles: vehicleProfiles,
+                updatedAt: Date.now()
+            });
+        }
+    }
+
+    initDriveScore();</script>
+
+<!-- Footer displaying application version and profile sync status -->
 <footer class="app-footer">
-    <p>Version <span id="appVersion">1.4</span></p>
+    <p>Version <span id="appVersion">1.5</span></p>
 </footer>
 </body>
 </html>

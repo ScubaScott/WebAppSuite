@@ -17,6 +17,8 @@
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
+    <!-- Suite profile styles for footer sync indicator -->
+    <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 
 <body>
@@ -96,9 +98,9 @@
             </div>
         </section>
 
-        <!-- Footer displaying application version -->
+        <!-- Footer displaying application version and profile sync status -->
         <footer class="app-footer">
-            <p>Version <span id="appVersion">1.6</span></p>
+            <p>Version <span id="appVersion">1.7</span></p>
         </footer>
     </div>
 
@@ -142,9 +144,12 @@
     <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"
         onerror="window.tesseractLoadFailed = true;"></script>
 
+    <!-- Suite profile cloud sync library — must load before main script block -->
+    <script src="../media/suite-profile.js"></script>
+
     <script>
         // Application version identifier
-        const VERSION = '1.6';
+        const VERSION = '1.7';
 
         // Settings modal functions
         function openSettingsModal() {
@@ -234,6 +239,10 @@
             } catch (err) {
                 // Ignore storage restrictions if running in private mode
             }
+            // Sync theme preference to cloud profile if logged in
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                SuiteProfile.saveAppData('harleyvin', { theme: themeName, updatedAt: Date.now() });
+            }
             // Re-draw canvas placeholder when theme changes to match background
             if (typeof drawImage === "function") {
                 drawImage();
@@ -280,18 +289,11 @@
         let cropStart = null;
         let cropEnd = null;
 
-        // Initialize active theme from localStorage or default to 'hd'
-        let savedTheme = "hd";
-        try {
-            savedTheme = localStorage.getItem("hdev_theme") || "hd";
-        } catch (e) { }
-        applyTheme(savedTheme);
-
         // Persistent Tesseract worker context variables
         let ocrWorker = null;
         let currentLogger = null;
 
-        // Setup HUD canvas placeholder on load
+        // Setup HUD canvas placeholder on load; initializes theme from cloud or localStorage
         window.addEventListener("DOMContentLoaded", () => {
             drawCanvasPlaceholder();
             updateCropButtons();
@@ -300,6 +302,41 @@
             vinInput.addEventListener("input", (e) => {
                 decodeVin(e.target.value);
             });
+
+            // Render footer profile/sync indicator
+            if (window.SuiteProfile) {
+                SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+            }
+
+            // Async cloud init: loads theme preference from cloud profile if logged in
+            (async function initHarleyVin() {
+                let cloudData = null;
+                if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                    try {
+                        cloudData = await Promise.race([
+                            SuiteProfile.loadAppData('harleyvin'),
+                            new Promise(resolve => setTimeout(() => resolve(null), 3000))
+                        ]);
+                    } catch (err) {
+                        console.warn('Could not load cloud HarleyVin settings, using local:', err);
+                    }
+                }
+
+                // Apply cloud theme if available; otherwise fall back to localStorage or default
+                let savedTheme = "hd";
+                if (cloudData && cloudData.theme) {
+                    savedTheme = cloudData.theme;
+                    try { localStorage.setItem("hdev_theme", savedTheme); } catch (e) {}
+                } else {
+                    try { savedTheme = localStorage.getItem("hdev_theme") || "hd"; } catch (e) {}
+                }
+                applyTheme(savedTheme);
+
+                // Seed cloud with current theme if logged in but no cloud data yet
+                if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
+                    SuiteProfile.saveAppData('harleyvin', { theme: savedTheme, updatedAt: Date.now() });
+                }
+            })();
         });
 
         // Initialize file upload bindings

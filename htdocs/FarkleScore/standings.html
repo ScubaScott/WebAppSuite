@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Farkle – Standings</title>
     <link rel="stylesheet" href="styles.css" />
+    <!-- Suite profile styles for footer sync indicator -->
+    <link rel="stylesheet" href="../media/suite-profile.css" />
   </head>
   <body data-page="standings">
     <div class="page-shell">
@@ -31,10 +33,15 @@
         </section>
       </main>
     </div>
+    <!-- Suite profile cloud sync library for user preferences -->
+    <script src="../media/suite-profile.js"></script>
     <script src="app.js"></script>
+    <footer class="app-footer">
+      <p>Version <span id="appVersion">1.1</span></p>
+    </footer>
     <script>
       // Standings page version identifier
-      const PAGE_VERSION = '1.0';
+      const PAGE_VERSION = '1.1';
     </script>
   </body>
 </html>

@@ -6,6 +6,8 @@
     <title>Cornhole Scorekeeper</title>
     <!-- Application Stylesheet -->
     <link rel="stylesheet" href="style.css">
+    <!-- Suite profile styles for footer sync indicator -->
+    <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 <body>
 
@@ -137,6 +139,8 @@
     </div>
 
     <!-- Application JavaScript Logic -->
+    <!-- Suite profile cloud sync library for user preferences -->
+    <script src="../media/suite-profile.js"></script>
     <script>
         // Centralized Application Game State
         let gameState = {
@@ -152,8 +156,31 @@
             theme: 'grass'          // Active theme: 'grass' (default) or 'dark'
         };
 
-        // Load saved state from browser localStorage on startup
-        function loadGame() {
+        // Builds the cloud-syncable preferences payload from current gameState
+        // Only syncs configurable settings, not live game scores
+        function buildPrefsPayload() {
+            return {
+                scoringMethod: gameState.scoringMethod,
+                bagsPerTeam: gameState.bagsPerTeam,
+                holePoints: gameState.holePoints,
+                boardPoints: gameState.boardPoints,
+                theme: gameState.theme,
+                updatedAt: Date.now()
+            };
+        }
+
+        // Applies cloud or local preference data into gameState (does not touch live scores)
+        function applyPrefs(prefs) {
+            if (!prefs) return;
+            if (prefs.scoringMethod) gameState.scoringMethod = prefs.scoringMethod;
+            if (typeof prefs.bagsPerTeam === 'number') gameState.bagsPerTeam = prefs.bagsPerTeam;
+            if (typeof prefs.holePoints === 'number') gameState.holePoints = prefs.holePoints;
+            if (typeof prefs.boardPoints === 'number') gameState.boardPoints = prefs.boardPoints;
+            if (prefs.theme) gameState.theme = prefs.theme;
+        }
+
+        // Loads saved local game state from localStorage on startup
+        function loadLocalGame() {
             const savedState = localStorage.getItem('beanBagScoreState');
             if (savedState) {
                 try {
@@ -165,19 +192,57 @@
                         redBags: Array.isArray(parsed.redBags) ? parsed.redBags : [],
                         blueBags: Array.isArray(parsed.blueBags) ? parsed.blueBags : [],
                         currentTurn: parsed.currentTurn || 'red',
-                        scoringMethod: parsed.scoringMethod || (parsed.seriesMode ? 'batch' : 'batch'),
+                        scoringMethod: parsed.scoringMethod || 'batch',
                         bagsPerTeam: typeof parsed.bagsPerTeam === 'number' ? parsed.bagsPerTeam : 4,
                         holePoints: typeof parsed.holePoints === 'number' ? parsed.holePoints : 3,
                         boardPoints: typeof parsed.boardPoints === 'number' ? parsed.boardPoints : 1,
                         theme: parsed.theme || 'grass'
                     };
                 } catch (e) {
-                    console.error("Error loading saved game state", e);
+                    console.error('Error loading saved game state', e);
                 }
             }
+        }
+
+        // Initializes the app: checks cloud for saved preferences if logged in,
+        // falls back to localStorage, then renders the UI
+        async function initBagScore() {
+            // Render footer sync/profile indicator
+            if (window.SuiteProfile) {
+                SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+            }
+
+            // Load local state first as baseline
+            loadLocalGame();
+
+            // If logged in, try to fetch cloud preferences (3-second timeout)
+            let cloudPrefs = null;
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                try {
+                    cloudPrefs = await Promise.race([
+                        SuiteProfile.loadAppData('bagscore'),
+                        new Promise(resolve => setTimeout(() => resolve(null), 3000))
+                    ]);
+                } catch (err) {
+                    console.warn('Could not load cloud BagScore prefs, using local:', err);
+                }
+            }
+
+            // If cloud prefs found, apply them (overrides local preference settings only)
+            if (cloudPrefs) {
+                applyPrefs(cloudPrefs);
+                // Write merged prefs back to localStorage so offline works correctly
+                localStorage.setItem('beanBagScoreState', JSON.stringify(gameState));
+            }
+
             applyTheme();
             syncModalFields();
             updateUI();
+
+            // If logged in but no cloud data yet, seed cloud with current local prefs
+            if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudPrefs) {
+                SuiteProfile.saveAppData('bagscore', buildPrefsPayload());
+            }
         }
 
         // Apply active theme attribute to HTML document body
@@ -185,9 +250,13 @@
             document.body.setAttribute('data-theme', gameState.theme || 'grass');
         }
 
-        // Save current game state to browser localStorage
+        // Save current game state to browser localStorage and sync preferences to cloud
         function saveGame() {
             localStorage.setItem('beanBagScoreState', JSON.stringify(gameState));
+            // Sync user preference fields to cloud profile if logged in
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                SuiteProfile.saveAppData('bagscore', buildPrefsPayload());
+            }
         }
 
         // Change active theme option from modal control
@@ -461,17 +530,17 @@
             }
         });
 
-        // Application version variable
-        const VERSION = '1.4';
+        // Application version identifier
+        const VERSION = '1.5';
         document.getElementById('appVersion').textContent = VERSION;
 
-        // Initialize application state on page load
-        loadGame();
+        // Initialize application state on page load (async to support cloud sync)
+        initBagScore();
     </script>
 
-    <!-- Footer displaying application version -->
+    <!-- Footer displaying application version and profile sync status -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.4</span></p>
+        <p>Version <span id="appVersion">1.5</span></p>
     </footer>
 </body>
 </html>
