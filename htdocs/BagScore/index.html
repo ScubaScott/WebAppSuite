@@ -140,7 +140,7 @@
 
     <!-- Footer displaying application version and profile sync status -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.6</span></p>
+        <p>Version <span id="appVersion">1.7</span></p>
     </footer>
 
     <!-- Application JavaScript Logic -->
@@ -234,22 +234,49 @@
                 }
             }
 
-            // If cloud prefs found, apply them (overrides local preference settings only)
-            if (cloudPrefs) {
-                applyPrefs(cloudPrefs);
+            // If logged in: cloud preferences strictly overwrite local settings.
+            // If logged in but user has no cloud prefs yet, apply clean defaults (do not inherit guest settings).
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                if (cloudPrefs) {
+                    applyPrefs(cloudPrefs);
+                } else {
+                    gameState.scoringMethod = 'batch';
+                    gameState.bagsPerTeam = 4;
+                    gameState.holePoints = 3;
+                    gameState.boardPoints = 1;
+                    gameState.theme = 'grass';
+                }
                 applyTheme();
-                // Write merged prefs back to localStorage so offline works correctly
                 localStorage.setItem('beanBagScoreState', JSON.stringify(gameState));
             }
 
             syncModalFields();
             updateUI();
-
-            // If logged in but no cloud data yet, seed cloud with current local prefs
-            if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudPrefs) {
-                SuiteProfile.saveAppData('bagscore', buildPrefsPayload());
-            }
         }
+
+        // React to user profile authentication lifecycle events
+        window.addEventListener('suite-profile-changed', (e) => {
+            const detail = e.detail || {};
+            if (detail.action === 'logout') {
+                gameState = {
+                    redTotal: 0,
+                    blueTotal: 0,
+                    redBags: [],
+                    blueBags: [],
+                    currentTurn: 'red',
+                    scoringMethod: 'batch',
+                    bagsPerTeam: 4,
+                    holePoints: 3,
+                    boardPoints: 1,
+                    theme: 'grass'
+                };
+                applyTheme();
+                syncModalFields();
+                updateUI();
+            } else if (detail.action === 'login') {
+                initBagScore();
+            }
+        });
 
         // Apply active theme attribute to HTML document body
         function applyTheme() {

@@ -149,7 +149,7 @@
 
     <script>
         // Application version identifier
-        const VERSION = '1.7';
+        const VERSION = '1.8';
 
         // Settings modal functions
         function openSettingsModal() {
@@ -309,7 +309,7 @@
             }
 
             // Async cloud init: loads theme preference from cloud profile if logged in
-            (async function initHarleyVin() {
+            async function initHarleyVin() {
                 let cloudData = null;
                 if (window.SuiteProfile && !SuiteProfile.isGuest()) {
                     try {
@@ -322,21 +322,33 @@
                     }
                 }
 
-                // Apply cloud theme if available; otherwise fall back to localStorage or default
+                // When logged in: cloud data strictly overwrites local state.
+                // If logged in and cloud data exists, apply it. If logged in but user has no cloud record, apply default theme.
                 let savedTheme = "hd";
-                if (cloudData && cloudData.theme) {
-                    savedTheme = cloudData.theme;
+                if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                    if (cloudData && cloudData.theme) {
+                        savedTheme = cloudData.theme;
+                    } else {
+                        savedTheme = "hd";
+                    }
                     try { localStorage.setItem("hdev_theme", savedTheme); } catch (e) {}
                 } else {
                     try { savedTheme = localStorage.getItem("hdev_theme") || "hd"; } catch (e) {}
                 }
                 applyTheme(savedTheme);
+            }
 
-                // Seed cloud with current theme if logged in but no cloud data yet
-                if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
-                    SuiteProfile.saveAppData('harleyvin', { theme: savedTheme, updatedAt: Date.now() });
+            // React to user profile authentication lifecycle events
+            window.addEventListener('suite-profile-changed', (e) => {
+                const detail = e.detail || {};
+                if (detail.action === 'logout') {
+                    applyTheme("hd");
+                } else if (detail.action === 'login') {
+                    initHarleyVin();
                 }
-            })();
+            });
+
+            initHarleyVin();
         });
 
         // Initialize file upload bindings

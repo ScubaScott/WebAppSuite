@@ -256,3 +256,11 @@
 .suite-footer-profile .suite-sync-state-guest {
     opacity: 0.75;
 }
+
+.suite-footer-profile .suite-sync-state-offline {
+    color: #e37400;
+}
+
+.suite-footer-profile .suite-sync-state-pending {
+    color: #1a73e8;
+}

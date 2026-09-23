@@ -1,5 +1,5 @@
 // Farkle application version identifier
-const VERSION = '1.1';
+const VERSION = '1.2';
 
 // ─── Storage keys ────────────────────────────────────────────────────────────
 const STORAGE_KEYS = {
@@ -855,23 +855,38 @@ async function initWithCloud() {
     }
   }
 
-  // If cloud data exists, apply players and settings before init() reads localStorage
-  if (cloudData) {
-    if (Array.isArray(cloudData.players) && cloudData.players.length) {
-      localStorage.setItem(STORAGE_KEYS.players, JSON.stringify(cloudData.players));
-    }
-    if (cloudData.settings && typeof cloudData.settings === 'object') {
-      localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloudData.settings));
+  // When logged in: cloud data strictly overwrites local state.
+  // If logged in and cloud data exists, apply it. If logged in but user has no cloud record, apply clean defaults.
+  if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+    if (cloudData) {
+      if (Array.isArray(cloudData.players) && cloudData.players.length) {
+        localStorage.setItem(STORAGE_KEYS.players, JSON.stringify(cloudData.players));
+      }
+      if (cloudData.settings && typeof cloudData.settings === 'object') {
+        localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloudData.settings));
+      }
+    } else {
+      localStorage.setItem(STORAGE_KEYS.players, JSON.stringify(defaultPlayers));
+      localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(defaultSettings));
     }
   }
 
   // Run standard initialization (reads localStorage, binds events, renders page)
   init();
-
-  // If logged in but no cloud record found yet, seed cloud with local data
-  if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
-    SuiteProfile.saveAppData('farkle', { players, settings, updatedAt: Date.now() });
-  }
 }
+
+// React to user profile authentication lifecycle events
+window.addEventListener('suite-profile-changed', (e) => {
+  const detail = e.detail || {};
+  if (detail.action === 'logout') {
+    players = defaultPlayers.slice();
+    settings = { ...defaultSettings };
+    game = freshGame();
+    saveState();
+    render();
+  } else if (detail.action === 'login') {
+    initWithCloud();
+  }
+});
 
 initWithCloud();

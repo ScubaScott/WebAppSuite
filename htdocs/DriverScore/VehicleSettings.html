@@ -107,7 +107,7 @@
 
 <!-- Footer displaying application version and profile sync status -->
 <footer class="app-footer">
-    <p>Version <span id="appVersion">1.5</span></p>
+    <p>Version <span id="appVersion">1.6</span></p>
 </footer>
 
 <!-- Suite profile cloud sync library — must load before main script block -->
@@ -570,29 +570,38 @@
             }
         }
 
-        // If cloud data found, merge profiles into in-memory vars and localStorage
-        if (cloudData) {
-            if (cloudData.driver_profiles && typeof cloudData.driver_profiles === 'object') {
-                const localDrivers = JSON.parse(localStorage.getItem('driver_profiles') || '{}');
-                const mergedDrivers = { ...localDrivers, ...cloudData.driver_profiles };
-                localStorage.setItem('driver_profiles', JSON.stringify(mergedDrivers));
+        // When logged in: cloud data strictly overwrites local state.
+        // If logged in but user has no cloud profiles yet, start fresh with empty profiles (do NOT adopt guest state).
+        if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+            if (cloudData) {
+                const cloudDrivers = (cloudData.driver_profiles && typeof cloudData.driver_profiles === 'object') ? cloudData.driver_profiles : {};
+                vehicleProfiles = (cloudData.vehicle_profiles && typeof cloudData.vehicle_profiles === 'object') ? cloudData.vehicle_profiles : {};
+                localStorage.setItem('driver_profiles', JSON.stringify(cloudDrivers));
+            } else {
+                vehicleProfiles = {};
+                localStorage.setItem('driver_profiles', JSON.stringify({}));
             }
-            if (cloudData.vehicle_profiles && typeof cloudData.vehicle_profiles === 'object') {
-                vehicleProfiles = { ...vehicleProfiles, ...cloudData.vehicle_profiles };
-                localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
-            }
+            localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
         }
 
-        // Render the vehicle dropdown with merged profile data
+        // Render the vehicle dropdown with profile data
         renderDropdown();
         currentVehicleSelection = ddlVehicle.value;
         loadVehicleData(currentVehicleSelection);
-
-        // If logged in but no cloud data yet, seed cloud with current local profiles
-        if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
-            syncGarageToCloud();
-        }
     }
+
+    // React to user profile authentication lifecycle events
+    window.addEventListener('suite-profile-changed', (e) => {
+        const detail = e.detail || {};
+        if (detail.action === 'logout') {
+            vehicleProfiles = {};
+            currentVehicleSelection = "";
+            renderDropdown();
+            loadVehicleData("");
+        } else if (detail.action === 'login') {
+            initVehicleSettings();
+        }
+    });
 
     initVehicleSettings();
 </script>

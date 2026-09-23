@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.8';
+const VERSION = '3.9';
 
 
 // ============================================================
@@ -1580,18 +1580,27 @@ async function initBingoSettings() {
         }
     }
 
-    // If DB settings exist, adopt them into localStorage before applying
-    if (cloudData) {
-        if (cloudData.theme && THEMES.includes(cloudData.theme)) {
-            localStorage.setItem("bingoTheme", cloudData.theme);
-        }
-        if (cloudData.flashboardConfig) {
-            flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG, ...cloudData.flashboardConfig };
+    // When logged in: cloud data strictly overwrites local state.
+    // If logged in but user has no cloud settings yet, apply clean defaults (do not inherit guest settings).
+    if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+        if (cloudData) {
+            if (cloudData.theme && THEMES.includes(cloudData.theme)) {
+                localStorage.setItem("bingoTheme", cloudData.theme);
+            }
+            if (cloudData.flashboardConfig) {
+                flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG, ...cloudData.flashboardConfig };
+                localStorage.setItem("bingoFlashboardConfig", JSON.stringify(flashboardConfig));
+            }
+            if (cloudData.cardSize !== null && typeof cloudData.cardSize !== 'undefined') {
+                cardSizeValue = parseInt(cloudData.cardSize, 10);
+                localStorage.setItem("bingoCardSize", cardSizeValue);
+            }
+        } else {
+            localStorage.setItem("bingoTheme", "basic");
+            flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG };
             localStorage.setItem("bingoFlashboardConfig", JSON.stringify(flashboardConfig));
-        }
-        if (cloudData.cardSize !== null && typeof cloudData.cardSize !== 'undefined') {
-            cardSizeValue = parseInt(cloudData.cardSize, 10);
-            localStorage.setItem("bingoCardSize", cardSizeValue);
+            cardSizeValue = 180;
+            localStorage.setItem("bingoCardSize", 180);
         }
     }
 
@@ -1606,11 +1615,21 @@ async function initBingoSettings() {
 
     // Initialization complete: future user changes are allowed to sync
     isInitializingSettings = false;
-
-    // If logged in and DB had no settings yet, seed DB with this device's current settings
-    if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
-        syncBingoSettings();
-    }
 }
+
+// React to user profile authentication lifecycle events
+window.addEventListener('suite-profile-changed', (e) => {
+    const detail = e.detail || {};
+    if (detail.action === 'logout') {
+        flashboardConfig = { ...DEFAULT_FLASHBOARD_CONFIG };
+        cardSizeValue = 180;
+        initTheme();
+        initFlashboardConfig();
+        initCardSize();
+        updateUI();
+    } else if (detail.action === 'login') {
+        initBingoSettings();
+    }
+});
 
 initBingoSettings();

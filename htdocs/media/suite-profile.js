@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.3';
+const SUITE_PROFILE_VERSION = '1.4';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -14,7 +14,28 @@ const SUITE_PROFILE_VERSION = '1.3';
     }
 }(typeof self !== 'undefined' ? self : this, function () {
     const STORAGE_KEY = 'webappsuite_profile_session';
+    const PENDING_SYNC_KEY = 'webappsuite_pending_sync';
     let saveTimeout = null;
+
+    // List of known application storage keys to clear when logging out
+    const SUITE_APP_KEYS = [
+        'driver_profiles',
+        'vehicle_profiles',
+        'beanBagScoreState',
+        'bingoSession',
+        'bingoTheme',
+        'bingoFlashboardConfig',
+        'bingoCardSize',
+        'farkle-players',
+        'farkle-settings',
+        'farkle-game',
+        'hdev_theme',
+        'timerStateV7',
+        'scoreBoardActiveGamesV1',
+        'scoreBoardCurrentGameIdV1',
+        'scoreKeeperActiveGamesV1',
+        'scoreKeeperCurrentGameIdV1'
+    ];
 
     /**
      * Determines relative path to the api directory based on current URL path.
@@ -24,8 +45,6 @@ const SUITE_PROFILE_VERSION = '1.3';
      */
     function getApiUrl(endpoint = 'profile.php') {
         const path = window.location.pathname;
-        // If in a sub-app folder (e.g. /ScoreBoard/, /Bingo/)
-        const depth = (path.match(/\//g) || []).length;
         if (path.indexOf('/ScoreBoard') !== -1 ||
             path.indexOf('/ScoreKeeper') !== -1 ||
             path.indexOf('/Bingo') !== -1 ||
@@ -63,17 +82,107 @@ const SUITE_PROFILE_VERSION = '1.3';
     }
 
     /**
+     * Retrieves the pending sync dictionary from localStorage.
+     *
+     * @returns {Object}
+     */
+    function getPendingSyncQueue() {
+        try {
+            const raw = localStorage.getItem(PENDING_SYNC_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    /**
+     * Adds an app payload to the offline pending sync queue.
+     *
+     * @param {string} appId
+     * @param {Object} data
+     */
+    function queuePendingSync(appId, data) {
+        if (isGuest()) return;
+        const queue = getPendingSyncQueue();
+        queue[appId] = { data, queuedAt: Date.now() };
+        try {
+            localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(queue));
+        } catch (e) {
+            // Storage quota or restriction fallback
+        }
+        window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'offline_pending', app: appId } }));
+    }
+
+    /**
+     * Flushes all queued app sync payloads to the server if online and logged in.
+     */
+    async function flushPendingSyncQueue() {
+        const user = getUser();
+        if (!user || !user.token || !navigator.onLine) return;
+        const queue = getPendingSyncQueue();
+        const appIds = Object.keys(queue);
+        if (appIds.length === 0) return;
+
+        for (const appId of appIds) {
+            const item = queue[appId];
+            if (!item || !item.data) continue;
+            try {
+                window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'syncing', app: appId } }));
+                const url = getApiUrl('profile.php') + '?action=save&app=' + encodeURIComponent(appId) + '&token=' + encodeURIComponent(user.token);
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + user.token
+                    },
+                    body: JSON.stringify({ token: user.token, data: item.data })
+                });
+                const result = await res.json();
+                if (res.ok && result.success) {
+                    delete queue[appId];
+                    try {
+                        localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(queue));
+                    } catch (e) {}
+                    window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'synced', app: appId } }));
+                } else {
+                    window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'offline_pending', app: appId } }));
+                    break;
+                }
+            } catch (err) {
+                window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'offline_pending', app: appId } }));
+                break;
+            }
+        }
+    }
+
+    // Automatically trigger queue sync when network connectivity is regained
+    window.addEventListener('online', () => {
+        flushPendingSyncQueue();
+    });
+
+    /**
      * Saves user session to localStorage and triggers profile change event.
      *
      * @param {Object|null} session
+     * @param {string} action
      */
-    function setSession(session) {
+    function setSession(session, action = 'change') {
         if (session) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
         } else {
             localStorage.removeItem(STORAGE_KEY);
+            // Clear pending offline queue when logging out
+            localStorage.removeItem(PENDING_SYNC_KEY);
+            // Clear local cached data for all suite apps
+            for (const key of SUITE_APP_KEYS) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {}
+            }
         }
-        window.dispatchEvent(new CustomEvent('suite-profile-changed', { detail: session }));
+        window.dispatchEvent(new CustomEvent('suite-profile-changed', {
+            detail: { session, action }
+        }));
     }
 
     /**
@@ -101,15 +210,17 @@ const SUITE_PROFILE_VERSION = '1.3';
             token: data.token,
             hasPassword: !!data.hasPassword
         };
-        setSession(session);
+        // Reset any pending queue from prior session
+        localStorage.removeItem(PENDING_SYNC_KEY);
+        setSession(session, 'login');
         return session;
     }
 
     /**
-     * Logs out the current user and returns to guest mode.
+     * Logs out the current user, wipes app state from localStorage, and returns to guest mode.
      */
     function logout() {
-        setSession(null);
+        setSession(null, 'logout');
     }
 
     /**
@@ -140,7 +251,7 @@ const SUITE_PROFILE_VERSION = '1.3';
         }
 
         user.hasPassword = true;
-        setSession(user);
+        setSession(user, 'update');
         return true;
     }
 
@@ -172,14 +283,26 @@ const SUITE_PROFILE_VERSION = '1.3';
 
     /**
      * Saves app data payload to cloud with debouncing if logged in.
+     * If user is offline or fetch fails, queues payload for later synchronization.
      *
      * @param {string} appId
      * @param {Object} data
      * @param {number} [delayMs=1000]
      */
     function saveAppData(appId, data, delayMs = 1000) {
+        // Guest changes are strictly local: never sync to cloud
+        if (isGuest()) {
+            return;
+        }
+
         const user = getUser();
-        if (!user || !user.token || !navigator.onLine) {
+        if (!user || !user.token) {
+            return;
+        }
+
+        // If offline, queue for sync once connection is restored
+        if (!navigator.onLine) {
+            queuePendingSync(appId, data);
             return;
         }
 
@@ -203,12 +326,18 @@ const SUITE_PROFILE_VERSION = '1.3';
                 });
                 const result = await res.json();
                 if (res.ok && result.success) {
+                    // Remove item from pending queue if present
+                    const queue = getPendingSyncQueue();
+                    if (queue[appId]) {
+                        delete queue[appId];
+                        try { localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(queue)); } catch (e) {}
+                    }
                     window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'synced', app: appId } }));
                 } else {
-                    window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'error', app: appId } }));
+                    queuePendingSync(appId, data);
                 }
             } catch (e) {
-                window.dispatchEvent(new CustomEvent('suite-sync-state', { detail: { state: 'error', app: appId } }));
+                queuePendingSync(appId, data);
             }
         };
 
@@ -220,7 +349,7 @@ const SUITE_PROFILE_VERSION = '1.3';
     }
 
     /**
-     * Renders a subtle status indicator in sub-app footers.
+     * Renders a status indicator in sub-app footers.
      *
      * @param {HTMLElement} containerEl
      */
@@ -234,34 +363,36 @@ const SUITE_PROFILE_VERSION = '1.3';
             containerEl.appendChild(badge);
         }
 
-        function updateBadge() {
+        function updateBadge(syncStatus = null) {
             const user = getUser();
             if (user && user.token) {
-                badge.innerHTML = `👤 ${escapeHtml(user.username)} <span class="suite-cloud-icon suite-sync-state-ok" title="Settings synced to cloud">☁️</span>`;
+                const queue = getPendingSyncQueue();
+                const hasPending = Object.keys(queue).length > 0;
+                const isOnline = navigator.onLine;
+
+                if (!isOnline) {
+                    badge.innerHTML = `👤 ${escapeHtml(user.username)} <span class="suite-sync-state-offline" title="Working offline. Changes saved locally.">⚠️ (Offline)</span>`;
+                } else if (hasPending || syncStatus === 'offline_pending') {
+                    badge.innerHTML = `👤 ${escapeHtml(user.username)} <span class="suite-sync-state-pending" title="Changes saved locally; sync pending">⏳ (Sync pending)</span>`;
+                } else if (syncStatus === 'syncing') {
+                    badge.innerHTML = `👤 ${escapeHtml(user.username)} <span class="suite-sync-state-pending" title="Syncing with cloud...">🔄 Syncing...</span>`;
+                } else {
+                    badge.innerHTML = `👤 ${escapeHtml(user.username)} <span class="suite-cloud-icon suite-sync-state-ok" title="Settings synced to cloud">☁️</span>`;
+                }
             } else {
                 badge.innerHTML = `<span class="suite-sync-state-guest" title="Local cache only">👤 Guest (local)</span>`;
             }
         }
 
         updateBadge();
-        window.addEventListener('suite-profile-changed', updateBadge);
+        window.addEventListener('suite-profile-changed', () => updateBadge());
         window.addEventListener('suite-sync-state', (e) => {
-            const user = getUser();
-            if (!user) return;
-            const icon = badge.querySelector('.suite-cloud-icon');
-            if (icon) {
-                if (e.detail.state === 'syncing') {
-                    icon.style.opacity = '0.5';
-                    icon.title = 'Syncing...';
-                } else if (e.detail.state === 'synced') {
-                    icon.style.opacity = '1';
-                    icon.title = 'Settings synced to cloud';
-                } else {
-                    icon.title = 'Offline or sync pending';
-                }
-            }
+            updateBadge(e.detail ? e.detail.state : null);
         });
+        window.addEventListener('online', () => updateBadge('synced'));
+        window.addEventListener('offline', () => updateBadge('offline'));
     }
+
 
     /**
      * Mounts the floating profile avatar button and modal on the main launcher page.

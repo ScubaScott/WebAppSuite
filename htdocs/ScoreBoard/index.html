@@ -2010,11 +2010,19 @@
                 }
             }
 
-            let saved = loadState();
-            // If cloud state exists and is newer or local is empty, adopt cloud state
-            if (cloudState && (!saved || (cloudState.lastSavedAt && cloudState.lastSavedAt > (saved.lastSavedAt || 0)))) {
-                saved = cloudState;
-                safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
+            let saved = null;
+            // When logged in: cloud state strictly overwrites local state.
+            // If logged in and cloud state exists, use it. If logged in but no cloud state, start clean defaults.
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                if (cloudState) {
+                    saved = cloudState;
+                    safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
+                } else {
+                    saved = null;
+                    safeLocalStorageRemove(STORAGE_KEY);
+                }
+            } else {
+                saved = loadState();
             }
 
             if (saved) {
@@ -2075,7 +2083,22 @@
                 updatePauseButtonVisibility();
                 updatePenaltyCardsVisibility();
             } else {
-                // No saved state: apply the default theme
+                // No saved state or brand-new user: apply the default theme and clean defaults
+                homeScore = 0;
+                awayScore = 0;
+                currentPeriod = 1;
+                scoreHistory = [];
+                accumulatedTime = 0;
+                isPaused = false;
+                activeGameStarted = false;
+                activeGameId = null;
+                homeNameEl.textContent = homeTeamName;
+                awayNameEl.textContent = awayTeamName;
+                scoreHomeEl.textContent = 0;
+                scoreAwayEl.textContent = 0;
+                periodDisplay.textContent = 'P1';
+                renderHistory();
+                selectedTheme = 'saber-dark';
                 applyTheme(selectedTheme);
                 updateTimer();
                 updateMuteButton();
@@ -2084,12 +2107,15 @@
             }
             initRoller();
             isInitializingScoreboard = false;
-
-            // If logged in and DB had no settings yet, seed DB with local settings
-            if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudState && saved) {
-                SuiteProfile.saveAppData('scoreboard', saved);
-            }
         };
+
+        // React to user profile authentication lifecycle events
+        window.addEventListener('suite-profile-changed', (e) => {
+            const detail = e.detail || {};
+            if (detail.action === 'logout' || detail.action === 'login') {
+                window.location.reload();
+            }
+        });
 
         window.addEventListener('beforeunload', () => {
             // Save local state when unloading. Do NOT remove server entry here so
@@ -2104,7 +2130,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '2.6';
+        const VERSION = '2.7';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;

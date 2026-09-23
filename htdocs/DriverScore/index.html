@@ -131,7 +131,7 @@
 
 <!-- Footer displaying application version and profile sync status -->
 <footer class="app-footer">
-    <p>Version <span id="appVersion">1.7</span></p>
+    <p>Version <span id="appVersion">1.8</span></p>
 </footer>
 
 <!-- Suite profile cloud sync library — must load before main script block -->
@@ -835,19 +835,21 @@
             }
         }
 
-        // If cloud garage data found, merge into in-memory vars and localStorage
-        if (cloudData) {
-            if (cloudData.driver_profiles && typeof cloudData.driver_profiles === 'object') {
-                driverProfiles = { ...driverProfiles, ...cloudData.driver_profiles };
-                localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+        // When logged in: cloud data strictly overwrites local state.
+        // If logged in but user has no cloud profiles yet, start fresh with empty profiles (do NOT adopt guest state).
+        if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+            if (cloudData) {
+                driverProfiles = (cloudData.driver_profiles && typeof cloudData.driver_profiles === 'object') ? cloudData.driver_profiles : {};
+                vehicleProfiles = (cloudData.vehicle_profiles && typeof cloudData.vehicle_profiles === 'object') ? cloudData.vehicle_profiles : {};
+            } else {
+                driverProfiles = {};
+                vehicleProfiles = {};
             }
-            if (cloudData.vehicle_profiles && typeof cloudData.vehicle_profiles === 'object') {
-                vehicleProfiles = { ...vehicleProfiles, ...cloudData.vehicle_profiles };
-                localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
-            }
+            localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+            localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
         }
 
-        // Render initial dropdowns and configure active selections
+        // Render dropdowns and configure active selections
         renderDriverDropdown();
         renderVehicleDropdown();
         currentDriverSelection = ddlDriver.value;
@@ -857,16 +859,25 @@
         }
         updateActiveConfigurationUI();
         updateScoreUI();
-
-        // If logged in but no cloud data yet, seed cloud with current local garage
-        if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudData) {
-            SuiteProfile.saveAppData('driverscore', {
-                driver_profiles: driverProfiles,
-                vehicle_profiles: vehicleProfiles,
-                updatedAt: Date.now()
-            });
-        }
     }
+
+    // React to user profile authentication lifecycle events
+    window.addEventListener('suite-profile-changed', (e) => {
+        const detail = e.detail || {};
+        if (detail.action === 'logout') {
+            // Reset to clean default state
+            driverProfiles = {};
+            vehicleProfiles = {};
+            currentDriverSelection = null;
+            currentVehicleSelection = null;
+            renderDriverDropdown();
+            renderVehicleDropdown();
+            updateActiveConfigurationUI();
+        } else if (detail.action === 'login') {
+            // Re-fetch cloud profiles to overwrite any guest changes
+            initDriveScore();
+        }
+    });
 
     initDriveScore();
 </script>
