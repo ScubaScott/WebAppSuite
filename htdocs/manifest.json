@@ -2,7 +2,7 @@
   "name": "Scuba's App Suite",
   "short_name": "Scuba",
   "description": "Simple utilities",
-  "id": "./",
+  "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -11,22 +11,28 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./media/scuba.png",
+      "src": "./media/scuba-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./media/scuba.png",
+      "src": "./media/scuba-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
+      "src": "./media/scuba-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "./media/scuba.png",
       "sizes": "1024x1024",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ]
 }

@@ -1,0 +1,21 @@
+# WebAppSuite Apache Configuration
+
+# Ensure manifest.json is served with the correct PWA MIME type
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
+<Files "manifest.json">
+    <IfModule mod_mime.c>
+        ForceType application/manifest+json
+    </IfModule>
+</Files>
+
+# Ensure Service Worker and Web Manifest receive fresh responses without intermediate caching
+<IfModule mod_headers.c>
+    <FilesMatch "(sw\.js|manifest\.json)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </FilesMatch>
+</IfModule>
