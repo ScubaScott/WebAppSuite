@@ -116,9 +116,22 @@
     <div class="log" id="txtLog">System ready. Select profiles to begin.</div>
 </div>
 
+<!-- Modal Dialog for Adding Driver or Vehicle -->
+<div id="addProfileModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-card">
+        <h3 id="modalTitle">Add New Driver</h3>
+        <p id="modalDesc">Enter a name for the driver profile:</p>
+        <input type="text" id="modalInput" placeholder="Name" maxlength="40" autocomplete="off">
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" id="btnModalCancel">Cancel</button>
+            <button type="button" class="btn-modal-confirm" id="btnModalConfirm">Add</button>
+        </div>
+    </div>
+</div>
+
 <!-- Footer displaying application version and profile sync status -->
 <footer class="app-footer">
-    <p>Version <span id="appVersion">1.6</span></p>
+    <p>Version <span id="appVersion">1.7</span></p>
 </footer>
 
 <!-- Suite profile cloud sync library — must load before main script block -->
@@ -199,6 +212,64 @@
     const scoreCircle = document.getElementById('scoreCircle');
     const txtLog = document.getElementById('txtLog');
 
+    // Synchronizes active garage data to cloud profile if logged in
+    function syncGarageToCloud() {
+        if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+            SuiteProfile.saveAppData('driverscore', {
+                driver_profiles: driverProfiles,
+                vehicle_profiles: vehicleProfiles,
+                updatedAt: Date.now()
+            }, 0);
+        }
+    }
+
+    // Modal dialog controls for adding drivers and vehicles
+    let modalCallback = null;
+    function showAddModal(title, desc, placeholder, onConfirm) {
+        const modal = document.getElementById('addProfileModal');
+        const titleEl = document.getElementById('modalTitle');
+        const descEl = document.getElementById('modalDesc');
+        const inputEl = document.getElementById('modalInput');
+
+        titleEl.textContent = title;
+        descEl.textContent = desc;
+        inputEl.placeholder = placeholder;
+        inputEl.value = '';
+        modalCallback = onConfirm;
+
+        modal.style.display = 'flex';
+        setTimeout(() => inputEl.focus(), 60);
+    }
+
+    function hideAddModal() {
+        const modal = document.getElementById('addProfileModal');
+        modal.style.display = 'none';
+        modalCallback = null;
+    }
+
+    document.getElementById('btnModalConfirm').addEventListener('click', () => {
+        const inputEl = document.getElementById('modalInput');
+        const val = inputEl.value.trim();
+        if (val && modalCallback) {
+            modalCallback(val);
+        }
+        hideAddModal();
+    });
+
+    document.getElementById('btnModalCancel').addEventListener('click', () => {
+        hideAddModal();
+        ddlDriver.value = currentDriverSelection;
+        ddlVehicle.value = currentVehicleSelection;
+    });
+
+    document.getElementById('modalInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('btnModalConfirm').click();
+        } else if (e.key === 'Escape') {
+            document.getElementById('btnModalCancel').click();
+        }
+    });
+
     // Populates driver selection dropdown from stored profiles
     function renderDriverDropdown() {
         ddlDriver.innerHTML = '';
@@ -208,7 +279,7 @@
         for (const [name, data] of Object.entries(driverProfiles)) {
             ddlDriver.appendChild(new Option(`${name} - ${Math.round(data.averageScore)}`, name));
         }
-        ddlDriver.appendChild(new Option("add new...", "__ADD_NEW__"));
+        ddlDriver.appendChild(new Option("+ Add new driver...", "__ADD_NEW__"));
     }
 
     // Populates vehicle selection dropdown from stored profiles
@@ -220,42 +291,63 @@
         for (const [vName, config] of Object.entries(vehicleProfiles)) {
             ddlVehicle.appendChild(new Option(`${vName}`, vName));
         }
-        ddlVehicle.appendChild(new Option("add/modify vehicle...", "__MANAGE_VEHICLES__"));
+        ddlVehicle.appendChild(new Option("+ Add new vehicle...", "__ADD_NEW_VEHICLE__"));
+        ddlVehicle.appendChild(new Option("Manage garage...", "__MANAGE_VEHICLES__"));
     }
 
     // Synchronizes active sensitivity thresholds when vehicle selection changes
     function updateActiveConfigurationUI() {
-        if(ddlVehicle.value && vehicleProfiles[ddlVehicle.value]) {
+        if (ddlVehicle.value && vehicleProfiles[ddlVehicle.value]) {
             const current = vehicleProfiles[ddlVehicle.value];
             activeThreshold = current.threshold;
             activeAlpha = current.alpha;
         }
     }
 
+    // Adds a new driver profile and stores locally and in cloud
+    function addNewDriver(name) {
+        const clean = name.trim();
+        if (!clean || clean === "__ADD_NEW__") return;
+        if (!driverProfiles[clean]) {
+            driverProfiles[clean] = { totalDrives: 0, averageScore: 100 };
+            localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
+            syncGarageToCloud();
+            renderDriverDropdown();
+            ddlDriver.value = clean;
+            currentDriverSelection = clean;
+            logMessage(`Added driver profile: ${clean}`);
+        } else {
+            ddlDriver.value = clean;
+            currentDriverSelection = clean;
+        }
+    }
+
+    // Adds a new vehicle profile and stores locally and in cloud
+    function addNewVehicle(vTag) {
+        const clean = vTag.trim();
+        if (!clean || clean === "__ADD_NEW_VEHICLE__" || clean === "__MANAGE_VEHICLES__") return;
+        if (!vehicleProfiles[clean]) {
+            vehicleProfiles[clean] = { threshold: 0.32, alpha: 0.20, calibrated: false };
+            localStorage.setItem('vehicle_profiles', JSON.stringify(vehicleProfiles));
+            syncGarageToCloud();
+            renderVehicleDropdown();
+            ddlVehicle.value = clean;
+            currentVehicleSelection = clean;
+            updateActiveConfigurationUI();
+            logMessage(`Added vehicle profile: ${clean}`);
+        } else {
+            ddlVehicle.value = clean;
+            currentVehicleSelection = clean;
+            updateActiveConfigurationUI();
+        }
+    }
+
     // Driver selection handler to add new driver profiles on demand
     ddlDriver.addEventListener('change', () => {
         if (ddlDriver.value === "__ADD_NEW__") {
-            setTimeout(() => {
-                const raw = prompt("Enter new driver's name:");
-                const clean = raw ? raw.trim() : "";
-                if (clean && clean !== "__ADD_NEW__" && !driverProfiles[clean]) {
-                    driverProfiles[clean] = { totalDrives: 0, averageScore: 100 };
-                    localStorage.setItem('driver_profiles', JSON.stringify(driverProfiles));
-                    // Sync updated driver garage to cloud if logged in
-                    if (window.SuiteProfile && !SuiteProfile.isGuest()) {
-                        SuiteProfile.saveAppData('driverscore', {
-                            driver_profiles: driverProfiles,
-                            vehicle_profiles: vehicleProfiles,
-                            updatedAt: Date.now()
-                        });
-                    }
-                    renderDriverDropdown();
-                    ddlDriver.value = clean;
-                } else {
-                    ddlDriver.value = currentDriverSelection;
-                }
-                currentDriverSelection = ddlDriver.value;
-            }, 10);
+            showAddModal("Add New Driver", "Enter a name for the driver profile:", "Driver Name", (name) => {
+                addNewDriver(name);
+            });
         } else {
             currentDriverSelection = ddlDriver.value;
         }
@@ -263,7 +355,11 @@
 
     // Vehicle selection handler to trigger configuration updates or open garage settings
     ddlVehicle.addEventListener('change', () => {
-        if (ddlVehicle.value === "__MANAGE_VEHICLES__") {
+        if (ddlVehicle.value === "__ADD_NEW_VEHICLE__") {
+            showAddModal("Add New Vehicle", "Enter vehicle model / tag (e.g. Ford F-150, Honda Civic):", "Vehicle Tag", (vTag) => {
+                addNewVehicle(vTag);
+            });
+        } else if (ddlVehicle.value === "__MANAGE_VEHICLES__") {
             window.location.href = "VehicleSettings.html";
         } else {
             currentVehicleSelection = ddlVehicle.value;
@@ -704,12 +800,19 @@
     });
 
     // DriveScore application version identifier
-    const VERSION = '1.6';
+    const VERSION = '1.7';
     const APP_VERSION = VERSION;
     const versionEl = document.getElementById('appVersion');
     if (versionEl) {
         versionEl.textContent = VERSION;
     }
+
+    // Render baseline dropdowns immediately from local storage
+    renderDriverDropdown();
+    renderVehicleDropdown();
+    currentDriverSelection = ddlDriver.value;
+    currentVehicleSelection = ddlVehicle.value;
+    updateActiveConfigurationUI();
 
     // Suite profile cloud sync library must be loaded before this script block
     // Async init: loads cloud garage profiles then renders dropdowns

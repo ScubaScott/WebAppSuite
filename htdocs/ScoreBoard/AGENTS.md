@@ -1,20 +1,20 @@
-# ScoreKeeper - Sub-Application AI Agent Guidelines
+# ScoreBoard - Sub-Application AI Agent Guidelines
 
-This document defines the agent parameters, sync protocols, and architecture specific to the **ScoreKeeper** sub-application under `htdocs/ScoreKeeper/`.
+This document defines the agent parameters, sync protocols, and architecture specific to the **ScoreBoard** sub-application under `htdocs/ScoreBoard/`.
 
 ---
 
 ## 1. Sub-App Overview
 
-ScoreKeeper is a versatile multi-sport digital scoreboard and match management utility. It includes home and away team scoring, period tracking, countdown game timers, shot/possession clocks, audio buzzer alerts, and spectator remote viewing.
+ScoreBoard is a versatile multi-sport digital scoreboard and match management utility. It includes home and away team scoring, period tracking, countdown game timers, shot/possession clocks, audio buzzer alerts, and spectator remote viewing.
 
 ### Primary Files
 - `index.html`: Main operator console and scoreboard controller.
-- `ScoreKeeperViewer.html`: Clean spectator display optimized for external monitors, projectors, or remote viewers.
-- `ScoreKeeperActiveGames.html`: Dashboard showing currently active/open games.
-- `ScoreKeeperHelp.html`: Operating guide and keyboard shortcut instructions.
+- `ScoreBoardViewer.html`: Clean spectator display optimized for external monitors, projectors, or remote viewers.
+- `ScoreBoardActiveGames.html`: Dashboard showing currently active/open games.
+- `ScoreBoardHelp.html`: Operating guide and keyboard shortcut instructions.
 - `active-games.php`: Optional lightweight PHP backend for publishing and reading active game states across multiple devices.
-- `scorekeeper.css`: High-contrast dark scoreboard styling, large LED-style score boxes, and responsive control panels.
+- `scoreboard.css`: High-contrast dark scoreboard styling, large LED-style score boxes, and responsive control panels.
 
 ---
 
@@ -37,7 +37,7 @@ ScoreKeeper is a versatile multi-sport digital scoreboard and match management u
 - **Hybrid Synchronization**:
   - Local state: Persisted in `localStorage` for zero-latency local operations and full offline capability.
   - Network sync (`active-games.php`): When a backend server is available, periodically sync active game payloads (JSON containing `gameId`, `homeTeam`, `awayTeam`, `homeScore`, `awayScore`, `period`, `timeRemaining`, `status`).
-  - Spectator mode (`ScoreKeeperViewer.html`): Polls or listens for game state updates to mirror the operator's scoreboard without exposing controls.
+  - Spectator mode (`ScoreBoardViewer.html`): Polls or listens for game state updates to mirror the operator's scoreboard without exposing controls.
 - **Resilience**: Never throw unhandled errors if PHP/network sync fails; gracefully continue local operation.
 
 ---

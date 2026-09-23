@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ScoreKeeper — Viewer</title>
+    <title>ScoreBoard — Viewer</title>
     <style>
         :root {
             color-scheme: dark;
@@ -221,7 +221,7 @@
             <h1 class="title" id="title">Game Viewer</h1>
             <p class="meta" id="meta">Loading…</p>
         </div>
-        <a class="back-link" href="ScoreKeeperActiveGames.html">← Active Games</a>
+        <a class="back-link" href="ScoreBoardActiveGames.html">← Active Games</a>
     </div>
     <div class="court">
         <div class="team-panel">
@@ -364,7 +364,13 @@
     loadGame();
 
     // Viewer tool version identifier
-    const VERSION = '1.0';
+    const VERSION = '1.1';
+    const APP_VERSION = VERSION;
+    const versionEl = document.getElementById('viewerVersion');
+    if (versionEl) versionEl.textContent = VERSION;
 </script>
+<footer style="margin-top: 16px; font-size: 0.75rem; color: #64748b; text-align: center;">
+    <p>Version <span id="viewerVersion">1.1</span></p>
+</footer>
 </body>
 </html>

@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.2';
+const SUITE_PROFILE_VERSION = '1.3';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -24,9 +24,10 @@ const SUITE_PROFILE_VERSION = '1.2';
      */
     function getApiUrl(endpoint = 'profile.php') {
         const path = window.location.pathname;
-        // If in a sub-app folder (e.g. /ScoreKeeper/, /Bingo/)
+        // If in a sub-app folder (e.g. /ScoreBoard/, /Bingo/)
         const depth = (path.match(/\//g) || []).length;
-        if (path.indexOf('/ScoreKeeper') !== -1 ||
+        if (path.indexOf('/ScoreBoard') !== -1 ||
+            path.indexOf('/ScoreKeeper') !== -1 ||
             path.indexOf('/Bingo') !== -1 ||
             path.indexOf('/BagScore') !== -1 ||
             path.indexOf('/DriverScore') !== -1 ||
@@ -347,7 +348,7 @@ const SUITE_PROFILE_VERSION = '1.2';
                     </div>
 
                     <div style="background: #f8f9fa; border: 1px solid #dadce0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; line-height: 1.4;">
-                        Your settings, themes, and game configurations in ScoreKeeper and Bingo automatically sync with this profile.
+                        Your settings, themes, and game configurations in ScoreBoard and Bingo automatically sync with this profile.
                     </div>
 
                     <div id="suiteSetPasswordSection" style="margin-bottom: 16px; border-top: 1px solid #e8eaed; padding-top: 14px;">

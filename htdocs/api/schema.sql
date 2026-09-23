@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `suite_users` (
 CREATE TABLE IF NOT EXISTS `suite_user_data` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT UNSIGNED NOT NULL,
-    `app_id` VARCHAR(32) NOT NULL,              -- e.g. 'scorekeeper', 'bingo', 'bagscore', 'driverscore'
+    `app_id` VARCHAR(32) NOT NULL,              -- e.g. 'scoreboard', 'bingo', 'bagscore', 'driverscore'
     `data_json` LONGTEXT NOT NULL,              -- Serialized JSON containing user settings & history
     `version` INT UNSIGNED DEFAULT 1,           -- Incremental revision counter for sync resolution
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

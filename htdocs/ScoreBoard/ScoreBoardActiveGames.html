@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Active ScoreKeeper Games</title>
+    <title>Active ScoreBoard Games</title>
     <style>
         body {
             margin: 0;
@@ -130,10 +130,10 @@
     <div class="page-shell">
         <div class="header">
             <div>
-                <h1>Active ScoreKeeper Games</h1>
-                <p>Read-only view of active games shared by other open ScoreKeeper windows in this browser profile. Updates automatically when the shared state changes.</p>
+                <h1>Active ScoreBoard Games</h1>
+                <p>Read-only view of active games shared by other open ScoreBoard windows in this browser profile. Updates automatically when the shared state changes.</p>
             </div>
-            <a class="back-link" href="index.html">↩ Back to ScoreKeeper</a>
+            <a class="back-link" href="index.html">↩ Back to ScoreBoard</a>
         </div>
 
         <div class="board" id="games-board">
@@ -166,7 +166,7 @@
 
         function renderGames(rows) {
             if (!Array.isArray(rows) || rows.length === 0) {
-                gamesList.innerHTML = '<div class="empty-state">No active games were found. Open ScoreKeeper in another tab or on another device to publish active state.</div>';
+                gamesList.innerHTML = '<div class="empty-state">No active games were found. Open ScoreBoard in another tab or on another device to publish active state.</div>';
                 return;
             }
 
@@ -191,7 +191,7 @@
 
             function openViewer(id) {
                 try {
-                    window.open(`ScoreKeeperViewer.html?id=${encodeURIComponent(id)}`, '_blank');
+                    window.open(`ScoreBoardViewer.html?id=${encodeURIComponent(id)}`, '_blank');
                 } catch (e) {}
             }
 
@@ -219,7 +219,7 @@
         }
 
         function renderFallbackGames() {
-            const raw = safeLocalStorageGet('scoreKeeperActiveGamesV1');
+            const raw = safeLocalStorageGet('scoreBoardActiveGamesV1') || safeLocalStorageGet('scoreKeeperActiveGamesV1');
             if (!raw) {
                 gamesList.innerHTML = '<div class="empty-state">No active games were found. Server data is unavailable and local storage fallback is empty.</div>';
                 return;
@@ -246,7 +246,7 @@
         }
 
         window.addEventListener('storage', (event) => {
-            if (event.key === 'scoreKeeperActiveGamesV1') {
+            if (event.key === 'scoreBoardActiveGamesV1' || event.key === 'scoreKeeperActiveGamesV1') {
                 refresh();
             }
         });
@@ -255,7 +255,13 @@
         refresh();
 
         // Active games directory version identifier
-        const VERSION = '1.1';
+        const VERSION = '1.2';
+        const APP_VERSION = VERSION;
+        const versionEl = document.getElementById('appVersion');
+        if (versionEl) versionEl.textContent = VERSION;
     </script>
+    <footer style="margin-top: 24px; font-size: 0.75rem; color: #64748b; text-align: center;">
+        <p>Version <span id="appVersion">1.2</span></p>
+    </footer>
 </body>
 </html>

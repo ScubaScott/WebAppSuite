@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Score Keeper</title>
-    <meta name="description" content="ScoreKeeper — track scores, periods, and elapsed time for any sport.">
+    <title>ScoreBoard</title>
+    <meta name="description" content="ScoreBoard — track scores, periods, and elapsed time for any sport.">
     <!-- External stylesheet contains all application styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="scorekeeper.css">
+    <link rel="stylesheet" href="scoreboard.css">
     <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 
@@ -256,10 +256,10 @@
 
                 <!-- Links -->
                 <div style="width:100%;text-align:center;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
-                    <a href="ScoreKeeperActiveGames.html"
+                    <a href="ScoreBoardActiveGames.html"
                         style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active
                         Games</a>
-                    <a href="ScoreKeeperHelp.html"
+                    <a href="ScoreBoardHelp.html"
                         style="font-size:0.875rem;font-weight:700;color:#60a5fa;text-decoration:underline;">help!</a>
                 </div>
 
@@ -713,8 +713,8 @@
         }
 
         const STORAGE_KEY = 'timerStateV7';
-        const ACTIVE_GAMES_KEY = 'scoreKeeperActiveGamesV1';
-        const ACTIVE_GAME_ID_KEY = 'scoreKeeperCurrentGameIdV1';
+        const ACTIVE_GAMES_KEY = 'scoreBoardActiveGamesV1';
+        const ACTIVE_GAME_ID_KEY = 'scoreBoardCurrentGameIdV1';
 
         function safeLocalStorageGet(key) {
             try {
@@ -802,9 +802,9 @@
         }
 
         function loadOrCreateActiveGameId() {
-            let id = safeLocalStorageGet(ACTIVE_GAME_ID_KEY);
+            let id = safeLocalStorageGet(ACTIVE_GAME_ID_KEY) || safeLocalStorageGet('scoreKeeperCurrentGameIdV1');
             if (!id) {
-                id = `scorekeeper-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                id = `scoreboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
                 safeLocalStorageSet(ACTIVE_GAME_ID_KEY, id);
             }
             return id;
@@ -868,11 +868,11 @@
             }
         }
 
-        let isInitializingScorekeeper = true;
+        let isInitializingScoreboard = true;
 
         // Persist the timer state to localStorage for page reloads.
         function saveState() {
-            if (isInitializingScorekeeper) return;
+            if (isInitializingScoreboard) return;
             const state = {
                 startTime, accumulatedTime, timeLimit, isCountingUp,
                 running: timerRunning, homeScore, awayScore,
@@ -889,7 +889,7 @@
             safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
             publishActiveGameState();
             if (window.SuiteProfile) {
-                SuiteProfile.saveAppData('scorekeeper', state);
+                SuiteProfile.saveAppData('scoreboard', state);
             }
         }
 
@@ -1954,7 +1954,7 @@
             }
 
             // Generate a new game ID so this session is tracked independently.
-            activeGameId = `scorekeeper-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            activeGameId = `scoreboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
             activeGameStarted = false;
             safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
 
@@ -1987,7 +1987,7 @@
 
         // Initialize the page from saved state when the browser loads.
         window.onload = async function () {
-            isInitializingScorekeeper = true;
+            isInitializingScoreboard = true;
 
             // Render footer indicator
             if (window.SuiteProfile) {
@@ -1999,9 +1999,12 @@
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
                 try {
                     cloudState = await Promise.race([
-                        SuiteProfile.loadAppData('scorekeeper'),
+                        SuiteProfile.loadAppData('scoreboard'),
                         new Promise(resolve => setTimeout(() => resolve(null), 3000))
                     ]);
+                    if (!cloudState) {
+                        cloudState = await SuiteProfile.loadAppData('scorekeeper');
+                    }
                 } catch (e) {
                     console.warn('DB settings check failed, falling back to local:', e);
                 }
@@ -2080,11 +2083,11 @@
                 updatePenaltyCardsVisibility();
             }
             initRoller();
-            isInitializingScorekeeper = false;
+            isInitializingScoreboard = false;
 
             // If logged in and DB had no settings yet, seed DB with local settings
             if (window.SuiteProfile && !SuiteProfile.isGuest() && !cloudState && saved) {
-                SuiteProfile.saveAppData('scorekeeper', saved);
+                SuiteProfile.saveAppData('scoreboard', saved);
             }
         };
 
@@ -2100,8 +2103,8 @@
             }
         });
 
-        // ScoreKeeper version identifier
-        const VERSION = '2.5';
+        // ScoreBoard version identifier
+        const VERSION = '2.6';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
@@ -2116,7 +2119,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.5</span></p>
+        <p>Version <span id="appVersion">2.6</span></p>
     </footer>
 </body>
 
