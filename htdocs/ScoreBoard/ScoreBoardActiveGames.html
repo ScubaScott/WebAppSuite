@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
             color-scheme: dark;
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
+
         body {
             margin: 0;
             min-height: 100vh;
@@ -20,9 +22,11 @@
             padding: 24px 16px;
             box-sizing: border-box;
         }
+
         .page-shell {
             width: min(100%, 1080px);
         }
+
         .header {
             display: flex;
             flex-wrap: wrap;
@@ -31,23 +35,27 @@
             gap: 16px;
             margin-bottom: 24px;
         }
+
         .header-title-box h1 {
             margin: 0;
             font-size: clamp(1.5rem, 2.2vw, 2.25rem);
             line-height: 1.1;
         }
+
         .header-title-box p {
             margin: 8px 0 0;
             color: #94a3b8;
             max-width: 640px;
             font-size: 0.95rem;
         }
+
         .header-nav {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             align-items: center;
         }
+
         .nav-link {
             display: inline-flex;
             align-items: center;
@@ -62,19 +70,23 @@
             background: rgba(255, 255, 255, 0.04);
             transition: all 0.15s ease;
         }
+
         .nav-link:hover {
             background: rgba(255, 255, 255, 0.08);
             border-color: #64748b;
         }
+
         .nav-link-primary {
             background: rgba(59, 130, 246, 0.15);
             border-color: rgba(59, 130, 246, 0.4);
             color: #93c5fd;
         }
+
         .nav-link-primary:hover {
             background: rgba(59, 130, 246, 0.25);
             border-color: rgba(59, 130, 246, 0.6);
         }
+
         .board {
             width: 100%;
             border-radius: 20px;
@@ -83,6 +95,7 @@
             background: rgba(15, 23, 42, 0.92);
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
         }
+
         .board-header,
         .board-row {
             display: grid;
@@ -91,6 +104,7 @@
             align-items: center;
             padding: 14px 18px;
         }
+
         .board-header {
             border-bottom: 1px solid #334155;
             background: rgba(15, 23, 42, 0.98);
@@ -100,17 +114,21 @@
             color: #94a3b8;
             font-weight: 700;
         }
+
         .board-row {
             border-bottom: 1px solid #1e293b;
             cursor: pointer;
             transition: background 0.15s ease;
         }
+
         .board-row:hover {
             background: rgba(255, 255, 255, 0.04);
         }
+
         .board-row:last-child {
             border-bottom: none;
         }
+
         .board-row div {
             min-height: 44px;
             display: flex;
@@ -118,6 +136,7 @@
             color: #f8fafc;
             font-size: 0.95rem;
         }
+
         .game-title-cell {
             display: flex;
             flex-direction: column;
@@ -125,14 +144,17 @@
             align-items: flex-start !important;
             gap: 3px;
         }
+
         .game-title-cell strong {
             font-size: 1rem;
             color: #f8fafc;
         }
+
         .game-title-cell span {
             color: #94a3b8;
             font-size: 0.8rem;
         }
+
         .status-pill {
             display: inline-block;
             border-radius: 999px;
@@ -142,10 +164,30 @@
             text-transform: uppercase;
             letter-spacing: 0.06em;
         }
-        .status-live { background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
-        .status-paused { background: rgba(234, 179, 8, 0.18); color: #fde68a; border: 1px solid rgba(234, 179, 8, 0.4); }
-        .status-stalled { background: rgba(249, 115, 22, 0.18); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.4); }
-        .status-final { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+        .status-live {
+            background: rgba(34, 197, 94, 0.18);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .status-paused {
+            background: rgba(234, 179, 8, 0.18);
+            color: #fde68a;
+            border: 1px solid rgba(234, 179, 8, 0.4);
+        }
+
+        .status-stalled {
+            background: rgba(249, 115, 22, 0.18);
+            color: #fdba74;
+            border: 1px solid rgba(249, 115, 22, 0.4);
+        }
+
+        .status-final {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
 
         .empty-state {
             padding: 48px 24px;
@@ -153,12 +195,14 @@
             color: #94a3b8;
             font-size: 1rem;
         }
+
         .note {
             color: #94a3b8;
             font-size: 0.88rem;
             margin-top: 18px;
             line-height: 1.5;
         }
+
         .app-footer {
             margin-top: 32px;
             font-size: 0.75rem;
@@ -170,17 +214,20 @@
             .board-header {
                 display: none;
             }
+
             .board-row {
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
                 padding: 14px 16px;
             }
+
             .game-title-cell {
                 grid-column: span 2;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="page-shell">
         <div class="header">
@@ -189,9 +236,9 @@
                 <p>Live scoreboard broadcast feed. Click any match to launch the real-time spectator view.</p>
             </div>
             <div class="header-nav">
-                <a class="nav-link" href="../index.html">← Back to Apps</a>
                 <a class="nav-link" href="index.html">← Back to ScoreBoard</a>
-                <a class="nav-link nav-link-primary" id="my-games-link" href="ScoreBoardMyGames.html" style="display:none;">My Saved Games</a>
+                <a class="nav-link nav-link-primary" id="my-games-link" href="ScoreBoardMyGames.html"
+                    style="display:none;">My Saved Games</a>
             </div>
         </div>
 
@@ -206,7 +253,8 @@
             <div id="games-list"></div>
         </div>
 
-        <div class="note">Matches are synchronized directly with the database. Active live games update automatically every few seconds.</div>
+        <div class="note">Matches are synchronized directly with the database. Active live games update automatically
+            every few seconds.</div>
     </div>
 
     <!-- Shared Suite Profile and Games Client -->
@@ -392,4 +440,5 @@
         <p>Version <span id="appVersion">1.3</span></p>
     </footer>
 </body>
+
 </html>

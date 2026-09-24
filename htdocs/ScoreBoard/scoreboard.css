@@ -1,6 +1,6 @@
 /* ============================================================
    ScoreBoard — scoreboard.css
-   Version: 2.3
+   Version: 2.5
    All visual styles for the ScoreBoard application.
    ============================================================ */
 
@@ -1451,4 +1451,385 @@ footer {
     font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.35);
 }
+
+/* ============================================================
+   ScoreBoard Match Lifecycle & Flow Engine Additions
+   ============================================================ */
+
+/* Dimmed and locked board controls for pre-game and game-over */
+.board-locked {
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* History table remains explicitly interactive during game over */
+.history-interactive {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+/* Top-right card menu ellipsis button */
+.card-menu-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 8px 12px;
+    min-width: 44px;
+    min-height: 44px;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+    z-index: 10;
+}
+.card-menu-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Overage indicator badge */
+.overage-badge {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 4px;
+}
+
+/* Streamlined control bar */
+.control-bar {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.ctrl-btn {
+    flex: 1;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    padding: 12px 14px;
+    min-height: 44px;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    transition: background 0.15s, transform 0.1s;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.ctrl-btn:active {
+    transform: scale(0.96);
+}
+
+.ctrl-btn-new {
+    background: #374151;
+    color: #ffffff;
+}
+.ctrl-btn-new:hover {
+    background: #4b5563;
+}
+
+.ctrl-btn-start {
+    background: #10b981;
+    color: #ffffff;
+}
+.ctrl-btn-start:hover {
+    background: #059669;
+}
+
+.ctrl-btn-pause {
+    background: #f59e0b;
+    color: #ffffff;
+}
+.ctrl-btn-pause:hover {
+    background: #d97706;
+}
+
+.ctrl-btn-resume {
+    background: #10b981;
+    color: #ffffff;
+}
+.ctrl-btn-resume:hover {
+    background: #059669;
+}
+
+.ctrl-btn-period {
+    background: #3b82f6;
+    color: #ffffff;
+}
+.ctrl-btn-period:hover {
+    background: #2563eb;
+}
+
+.ctrl-btn-endot {
+    background: #7f1d1d;
+    color: #ffffff;
+}
+.ctrl-btn-endot:hover {
+    background: #991b1b;
+}
+
+/* Common Modal Overlay & Panel */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.modal-dialog {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75);
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid #1f2937;
+    position: sticky;
+    top: 0;
+    background: #111827;
+    border-radius: 20px 20px 0 0;
+    z-index: 2;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-close-x {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+.modal-close-x:hover {
+    color: #fff;
+}
+
+.modal-body {
+    padding: 16px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 14px 22px 18px;
+    border-top: 1px solid #1f2937;
+    background: #111827;
+    border-radius: 0 0 20px 20px;
+}
+
+/* Stepper Component */
+.stepper-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: #1f2937;
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 1px solid #374151;
+}
+
+.stepper-btn {
+    width: 40px;
+    height: 40px;
+    background: #374151;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+.stepper-btn:hover {
+    background: #4b5563;
+}
+.stepper-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.stepper-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #ffffff;
+    min-width: 40px;
+    text-align: center;
+    font-family: monospace;
+}
+
+/* Action buttons inside modals */
+.modal-action-btn {
+    flex: 1;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 12px;
+    min-height: 44px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.modal-action-btn-primary {
+    background: #10b981;
+    color: #ffffff;
+}
+.modal-action-btn-primary:hover {
+    background: #059669;
+}
+
+.modal-action-btn-danger {
+    background: #dc2626;
+    color: #ffffff;
+}
+.modal-action-btn-danger:hover {
+    background: #b91c1c;
+}
+
+.modal-action-btn-secondary {
+    background: #374151;
+    color: #d1d5db;
+    border: 1px solid #4b5563;
+}
+.modal-action-btn-secondary:hover {
+    background: #4b5563;
+    color: #ffffff;
+}
+
+.modal-action-btn-accent {
+    background: #2563eb;
+    color: #ffffff;
+}
+.modal-action-btn-accent:hover {
+    background: #1d4ed8;
+}
+
+/* Preset grid for period durations in match setup */
+.duration-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.duration-preset-btn {
+    background: #1f2937;
+    color: #d1d5db;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 10px 4px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+.duration-preset-btn:hover {
+    background: #374151;
+    color: #ffffff;
+}
+.duration-preset-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #3b82f6;
+}
+
+.custom-duration-btn {
+    width: 100%;
+    background: #1f2937;
+    color: #93c5fd;
+    border: 1px dashed #3b82f6;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+.custom-duration-btn:hover {
+    background: rgba(37, 99, 235, 0.15);
+    color: #bfdbfe;
+}
+
+/* Embedded setup roller container in match setup modal */
+.setup-roller-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 4px;
+    animation: fadeIn 0.2s ease;
+}
+
+.setup-roller-box.hidden {
+    display: none !important;
+}
+
 
