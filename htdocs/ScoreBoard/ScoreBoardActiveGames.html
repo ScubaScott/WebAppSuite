@@ -294,37 +294,46 @@
 
             .board-row {
                 display: grid;
-                grid-template-areas: none;
+                grid-template-areas: "title score period status age";
                 grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
                 gap: 12px;
                 align-items: center;
                 padding: 14px 20px;
             }
 
-            .board-row div {
+            .game-title-cell {
+                grid-area: title;
+                min-height: 44px;
+            }
+
+            .game-score-cell {
+                grid-area: score;
+                font-size: 0.95rem;
+                font-weight: 400;
+                color: #f8fafc;
+                min-height: 44px;
+            }
+
+            .game-period-cell {
+                grid-area: period;
+                font-size: 0.95rem;
+                font-weight: 400;
                 min-height: 44px;
             }
 
             .game-status-cell {
+                grid-area: status;
                 align-items: center;
                 justify-content: flex-start;
-            }
-
-            .game-score-cell {
-                font-size: 0.95rem;
-                font-weight: 400;
-                color: #f8fafc;
-            }
-
-            .game-period-cell {
-                font-size: 0.95rem;
-                font-weight: 400;
+                min-height: 44px;
             }
 
             .game-age-cell {
+                grid-area: age;
                 justify-content: flex-start;
                 text-align: left;
                 font-size: 0.95rem;
+                min-height: 44px;
             }
         }
     </style>
@@ -521,7 +530,7 @@
         }
 
         // Active games directory version identifier
-        const VERSION = '1.5';
+        const VERSION = '1.6';
         const APP_VERSION = VERSION;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -543,7 +552,7 @@
     </script>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.5</span></p>
+        <p>Version <span id="appVersion">1.6</span></p>
     </footer>
 </body>
 

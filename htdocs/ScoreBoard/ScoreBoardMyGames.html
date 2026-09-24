@@ -391,7 +391,7 @@
 
             .game-row {
                 display: grid;
-                grid-template-areas: none;
+                grid-template-areas: "match score period badges actions";
                 grid-template-columns: 2fr 1fr 1fr 1.2fr 2fr;
                 gap: 12px;
                 align-items: center;
@@ -403,24 +403,32 @@
                 background: rgba(255, 255, 255, 0.02);
             }
 
-            .game-badges {
-                justify-content: flex-start;
-                align-self: center;
+            .game-match-info {
+                grid-area: match;
             }
 
             .game-score-info {
+                grid-area: score;
                 font-size: 1.1rem;
                 font-weight: 700;
                 color: #f8fafc;
             }
 
             .game-period-info {
+                grid-area: period;
                 font-size: 0.95rem;
                 font-weight: 400;
                 justify-self: stretch;
             }
 
+            .game-badges {
+                grid-area: badges;
+                justify-content: flex-start;
+                align-self: center;
+            }
+
             .game-actions-cell {
+                grid-area: actions;
                 margin-top: 0;
                 justify-content: flex-start;
             }
@@ -692,7 +700,7 @@
         }
 
         // My Games version identifier
-        const VERSION = '1.2';
+        const VERSION = '1.3';
         const APP_VERSION = VERSION;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -712,7 +720,7 @@
     </script>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.2</span></p>
+        <p>Version <span id="appVersion">1.3</span></p>
     </footer>
 </body>
 </html>
