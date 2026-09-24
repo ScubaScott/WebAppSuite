@@ -801,6 +801,7 @@
         const STORAGE_KEY = 'timerStateV7';
         const ACTIVE_GAMES_KEY = 'scoreBoardActiveGamesV1';
         const ACTIVE_GAME_ID_KEY = 'scoreBoardCurrentGameIdV1';
+        const ACTIVE_GAME_WRITE_TOKEN_KEY = 'scoreBoardCurrentGameWriteTokenV1';
 
         function safeLocalStorageGet(key) {
             try {
@@ -2347,7 +2348,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '2.8';
+        const VERSION = '2.9';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running
@@ -2362,7 +2363,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.8</span></p>
+        <p>Version <span id="appVersion">2.9</span></p>
     </footer>
 </body>
 
