@@ -22,7 +22,7 @@
         <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
             <a href="../" class="back-link" style="align-self:flex-start;">← Back to Apps</a>
             <div id="scoreboard-card"
-                style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;position:relative;">
+                style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px 24px 44px 24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;position:relative;">
 
                 <!-- Top-Right Card Menu Ellipsis Button (Edit Match Details) -->
                 <button type="button" id="btn-card-menu" class="card-menu-btn hidden" title="Edit Match Details" aria-label="Edit Match Details">⋮</button>
@@ -181,19 +181,23 @@
                     </div>
                 </div>
 
-                <!-- Links -->
-                <div style="width:100%;text-align:center;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
-                    <div style="display:flex;justify-content:center;gap:16px;align-items:center;">
-                        <a href="ScoreBoardActiveGames.html"
-                            style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active Games</a>
-                        <a href="ScoreBoardMyGames.html" id="link-my-games" class="hidden"
-                            style="font-size:0.875rem;font-weight:700;color:#a78bfa;text-decoration:underline;">My Games</a>
-                    </div>
-                    <a href="ScoreBoardHelp.html"
-                        style="font-size:0.875rem;font-weight:700;color:#60a5fa;text-decoration:underline;">help!</a>
-                </div>
+                <!-- Lower-Right Card Help Button -->
+                <a href="ScoreBoardHelp.html" id="btn-card-help" class="card-help-btn" title="ScoreBoard Help &amp; Guide" aria-label="ScoreBoard Help &amp; Guide">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/>
+                    </svg>
+                </a>
 
             </div><!-- end card -->
+
+            <!-- Actions below the game control window -->
+            <div class="card-bottom-actions">
+                <a href="ScoreBoardActiveGames.html" id="btn-view-active-games" class="btn-active-games" title="View Active Games">
+                    <span class="live-pulse-dot"></span>
+                    <span>View Active Games</span>
+                </a>
+                <a href="ScoreBoardMyGames.html" id="link-my-games" class="my-games-sublink hidden">My Games</a>
+            </div>
         </div><!-- end max-width wrapper -->
     </div><!-- end min-height centering wrapper -->
 
@@ -285,18 +289,6 @@
 
                 <!-- ── TIMER SETTINGS ─────────────────────────────── -->
                 <div class="settings-section-label">Timer Settings</div>
-
-                <!-- Add Pause Button toggle -->
-                <div class="settings-row">
-                    <div class="settings-row-text">
-                        <strong>Add Pause Button</strong>
-                        <span>Shows a dedicated button to pause the timer without advancing the period.</span>
-                    </div>
-                    <label class="toggle-label">
-                        <input type="checkbox" id="setting-add-pause">
-                        <div class="toggle-track"></div>
-                    </label>
-                </div>
 
                 <!-- Pause on Score toggle -->
                 <div class="settings-row">
@@ -668,7 +660,6 @@
         const whistleAudio = document.getElementById('whistle-sound');
         const settingsBtn = document.getElementById('settings-btn');
         const settingsModal = document.getElementById('settings-modal');
-        const settingAddPause = document.getElementById('setting-add-pause');
         const settingPauseOnScore = document.getElementById('setting-pause-on-score');
         const settingLogPauseResume = document.getElementById('setting-log-pause-resume');
         const settingLogPeriodStartStop = document.getElementById('setting-log-period-start-stop');
@@ -749,7 +740,6 @@
         let basePeriods = 2;
         let scoreHistory = [];
         let muted = false;
-        let addPauseButton = false;
         let pauseOnScore = false;
         let isPaused = false;
         let logPauseResume = false;
@@ -1130,7 +1120,7 @@
                 periodStartTimeUtc, totalPeriodPausedMs, overageResolvedForCurrentPeriod,
                 scoreHistory, homeTeamName, awayTeamName,
                 homeTeamColor, awayTeamColor, muted,
-                addPauseButton, pauseOnScore, isPaused,
+                pauseOnScore, isPaused,
                 logPauseResume, logPeriodStartStop,
                 splashOnHome, splashOnAway,
                 showPenaltyCards,
@@ -1830,6 +1820,11 @@
 
         // Record a yellow or red penalty card foul for the designated team in the history log.
         function recordFoulCard(teamId, cardType) {
+            // Disallow recording penalty cards when the clock is stopped
+            if (!timerRunning || matchState !== 'running') {
+                showToast('Clock is stopped');
+                return;
+            }
             const teamName = teamId === 'home' ? homeTeamName : awayTeamName;
             const teamColor = teamId === 'home' ? homeTeamColor : awayTeamColor;
             const degree = cardType === 'yellow' ? 'Yellow Card' : 'Red Card';
@@ -1855,6 +1850,11 @@
         }
 
         function addScore(teamId) {
+            // Disallow score adjustments when the clock is stopped
+            if (!timerRunning || matchState !== 'running') {
+                showToast('Clock is stopped');
+                return;
+            }
             if (teamId === 'home') homeScore++; else awayScore++;
             scoreHomeEl.textContent = homeScore;
             scoreAwayEl.textContent = awayScore;
@@ -1913,7 +1913,14 @@
                 boardControlsWrap.classList.toggle('board-locked', isBoardLocked);
             }
 
-            // 2. Top-right ellipsis menu visibility (visible during ready and paused)
+            // 2. Visual indicators for scoring and card availability while clock is running
+            const isClockRunning = (matchState === 'running');
+            if (scoreHomeEl) scoreHomeEl.classList.toggle('score-disabled', !isClockRunning);
+            if (scoreAwayEl) scoreAwayEl.classList.toggle('score-disabled', !isClockRunning);
+            const cardBtns = document.querySelectorAll('.foul-card-btn');
+            cardBtns.forEach(btn => btn.classList.toggle('card-btn-disabled', !isClockRunning));
+
+            // 3. Top-right ellipsis menu visibility (visible during ready and paused)
             const canEdit = (matchState === 'ready' || matchState === 'paused');
             if (btnCardMenu) {
                 btnCardMenu.classList.toggle('hidden', !canEdit);
@@ -2242,18 +2249,6 @@
             awayNameEl.style.color = awayTeamColor;
             scoreAwayEl.style.color = awayTeamColor;
 
-            // Update existing scoreHistory team references
-            scoreHistory.forEach(entry => {
-                if (entry.teamId === 'home') {
-                    entry.teamName = homeTeamName;
-                    entry.teamColor = homeTeamColor;
-                } else if (entry.teamId === 'away') {
-                    entry.teamName = awayTeamName;
-                    entry.teamColor = awayTeamColor;
-                }
-            });
-            renderHistory();
-
             if (matchSetupMode === 'create') {
                 // If previous game was active, finalize it on server
                 if (activeGameStarted && !activeGameEnded) {
@@ -2277,7 +2272,10 @@
                 homeScore = 0;
                 awayScore = 0;
                 currentPeriod = 1;
+                // Clear match history and close any open history dialogs for the new game
                 scoreHistory = [];
+                closeHistoryOptions();
+                renderHistory();
                 timeLimit = tempTimeLimit;
                 accumulatedTime = 0;
                 startTime = null;
@@ -2293,6 +2291,18 @@
                 updateMatchState('ready');
                 showToast('New game configured');
             } else if (matchSetupMode === 'overtime') {
+                // Update existing scoreHistory team references
+                scoreHistory.forEach(entry => {
+                    if (entry.teamId === 'home') {
+                        entry.teamName = homeTeamName;
+                        entry.teamColor = homeTeamColor;
+                    } else if (entry.teamId === 'away') {
+                        entry.teamName = awayTeamName;
+                        entry.teamColor = awayTeamColor;
+                    }
+                });
+                renderHistory();
+
                 // Advance to OT period with the chosen overtime duration
                 if (timerRunning) {
                     pauseTimer();
@@ -2311,6 +2321,18 @@
                 updateMatchState('ready');
                 showToast(`Overtime (${getPeriodLabel(currentPeriod)}) added`);
             } else {
+                // Update existing scoreHistory team references
+                scoreHistory.forEach(entry => {
+                    if (entry.teamId === 'home') {
+                        entry.teamName = homeTeamName;
+                        entry.teamColor = homeTeamColor;
+                    } else if (entry.teamId === 'away') {
+                        entry.teamName = awayTeamName;
+                        entry.teamColor = awayTeamColor;
+                    }
+                });
+                renderHistory();
+
                 // Edit mode: save changes to active game
                 if (matchState === 'ready') {
                     timeLimit = tempTimeLimit;
@@ -2479,6 +2501,9 @@
             if (!penaltyCardsRow) return;
             if (showPenaltyCards) {
                 penaltyCardsRow.classList.remove('hidden');
+                const isClockRunning = (matchState === 'running');
+                const cardBtns = penaltyCardsRow.querySelectorAll('.foul-card-btn');
+                cardBtns.forEach(btn => btn.classList.toggle('card-btn-disabled', !isClockRunning));
             } else {
                 penaltyCardsRow.classList.add('hidden');
             }
@@ -2486,7 +2511,6 @@
 
         function openSettings() {
             // Populate preferences
-            if (settingAddPause) settingAddPause.checked = addPauseButton;
             if (settingPauseOnScore) settingPauseOnScore.checked = pauseOnScore;
             if (settingLogPauseResume) settingLogPauseResume.checked = logPauseResume;
             if (settingLogPeriodStartStop) settingLogPeriodStartStop.checked = logPeriodStartStop;
@@ -2508,13 +2532,6 @@
         if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
         if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
         if (closeSettingsX) closeSettingsX.addEventListener('click', closeSettings);
-
-        if (settingAddPause) {
-            settingAddPause.addEventListener('change', () => {
-                addPauseButton = settingAddPause.checked;
-                saveState();
-            });
-        }
 
         if (settingPauseOnScore) {
             settingPauseOnScore.addEventListener('change', () => {
@@ -2671,7 +2688,6 @@
                 timeLimit = saved.timeLimit !== undefined ? saved.timeLimit : 40 * 60 * 1000;
                 isCountingUp = saved.isCountingUp;
                 muted = !!saved.muted;
-                addPauseButton = !!saved.addPauseButton;
                 pauseOnScore = !!saved.pauseOnScore;
                 isPaused = !!saved.isPaused;
                 logPauseResume = !!saved.logPauseResume;
@@ -2808,7 +2824,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '3.1';
+        const VERSION = '3.5';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running
@@ -2823,7 +2839,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">3.1</span></p>
+        <p>Version <span id="appVersion">3.5</span></p>
     </footer>
 </body>
 

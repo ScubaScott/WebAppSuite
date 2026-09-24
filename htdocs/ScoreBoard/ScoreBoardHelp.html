@@ -25,8 +25,8 @@
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li><strong>Idle:</strong> Displays <strong>[New Game]</strong>. Board controls (scores, fouls, period) are safely locked until a game is configured.</li>
                     <li><strong>Ready:</strong> Displays <strong>[Start]</strong> and <strong>[End / OT]</strong>. The clock is primed for the upcoming period.</li>
-                    <li><strong>Running:</strong> Displays <strong>[Pause]</strong> alongside <strong>[End Period]</strong> (or <strong>[End / OT]</strong> if in the final period or overtime).</li>
-                    <li><strong>Paused:</strong> Displays <strong>[Resume]</strong> alongside <strong>[End Period]</strong> or <strong>[End / OT]</strong>.</li>
+                    <li><strong>Running:</strong> Displays <strong>[Pause]</strong> alongside <strong>[End Period]</strong> (or <strong>[End / OT]</strong> if in the final period or overtime). Scoring and penalty cards are active only while the clock is running.</li>
+                    <li><strong>Paused:</strong> Displays <strong>[Resume]</strong> alongside <strong>[End Period]</strong> or <strong>[End / OT]</strong>. Scoring and cards are locked while the clock is paused.</li>
                     <li><strong>Final:</strong> Displays <strong>[New Game]</strong>. The board is locked to preserve the completed match result.</li>
                 </ul>
             </div>
@@ -100,7 +100,7 @@
                 <h2 class="text-lg font-semibold text-white">Penalty Cards (Fouls)</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li>Enable <strong>Show Penalty Cards</strong> in Settings to display Yellow and Red card buttons below each team's score.</li>
-                    <li>Tapping a card button logs the foul to the score history (team, card degree, and elapsed game time) and plays a card-raising animation.</li>
+                    <li>Tapping a card button while the clock is running logs the foul to the score history (team, card degree, and elapsed game time) and plays a card-raising animation. Cards are disabled while the clock is stopped.</li>
                     <li>Foul card entries can be tapped in the history list to add notes, share the card event, or remove accidental entries without altering scores.</li>
                 </ul>
             </div>
@@ -115,11 +115,11 @@
         </div>
     </div>
     <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">1.8</span></p>
+        <p>Version <span id="helpVersion">1.9</span></p>
     </footer>
     <script>
         // ScoreBoard help documentation version identifier
-        const VERSION = '1.8';
+        const VERSION = '1.9';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;
