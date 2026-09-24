@@ -25,13 +25,16 @@
                 style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px 24px 44px 24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;position:relative;">
 
                 <!-- Top-Right Card Menu Ellipsis Button (Edit Match Details) -->
-                <button type="button" id="btn-card-menu" class="card-menu-btn hidden" title="Edit Match Details" aria-label="Edit Match Details">⋮</button>
+                <button type="button" id="btn-card-menu" class="card-menu-btn hidden" title="Edit Match Details"
+                    aria-label="Edit Match Details">⋮</button>
 
                 <!-- Board controls wrapper: scores, period, cards, and timer (locked in idle and game-over states) -->
-                <div id="board-controls-wrap" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
+                <div id="board-controls-wrap"
+                    style="width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
 
                     <!-- Score row: Home | Period | Away -->
-                    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
+                    <div
+                        style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
                         <!-- Home team -->
                         <div style="display:flex;flex-direction:column;align-items:center;">
                             <div id="home-team-name"
@@ -104,7 +107,8 @@
                                 style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
                                 Remaining</div>
                             <div id="timer-display"
-                                style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;">00:40:00.0</div>
+                                style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;">
+                                00:40:00.0</div>
                             <div id="overage-badge" class="overage-badge hidden">Overage</div>
                         </div>
 
@@ -113,7 +117,8 @@
                                 style="font-size:0.75rem;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
                                 Period Elapsed</div>
                             <div id="elapsed-time-display" class="interactive-box"
-                                style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">00:00:00.0
+                                style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">
+                                00:00:00.0
                             </div>
                         </div>
                     </div>
@@ -152,7 +157,8 @@
                     <button type="button" id="btn-start" class="ctrl-btn ctrl-btn-start hidden">Start</button>
                     <button type="button" id="btn-pause" class="ctrl-btn ctrl-btn-pause hidden">Pause</button>
                     <button type="button" id="btn-resume" class="ctrl-btn ctrl-btn-resume hidden">Resume</button>
-                    <button type="button" id="btn-end-period" class="ctrl-btn ctrl-btn-period hidden">End Period</button>
+                    <button type="button" id="btn-end-period" class="ctrl-btn ctrl-btn-period hidden">End
+                        Period</button>
                     <button type="button" id="btn-end-ot" class="ctrl-btn ctrl-btn-endot hidden">End / OT</button>
                 </div>
 
@@ -182,9 +188,12 @@
                 </div>
 
                 <!-- Lower-Right Card Help Button -->
-                <a href="ScoreBoardHelp.html" id="btn-card-help" class="card-help-btn" title="ScoreBoard Help &amp; Guide" aria-label="ScoreBoard Help &amp; Guide">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/>
+                <a href="ScoreBoardHelp.html" id="btn-card-help" class="card-help-btn"
+                    title="ScoreBoard Help &amp; Guide" aria-label="ScoreBoard Help &amp; Guide">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"
+                        fill="currentColor">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" />
                     </svg>
                 </a>
 
@@ -192,7 +201,8 @@
 
             <!-- Actions below the game control window -->
             <div class="card-bottom-actions">
-                <a href="ScoreBoardActiveGames.html" id="btn-view-active-games" class="btn-active-games" title="View Active Games">
+                <a href="ScoreBoardActiveGames.html" id="btn-view-active-games" class="btn-active-games"
+                    title="View Active Games">
                     <span class="live-pulse-dot"></span>
                     <span>View Active Games</span>
                 </a>
@@ -369,7 +379,8 @@
                     <div class="settings-row">
                         <div class="settings-row-text">
                             <strong>Share on Active Games list</strong>
-                            <span>Shows this match in the public Active Games board. Turn off to keep private in your account.</span>
+                            <span>Shows this match in the public Active Games board. Turn off to keep private in your
+                                account.</span>
                         </div>
                         <label class="toggle-label">
                             <input type="checkbox" id="setting-share-public" checked>
@@ -405,9 +416,11 @@
                     <div class="team-card">
                         <div class="team-card-header">
                             <span class="team-card-label">Home</span>
-                            <div id="setup-home-color-swatch" class="team-color-swatch" style="background:#ef4444;"></div>
+                            <div id="setup-home-color-swatch" class="team-color-swatch" style="background:#ef4444;">
+                            </div>
                         </div>
-                        <input id="setup-home-name" class="team-name-input" placeholder="Team name" autocomplete="off" value="Us">
+                        <input id="setup-home-name" class="team-name-input" placeholder="Team name" autocomplete="off"
+                            value="Us">
                         <select id="setup-home-color" class="team-color-select">
                             <option value="#ef4444">Red</option>
                             <option value="#3b82f6">Blue</option>
@@ -424,9 +437,11 @@
                     <div class="team-card">
                         <div class="team-card-header">
                             <span class="team-card-label">Away</span>
-                            <div id="setup-away-color-swatch" class="team-color-swatch" style="background:#3b82f6;"></div>
+                            <div id="setup-away-color-swatch" class="team-color-swatch" style="background:#3b82f6;">
+                            </div>
                         </div>
-                        <input id="setup-away-name" class="team-name-input" placeholder="Team name" autocomplete="off" value="Them">
+                        <input id="setup-away-name" class="team-name-input" placeholder="Team name" autocomplete="off"
+                            value="Them">
                         <select id="setup-away-color" class="team-color-select">
                             <option value="#3b82f6">Blue</option>
                             <option value="#ef4444">Red</option>
@@ -447,9 +462,11 @@
                 <div style="display:flex;flex-direction:column;gap:6px;">
                     <label style="font-size:0.75rem;color:#9ca3af;font-weight:600;">Total Periods</label>
                     <div class="stepper-container">
-                        <button type="button" id="btn-period-minus" class="stepper-btn" title="Decrease periods">-</button>
+                        <button type="button" id="btn-period-minus" class="stepper-btn"
+                            title="Decrease periods">-</button>
                         <span id="setup-total-periods-val" class="stepper-value">2</span>
-                        <button type="button" id="btn-period-plus" class="stepper-btn" title="Increase periods">+</button>
+                        <button type="button" id="btn-period-plus" class="stepper-btn"
+                            title="Increase periods">+</button>
                     </div>
                 </div>
 
@@ -462,7 +479,8 @@
                         <button type="button" class="duration-preset-btn" data-ms="2100000">35 min</button>
                         <button type="button" class="duration-preset-btn active" data-ms="2400000">40 min</button>
                     </div>
-                    <button type="button" id="btn-setup-custom-time" class="custom-duration-btn">Custom Duration (Roller) ▾</button>
+                    <button type="button" id="btn-setup-custom-time" class="custom-duration-btn">Custom Duration
+                        (Roller) ▾</button>
 
                     <!-- Embedded Dual-Wheel Time Roller Picker -->
                     <div id="setup-roller-container" class="setup-roller-box hidden">
@@ -510,8 +528,10 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" id="btn-setup-cancel" class="modal-action-btn modal-action-btn-secondary">Cancel</button>
-                <button type="button" id="btn-setup-submit" class="modal-action-btn modal-action-btn-primary">Start Match</button>
+                <button type="button" id="btn-setup-cancel"
+                    class="modal-action-btn modal-action-btn-secondary">Cancel</button>
+                <button type="button" id="btn-setup-submit" class="modal-action-btn modal-action-btn-primary">Start
+                    Match</button>
             </div>
         </div>
     </div>
@@ -554,13 +574,15 @@
             </div>
             <div class="modal-body">
                 <p style="color:#f3f4f6;font-size:0.92rem;line-height:1.5;margin:0;">
-                    Current elapsed time has passed the configured period duration. Did <strong id="drift-period-name">Period 1</strong> end on schedule, or is the match in stoppage/overage?
+                    Current elapsed time has passed the configured period duration. Did <strong
+                        id="drift-period-name">Period 1</strong> end on schedule, or is the match in stoppage/overage?
                 </p>
                 <div style="display:flex;gap:10px;margin-top:10px;">
                     <button type="button" id="btn-drift-end-on-time" class="modal-action-btn modal-action-btn-primary">
                         End Period on Time
                     </button>
-                    <button type="button" id="btn-drift-continue-overage" class="modal-action-btn modal-action-btn-accent">
+                    <button type="button" id="btn-drift-continue-overage"
+                        class="modal-action-btn modal-action-btn-accent">
                         Continue in Overage
                     </button>
                 </div>
@@ -571,15 +593,19 @@
     <!-- Stale Game Resume Confirmation Modal -->
     <div id="stale-resume-modal" class="modal-backdrop hidden"
         style="position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <div style="background:#1f2937;border:1px solid #374151;border-radius:18px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.7);text-align:center;">
+        <div
+            style="background:#1f2937;border:1px solid #374151;border-radius:18px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.7);text-align:center;">
             <div style="font-size:2rem;margin-bottom:8px;">⏳</div>
             <h3 style="margin:0 0 8px;color:#f3f4f6;font-size:1.25rem;">Finish Last Game?</h3>
-            <p style="color:#9ca3af;font-size:0.875rem;line-height:1.5;margin:0 0 20px;">This game was left running over 3 hours ago. Would you like to finalize and archive it, or resume the clock?</p>
+            <p style="color:#9ca3af;font-size:0.875rem;line-height:1.5;margin:0 0 20px;">This game was left running over
+                3 hours ago. Would you like to finalize and archive it, or resume the clock?</p>
             <div style="display:flex;gap:10px;justify-content:center;">
                 <button type="button" id="btn-stale-finish"
-                    style="flex:1;background:#dc2626;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Finish Game</button>
+                    style="flex:1;background:#dc2626;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Finish
+                    Game</button>
                 <button type="button" id="btn-stale-resume"
-                    style="flex:1;background:#374151;color:#fff;border:1px solid #4b5563;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Resume Clock</button>
+                    style="flex:1;background:#374151;color:#fff;border:1px solid #4b5563;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Resume
+                    Clock</button>
             </div>
         </div>
     </div>
@@ -1096,7 +1122,7 @@
             try {
                 const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
                 navigator.sendBeacon('../api/games.php?action=sync', blob);
-            } catch (e) {}
+            } catch (e) { }
         }
 
         function publishActiveGameState(statusOverride = null, endedByOverride = null) {
@@ -1581,21 +1607,30 @@
             showToast('Entry removed');
         }
 
-        // Copy a concise, SMS-ready description of the event to the clipboard.
         // Copy a concise, SMS-ready description of the event and open native share sheet if supported.
         function shareHistoryEntry() {
             if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
             const entry = scoreHistory[activeHistoryIndex];
             let shareText = '';
-            const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
 
             if (entry.type === 'score') {
+                const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
                 shareText = `${entry.teamName} scored (${entry.currentScore}) at ${entry.gameTime || ''}${noteSuffix}`;
             } else if (entry.type === 'card') {
-                const degree = entry.degree || (entry.cardType === 'yellow' ? 'Yellow Card' : 'Red Card');
-                shareText = `${entry.teamName} ${degree} at ${entry.gameTime || ''}${noteSuffix}`;
+                const isYellow = (entry.cardType === 'yellow' || (entry.degree && entry.degree.toLowerCase().includes('yellow')));
+                const cardSymbol = isYellow ? '🟨' : '🟥';
+                const noteSuffix = entry.note ? ` (${entry.note})` : '';
+                shareText = `${cardSymbol} ${entry.teamName} at ${entry.gameTime || ''}${noteSuffix}`;
             } else {
-                shareText = `${entry.text}${noteSuffix}`;
+                const isFinalEvent = (entry.text && entry.text.includes('(Final)'));
+                if (isFinalEvent) {
+                    const currentScore = `${homeScore}-${awayScore}`;
+                    const noteSuffix = entry.note ? ` - ${entry.note}` : '';
+                    shareText = `Game! (${currentScore})${noteSuffix}`;
+                } else {
+                    const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
+                    shareText = `${entry.text}${noteSuffix}`;
+                }
             }
 
             closeHistoryOptions();
@@ -2658,7 +2693,7 @@
                                 ended_by: 'new_game',
                                 snapshot: localSaved
                             });
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                     saved = cloudState;
                     safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
@@ -2824,7 +2859,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '3.5';
+        const VERSION = '3.6';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running
@@ -2839,7 +2874,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">3.5</span></p>
+        <p>Version <span id="appVersion">3.6</span></p>
     </footer>
 </body>
 
