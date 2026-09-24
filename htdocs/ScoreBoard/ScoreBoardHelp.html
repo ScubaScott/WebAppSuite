@@ -21,51 +21,78 @@
         </div>
         <div class="space-y-4 text-sm text-gray-300">
             <div>
-                <h2 class="text-lg font-semibold text-white">Timer Controls</h2>
+                <h2 class="text-lg font-semibold text-white">Match Lifecycle &amp; Control Bar</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li><strong>Remaining</strong>: shows the current time left in the selected period. Tap it while the timer is stopped to open the time-limit selector.</li>
-                    <li><strong>Elapsed</strong>: shows the elapsed time within the current period. Tap it while running to adjust elapsed time if the clock was started early or late.</li>
+                    <li><strong>Idle:</strong> Displays <strong>[New Game]</strong>. Board controls (scores, fouls, period) are safely locked until a game is configured.</li>
+                    <li><strong>Ready:</strong> Displays <strong>[Start]</strong> and <strong>[End / OT]</strong>. The clock is primed for the upcoming period.</li>
+                    <li><strong>Running:</strong> Displays <strong>[Pause]</strong> alongside <strong>[End Period]</strong> (or <strong>[End / OT]</strong> if in the final period or overtime). Scoring and penalty cards are active only while the clock is running.</li>
+                    <li><strong>Paused:</strong> Displays <strong>[Resume]</strong> alongside <strong>[End Period]</strong> or <strong>[End / OT]</strong>. Scoring and cards are locked while the clock is paused.</li>
+                    <li><strong>Final:</strong> Displays <strong>[New Game]</strong>. The board is locked to preserve the completed match result.</li>
                 </ul>
             </div>
 
             <div>
-                <h2 class="text-lg font-semibold text-white">Time Limit Options</h2>
+                <h2 class="text-lg font-semibold text-white">Dual Clocks &amp; Overage</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>Tap a preset limit (<strong>12 min</strong>, <strong>20 min</strong>, <strong>35 min</strong>, or <strong>40 min</strong>) to quickly roll the wheels to that duration.</li>
-                    <li>Fine-tune the time by rolling the minutes or seconds wheels, then tap <strong>Set Time</strong> to apply and close.</li>
-                    <li>The timer will use the selected limit and wait for you to start.</li>
+                    <li><strong>Period Countdown (Main):</strong> Shows remaining time in the current period (e.g. <code>40:00.0</code>). The clock is display-only (clicking it does not open the time roller). When the countdown reaches zero, the whistle sounds and the clock transitions into overage (e.g. <code>-01:23.4</code>) with an amber/red overage badge.</li>
+                    <li><strong>Period Elapsed:</strong> Readout beneath the countdown tracking continuous playing time elapsed within the active period. Tap it while running to open quick minute adjustments (+/- 1m, +/- 5m) if the clock was started late or early.</li>
                 </ul>
             </div>
 
             <div>
-                <h2 class="text-lg font-semibold text-white">Starting & Stopping</h2>
+                <h2 class="text-lg font-semibold text-white">Match Setup &amp; Period Settings</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>Tap <strong>Start</strong> to begin the timer; the button toggles to <strong>Stop</strong> while running.</li>
-                    <li>Stopping the timer logs the end of the current period and advances the period counter (P1–P4).</li>
-                    <li>When a countdown reaches zero it plays the whistle, logs the end of the period, and resets to the chosen time limit.</li>
+                    <li>Tap <strong>New Game</strong> or the card menu button (<strong>⋮</strong> in the top-right corner) at any time to open Match Setup.</li>
+                    <li>Configure <strong>Team Names</strong>, custom <strong>Team Colors</strong>, total regulation periods (1–8 periods), and duration presets (<strong>12m</strong>, <strong>20m</strong>, <strong>35m</strong>, <strong>40m</strong>).</li>
+                    <li>The interactive dual-wheel time roller is accessible directly within this modal (tap <strong>Custom Duration (Roller)</strong>) to dial custom minutes and seconds.</li>
+                    <li>Tapping the <strong>Period</strong> indicator while stopped or paused also opens the match setup editor.</li>
                 </ul>
             </div>
 
             <div>
-                <h2 class="text-lg font-semibold text-white">Audio & Mute</h2>
+                <h2 class="text-lg font-semibold text-white">Overtime &amp; Ending Matches</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>A whistle sound plays when the timer reaches zero.</li>
-                    <li>Use the <strong>Mute</strong> button (lower-right) to toggle sound on/off; this setting is saved across reloads and resets.</li>
+                    <li>When in the final regulation period or an extra period, tapping <strong>End / OT</strong> opens options to:
+                        <ul class="list-disc list-inside ml-5 mt-1 space-y-1 text-gray-400">
+                            <li><strong>Finalize Match (Final):</strong> Concludes the match, marks it final in active game feeds, and locks the scoreboard.</li>
+                            <li><strong>Add Overtime / Extra Period:</strong> Configures an overtime period (e.g. <code>OT</code>, <code>OT2</code>) with custom duration while preserving all accumulated scores.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Background Drift Recovery</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>If the device goes to sleep or the browser tab is minimized while running past the scheduled period duration, the app detects the drift upon return and prompts the operator:
+                        <ul class="list-disc list-inside ml-5 mt-1 space-y-1 text-gray-400">
+                            <li><strong>End Period on Time:</strong> Caps the period at the scheduled duration (e.g. 40:00.0) and transitions to the next period.</li>
+                            <li><strong>Continue in Overage:</strong> Keeps the accumulated extra time and lets the clock continue running in overage.</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
 
             <div>
                 <h2 class="text-lg font-semibold text-white">Score Tracking &amp; History Log</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li><strong>Tap a team's score area</strong> to increment that team's score. The big red/blue score tiles are tappable.</li>
-                    <li>Each score entry is logged in the Score History with three columns: <strong>Team (Score)</strong>, <strong>Note</strong>, and <strong>Time</strong>.</li>
+                    <li><strong>Tap a team's score area</strong> to increment that team's score.</li>
+                    <li>Each score entry is logged in the Score History with <strong>Team (Score)</strong>, custom note, period tag (e.g. <code>P1</code>, <code>OT</code>), and period elapsed time.</li>
                     <li><strong>Tap any history row</strong> to open its options menu:
                         <ul class="list-disc list-inside ml-5 mt-1 space-y-1 text-gray-400">
-                            <li><strong>Add Note / Edit Note:</strong> Attach a custom single-line note (up to 60 characters) to that event (e.g., penalty kick, player name).</li>
-                            <li><strong>Share:</strong> Opens your device's native share sheet (Android / iOS) to send directly via Messages, WhatsApp, or other apps, while also copying the text to your clipboard.</li>
-                            <li><strong>Remove:</strong> Replaces the old direct ✕ action. Deletes the selected entry and decrements the associated team's score total.</li>
+                            <li><strong>Add Note / Edit Note:</strong> Attach a custom single-line note (up to 60 characters) to that event.</li>
+                            <li><strong>Share:</strong> Opens the native share sheet or copies event text to clipboard.</li>
+                            <li><strong>Remove:</strong> Deletes the selected entry and decrements the associated score.</li>
                         </ul>
                     </li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-white">Period Rollback Fail-Safe</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>If a period was ended by accident, find the <strong>End of P{n}</strong> entry in the Score History and choose <strong>Remove</strong>.</li>
+                    <li>The app will automatically roll back the match to the previous period, restoring its exact elapsed time and paused state so play can continue without losing data.</li>
                 </ul>
             </div>
 
@@ -73,52 +100,26 @@
                 <h2 class="text-lg font-semibold text-white">Penalty Cards (Fouls)</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li>Enable <strong>Show Penalty Cards</strong> in Settings to display Yellow and Red card buttons below each team's score.</li>
-                    <li>Tapping a card button logs the foul to the score history (team, card degree, and elapsed game time) and plays a 1-second card-raising animation.</li>
-                    <li>Foul card entries can be tapped in the history list to add/edit notes, share the card event, or remove accidental entries without altering scores.</li>
+                    <li>Tapping a card button while the clock is running logs the foul to the score history (team, card degree, and elapsed game time) and plays a card-raising animation. Cards are disabled while the clock is stopped.</li>
+                    <li>Foul card entries can be tapped in the history list to add notes, share the card event, or remove accidental entries without altering scores.</li>
                 </ul>
             </div>
 
             <div>
-                <h2 class="text-lg font-semibold text-white">Teams & Colors</h2>
+                <h2 class="text-lg font-semibold text-white">Audio &amp; Mute</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>Tap a team name while the timer is stopped to open the edit panel for that team (name and color).</li>
-                    <li>The edit panel contains a name field and a color selector. As you change the color the small swatch updates immediately so you can preview the selection.</li>
-                    <li>Saving updates the team name, the large score tile color, and all existing history rows for that team. Colors are persisted in local storage.</li>
-                    <li>History rows display a small colored badge and show the team name in the chosen color for quick visual reference.</li>
-                </ul>
-            </div>
-
-            <div>
-                <h2 class="text-lg font-semibold text-white">Period & Manual Adjustments</h2>
-                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>Tap the period display while stopped to cycle through P1–P4.</li>
-                    <li>While the timer is running, tap the <strong>Elapsed</strong> display to open quick adjustment buttons (+/- 1 min, +/- 5 min) to correct early or late starts.</li>
-                </ul>
-            </div>
-
-            <div>
-                <h2 class="text-lg font-semibold text-white">Reset & Saved State</h2>
-                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>Tap <strong>Reset</strong> to clear timer, scores, period, and history. Team names, selected colors, time limit, and mute state are preserved.</li>
-                    <li>The app stores its state (timer, scores, period, history, team names/colors, time limit, mute) in local storage so reloading the page restores the previous session.</li>
-                </ul>
-            </div>
-
-            <div>
-                <h2 class="text-lg font-semibold text-white">Notes & Tips</h2>
-                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
-                    <li>Use the swatches and history badges to quickly distinguish teams during live scoring.</li>
-                    <li>Small-screen behavior: edit panels expand to full width and stack vertically for easier input on phones.</li>
+                    <li>A whistle sound plays when a period reaches zero.</li>
+                    <li>Use the <strong>Mute</strong> button (lower-right) to toggle sound on/off; this setting is saved across reloads and resets.</li>
                 </ul>
             </div>
         </div>
     </div>
     <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">1.6</span></p>
+        <p>Version <span id="helpVersion">1.9</span></p>
     </footer>
     <script>
         // ScoreBoard help documentation version identifier
-        const VERSION = '1.6';
+        const VERSION = '1.9';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;

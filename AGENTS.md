@@ -13,7 +13,7 @@ This is the overarching AI agent configuration for the entire `WebAppSuite` repo
 - **Dependencies**: Zero heavy build chains or frontend frameworks (no React, Angular, Vue, or Tailwind) unless explicitly requested by the user. Keep it pure, fast, and dependency-free.
 - **PWA & Caching Strategy**: The root suite includes a Progressive Web App service worker (`sw.js`) and web app manifest (`manifest.json`). All pages should operate on cache, but must always implement a **network-first cache checking strategy** to ensure users always receive the latest updates when online.
 - **Styling & CSS Separation**: All pages should use a separate CSS file for all styles (avoiding hardcoded inline styles), organized with CSS custom properties (variables) to support themes.
-- **Navigation**: Every sub-application under `htdocs/` must feature a prominent back link (`← Back to Apps` or `Back to Apps`) leading back to the root launcher (`../index.html` or `../`).
+- **Navigation**: Every sub-application under `htdocs/` must feature a prominent back link (`← Back to Apps` or `Back to Apps`) leading back to the root launcher (`../index.html` or `../`). sub pages, of sub pages, should not have this feature. 
 
 ---
 

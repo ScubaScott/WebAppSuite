@@ -3,7 +3,7 @@
 // Executes schema.sql to create needed tables in the configured MySQL database.
 
 // Setup utility version identifier
-$SETUP_VERSION = '1.0';
+$SETUP_VERSION = '1.1';
 
 require_once __DIR__ . '/config.php';
 
@@ -38,10 +38,7 @@ header('Content-Type: text/html; charset=utf-8');
     if (!$pdo) {
         echo '<div class="error">';
         echo '<strong>Connection Failed!</strong><br>';
-        echo 'Unable to connect to MySQL database. Please verify your credentials in <code>htdocs/api/config.php</code>.<br>';
-        echo 'Current Host: <code>' . htmlspecialchars(DB_HOST) . '</code><br>';
-        echo 'Current DB: <code>' . htmlspecialchars(DB_NAME) . '</code><br>';
-        echo 'Current User: <code>' . htmlspecialchars(DB_USER) . '</code>';
+        echo 'Unable to connect to MySQL database. Please verify your credentials in <code>htdocs/api/config.php</code>.';
         echo '</div>';
     } else {
         $sqlFile = __DIR__ . '/schema.sql';
@@ -53,7 +50,7 @@ header('Content-Type: text/html; charset=utf-8');
                 // Execute multi-query schema script
                 $pdo->exec($sql);
                 echo '<div class="success">';
-                echo '<strong>Success!</strong> Tables <code>suite_users</code> and <code>suite_user_data</code> have been successfully initialized or verified.';
+                echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, and <code>suite_games</code> have been successfully initialized or verified.';
                 echo '</div>';
                 echo '<p><a href="../index.html">&larr; Return to App Suite Launcher</a></p>';
             } catch (PDOException $e) {

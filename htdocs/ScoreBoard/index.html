@@ -21,171 +21,109 @@
         style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
         <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
             <a href="../" class="back-link" style="align-self:flex-start;">← Back to Apps</a>
-            <div
-                style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
+            <div id="scoreboard-card"
+                style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px 24px 44px 24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;position:relative;">
 
-                <!-- Score row: Home | Period | Away -->
-                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
-                    <!-- Home team -->
-                    <div style="display:flex;flex-direction:column;align-items:center;">
-                        <div id="home-team-name"
-                            style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
-                            Us</div>
-                        <div id="score-home" class="interactive-box"
-                            style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
-                            0</div>
-                    </div>
+                <!-- Top-Right Card Menu Ellipsis Button (Edit Match Details) -->
+                <button type="button" id="btn-card-menu" class="card-menu-btn hidden" title="Edit Match Details"
+                    aria-label="Edit Match Details">⋮</button>
 
-                    <!-- Period -->
-                    <div style="display:flex;flex-direction:column;align-items:center;">
-                        <div
-                            style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">
-                            Period</div>
-                        <div id="period-display" class="interactive-box"
-                            style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;transition:background 0.15s;">
-                            P1</div>
-                    </div>
+                <!-- Board controls wrapper: scores, period, cards, and timer (locked in idle and game-over states) -->
+                <div id="board-controls-wrap"
+                    style="width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
 
-                    <!-- Away team -->
-                    <div style="display:flex;flex-direction:column;align-items:center;">
-                        <div id="away-team-name"
-                            style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
-                            Them</div>
-                        <div id="score-away" class="interactive-box"
-                            style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
-                            0</div>
-                    </div>
-                </div>
-
-                <!-- Penalty cards row (optional, configured in settings) -->
-                <div id="penalty-cards-row" class="penalty-cards-container hidden">
-                    <!-- Home team cards -->
-                    <div class="team-cards-group" id="home-cards-group">
-                        <button type="button" id="btn-card-home-yellow" class="foul-card-btn"
-                            onclick="recordFoulCard('home', 'yellow')" title="Home Team: Yellow Card">
-                            <span class="card-swatch yellow"></span>
-                            <span>Yellow</span>
-                        </button>
-                        <button type="button" id="btn-card-home-red" class="foul-card-btn"
-                            onclick="recordFoulCard('home', 'red')" title="Home Team: Red Card">
-                            <span class="card-swatch red"></span>
-                            <span>Red</span>
-                        </button>
-                    </div>
-
-                    <!-- Center label -->
-                    <div class="cards-center-label">Cards</div>
-
-                    <!-- Away team cards -->
-                    <div class="team-cards-group" id="away-cards-group">
-                        <button type="button" id="btn-card-away-yellow" class="foul-card-btn"
-                            onclick="recordFoulCard('away', 'yellow')" title="Away Team: Yellow Card">
-                            <span class="card-swatch yellow"></span>
-                            <span>Yellow</span>
-                        </button>
-                        <button type="button" id="btn-card-away-red" class="foul-card-btn"
-                            onclick="recordFoulCard('away', 'red')" title="Away Team: Red Card">
-                            <span class="card-swatch red"></span>
-                            <span>Red</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Timer displays -->
-                <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:24px;">
-                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-                        <div
-                            style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
-                            Remaining</div>
-                        <div id="timer-display" class="interactive-box"
-                            style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;"
-                            title="Tap while stopped to choose a time limit">00:40:00.0</div>
-                    </div>
-
-                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-                        <div
-                            style="font-size:0.75rem;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
-                            Elapsed</div>
-                        <div id="elapsed-time-display" class="interactive-box"
-                            style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">00:00:00.0
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Time limit selection panel with presets and interactive dual-wheel roller -->
-                <div id="adjustment-panel" class="time-selector-panel">
-                    <div class="time-selector-header">
-                        <span class="time-selector-title">Select Time Limit</span>
-                        <button type="button" class="time-selector-close-x" onclick="toggleAdjustmentPanel(false)"
-                            title="Close">&times;</button>
-                    </div>
-
-                    <!-- Preset options row -->
-                    <div class="time-preset-row">
-                        <button type="button" class="time-preset-btn" data-ms="720000"
-                            onclick="selectPreset(12 * 60 * 1000)">12 min</button>
-                        <button type="button" class="time-preset-btn" data-ms="1200000"
-                            onclick="selectPreset(20 * 60 * 1000)">20 min</button>
-                        <button type="button" class="time-preset-btn" data-ms="2100000"
-                            onclick="selectPreset(35 * 60 * 1000)">35 min</button>
-                        <button type="button" class="time-preset-btn" data-ms="2400000"
-                            onclick="selectPreset(40 * 60 * 1000)">40 min</button>
-                    </div>
-
-                    <div class="time-selector-divider">
-                        <span>or roll custom time</span>
-                    </div>
-
-                    <!-- Dual-wheel roller picker (Minutes : Seconds) -->
-                    <div class="roller-picker-wrapper">
-                        <!-- Top control buttons: labels and '+' increment buttons -->
-                        <div class="roller-top-controls">
-                            <div class="roller-col-ctrl">
-                                <span class="roller-unit-label">MIN</span>
-                                <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', 1)"
-                                    title="Add 1 minute">+</button>
-                            </div>
-                            <div class="roller-colon-spacer"></div>
-                            <div class="roller-col-ctrl">
-                                <span class="roller-unit-label">SEC</span>
-                                <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', 1)"
-                                    title="Add 1 second">+</button>
-                            </div>
+                    <!-- Score row: Home | Period | Away -->
+                    <div
+                        style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
+                        <!-- Home team -->
+                        <div style="display:flex;flex-direction:column;align-items:center;">
+                            <div id="home-team-name"
+                                style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                                Us</div>
+                            <div id="score-home" class="interactive-box"
+                                style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
+                                0</div>
                         </div>
 
-                        <!-- Middle wheels row: scrollable drums with center selection lens -->
-                        <div class="roller-wheels-row">
-                            <div class="roller-selection-lens"></div>
-                            <div class="roller-fade-top"></div>
-                            <div class="roller-fade-bottom"></div>
-
-                            <div class="roller-column" id="roller-minutes" data-type="minutes"></div>
-                            <div class="roller-colon">:</div>
-                            <div class="roller-column" id="roller-seconds" data-type="seconds"></div>
+                        <!-- Period -->
+                        <div style="display:flex;flex-direction:column;align-items:center;">
+                            <div
+                                style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">
+                                Period</div>
+                            <div id="period-display" class="interactive-box"
+                                style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;transition:background 0.15s;">
+                                P1</div>
                         </div>
 
-                        <!-- Bottom control buttons: '-' decrement buttons -->
-                        <div class="roller-bottom-controls">
-                            <div class="roller-col-ctrl">
-                                <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', -1)"
-                                    title="Subtract 1 minute">-</button>
-                            </div>
-                            <div class="roller-colon-spacer"></div>
-                            <div class="roller-col-ctrl">
-                                <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', -1)"
-                                    title="Subtract 1 second">-</button>
+                        <!-- Away team -->
+                        <div style="display:flex;flex-direction:column;align-items:center;">
+                            <div id="away-team-name"
+                                style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                                Them</div>
+                            <div id="score-away" class="interactive-box"
+                                style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
+                                0</div>
+                        </div>
+                    </div>
+
+                    <!-- Penalty cards row (optional, configured in settings) -->
+                    <div id="penalty-cards-row" class="penalty-cards-container hidden">
+                        <!-- Home team cards -->
+                        <div class="team-cards-group" id="home-cards-group">
+                            <button type="button" id="btn-card-home-yellow" class="foul-card-btn"
+                                onclick="recordFoulCard('home', 'yellow')" title="Home Team: Yellow Card">
+                                <span class="card-swatch yellow"></span>
+                                <span>Yellow</span>
+                            </button>
+                            <button type="button" id="btn-card-home-red" class="foul-card-btn"
+                                onclick="recordFoulCard('home', 'red')" title="Home Team: Red Card">
+                                <span class="card-swatch red"></span>
+                                <span>Red</span>
+                            </button>
+                        </div>
+
+                        <!-- Center label -->
+                        <div class="cards-center-label">Cards</div>
+
+                        <!-- Away team cards -->
+                        <div class="team-cards-group" id="away-cards-group">
+                            <button type="button" id="btn-card-away-yellow" class="foul-card-btn"
+                                onclick="recordFoulCard('away', 'yellow')" title="Away Team: Yellow Card">
+                                <span class="card-swatch yellow"></span>
+                                <span>Yellow</span>
+                            </button>
+                            <button type="button" id="btn-card-away-red" class="foul-card-btn"
+                                onclick="recordFoulCard('away', 'red')" title="Away Team: Red Card">
+                                <span class="card-swatch red"></span>
+                                <span>Red</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timer displays: Primary Countdown & Secondary Period-Elapsed -->
+                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:20px;">
+                        <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                            <div
+                                style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                                Remaining</div>
+                            <div id="timer-display"
+                                style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;">
+                                00:40:00.0</div>
+                            <div id="overage-badge" class="overage-badge hidden">Overage</div>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                            <div
+                                style="font-size:0.75rem;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                                Period Elapsed</div>
+                            <div id="elapsed-time-display" class="interactive-box"
+                                style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">
+                                00:00:00.0
                             </div>
                         </div>
                     </div>
 
-                    <!-- Action buttons -->
-                    <div class="time-roller-actions">
-                        <button type="button" class="time-set-btn" id="roller-apply-btn" onclick="applyRollerTime()">Set
-                            Time (40:00)</button>
-                        <button type="button" class="time-cancel-btn"
-                            onclick="toggleAdjustmentPanel(false)">Cancel</button>
-                    </div>
-                </div>
+                </div><!-- end board-controls-wrap -->
 
                 <!-- Elapsed-time adjustment panel (shown while clock is running) -->
                 <div id="elapsed-adjust-panel"
@@ -213,24 +151,19 @@
                         to correct early/late starts.</div>
                 </div>
 
-                <!-- Start / Pause / New Game buttons -->
-                <div style="width:100%;display:flex;justify-content:center;gap:8px;">
-                    <button id="start-stop-btn"
-                        style="flex:1;background:#10b981;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
-                        onmousedown="this.style.transform='scale(0.95)'"
-                        onmouseup="this.style.transform='scale(1)'">Start</button>
-                    <button id="pause-btn"
-                        style="flex:1;background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
-                        class="hidden" onmousedown="this.style.transform='scale(0.95)'"
-                        onmouseup="this.style.transform='scale(1)'">Pause</button>
-                    <button id="reset-btn"
-                        style="flex:1;background:#374151;color:#fff;font-family:'Inter',sans-serif;font-weight:700;padding:12px 0;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:background 0.15s,transform 0.1s;font-size:1rem;"
-                        onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">New
-                        Game</button>
+                <!-- Streamlined Dynamic Control Bar -->
+                <div id="control-bar" class="control-bar">
+                    <button type="button" id="btn-new-game" class="ctrl-btn ctrl-btn-new">New Game</button>
+                    <button type="button" id="btn-start" class="ctrl-btn ctrl-btn-start hidden">Start</button>
+                    <button type="button" id="btn-pause" class="ctrl-btn ctrl-btn-pause hidden">Pause</button>
+                    <button type="button" id="btn-resume" class="ctrl-btn ctrl-btn-resume hidden">Resume</button>
+                    <button type="button" id="btn-end-period" class="ctrl-btn ctrl-btn-period hidden">End
+                        Period</button>
+                    <button type="button" id="btn-end-ot" class="ctrl-btn ctrl-btn-endot hidden">End / OT</button>
                 </div>
 
-                <!-- Score History table -->
-                <div
+                <!-- Score History table (remains interactive during Game Over) -->
+                <div id="score-history-container" class="history-interactive"
                     style="width:100%;background:#1f2937;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:1px solid #374151;">
                     <div
                         style="background:#374151;padding:8px 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#d1d5db;">
@@ -254,16 +187,27 @@
                     </div>
                 </div>
 
-                <!-- Links -->
-                <div style="width:100%;text-align:center;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
-                    <a href="ScoreBoardActiveGames.html"
-                        style="font-size:0.875rem;font-weight:700;color:#34d399;text-decoration:underline;">View Active
-                        Games</a>
-                    <a href="ScoreBoardHelp.html"
-                        style="font-size:0.875rem;font-weight:700;color:#60a5fa;text-decoration:underline;">help!</a>
-                </div>
+                <!-- Lower-Right Card Help Button -->
+                <a href="ScoreBoardHelp.html" id="btn-card-help" class="card-help-btn"
+                    title="ScoreBoard Help &amp; Guide" aria-label="ScoreBoard Help &amp; Guide">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"
+                        fill="currentColor">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" />
+                    </svg>
+                </a>
 
             </div><!-- end card -->
+
+            <!-- Actions below the game control window -->
+            <div class="card-bottom-actions">
+                <a href="ScoreBoardActiveGames.html" id="btn-view-active-games" class="btn-active-games"
+                    title="View Active Games">
+                    <span class="live-pulse-dot"></span>
+                    <span>View Active Games</span>
+                </a>
+                <a href="ScoreBoardMyGames.html" id="link-my-games" class="my-games-sublink hidden">My Games</a>
+            </div>
         </div><!-- end max-width wrapper -->
     </div><!-- end min-height centering wrapper -->
 
@@ -311,52 +255,8 @@
             <!-- Scrollable body -->
             <div class="settings-body">
 
-                <!-- ── TEAM SETUP ─────────────────────────────────── -->
-                <div class="settings-section-label">Team Setup</div>
-                <div class="team-setup-grid">
-
-                    <!-- Home team card -->
-                    <div class="team-card">
-                        <div class="team-card-header">
-                            <span class="team-card-label">Home</span>
-                            <div id="home-color-swatch" class="team-color-swatch" style="background:#ef4444;"></div>
-                        </div>
-                        <input id="home-name-input" class="team-name-input" placeholder="Team name" autocomplete="off">
-                        <select id="home-color-select" class="team-color-select">
-                            <option value="#ef4444">Red</option>
-                            <option value="#3b82f6">Blue</option>
-                            <option value="#10b981">Green</option>
-                            <option value="#f59e0b">Yellow</option>
-                            <option value="#fb923c">Orange</option>
-                            <option value="#8b5cf6">Purple</option>
-                            <option value="#ffffff">White</option>
-                            <option value="#000000">Black</option>
-                        </select>
-                    </div>
-
-                    <!-- Away team card -->
-                    <div class="team-card">
-                        <div class="team-card-header">
-                            <span class="team-card-label">Away</span>
-                            <div id="away-color-swatch" class="team-color-swatch" style="background:#3b82f6;"></div>
-                        </div>
-                        <input id="away-name-input" class="team-name-input" placeholder="Team name" autocomplete="off">
-                        <select id="away-color-select" class="team-color-select">
-                            <option value="#3b82f6">Blue</option>
-                            <option value="#ef4444">Red</option>
-                            <option value="#10b981">Green</option>
-                            <option value="#f59e0b">Yellow</option>
-                            <option value="#fb923c">Orange</option>
-                            <option value="#8b5cf6">Purple</option>
-                            <option value="#ffffff">White</option>
-                            <option value="#000000">Black</option>
-                        </select>
-                    </div>
-
-                </div><!-- end team-setup-grid -->
-
                 <!-- ── THEME ──────────────────────────────────────── -->
-                <div class="settings-section-label">Theme</div>
+                <div class="settings-section-label" style="padding-top:14px;">Theme</div>
                 <div class="theme-grid" id="theme-grid">
 
                     <!-- Theme: Saber Dark -->
@@ -399,18 +299,6 @@
 
                 <!-- ── TIMER SETTINGS ─────────────────────────────── -->
                 <div class="settings-section-label">Timer Settings</div>
-
-                <!-- Add Pause Button toggle -->
-                <div class="settings-row">
-                    <div class="settings-row-text">
-                        <strong>Add Pause Button</strong>
-                        <span>Shows a dedicated button to pause the timer without advancing the period.</span>
-                    </div>
-                    <label class="toggle-label">
-                        <input type="checkbox" id="setting-add-pause">
-                        <div class="toggle-track"></div>
-                    </label>
-                </div>
 
                 <!-- Pause on Score toggle -->
                 <div class="settings-row">
@@ -484,6 +372,23 @@
                     </label>
                 </div>
 
+                <!-- ── SHARING & PRIVACY (Signed-in only) ───────────── -->
+                <div id="settings-sharing-section" class="hidden">
+                    <div class="settings-section-label">Sharing &amp; Privacy</div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-text">
+                            <strong>Share on Active Games list</strong>
+                            <span>Shows this match in the public Active Games board. Turn off to keep private in your
+                                account.</span>
+                        </div>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="setting-share-public" checked>
+                            <div class="toggle-track"></div>
+                        </label>
+                    </div>
+                </div>
+
             </div><!-- end settings-body -->
 
             <!-- Sticky footer -->
@@ -493,6 +398,217 @@
 
         </div><!-- end settings-panel -->
     </div><!-- end settings-modal -->
+
+    <!-- ================================================================
+         Match Setup Modal ("New Game Setup" / "Edit Match Details")
+         ================================================================ -->
+    <div id="match-setup-modal" class="modal-overlay hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="match-setup-title">New Game Setup</h3>
+                <button type="button" id="close-match-setup-x" class="modal-close-x" title="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Team Setup Section -->
+                <div class="settings-section-label" style="padding-top:0;">Teams</div>
+                <div class="team-setup-grid">
+                    <!-- Home team card -->
+                    <div class="team-card">
+                        <div class="team-card-header">
+                            <span class="team-card-label">Home</span>
+                            <div id="setup-home-color-swatch" class="team-color-swatch" style="background:#ef4444;">
+                            </div>
+                        </div>
+                        <input id="setup-home-name" class="team-name-input" placeholder="Team name" autocomplete="off"
+                            value="Us">
+                        <select id="setup-home-color" class="team-color-select">
+                            <option value="#ef4444">Red</option>
+                            <option value="#3b82f6">Blue</option>
+                            <option value="#10b981">Green</option>
+                            <option value="#f59e0b">Yellow</option>
+                            <option value="#fb923c">Orange</option>
+                            <option value="#8b5cf6">Purple</option>
+                            <option value="#ffffff">White</option>
+                            <option value="#000000">Black</option>
+                        </select>
+                    </div>
+
+                    <!-- Away team card -->
+                    <div class="team-card">
+                        <div class="team-card-header">
+                            <span class="team-card-label">Away</span>
+                            <div id="setup-away-color-swatch" class="team-color-swatch" style="background:#3b82f6;">
+                            </div>
+                        </div>
+                        <input id="setup-away-name" class="team-name-input" placeholder="Team name" autocomplete="off"
+                            value="Them">
+                        <select id="setup-away-color" class="team-color-select">
+                            <option value="#3b82f6">Blue</option>
+                            <option value="#ef4444">Red</option>
+                            <option value="#10b981">Green</option>
+                            <option value="#f59e0b">Yellow</option>
+                            <option value="#fb923c">Orange</option>
+                            <option value="#8b5cf6">Purple</option>
+                            <option value="#ffffff">White</option>
+                            <option value="#000000">Black</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Match Rules Section -->
+                <div class="settings-section-label">Match Rules</div>
+
+                <!-- Total Periods Stepper -->
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-size:0.75rem;color:#9ca3af;font-weight:600;">Total Periods</label>
+                    <div class="stepper-container">
+                        <button type="button" id="btn-period-minus" class="stepper-btn"
+                            title="Decrease periods">-</button>
+                        <span id="setup-total-periods-val" class="stepper-value">2</span>
+                        <button type="button" id="btn-period-plus" class="stepper-btn"
+                            title="Increase periods">+</button>
+                    </div>
+                </div>
+
+                <!-- Period Duration -->
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <label style="font-size:0.75rem;color:#9ca3af;font-weight:600;">Period Duration</label>
+                    <div class="duration-preset-grid" id="setup-duration-presets">
+                        <button type="button" class="duration-preset-btn" data-ms="720000">12 min</button>
+                        <button type="button" class="duration-preset-btn" data-ms="1200000">20 min</button>
+                        <button type="button" class="duration-preset-btn" data-ms="2100000">35 min</button>
+                        <button type="button" class="duration-preset-btn active" data-ms="2400000">40 min</button>
+                    </div>
+                    <button type="button" id="btn-setup-custom-time" class="custom-duration-btn">Custom Duration
+                        (Roller) ▾</button>
+
+                    <!-- Embedded Dual-Wheel Time Roller Picker -->
+                    <div id="setup-roller-container" class="setup-roller-box hidden">
+                        <div class="roller-picker-wrapper">
+                            <!-- Top control buttons: labels and '+' increment buttons -->
+                            <div class="roller-top-controls">
+                                <div class="roller-col-ctrl">
+                                    <span class="roller-unit-label">MIN</span>
+                                    <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', 1)"
+                                        title="Add 1 minute">+</button>
+                                </div>
+                                <div class="roller-colon-spacer"></div>
+                                <div class="roller-col-ctrl">
+                                    <span class="roller-unit-label">SEC</span>
+                                    <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', 1)"
+                                        title="Add 1 second">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Middle wheels row: scrollable drums with center selection lens -->
+                            <div class="roller-wheels-row">
+                                <div class="roller-selection-lens"></div>
+                                <div class="roller-fade-top"></div>
+                                <div class="roller-fade-bottom"></div>
+
+                                <div class="roller-column" id="roller-minutes" data-type="minutes"></div>
+                                <div class="roller-colon">:</div>
+                                <div class="roller-column" id="roller-seconds" data-type="seconds"></div>
+                            </div>
+
+                            <!-- Bottom control buttons: '-' decrement buttons -->
+                            <div class="roller-bottom-controls">
+                                <div class="roller-col-ctrl">
+                                    <button type="button" class="roller-step-btn" onclick="stepRoller('minutes', -1)"
+                                        title="Subtract 1 minute">-</button>
+                                </div>
+                                <div class="roller-colon-spacer"></div>
+                                <div class="roller-col-ctrl">
+                                    <button type="button" class="roller-step-btn" onclick="stepRoller('seconds', -1)"
+                                        title="Subtract 1 second">-</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-setup-cancel"
+                    class="modal-action-btn modal-action-btn-secondary">Cancel</button>
+                <button type="button" id="btn-setup-submit" class="modal-action-btn modal-action-btn-primary">Start
+                    Match</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         End Match / Overtime Modal
+         ================================================================ -->
+    <div id="end-ot-modal" class="modal-overlay hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Match Options</h3>
+                <button type="button" id="close-end-ot-x" class="modal-close-x" title="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:#d1d5db;font-size:0.9rem;line-height:1.5;margin:0;">
+                    Would you like to conclude this match as Final or add extra stoppage time / overtime period?
+                </p>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+                    <button type="button" id="btn-modal-finalize" class="modal-action-btn modal-action-btn-danger">
+                        🏁 Finalize Match (Final)
+                    </button>
+                    <button type="button" id="btn-modal-add-ot" class="modal-action-btn modal-action-btn-accent">
+                        ⏱️ Add Overtime / Extra Period
+                    </button>
+                    <button type="button" id="btn-modal-cancel-end" class="modal-action-btn modal-action-btn-secondary">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         Period Limit Exceeded / Background Drift Modal
+         ================================================================ -->
+    <div id="overage-drift-modal" class="modal-overlay hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Period Limit Exceeded</h3>
+            </div>
+            <div class="modal-body">
+                <p style="color:#f3f4f6;font-size:0.92rem;line-height:1.5;margin:0;">
+                    Current elapsed time has passed the configured period duration. Did <strong
+                        id="drift-period-name">Period 1</strong> end on schedule, or is the match in stoppage/overage?
+                </p>
+                <div style="display:flex;gap:10px;margin-top:10px;">
+                    <button type="button" id="btn-drift-end-on-time" class="modal-action-btn modal-action-btn-primary">
+                        End Period on Time
+                    </button>
+                    <button type="button" id="btn-drift-continue-overage"
+                        class="modal-action-btn modal-action-btn-accent">
+                        Continue in Overage
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stale Game Resume Confirmation Modal -->
+    <div id="stale-resume-modal" class="modal-backdrop hidden"
+        style="position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <div
+            style="background:#1f2937;border:1px solid #374151;border-radius:18px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.7);text-align:center;">
+            <div style="font-size:2rem;margin-bottom:8px;">⏳</div>
+            <h3 style="margin:0 0 8px;color:#f3f4f6;font-size:1.25rem;">Finish Last Game?</h3>
+            <p style="color:#9ca3af;font-size:0.875rem;line-height:1.5;margin:0 0 20px;">This game was left running over
+                3 hours ago. Would you like to finalize and archive it, or resume the clock?</p>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button type="button" id="btn-stale-finish"
+                    style="flex:1;background:#dc2626;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Finish
+                    Game</button>
+                <button type="button" id="btn-stale-resume"
+                    style="flex:1;background:#374151;color:#fff;border:1px solid #4b5563;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Resume
+                    Clock</button>
+            </div>
+        </div>
+    </div>
 
     <!-- History Row Options Modal -->
     <div id="history-options-modal" class="hidden">
@@ -547,29 +663,29 @@
     <script>
         // DOM references for the visible timer, score, and control elements.
         const timerDisplay = document.getElementById('timer-display');
-        const startStopBtn = document.getElementById('start-stop-btn');
-        const resetBtn = document.getElementById('reset-btn');
         const elapsedTimeDisplay = document.getElementById('elapsed-time-display');
+        const overageBadge = document.getElementById('overage-badge');
+        const boardControlsWrap = document.getElementById('board-controls-wrap');
+        const btnCardMenu = document.getElementById('btn-card-menu');
+        const btnNewGame = document.getElementById('btn-new-game');
+        const btnStart = document.getElementById('btn-start');
+        const btnPause = document.getElementById('btn-pause');
+        const btnResume = document.getElementById('btn-resume');
+        const btnEndPeriod = document.getElementById('btn-end-period');
+        const btnEndOt = document.getElementById('btn-end-ot');
         const scoreHomeEl = document.getElementById('score-home');
         const scoreAwayEl = document.getElementById('score-away');
         const homeNameEl = document.getElementById('home-team-name');
         const awayNameEl = document.getElementById('away-team-name');
-        const homeNameInput = document.getElementById('home-name-input');
-        const awayNameInput = document.getElementById('away-name-input');
-        const homeColorSelect = document.getElementById('home-color-select');
-        const awayColorSelect = document.getElementById('away-color-select');
-        const homeColorSwatch = document.getElementById('home-color-swatch');
-        const awayColorSwatch = document.getElementById('away-color-swatch');
         const periodDisplay = document.getElementById('period-display');
         const historyBody = document.getElementById('history-body');
-        const adjustmentPanel = document.getElementById('adjustment-panel');
+        const setupRollerContainer = document.getElementById('setup-roller-container');
         const elapsedAdjustPanel = document.getElementById('elapsed-adjust-panel');
         const muteBtn = document.getElementById('mute-btn');
         const muteIcon = document.getElementById('mute-icon');
         const whistleAudio = document.getElementById('whistle-sound');
         const settingsBtn = document.getElementById('settings-btn');
         const settingsModal = document.getElementById('settings-modal');
-        const settingAddPause = document.getElementById('setting-add-pause');
         const settingPauseOnScore = document.getElementById('setting-pause-on-score');
         const settingLogPauseResume = document.getElementById('setting-log-pause-resume');
         const settingLogPeriodStartStop = document.getElementById('setting-log-period-start-stop');
@@ -577,10 +693,14 @@
         const settingSplashAway = document.getElementById('setting-splash-away');
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const closeSettingsX = document.getElementById('close-settings-x');
-        const pauseBtn = document.getElementById('pause-btn');
+        const linkMyGames = document.getElementById('link-my-games');
+        const settingsSharingSection = document.getElementById('settings-sharing-section');
+        const settingSharePublic = document.getElementById('setting-share-public');
+        const staleResumeModal = document.getElementById('stale-resume-modal');
+        const btnStaleFinish = document.getElementById('btn-stale-finish');
+        const btnStaleResume = document.getElementById('btn-stale-resume');
         const rollerMinutesEl = document.getElementById('roller-minutes');
         const rollerSecondsEl = document.getElementById('roller-seconds');
-        const rollerApplyBtn = document.getElementById('roller-apply-btn');
         const settingShowCards = document.getElementById('setting-show-cards');
         const penaltyCardsRow = document.getElementById('penalty-cards-row');
         const historyOptionsModal = document.getElementById('history-options-modal');
@@ -593,6 +713,38 @@
         const historyPreviewNote = document.getElementById('history-preview-note');
         const historyNoteBtnText = document.getElementById('history-note-btn-text');
         const clipboardToast = document.getElementById('clipboard-toast');
+
+        // Match setup modal elements
+        const matchSetupModal = document.getElementById('match-setup-modal');
+        const matchSetupTitle = document.getElementById('match-setup-title');
+        const closeMatchSetupX = document.getElementById('close-match-setup-x');
+        const setupHomeName = document.getElementById('setup-home-name');
+        const setupHomeColor = document.getElementById('setup-home-color');
+        const setupHomeColorSwatch = document.getElementById('setup-home-color-swatch');
+        const setupAwayName = document.getElementById('setup-away-name');
+        const setupAwayColor = document.getElementById('setup-away-color');
+        const setupAwayColorSwatch = document.getElementById('setup-away-color-swatch');
+        const btnPeriodMinus = document.getElementById('btn-period-minus');
+        const btnPeriodPlus = document.getElementById('btn-period-plus');
+        const setupTotalPeriodsVal = document.getElementById('setup-total-periods-val');
+        const setupDurationPresets = document.getElementById('setup-duration-presets');
+        const btnSetupCustomTime = document.getElementById('btn-setup-custom-time');
+        const btnSetupCancel = document.getElementById('btn-setup-cancel');
+        const btnSetupSubmit = document.getElementById('btn-setup-submit');
+
+        // End / OT modal elements
+        const endOtModal = document.getElementById('end-ot-modal');
+        const closeEndOtX = document.getElementById('close-end-ot-x');
+        const btnModalFinalize = document.getElementById('btn-modal-finalize');
+        const btnModalAddOt = document.getElementById('btn-modal-add-ot');
+        const btnModalCancelEnd = document.getElementById('btn-modal-cancel-end');
+
+        // Period limit drift modal elements
+        const overageDriftModal = document.getElementById('overage-drift-modal');
+        const driftPeriodName = document.getElementById('drift-period-name');
+        const btnDriftEndOnTime = document.getElementById('btn-drift-end-on-time');
+        const btnDriftContinueOverage = document.getElementById('btn-drift-continue-overage');
+
         let activeHistoryIndex = -1;
 
         // Timer state and game state variables persisted between reloads.
@@ -610,9 +762,10 @@
         let awayTeamColor = '#3b82f6';
         let homeBackgroundImage = 'saber.png';
         let currentPeriod = 1;
+        let totalPeriods = 2;
+        let basePeriods = 2;
         let scoreHistory = [];
         let muted = false;
-        let addPauseButton = false;
         let pauseOnScore = false;
         let isPaused = false;
         let logPauseResume = false;
@@ -621,8 +774,58 @@
         let splashOnAway = true;   // Show celebration splash when away team scores
         let showPenaltyCards = false; // Optional penalty cards area below score boxes
         let activeGameId = null;
+        let activeGameWriteToken = null;
+        let activeGameRev = 0;
+        let activeGameVisibility = 'public';
         let activeGameStarted = false;
+        let activeGameEnded = false;
+        let activeGameStartedAt = null;
         let selectedTheme = 'saber-dark'; // Active theme name persisted to localStorage
+
+        // Match state machine & timeline engine variables
+        let matchState = 'idle'; // 'idle' | 'ready' | 'running' | 'paused' | 'final'
+        let periodStartTimeUtc = null;
+        let totalPeriodPausedMs = 0;
+        let pauseStartUtc = null;
+        let overageResolvedForCurrentPeriod = false;
+        let matchSetupMode = 'create';
+        let tempTotalPeriods = 2;
+        let tempTimeLimit = 2400000;
+
+        /**
+         * Generates a standard RFC4122 version 4 UUID.
+         * Falls back to pseudo-random generation if crypto.randomUUID is unavailable.
+         *
+         * @returns {string}
+         */
+        function generateUuidV4() {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        /**
+         * Generates a 32-byte (64-character hex) cryptographic secret write token.
+         *
+         * @returns {string}
+         */
+        function generateWriteToken() {
+            if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                const buf = new Uint8Array(32);
+                crypto.getRandomValues(buf);
+                return Array.from(buf, b => b.toString(16).padStart(2, '0')).join('');
+            }
+            let token = '';
+            for (let i = 0; i < 64; i++) {
+                token += Math.floor(Math.random() * 16).toString(16);
+            }
+            return token;
+        }
 
         // Theme definitions: background image and body background-color fallback.
         // Each theme maps to a bg image file and an accent color for the page overlay.
@@ -715,6 +918,7 @@
         const STORAGE_KEY = 'timerStateV7';
         const ACTIVE_GAMES_KEY = 'scoreBoardActiveGamesV1';
         const ACTIVE_GAME_ID_KEY = 'scoreBoardCurrentGameIdV1';
+        const ACTIVE_GAME_WRITE_TOKEN_KEY = 'scoreBoardCurrentGameWriteTokenV1';
 
         function safeLocalStorageGet(key) {
             try {
@@ -768,11 +972,12 @@
             return games;
         }
 
-        function updateActiveGameEntry() {
+        function updateActiveGameEntry(statusOverride = null) {
             if (!activeGameId || !activeGameStarted) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             const games = pruneStaleActiveGames(getActiveGames());
+            const effectiveStatus = statusOverride || (activeGameEnded ? 'game_over' : (timerRunning ? 'running' : (isPaused ? 'paused' : 'stopped')));
             games[activeGameId] = {
                 id: activeGameId,
                 homeTeamName,
@@ -786,7 +991,8 @@
                 timeLimit,
                 elapsedMs: elapsed,
                 lastUpdate: now,
-                expiresAt: now + 3 * 60 * 1000,
+                expiresAt: now + 24 * 60 * 60 * 1000,
+                status: effectiveStatus,
                 gameTitle: `${homeTeamName} vs ${awayTeamName}`
             };
             setActiveGames(games);
@@ -803,69 +1009,129 @@
 
         function loadOrCreateActiveGameId() {
             let id = safeLocalStorageGet(ACTIVE_GAME_ID_KEY) || safeLocalStorageGet('scoreKeeperCurrentGameIdV1');
-            if (!id) {
-                id = `scoreboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            if (!id || id.indexOf('scoreboard-') === 0) {
+                id = generateUuidV4();
                 safeLocalStorageSet(ACTIVE_GAME_ID_KEY, id);
             }
             return id;
         }
 
-        async function publishActiveGameStateServer() {
+        function loadOrCreateWriteToken() {
+            let token = safeLocalStorageGet(ACTIVE_GAME_WRITE_TOKEN_KEY);
+            if (!token || token.length !== 64) {
+                token = generateWriteToken();
+                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, token);
+            }
+            return token;
+        }
+
+        // Synchronize active game snapshot with database through SuiteProfile.games.sync
+        async function syncActiveGameWithServer(statusOverride = null, endedByOverride = null) {
             if (!activeGameId || !activeGameStarted) return;
+            const now = Date.now();
+            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+            activeGameRev = (activeGameRev || 0) + 1;
+
+            const effectiveStatus = statusOverride || (activeGameEnded ? 'final' : (timerRunning ? 'live' : 'live'));
+            const effectiveEndedBy = endedByOverride || (activeGameEnded ? 'user' : null);
+
             const payload = {
-                id: activeGameId,
-                homeTeamName,
-                awayTeamName,
-                homeScore,
-                awayScore,
-                currentPeriod,
-                timerRunning,
-                isPaused,
-                isCountingUp,
-                timeLimit,
-                // include full score history so viewers can render exact local timestamps
-                scoreHistory: scoreHistory || [],
-                // elapsedMs is the cumulative elapsed time at the moment of publish
-                elapsedMs: accumulatedTime + (startTime ? Date.now() - startTime : 0),
-                lastUpdate: Date.now(),
-                // 24 hours expiry to keep games visible when users return later
-                expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-                gameTitle: `${homeTeamName} vs ${awayTeamName}`
+                game_id: activeGameId,
+                write_token: activeGameWriteToken || loadOrCreateWriteToken(),
+                rev: activeGameRev,
+                visibility: activeGameVisibility || 'public',
+                status: effectiveStatus,
+                ended_by: effectiveEndedBy,
+                snapshot: {
+                    homeTeamName,
+                    awayTeamName,
+                    homeScore,
+                    awayScore,
+                    currentPeriod,
+                    totalPeriods,
+                    basePeriods,
+                    matchState,
+                    periodStartTimeUtc,
+                    totalPeriodPausedMs,
+                    overageResolvedForCurrentPeriod,
+                    timerRunning,
+                    isPaused,
+                    isCountingUp,
+                    timeLimit,
+                    scoreHistory: scoreHistory || [],
+                    elapsedMs: elapsed,
+                    startedAt: activeGameStartedAt || now,
+                    homeTeamColor,
+                    awayTeamColor
+                }
+            };
+
+            if (window.SuiteProfile && SuiteProfile.games) {
+                try {
+                    const res = await SuiteProfile.games.sync(payload, 2000);
+                    if (res && res.conflict) {
+                        if (res.rev) activeGameRev = Math.max(activeGameRev, res.rev);
+                        if (res.stopped) activeGameEnded = true;
+                    }
+                } catch (e) {
+                    // Fail silently in offline mode
+                }
+            }
+        }
+
+        // Flush game state immediately using sendBeacon on page unload/visibilitychange
+        function flushBeaconSync(statusOverride = null, endedByOverride = null) {
+            if (!activeGameId || !activeGameStarted || !navigator.sendBeacon) return;
+            const now = Date.now();
+            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+            activeGameRev = (activeGameRev || 0) + 1;
+
+            const user = (window.SuiteProfile && !SuiteProfile.isGuest()) ? SuiteProfile.getUser() : null;
+            const payload = {
+                game_id: activeGameId,
+                write_token: activeGameWriteToken || loadOrCreateWriteToken(),
+                token: user ? user.token : null,
+                rev: activeGameRev,
+                visibility: activeGameVisibility || 'public',
+                status: statusOverride || (activeGameEnded ? 'final' : 'live'),
+                ended_by: endedByOverride || (activeGameEnded ? 'user' : null),
+                snapshot: {
+                    homeTeamName,
+                    awayTeamName,
+                    homeScore,
+                    awayScore,
+                    currentPeriod,
+                    totalPeriods,
+                    basePeriods,
+                    matchState,
+                    periodStartTimeUtc,
+                    totalPeriodPausedMs,
+                    overageResolvedForCurrentPeriod,
+                    timerRunning,
+                    isPaused,
+                    isCountingUp,
+                    timeLimit,
+                    scoreHistory: scoreHistory || [],
+                    elapsedMs: elapsed,
+                    startedAt: activeGameStartedAt || now,
+                    homeTeamColor,
+                    awayTeamColor
+                }
             };
 
             try {
-                await fetch('./active-games.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                    keepalive: true
-                });
-            } catch (error) {
-                // Fail silently if the server is unavailable.
-            }
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                navigator.sendBeacon('../api/games.php?action=sync', blob);
+            } catch (e) { }
         }
 
-        function publishActiveGameState() {
+        function publishActiveGameState(statusOverride = null, endedByOverride = null) {
             try {
-                updateActiveGameEntry();
+                updateActiveGameEntry(statusOverride);
             } catch (error) {
                 // Fail silently if local active game publishing is unavailable.
             }
-            publishActiveGameStateServer();
-        }
-
-        async function removeActiveGameFromServer() {
-            if (!activeGameId) return;
-            try {
-                await fetch('./active-games.php', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: activeGameId }),
-                    keepalive: true
-                });
-            } catch (error) {
-                // Fail silently.
-            }
+            syncActiveGameWithServer(statusOverride, endedByOverride);
         }
 
         let isInitializingScoreboard = true;
@@ -876,13 +1142,17 @@
             const state = {
                 startTime, accumulatedTime, timeLimit, isCountingUp,
                 running: timerRunning, homeScore, awayScore,
-                currentPeriod, scoreHistory, homeTeamName, awayTeamName,
+                currentPeriod, totalPeriods, basePeriods, matchState,
+                periodStartTimeUtc, totalPeriodPausedMs, overageResolvedForCurrentPeriod,
+                scoreHistory, homeTeamName, awayTeamName,
                 homeTeamColor, awayTeamColor, muted,
-                addPauseButton, pauseOnScore, isPaused,
+                pauseOnScore, isPaused,
                 logPauseResume, logPeriodStartStop,
                 splashOnHome, splashOnAway,
                 showPenaltyCards,
-                activeGameId, activeGameStarted,
+                activeGameId, activeGameWriteToken, activeGameRev,
+                activeGameVisibility, activeGameStarted, activeGameEnded,
+                activeGameStartedAt,
                 selectedTheme,
                 lastSavedAt: Date.now()
             };
@@ -911,13 +1181,13 @@
             const s = totalSeconds % 60;
             const decis = Math.floor((absMs % 1000) / 100);
             const pad = (n) => n.toString().padStart(2, '0');
-            return `${ms < 0 ? '-' : ''}${totalMinutes}:${pad(s)}.${decis}`;
+            return `${ms < 0 ? '-' : ''}${pad(totalMinutes)}:${pad(s)}.${decis}`;
         }
 
         function getElapsedStamp() {
             const now = Date.now();
             let elapsed = accumulatedTime + (startTime ? now - startTime : 0);
-            return `P${currentPeriod}:${formatTime(elapsed)}`;
+            return `${getPeriodLabel(currentPeriod)}: ${formatTime(elapsed)}`;
         }
 
         function formatLocalLabel(date) {
@@ -951,13 +1221,12 @@
             saveState();
         }
 
-        // Set the active countdown time limit and hide the adjustment panel.
+        // Set the active countdown time limit.
         function setTimeLimitOption(ms) {
             timeLimit = ms;
             isCountingUp = ms <= 0;
             accumulatedTime = 0;
             startTime = null;
-            toggleAdjustmentPanel(false);
             if (timerRunning) stopTimer();
             updateTimer();
             saveState();
@@ -965,6 +1234,10 @@
 
         // Calculate the item index centered in a roller column.
         function getRollerIndex(col, maxVal) {
+            if (!col || col.clientHeight === 0) {
+                const totalSec = Math.max(0, Math.floor((tempTimeLimit || 0) / 1000));
+                return col === rollerMinutesEl ? Math.min(99, Math.floor(totalSec / 60)) : Math.min(59, totalSec % 60);
+            }
             const itemHeight = 40;
             return Math.min(maxVal, Math.max(0, Math.round(col.scrollTop / itemHeight)));
         }
@@ -993,20 +1266,13 @@
                 }
             }
 
-            const pad = (n) => n.toString().padStart(2, '0');
-            if (rollerApplyBtn) {
-                rollerApplyBtn.textContent = `Set Time (${pad(minIndex)}:${pad(secIndex)})`;
+            if (matchSetupModal && !matchSetupModal.classList.contains('hidden') &&
+                setupRollerContainer && !setupRollerContainer.classList.contains('hidden') &&
+                rollerMinutesEl.clientHeight > 0) {
+                const currentMs = (minIndex * 60 + secIndex) * 1000;
+                tempTimeLimit = currentMs;
+                syncDurationPresetButtons(currentMs);
             }
-
-            const currentMs = (minIndex * 60 + secIndex) * 1000;
-            document.querySelectorAll('.time-preset-btn').forEach(btn => {
-                const presetMs = parseInt(btn.dataset.ms, 10);
-                if (presetMs === currentMs) {
-                    btn.classList.add('time-preset-active');
-                } else {
-                    btn.classList.remove('time-preset-active');
-                }
-            });
         }
 
         // Position a roller column at the requested item index.
@@ -1041,7 +1307,7 @@
             scrollRollerToIndex(type, targetIndex, true);
         }
 
-        // Dial the roller wheels to the selected preset duration without closing the panel.
+        // Dial the roller wheels to the selected preset duration.
         function selectPreset(ms) {
             syncRollerToMs(ms, true);
         }
@@ -1052,27 +1318,12 @@
             const minutes = getRollerIndex(rollerMinutesEl, 99);
             const seconds = getRollerIndex(rollerSecondsEl, 59);
             const totalMs = (minutes * 60 + seconds) * 1000;
-            setTimeLimitOption(totalMs);
-        }
-
-        // Toggle visibility of the time limit adjustment panel.
-        function toggleAdjustmentPanel(show = null) {
-            if (timerRunning) return;
-            const isCurrentlyShown = adjustmentPanel.style.display === 'flex';
-            const nextState = show !== null ? show : !isCurrentlyShown;
-            if (nextState) {
-                adjustmentPanel.style.display = 'flex';
-                requestAnimationFrame(() => {
-                    syncRollerToMs(timeLimit, false);
-                });
+            if (matchSetupModal && !matchSetupModal.classList.contains('hidden')) {
+                tempTimeLimit = totalMs;
+                syncDurationPresetButtons(totalMs);
             } else {
-                adjustmentPanel.style.display = 'none';
+                setTimeLimitOption(totalMs);
             }
-        }
-
-        // Open the roller time selector (fallback for any manual limit actions).
-        function chooseManualLimit() {
-            toggleAdjustmentPanel(true);
         }
 
         // Attach mouse drag, wheel, and snapping behavior to a roller column.
@@ -1156,7 +1407,6 @@
         // Used for small corrections when the clock was started early or late.
         function showElapsedAdjustPanel() {
             elapsedAdjustPanel.style.display = 'flex';
-            adjustmentPanel.style.display = 'none';
         }
 
         function hideElapsedAdjustPanel() {
@@ -1182,21 +1432,27 @@
             saveState();
         };
 
-        timerDisplay.addEventListener('click', () => {
-            // Toggle time-limit selection panel when tapped while stopped.
-            if (!timerRunning) {
-                toggleAdjustmentPanel();
-            }
-        });
-
         elapsedTimeDisplay.addEventListener('click', () => {
             if (timerRunning) showElapsedAdjustPanel();
         });
 
-        function cyclePeriod() {
-            currentPeriod = (currentPeriod % 4) + 1;
-            periodDisplay.textContent = `P${currentPeriod}`;
-            saveState();
+        /**
+         * Returns the user-facing period label:
+         * P1, P2 ... or OT / OT1, OT2 if beyond base regular periods.
+         *
+         * @param {number} periodNum
+         * @returns {string}
+         */
+        function getPeriodLabel(periodNum) {
+            const p = Number(periodNum) || 1;
+            if (p <= basePeriods) {
+                return `P${p}`;
+            }
+            const otIndex = p - basePeriods;
+            if (totalPeriods === basePeriods + 1) {
+                return 'OT';
+            }
+            return `OT${otIndex}`;
         }
 
         // Safely escape characters for HTML insertion.
@@ -1351,21 +1607,30 @@
             showToast('Entry removed');
         }
 
-        // Copy a concise, SMS-ready description of the event to the clipboard.
         // Copy a concise, SMS-ready description of the event and open native share sheet if supported.
         function shareHistoryEntry() {
             if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
             const entry = scoreHistory[activeHistoryIndex];
             let shareText = '';
-            const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
 
             if (entry.type === 'score') {
+                const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
                 shareText = `${entry.teamName} scored (${entry.currentScore}) at ${entry.gameTime || ''}${noteSuffix}`;
             } else if (entry.type === 'card') {
-                const degree = entry.degree || (entry.cardType === 'yellow' ? 'Yellow Card' : 'Red Card');
-                shareText = `${entry.teamName} ${degree} at ${entry.gameTime || ''}${noteSuffix}`;
+                const isYellow = (entry.cardType === 'yellow' || (entry.degree && entry.degree.toLowerCase().includes('yellow')));
+                const cardSymbol = isYellow ? '🟨' : '🟥';
+                const noteSuffix = entry.note ? ` (${entry.note})` : '';
+                shareText = `${cardSymbol} ${entry.teamName} at ${entry.gameTime || ''}${noteSuffix}`;
             } else {
-                shareText = `${entry.text}${noteSuffix}`;
+                const isFinalEvent = (entry.text && entry.text.includes('(Final)'));
+                if (isFinalEvent) {
+                    const currentScore = `${homeScore}-${awayScore}`;
+                    const noteSuffix = entry.note ? ` - ${entry.note}` : '';
+                    shareText = `Game! (${currentScore})${noteSuffix}`;
+                } else {
+                    const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
+                    shareText = `${entry.text}${noteSuffix}`;
+                }
             }
 
             closeHistoryOptions();
@@ -1456,8 +1721,26 @@
         window.deleteScore = function (index) {
             const entry = scoreHistory[index];
             if (!entry) return;
-            if (entry.type === 'score') {
-                if (entry.teamId === 'home') homeScore--; else awayScore--;
+
+            // Period rollback: if deleting an "End of P{n}" or "End of OT..." event
+            const periodMatch = entry.type === 'event' && entry.text && entry.text.match(/^End of (P\d+|OT\d*)/);
+            if (periodMatch && entry.period) {
+                // Decrement currentPeriod back to the deleted period's index
+                currentPeriod = entry.period;
+                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+
+                // Reconstruct period elapsed time based on the saved timeline
+                accumulatedTime = (entry.periodElapsedMs !== undefined) ? entry.periodElapsedMs : timeLimit;
+                startTime = null;
+                timerRunning = false;
+                isPaused = true;
+                overageResolvedForCurrentPeriod = (accumulatedTime >= timeLimit);
+
+                // Transition state machine to Paused in that restored period
+                updateMatchState('paused');
+                updateTimer();
+            } else if (entry.type === 'score') {
+                if (entry.teamId === 'home') homeScore = Math.max(0, homeScore - 1); else awayScore = Math.max(0, awayScore - 1);
                 scoreHomeEl.textContent = homeScore;
                 scoreAwayEl.textContent = awayScore;
             }
@@ -1572,12 +1855,21 @@
 
         // Record a yellow or red penalty card foul for the designated team in the history log.
         function recordFoulCard(teamId, cardType) {
+            // Disallow recording penalty cards when the clock is stopped
+            if (!timerRunning || matchState !== 'running') {
+                showToast('Clock is stopped');
+                return;
+            }
             const teamName = teamId === 'home' ? homeTeamName : awayTeamName;
             const teamColor = teamId === 'home' ? homeTeamColor : awayTeamColor;
             const degree = cardType === 'yellow' ? 'Yellow Card' : 'Red Card';
+            const elapsed = accumulatedTime + (startTime ? (Date.now() - startTime) : 0);
 
             scoreHistory.push({
+                id: generateUuidV4(),
                 type: 'card',
+                period: currentPeriod,
+                periodElapsedMs: elapsed,
                 teamId,
                 teamName,
                 teamColor,
@@ -1593,18 +1885,29 @@
         }
 
         function addScore(teamId) {
+            // Disallow score adjustments when the clock is stopped
+            if (!timerRunning || matchState !== 'running') {
+                showToast('Clock is stopped');
+                return;
+            }
             if (teamId === 'home') homeScore++; else awayScore++;
             scoreHomeEl.textContent = homeScore;
             scoreAwayEl.textContent = awayScore;
             const snapshot = `${homeScore}-${awayScore}`;
             const teamColor = teamId === 'home' ? homeTeamColor : awayTeamColor;
+            const elapsed = accumulatedTime + (startTime ? (Date.now() - startTime) : 0);
+
             scoreHistory.push({
+                id: generateUuidV4(),
                 type: 'score',
+                period: currentPeriod,
+                periodElapsedMs: elapsed,
                 teamId,
                 teamName: teamId === 'home' ? homeTeamName : awayTeamName,
                 currentScore: snapshot,
                 gameTime: getElapsedStamp(),
-                teamColor
+                teamColor,
+                timestamp: new Date().toISOString()
             });
             renderHistory();
             // Trigger celebration splash if enabled for this team
@@ -1630,75 +1933,164 @@
             safePublishAfterAction();
         }
 
+        /**
+         * Updates match state machine and synchronizes button matrix, board controls,
+         * and the card menu button according to the technical specification.
+         *
+         * @param {'idle' | 'ready' | 'running' | 'paused' | 'final'} newState
+         */
+        function updateMatchState(newState) {
+            matchState = newState;
+
+            // 1. Board controls lock/dim state (score tiles, cards, period, timer clicks)
+            const isBoardLocked = (matchState === 'idle' || matchState === 'final');
+            if (boardControlsWrap) {
+                boardControlsWrap.classList.toggle('board-locked', isBoardLocked);
+            }
+
+            // 2. Visual indicators for scoring and card availability while clock is running
+            const isClockRunning = (matchState === 'running');
+            if (scoreHomeEl) scoreHomeEl.classList.toggle('score-disabled', !isClockRunning);
+            if (scoreAwayEl) scoreAwayEl.classList.toggle('score-disabled', !isClockRunning);
+            const cardBtns = document.querySelectorAll('.foul-card-btn');
+            cardBtns.forEach(btn => btn.classList.toggle('card-btn-disabled', !isClockRunning));
+
+            // 3. Top-right ellipsis menu visibility (visible during ready and paused)
+            const canEdit = (matchState === 'ready' || matchState === 'paused');
+            if (btnCardMenu) {
+                btnCardMenu.classList.toggle('hidden', !canEdit);
+            }
+
+            // 3. Control bar buttons visibility
+            if (btnNewGame) btnNewGame.classList.add('hidden');
+            if (btnStart) btnStart.classList.add('hidden');
+            if (btnPause) btnPause.classList.add('hidden');
+            if (btnResume) btnResume.classList.add('hidden');
+            if (btnEndPeriod) btnEndPeriod.classList.add('hidden');
+            if (btnEndOt) btnEndOt.classList.add('hidden');
+
+            switch (matchState) {
+                case 'idle':
+                    if (btnNewGame) btnNewGame.classList.remove('hidden');
+                    break;
+
+                case 'ready':
+                    if (btnStart) btnStart.classList.remove('hidden');
+                    if (btnEndOt) btnEndOt.classList.remove('hidden');
+                    break;
+
+                case 'running':
+                    if (btnPause) btnPause.classList.remove('hidden');
+                    break;
+
+                case 'paused':
+                    if (btnResume) btnResume.classList.remove('hidden');
+                    // Intermediate period shows End Period; final period omits it
+                    if (currentPeriod < totalPeriods) {
+                        if (btnEndPeriod) btnEndPeriod.classList.remove('hidden');
+                    }
+                    if (btnEndOt) btnEndOt.classList.remove('hidden');
+                    break;
+
+                case 'final':
+                    if (btnNewGame) btnNewGame.classList.remove('hidden');
+                    break;
+            }
+        }
+
         function updateTimerDisplayColor(remaining = null) {
             if (remaining === null || remaining > 120000) {
-                // Normal: white text
                 timerDisplay.style.color = '#ffffff';
             } else {
-                // Under 2 minutes: red warning text
                 timerDisplay.style.color = '#ef4444';
             }
         }
 
-        // Update the visible timer display on each tick.
-        // For count-up timers, show elapsed time; for count-down timers, show remaining time.
+        // Update the dual clocks: Primary Countdown with Overage & Secondary Period Elapsed.
         function updateTimer() {
             const now = Date.now();
             let elapsed = accumulatedTime + (startTime ? now - startTime : 0);
 
-            if (isCountingUp) {
-                timerDisplay.textContent = formatTime(elapsed);
-                elapsedTimeDisplay.textContent = formatTime(elapsed);
-                updateTimerDisplayColor();
+            // Primary clock: Countdown from timeLimit with negative overage
+            const remaining = (timeLimit || 0) - elapsed;
+            timerDisplay.textContent = formatTime(remaining);
+
+            if (remaining < 0) {
+                timerDisplay.style.color = '#ef4444';
+                if (overageBadge) overageBadge.classList.remove('hidden');
             } else {
-                const remaining = Math.max(0, (timeLimit || 0) - elapsed);
-                timerDisplay.textContent = formatTime(remaining);
-                elapsedTimeDisplay.textContent = formatTime(Math.min(timeLimit || 0, elapsed));
                 updateTimerDisplayColor(remaining);
-                if (remaining <= 0 && timerRunning) {
-                    playWhistle();
-                    stopTimer(true);
-                }
+                if (overageBadge) overageBadge.classList.add('hidden');
             }
-        }
 
-        function updateStartStopButton() {
-            if (timerRunning) {
-                startStopBtn.textContent = 'Stop';
-                // Red background while running
-                startStopBtn.style.background = '#dc2626';
-            } else {
-                startStopBtn.textContent = 'Start';
-                // Green background when stopped
-                startStopBtn.style.background = '#10b981';
+            // Secondary clock: Period elapsed time counting strictly up from 00:00.0
+            if (elapsedTimeDisplay) {
+                elapsedTimeDisplay.textContent = formatTime(elapsed);
             }
-        }
 
-        // Start the timer and optionally add a history note for the period start.
-        function startTimer(logStart = true) {
-            if (!activeGameStarted && currentPeriod === 1) {
-                activeGameId = loadOrCreateActiveGameId();
-                activeGameStarted = true;
-                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
-            }
-            if (!startTime) startTime = Date.now();
-            if (logStart) {
-                if (isPaused) {
-                    if (logPauseResume) {
-                        addHistoryEvent(`Resumed P${currentPeriod} ${formatLocalLabel(new Date())}`);
-                    }
-                    isPaused = false;
+            // Live field expiration at 00:00.0
+            if (remaining <= 0 && timerRunning && !overageResolvedForCurrentPeriod) {
+                playWhistle();
+                pauseTimer();
+
+                if (currentPeriod < totalPeriods) {
+                    // Log period completion
+                    logPeriodEnd(currentPeriod, timeLimit, '(Time)');
+                    // Auto-advance to next period
+                    currentPeriod++;
+                    periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                    // Reset period clocks to ready state
+                    accumulatedTime = 0;
+                    startTime = null;
+                    periodStartTimeUtc = null;
+                    totalPeriodPausedMs = 0;
+                    pauseStartUtc = null;
+                    overageResolvedForCurrentPeriod = false;
+                    updateTimer();
+                    updateMatchState('ready');
+                    saveState();
                 } else {
-                    if (logPeriodStartStop) {
-                        addHistoryEvent(`Start of P${currentPeriod} ${formatLocalLabel(new Date())}`);
-                    }
+                    // Final period expiration: prompt operator for completion or overtime
+                    openEndOtModal();
                 }
             }
-            adjustmentPanel.style.display = 'none';
+        }
+
+        // Start the timer and update match state.
+        function startTimer(isResuming = false) {
+            if (!activeGameStarted) {
+                activeGameId = loadOrCreateActiveGameId();
+                activeGameWriteToken = loadOrCreateWriteToken();
+                activeGameRev = activeGameRev || 1;
+                activeGameStarted = true;
+                activeGameEnded = false;
+                activeGameStartedAt = activeGameStartedAt || Date.now();
+                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
+                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, activeGameWriteToken);
+            }
+
+            const now = Date.now();
+            if (!startTime) startTime = now;
+            if (!periodStartTimeUtc) periodStartTimeUtc = now;
+
+            if (isResuming) {
+                if (pauseStartUtc) {
+                    totalPeriodPausedMs += (now - pauseStartUtc);
+                    pauseStartUtc = null;
+                }
+                if (logPauseResume) {
+                    addHistoryEvent(`Resumed ${getPeriodLabel(currentPeriod)} ${formatLocalLabel(new Date())}`);
+                }
+                isPaused = false;
+            } else {
+                if (logPeriodStartStop) {
+                    addHistoryEvent(`Start of ${getPeriodLabel(currentPeriod)} ${formatLocalLabel(new Date())}`);
+                }
+            }
+
             timerInterval = setInterval(updateTimer, 100);
             timerRunning = true;
-            updateStartStopButton();
-            if (pauseBtn) pauseBtn.disabled = false;
+            updateMatchState('running');
             saveState();
         }
 
@@ -1706,60 +2098,437 @@
         function pauseTimer() {
             if (!timerRunning) return;
             clearInterval(timerInterval);
+            const now = Date.now();
             if (startTime) {
-                accumulatedTime += Date.now() - startTime;
+                accumulatedTime += now - startTime;
             }
+            pauseStartUtc = now;
             if (logPauseResume) {
-                addHistoryEvent(`Paused P${currentPeriod} ${formatLocalLabel(new Date())}`);
+                addHistoryEvent(`Paused ${getPeriodLabel(currentPeriod)} ${formatLocalLabel(new Date())}`);
             }
             startTime = null;
             timerRunning = false;
             isPaused = true;
-            updateStartStopButton();
-            if (pauseBtn) pauseBtn.disabled = true;
+            updateMatchState('paused');
             saveState();
         }
 
-        // Stop the timer and record elapsed time, or reset when the period ends.
-        function stopTimer(resetToLimit = false) {
-            clearInterval(timerInterval);
-            if (resetToLimit) {
-                accumulatedTime = 0;
-            } else if (startTime) {
-                accumulatedTime += Date.now() - startTime;
+        // Record a structured period completion entry in the history ledger.
+        function logPeriodEnd(periodNum, elapsedMs, suffix = '') {
+            const label = getPeriodLabel(periodNum);
+            const text = `End of ${label}${suffix ? ' ' + suffix : ''}`;
+            scoreHistory.push({
+                id: generateUuidV4(),
+                type: 'event',
+                text: text,
+                period: periodNum,
+                periodElapsedMs: elapsedMs,
+                gameTime: `${label}: ${formatTime(elapsedMs)}`,
+                timestamp: new Date().toISOString()
+            });
+            renderHistory();
+            saveState();
+        }
+
+        // Conclude the current period, advance to the next, and reset timer to ready state.
+        function endCurrentPeriod() {
+            if (timerRunning) {
+                pauseTimer();
             }
-            if (logPeriodStartStop) {
-                addHistoryEvent(`End of P${currentPeriod} ${formatLocalLabel(new Date())}`);
-            }
+            const periodElapsed = accumulatedTime;
+            logPeriodEnd(currentPeriod, periodElapsed);
+
+            currentPeriod++;
+            periodDisplay.textContent = getPeriodLabel(currentPeriod);
+
+            // Reset clocks for the next period
+            accumulatedTime = 0;
             startTime = null;
-            timerRunning = false;
-            isPaused = false;
-            updateStartStopButton();
-            if (pauseBtn) pauseBtn.disabled = true;
-            cyclePeriod();
-            if (resetToLimit) updateTimer();
+            periodStartTimeUtc = null;
+            totalPeriodPausedMs = 0;
+            pauseStartUtc = null;
+            overageResolvedForCurrentPeriod = false;
+
+            updateTimer();
+            updateMatchState('ready');
             saveState();
+            showToast(`${getPeriodLabel(currentPeriod - 1)} ended`);
         }
 
-        // Toggle the running state when the main Start/Stop button is pressed.
-        startStopBtn.addEventListener('click', () => {
-            if (timerRunning) stopTimer(); else startTimer();
-        });
+        // Finalize the current active game without resetting scores.
+        async function endCurrentGame() {
+            closeEndOtModal();
+            if (timerRunning) {
+                pauseTimer();
+            }
+            activeGameEnded = true;
+            updateMatchState('final');
+            publishActiveGameState('final', 'user');
+            saveState();
+            showToast('Match Finalized');
+        }
 
-        if (pauseBtn) {
-            pauseBtn.addEventListener('click', () => {
-                if (timerRunning) pauseTimer();
+        // Open the End / OT action modal
+        function openEndOtModal() {
+            if (endOtModal) endOtModal.classList.remove('hidden');
+        }
+
+        // Close the End / OT action modal
+        function closeEndOtModal() {
+            if (endOtModal) endOtModal.classList.add('hidden');
+        }
+
+        // Open the dedicated Match Setup modal
+        function openMatchSetup(mode = 'create') {
+            matchSetupMode = mode;
+            if (matchSetupTitle) {
+                if (mode === 'create') {
+                    matchSetupTitle.textContent = 'New Game Setup';
+                    if (btnSetupSubmit) btnSetupSubmit.textContent = 'Start Match';
+                    tempTotalPeriods = 2;
+                    tempTimeLimit = 2400000;
+                } else if (mode === 'overtime') {
+                    matchSetupTitle.textContent = 'Add Overtime / Extra Period';
+                    if (btnSetupSubmit) btnSetupSubmit.textContent = 'Add Overtime';
+                    tempTotalPeriods = Math.max(totalPeriods + 1, basePeriods + 1);
+                    tempTimeLimit = 600000; // 10 min default for OT
+                } else {
+                    matchSetupTitle.textContent = 'Edit Match Details';
+                    if (btnSetupSubmit) btnSetupSubmit.textContent = 'Save Changes';
+                    tempTotalPeriods = totalPeriods;
+                    tempTimeLimit = timeLimit;
+                }
+            }
+
+            if (setupHomeName) setupHomeName.value = homeTeamName;
+            if (setupHomeColor) setupHomeColor.value = homeTeamColor;
+            if (setupHomeColorSwatch) setupHomeColorSwatch.style.background = homeTeamColor;
+
+            if (setupAwayName) setupAwayName.value = awayTeamName;
+            if (setupAwayColor) setupAwayColor.value = awayTeamColor;
+            if (setupAwayColorSwatch) setupAwayColorSwatch.style.background = awayTeamColor;
+
+            if (setupTotalPeriodsVal) setupTotalPeriodsVal.textContent = tempTotalPeriods;
+
+            const standardPresets = [720000, 1200000, 2100000, 2400000];
+            const isStandard = standardPresets.includes(tempTimeLimit);
+            if (setupRollerContainer) {
+                if (isStandard) {
+                    setupRollerContainer.classList.add('hidden');
+                } else {
+                    setupRollerContainer.classList.remove('hidden');
+                }
+            }
+            syncDurationPresetButtons(tempTimeLimit);
+
+            if (matchSetupModal) matchSetupModal.classList.remove('hidden');
+
+            requestAnimationFrame(() => {
+                syncRollerToMs(tempTimeLimit, false);
             });
         }
 
-        function updatePauseButtonVisibility() {
-            if (!pauseBtn) return;
-            if (addPauseButton) {
-                pauseBtn.classList.remove('hidden');
-            } else {
-                pauseBtn.classList.add('hidden');
+        // Close the dedicated Match Setup modal
+        function closeMatchSetup() {
+            if (matchSetupModal) matchSetupModal.classList.add('hidden');
+            if (setupRollerContainer) setupRollerContainer.classList.add('hidden');
+        }
+
+        // Synchronize duration preset buttons highlight state
+        function syncDurationPresetButtons(ms) {
+            const buttons = setupDurationPresets ? setupDurationPresets.querySelectorAll('.duration-preset-btn') : [];
+            let matched = false;
+            buttons.forEach(btn => {
+                const btnMs = Number(btn.getAttribute('data-ms'));
+                if (btnMs === ms) {
+                    btn.classList.add('active');
+                    matched = true;
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            if (btnSetupCustomTime) {
+                const isContainerVisible = setupRollerContainer && !setupRollerContainer.classList.contains('hidden');
+                const arrow = isContainerVisible ? '▴' : '▾';
+                if (!matched) {
+                    btnSetupCustomTime.textContent = `Custom: ${formatTime(ms).replace(/\.0$/, '')} ${arrow}`;
+                } else {
+                    btnSetupCustomTime.textContent = `Custom Duration (Roller) ${arrow}`;
+                }
             }
-            pauseBtn.disabled = !timerRunning;
+        }
+
+        // Save changes from Match Setup modal
+        function saveMatchSetup() {
+            const newHomeName = setupHomeName ? setupHomeName.value.trim() : '';
+            const newHomeColor = setupHomeColor ? setupHomeColor.value : homeTeamColor;
+            const newAwayName = setupAwayName ? setupAwayName.value.trim() : '';
+            const newAwayColor = setupAwayColor ? setupAwayColor.value : awayTeamColor;
+
+            if (newHomeName) homeTeamName = newHomeName;
+            homeTeamColor = newHomeColor || homeTeamColor;
+            if (newAwayName) awayTeamName = newAwayName;
+            awayTeamColor = newAwayColor || awayTeamColor;
+
+            totalPeriods = tempTotalPeriods;
+            if (matchSetupMode === 'create') {
+                basePeriods = totalPeriods;
+            }
+
+            // Sync visual team displays
+            homeNameEl.textContent = homeTeamName;
+            homeNameEl.style.color = homeTeamColor;
+            scoreHomeEl.style.color = homeTeamColor;
+
+            awayNameEl.textContent = awayTeamName;
+            awayNameEl.style.color = awayTeamColor;
+            scoreAwayEl.style.color = awayTeamColor;
+
+            if (matchSetupMode === 'create') {
+                // If previous game was active, finalize it on server
+                if (activeGameStarted && !activeGameEnded) {
+                    publishActiveGameState('final', 'new_game');
+                }
+
+                // Initialize brand-new game session
+                if (timerRunning) {
+                    clearInterval(timerInterval);
+                    timerRunning = false;
+                }
+                activeGameId = generateUuidV4();
+                activeGameWriteToken = generateWriteToken();
+                activeGameRev = 1;
+                activeGameStarted = true;
+                activeGameEnded = false;
+                activeGameStartedAt = new Date().toISOString();
+                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
+                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, activeGameWriteToken);
+
+                homeScore = 0;
+                awayScore = 0;
+                currentPeriod = 1;
+                // Clear match history and close any open history dialogs for the new game
+                scoreHistory = [];
+                closeHistoryOptions();
+                renderHistory();
+                timeLimit = tempTimeLimit;
+                accumulatedTime = 0;
+                startTime = null;
+                periodStartTimeUtc = null;
+                totalPeriodPausedMs = 0;
+                pauseStartUtc = null;
+                overageResolvedForCurrentPeriod = false;
+
+                scoreHomeEl.textContent = '0';
+                scoreAwayEl.textContent = '0';
+                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                updateTimer();
+                updateMatchState('ready');
+                showToast('New game configured');
+            } else if (matchSetupMode === 'overtime') {
+                // Update existing scoreHistory team references
+                scoreHistory.forEach(entry => {
+                    if (entry.teamId === 'home') {
+                        entry.teamName = homeTeamName;
+                        entry.teamColor = homeTeamColor;
+                    } else if (entry.teamId === 'away') {
+                        entry.teamName = awayTeamName;
+                        entry.teamColor = awayTeamColor;
+                    }
+                });
+                renderHistory();
+
+                // Advance to OT period with the chosen overtime duration
+                if (timerRunning) {
+                    pauseTimer();
+                }
+                currentPeriod++;
+                timeLimit = tempTimeLimit;
+                accumulatedTime = 0;
+                startTime = null;
+                periodStartTimeUtc = null;
+                totalPeriodPausedMs = 0;
+                pauseStartUtc = null;
+                overageResolvedForCurrentPeriod = false;
+
+                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                updateTimer();
+                updateMatchState('ready');
+                showToast(`Overtime (${getPeriodLabel(currentPeriod)}) added`);
+            } else {
+                // Update existing scoreHistory team references
+                scoreHistory.forEach(entry => {
+                    if (entry.teamId === 'home') {
+                        entry.teamName = homeTeamName;
+                        entry.teamColor = homeTeamColor;
+                    } else if (entry.teamId === 'away') {
+                        entry.teamName = awayTeamName;
+                        entry.teamColor = awayTeamColor;
+                    }
+                });
+                renderHistory();
+
+                // Edit mode: save changes to active game
+                if (matchState === 'ready') {
+                    timeLimit = tempTimeLimit;
+                    updateTimer();
+                }
+                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                updateMatchState(matchState);
+                showToast('Match details updated');
+            }
+
+            closeMatchSetup();
+            saveState();
+        }
+
+        // Check if background drift occurred past the period duration limit
+        function checkBackgroundDrift() {
+            if (!timerRunning || !activeGameStarted || activeGameEnded) return;
+            const now = Date.now();
+            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+
+            // 3-hour stale check
+            if (elapsed >= 3 * 3600 * 1000) {
+                if (staleResumeModal) staleResumeModal.classList.remove('hidden');
+                return;
+            }
+
+            // Period Limit Exceeded drift check
+            if (elapsed >= timeLimit && !overageResolvedForCurrentPeriod) {
+                if (driftPeriodName) {
+                    driftPeriodName.textContent = getPeriodLabel(currentPeriod);
+                }
+                if (overageDriftModal) {
+                    overageDriftModal.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Control bar listeners
+        if (btnNewGame) btnNewGame.addEventListener('click', () => openMatchSetup('create'));
+        if (btnStart) btnStart.addEventListener('click', () => startTimer(false));
+        if (btnPause) btnPause.addEventListener('click', () => pauseTimer());
+        if (btnResume) btnResume.addEventListener('click', () => startTimer(true));
+        if (btnEndPeriod) btnEndPeriod.addEventListener('click', () => endCurrentPeriod());
+        if (btnEndOt) btnEndOt.addEventListener('click', () => openEndOtModal());
+        if (btnCardMenu) btnCardMenu.addEventListener('click', () => openMatchSetup('edit'));
+
+        // Match setup modal button listeners
+        if (closeMatchSetupX) closeMatchSetupX.addEventListener('click', closeMatchSetup);
+        if (btnSetupCancel) btnSetupCancel.addEventListener('click', closeMatchSetup);
+        if (btnSetupSubmit) btnSetupSubmit.addEventListener('click', saveMatchSetup);
+
+        if (btnPeriodMinus) {
+            btnPeriodMinus.addEventListener('click', () => {
+                if (tempTotalPeriods > 1) {
+                    tempTotalPeriods--;
+                    if (setupTotalPeriodsVal) setupTotalPeriodsVal.textContent = tempTotalPeriods;
+                }
+            });
+        }
+        if (btnPeriodPlus) {
+            btnPeriodPlus.addEventListener('click', () => {
+                if (tempTotalPeriods < 8) {
+                    tempTotalPeriods++;
+                    if (setupTotalPeriodsVal) setupTotalPeriodsVal.textContent = tempTotalPeriods;
+                }
+            });
+        }
+
+        if (setupDurationPresets) {
+            setupDurationPresets.querySelectorAll('.duration-preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const ms = Number(btn.getAttribute('data-ms'));
+                    if (ms > 0) {
+                        tempTimeLimit = ms;
+                        if (setupRollerContainer) {
+                            setupRollerContainer.classList.add('hidden');
+                        }
+                        syncDurationPresetButtons(ms);
+                        syncRollerToMs(ms, true);
+                    }
+                });
+            });
+        }
+        if (btnSetupCustomTime) {
+            btnSetupCustomTime.addEventListener('click', () => {
+                if (!setupRollerContainer) return;
+                const isHidden = setupRollerContainer.classList.contains('hidden');
+                if (isHidden) {
+                    setupRollerContainer.classList.remove('hidden');
+                    syncDurationPresetButtons(tempTimeLimit);
+                    requestAnimationFrame(() => {
+                        syncRollerToMs(tempTimeLimit, false);
+                    });
+                } else {
+                    setupRollerContainer.classList.add('hidden');
+                    syncDurationPresetButtons(tempTimeLimit);
+                }
+            });
+        }
+
+        // Live swatch preview for setup modal
+        if (setupHomeColor && setupHomeColorSwatch) {
+            setupHomeColor.addEventListener('change', () => {
+                setupHomeColorSwatch.style.background = setupHomeColor.value;
+            });
+        }
+        if (setupAwayColor && setupAwayColorSwatch) {
+            setupAwayColor.addEventListener('change', () => {
+                setupAwayColorSwatch.style.background = setupAwayColor.value;
+            });
+        }
+
+        // End / OT modal button listeners
+        if (closeEndOtX) closeEndOtX.addEventListener('click', closeEndOtModal);
+        if (btnModalCancelEnd) btnModalCancelEnd.addEventListener('click', closeEndOtModal);
+        if (btnModalFinalize) btnModalFinalize.addEventListener('click', endCurrentGame);
+        if (btnModalAddOt) {
+            btnModalAddOt.addEventListener('click', () => {
+                closeEndOtModal();
+                openMatchSetup('overtime');
+            });
+        }
+
+        // Drift modal button listeners
+        if (btnDriftEndOnTime) {
+            btnDriftEndOnTime.addEventListener('click', () => {
+                if (overageDriftModal) overageDriftModal.classList.add('hidden');
+                if (timerRunning) pauseTimer();
+                logPeriodEnd(currentPeriod, timeLimit);
+
+                if (currentPeriod < totalPeriods) {
+                    currentPeriod++;
+                    periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                    accumulatedTime = 0;
+                    startTime = null;
+                    periodStartTimeUtc = null;
+                    totalPeriodPausedMs = 0;
+                    pauseStartUtc = null;
+                    overageResolvedForCurrentPeriod = false;
+                    updateTimer();
+                    updateMatchState('ready');
+                    saveState();
+                } else {
+                    openEndOtModal();
+                }
+            });
+        }
+        if (btnDriftContinueOverage) {
+            btnDriftContinueOverage.addEventListener('click', () => {
+                if (overageDriftModal) overageDriftModal.classList.add('hidden');
+                overageResolvedForCurrentPeriod = true;
+            });
+        }
+
+        // Period display tap listener: fail-safe operation
+        if (periodDisplay) {
+            periodDisplay.addEventListener('click', () => {
+                if (!timerRunning && (matchState === 'ready' || matchState === 'paused')) {
+                    openMatchSetup('edit');
+                }
+            });
         }
 
         // Update visibility of the penalty cards area based on the settings toggle.
@@ -1767,66 +2536,30 @@
             if (!penaltyCardsRow) return;
             if (showPenaltyCards) {
                 penaltyCardsRow.classList.remove('hidden');
+                const isClockRunning = (matchState === 'running');
+                const cardBtns = penaltyCardsRow.querySelectorAll('.foul-card-btn');
+                cardBtns.forEach(btn => btn.classList.toggle('card-btn-disabled', !isClockRunning));
             } else {
                 penaltyCardsRow.classList.add('hidden');
             }
         }
 
         function openSettings() {
-            // Populate timer toggle states
-            settingAddPause.checked = addPauseButton;
-            settingPauseOnScore.checked = pauseOnScore;
-            settingLogPauseResume.checked = logPauseResume;
-            settingLogPeriodStartStop.checked = logPeriodStartStop;
+            // Populate preferences
+            if (settingPauseOnScore) settingPauseOnScore.checked = pauseOnScore;
+            if (settingLogPauseResume) settingLogPauseResume.checked = logPauseResume;
+            if (settingLogPeriodStartStop) settingLogPeriodStartStop.checked = logPeriodStartStop;
             if (settingSplashHome) settingSplashHome.checked = splashOnHome;
             if (settingSplashAway) settingSplashAway.checked = splashOnAway;
             if (settingShowCards) settingShowCards.checked = showPenaltyCards;
-            // Populate team card inputs with current values
-            if (homeNameInput) homeNameInput.value = homeTeamName;
-            if (homeColorSelect) homeColorSelect.value = homeTeamColor;
-            if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
-            if (awayNameInput) awayNameInput.value = awayTeamName;
-            if (awayColorSelect) awayColorSelect.value = awayTeamColor;
-            if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
+            if (settingSharePublic) settingSharePublic.checked = (activeGameVisibility !== 'private');
+
             // Sync the active theme card highlight
             syncThemeCards();
-            // Show the modal
             settingsModal.classList.remove('hidden');
         }
 
-        // Apply team card values to the scoreboard and close the settings modal.
-        // Team changes take effect when Done (or X) is pressed.
-        function applyTeamSettings() {
-            // Home team
-            const newHomeName = homeNameInput ? homeNameInput.value.trim() : '';
-            const newHomeColor = homeColorSelect ? homeColorSelect.value : homeTeamColor;
-            if (newHomeName) homeTeamName = newHomeName;
-            homeTeamColor = newHomeColor || homeTeamColor;
-            homeNameEl.textContent = homeTeamName;
-            scoreHomeEl.textContent = homeScore;
-            homeNameEl.style.color = homeTeamColor;
-            scoreHomeEl.style.color = homeTeamColor;
-            if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
-            scoreHistory.forEach(e => { if (e.teamId === 'home') { e.teamName = homeTeamName; e.teamColor = homeTeamColor; } });
-
-            // Away team
-            const newAwayName = awayNameInput ? awayNameInput.value.trim() : '';
-            const newAwayColor = awayColorSelect ? awayColorSelect.value : awayTeamColor;
-            if (newAwayName) awayTeamName = newAwayName;
-            awayTeamColor = newAwayColor || awayTeamColor;
-            awayNameEl.textContent = awayTeamName;
-            scoreAwayEl.textContent = awayScore;
-            awayNameEl.style.color = awayTeamColor;
-            scoreAwayEl.style.color = awayTeamColor;
-            if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
-            scoreHistory.forEach(e => { if (e.teamId === 'away') { e.teamName = awayTeamName; e.teamColor = awayTeamColor; } });
-
-            renderHistory();
-        }
-
-        // Close the settings modal, applying any pending team changes first.
         function closeSettings() {
-            applyTeamSettings();
             settingsModal.classList.add('hidden');
             saveState();
         }
@@ -1834,14 +2567,6 @@
         if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
         if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
         if (closeSettingsX) closeSettingsX.addEventListener('click', closeSettings);
-
-        if (settingAddPause) {
-            settingAddPause.addEventListener('change', () => {
-                addPauseButton = settingAddPause.checked;
-                updatePauseButtonVisibility();
-                saveState();
-            });
-        }
 
         if (settingPauseOnScore) {
             settingPauseOnScore.addEventListener('change', () => {
@@ -1886,9 +2611,12 @@
             });
         }
 
-        periodDisplay.addEventListener('click', () => {
-            if (!timerRunning) cyclePeriod();
-        });
+        if (settingSharePublic) {
+            settingSharePublic.addEventListener('change', () => {
+                activeGameVisibility = settingSharePublic.checked ? 'public' : 'private';
+                saveState();
+            });
+        }
 
         scoreHomeEl.addEventListener('click', () => addScore('home'));
         scoreAwayEl.addEventListener('click', () => addScore('away'));
@@ -1898,100 +2626,39 @@
             saveState();
         });
 
-
-        // Live swatch preview: update swatch color as the user picks a different color.
-        if (homeColorSelect && homeColorSwatch) {
-            homeColorSelect.addEventListener('change', () => {
-                homeColorSwatch.style.background = homeColorSelect.value;
+        // Stale Game Resume / Finalize actions
+        if (btnStaleFinish) {
+            btnStaleFinish.addEventListener('click', () => {
+                if (staleResumeModal) staleResumeModal.classList.add('hidden');
+                activeGameEnded = true;
+                publishActiveGameState('final', 'abandoned');
+                saveState();
             });
         }
-        if (awayColorSelect && awayColorSwatch) {
-            awayColorSelect.addEventListener('change', () => {
-                awayColorSwatch.style.background = awayColorSelect.value;
+        if (btnStaleResume) {
+            btnStaleResume.addEventListener('click', () => {
+                if (staleResumeModal) staleResumeModal.classList.add('hidden');
+                startTimer(false);
+                saveState();
             });
         }
 
-        // Publish the current game as "game over" so it remains on the active games
-        // board with the final score and a "Game Over" status, then resets local state
-        // for a brand-new game with a fresh game ID.
-        async function endCurrentGameAndStartNew() {
-            if (!confirm("Start a New Game?\n\nThe current game will be saved with 'Game Over' status on the Active Games screen.")) return;
-
-            // Stop the timer if running.
-            clearInterval(timerInterval);
-            if (startTime) accumulatedTime += Date.now() - startTime;
-
-            // Publish the current game one final time with game_over status.
-            if (activeGameId && activeGameStarted) {
-                const finalPayload = {
-                    id: activeGameId,
-                    homeTeamName,
-                    awayTeamName,
-                    homeScore,
-                    awayScore,
-                    currentPeriod,
-                    timerRunning: false,
-                    isPaused: false,
-                    isCountingUp,
-                    timeLimit,
-                    scoreHistory: scoreHistory || [],
-                    elapsedMs: accumulatedTime,
-                    lastUpdate: Date.now(),
-                    // Keep the game visible for 24 hours after it ends.
-                    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-                    gameTitle: `${homeTeamName} vs ${awayTeamName}`,
-                    // Mark this game as finished so the board shows "Game Over".
-                    status: 'game_over'
-                };
-                try {
-                    await fetch('./active-games.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(finalPayload),
-                        keepalive: true
-                    });
-                } catch (e) { /* Fail silently. */ }
-            }
-
-            // Generate a new game ID so this session is tracked independently.
-            activeGameId = `scoreboard-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-            activeGameStarted = false;
-            safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
-
-            // Reset all local game state for the new game.
-            startTime = null;
-            accumulatedTime = 0;
-            timerRunning = false;
-            isPaused = false;
-            homeScore = 0;
-            awayScore = 0;
-            currentPeriod = 1;
-            scoreHistory = [];
-
-            // Refresh the visible UI.
-            scoreHomeEl.textContent = '0';
-            scoreAwayEl.textContent = '0';
-            periodDisplay.textContent = 'P1';
-            renderHistory();
-            updateTimer();
-            updateStartStopButton();
-            adjustmentPanel.style.display = 'none';
-            if (pauseBtn) pauseBtn.disabled = true;
-
-            // Persist the fresh state.
-            saveState();
-        }
-
-        resetBtn.addEventListener('click', endCurrentGameAndStartNew);
-
-
-        // Initialize the page from saved state when the browser loads.
+        // Initialize the page from saved state when the browser loads
         window.onload = async function () {
             isInitializingScoreboard = true;
 
             // Render footer indicator
             if (window.SuiteProfile) {
                 SuiteProfile.renderFooterIndicator(document.querySelector('footer p'));
+            }
+
+            // Toggle My Games link and Public Share setting based on auth state
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                if (linkMyGames) linkMyGames.style.display = 'inline-block';
+                if (settingsSharingSection) settingsSharingSection.style.display = 'block';
+            } else {
+                if (linkMyGames) linkMyGames.style.display = 'none';
+                if (settingsSharingSection) settingsSharingSection.style.display = 'none';
             }
 
             // Always check if there are new DB settings first if logged in
@@ -2011,39 +2678,66 @@
             }
 
             let saved = null;
-            // When logged in: cloud state strictly overwrites local state.
-            // If logged in and cloud state exists, use it. If logged in but no cloud state, start clean defaults.
+            const localSaved = loadState();
+
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
                 if (cloudState) {
+                    // Finalize any distinct active local game before adopting cloud state
+                    if (localSaved && localSaved.activeGameStarted && !localSaved.activeGameEnded && localSaved.activeGameId !== cloudState.activeGameId) {
+                        try {
+                            SuiteProfile.games.sync({
+                                game_id: localSaved.activeGameId,
+                                write_token: localSaved.activeGameWriteToken,
+                                rev: (localSaved.activeGameRev || 0) + 1,
+                                status: 'final',
+                                ended_by: 'new_game',
+                                snapshot: localSaved
+                            });
+                        } catch (e) { }
+                    }
                     saved = cloudState;
                     safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
                 } else {
-                    saved = null;
-                    safeLocalStorageRemove(STORAGE_KEY);
+                    // Preserve guest state upon login so it is claimed instead of wiped
+                    saved = localSaved;
+                    if (saved) {
+                        SuiteProfile.saveAppData('scoreboard', saved);
+                    }
                 }
             } else {
-                saved = loadState();
+                saved = localSaved;
             }
 
             if (saved) {
                 homeScore = saved.homeScore || saved.redScore || 0;
                 awayScore = saved.awayScore || saved.blueScore || 0;
                 currentPeriod = saved.currentPeriod || 1;
+                totalPeriods = saved.totalPeriods || 2;
+                basePeriods = saved.basePeriods || totalPeriods || 2;
                 scoreHistory = saved.scoreHistory || [];
                 accumulatedTime = saved.accumulatedTime || 0;
-                timeLimit = saved.timeLimit;
+                periodStartTimeUtc = saved.periodStartTimeUtc || null;
+                totalPeriodPausedMs = saved.totalPeriodPausedMs || 0;
+                pauseStartUtc = saved.pauseStartUtc || null;
+                overageResolvedForCurrentPeriod = !!saved.overageResolvedForCurrentPeriod;
+                timeLimit = saved.timeLimit !== undefined ? saved.timeLimit : 40 * 60 * 1000;
                 isCountingUp = saved.isCountingUp;
                 muted = !!saved.muted;
-                addPauseButton = !!saved.addPauseButton;
                 pauseOnScore = !!saved.pauseOnScore;
                 isPaused = !!saved.isPaused;
                 logPauseResume = !!saved.logPauseResume;
                 logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
-                // Default splash to true if not yet stored (first run after update)
                 splashOnHome = saved.splashOnHome !== undefined ? !!saved.splashOnHome : true;
                 splashOnAway = saved.splashOnAway !== undefined ? !!saved.splashOnAway : true;
                 activeGameStarted = !!saved.activeGameStarted;
                 activeGameId = activeGameStarted ? saved.activeGameId || null : null;
+                activeGameWriteToken = saved.activeGameWriteToken || null;
+                activeGameRev = saved.activeGameRev || 0;
+                activeGameVisibility = saved.activeGameVisibility || 'public';
+                activeGameEnded = !!saved.activeGameEnded;
+                activeGameStartedAt = saved.activeGameStartedAt || null;
+                matchState = saved.matchState || (activeGameEnded ? 'final' : (activeGameStarted ? (saved.running ? 'running' : 'paused') : 'idle'));
+
                 homeTeamName = saved.homeTeamName || saved.redTeamName || homeTeamName;
                 awayTeamName = saved.awayTeamName || saved.blueTeamName || awayTeamName;
                 homeTeamColor = saved.homeTeamColor || saved.redTeamColor || homeTeamColor;
@@ -2056,7 +2750,7 @@
                 awayNameEl.textContent = awayTeamName;
                 scoreHomeEl.textContent = homeScore;
                 scoreAwayEl.textContent = awayScore;
-                periodDisplay.textContent = `P${currentPeriod}`;
+                periodDisplay.textContent = getPeriodLabel(currentPeriod);
                 renderHistory();
 
                 // Apply stored colors to visible elements
@@ -2064,15 +2758,24 @@
                 scoreHomeEl.style.color = homeTeamColor;
                 awayNameEl.style.color = awayTeamColor;
                 scoreAwayEl.style.color = awayTeamColor;
-                if (homeColorSwatch) homeColorSwatch.style.background = homeTeamColor;
-                if (awayColorSwatch) awayColorSwatch.style.background = awayTeamColor;
+                if (setupHomeColorSwatch) setupHomeColorSwatch.style.background = homeTeamColor;
+                if (setupAwayColorSwatch) setupAwayColorSwatch.style.background = awayTeamColor;
 
+                // Handle timer recovery and stale resume checking
                 if (saved.running && saved.startTime) {
-                    const drift = Date.now() - saved.lastSavedAt;
-                    accumulatedTime += drift;
-                    startTimer(false);
+                    const drift = Date.now() - (saved.lastSavedAt || saved.startTime);
+                    if (drift >= 3 * 3600 * 1000) {
+                        // Unfinished game left running > 3 hours ago: prompt operator
+                        if (staleResumeModal) staleResumeModal.classList.remove('hidden');
+                        updateMatchState('paused');
+                        updateTimer();
+                    } else {
+                        accumulatedTime += drift;
+                        startTimer(false);
+                        checkBackgroundDrift();
+                    }
                 } else {
-                    updateStartStopButton();
+                    updateMatchState(matchState);
                     updateTimer();
                 }
                 // Restore and apply saved theme (or default to saber-dark)
@@ -2080,33 +2783,48 @@
                 applyTheme(selectedTheme);
                 updateMuteButton();
                 showPenaltyCards = !!saved.showPenaltyCards;
-                updatePauseButtonVisibility();
                 updatePenaltyCardsVisibility();
             } else {
-                // No saved state or brand-new user: apply the default theme and clean defaults
+                // No saved state or brand-new user: apply default theme and clean defaults
                 homeScore = 0;
                 awayScore = 0;
                 currentPeriod = 1;
+                totalPeriods = 2;
+                basePeriods = 2;
+                matchState = 'idle';
                 scoreHistory = [];
                 accumulatedTime = 0;
+                periodStartTimeUtc = null;
+                totalPeriodPausedMs = 0;
+                pauseStartUtc = null;
+                overageResolvedForCurrentPeriod = false;
                 isPaused = false;
                 activeGameStarted = false;
                 activeGameId = null;
+                activeGameWriteToken = null;
+                activeGameRev = 0;
+                activeGameVisibility = 'public';
+                activeGameEnded = false;
+                activeGameStartedAt = null;
                 homeNameEl.textContent = homeTeamName;
                 awayNameEl.textContent = awayTeamName;
                 scoreHomeEl.textContent = 0;
                 scoreAwayEl.textContent = 0;
-                periodDisplay.textContent = 'P1';
+                periodDisplay.textContent = getPeriodLabel(1);
                 renderHistory();
                 selectedTheme = 'saber-dark';
                 applyTheme(selectedTheme);
+                updateMatchState('idle');
                 updateTimer();
                 updateMuteButton();
-                updatePauseButtonVisibility();
                 updatePenaltyCardsVisibility();
             }
             initRoller();
             isInitializingScoreboard = false;
+
+            // Ensure footer version is updated
+            const verEl = document.getElementById('appVersion');
+            if (verEl) verEl.textContent = VERSION;
         };
 
         // React to user profile authentication lifecycle events
@@ -2118,9 +2836,20 @@
         });
 
         window.addEventListener('beforeunload', () => {
-            // Save local state when unloading. Do NOT remove server entry here so
-            // a game left running will remain discoverable for up to 24 hours.
             saveState();
+            flushBeaconSync();
+        });
+
+        window.addEventListener('pagehide', () => {
+            flushBeaconSync();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                flushBeaconSync();
+            } else if (document.visibilityState === 'visible') {
+                checkBackgroundDrift();
+            }
         });
 
         window.addEventListener('storage', (event) => {
@@ -2130,22 +2859,22 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '2.7';
+        const VERSION = '3.6';
         const APP_VERSION = VERSION;
-        const versionEl = document.getElementById('appVersion');
-        if (versionEl) versionEl.textContent = VERSION;
 
-        // Heartbeat: ensure server copy is refreshed while the page is open.
+        // Heartbeat: ping server every 20 seconds ONLY while timer is running
         try {
             setInterval(() => {
-                publishActiveGameStateServer().catch(() => { });
+                if (timerRunning && activeGameId && activeGameStarted) {
+                    publishActiveGameState();
+                }
             }, 20 * 1000);
         } catch (e) { }
     </script>
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">2.6</span></p>
+        <p>Version <span id="appVersion">3.6</span></p>
     </footer>
 </body>
 
