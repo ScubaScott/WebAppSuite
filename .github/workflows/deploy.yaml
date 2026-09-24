@@ -14,6 +14,16 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v6 # Upgraded to v6 for Node 24 support
 
+    # 📂 Check which branch is running and set the target directory
+    - name: 📁 Set FTP Target Directory
+      id: set-dir
+      run: |
+        if [ "${{ github.ref_name }}" = "main" ]; then
+          echo "target_dir=./htdocs/" >> $GITHUB_OUTPUT
+        else
+          echo "target_dir=./htdocs/dev/" >> $GITHUB_OUTPUT
+        fi
+
     - name: 🚀 Sync files via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.4.0 # Upgraded to v4.4.0 for Node 24 support
       with:
@@ -21,4 +31,4 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./htdocs/                  
-        server-dir: ./htdocs/
+        server-dir: ${{ steps.set-dir.outputs.target_dir }} # 👈 Dynamically injected
