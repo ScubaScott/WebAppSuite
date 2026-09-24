@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - Private-Games
   workflow_dispatch:
 
 jobs:
