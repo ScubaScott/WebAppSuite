@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // IMPORTANT: Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '3.3';
+const SW_VERSION = '3.4';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Static app-shell assets that should be pre-cached on install.
@@ -26,12 +26,15 @@ const APP_SHELL = [
 // Media files (images, fonts) still use cache-first for performance.
 const NETWORK_FIRST_EXTENSIONS = ['.html', '.js', '.css', '.php', '.json'];
 
-function isNetworkFirst(url) {
+function isNetworkFirst(url, request) {
   // Always use network-first for same-origin navigations and code assets
   const parsed = new URL(url);
   if (parsed.origin !== self.location.origin) return false;
   const path = parsed.pathname.toLowerCase();
-  return NETWORK_FIRST_EXTENSIONS.some(ext => path.endsWith(ext)) || path === '/';
+  const hasNetworkFirstExt = NETWORK_FIRST_EXTENSIONS.some(ext => path.endsWith(ext));
+  const isDirectoryStyle = path.endsWith('/');                 // e.g. /ScoreBoard/, /BagScore/
+  const isNavigation = request && request.mode === 'navigate'; // top-level page loads
+  return hasNetworkFirstExt || isDirectoryStyle || isNavigation;
 }
 
 // ---- Install: pre-cache the app shell ----
@@ -67,7 +70,7 @@ self.addEventListener('fetch', event => {
   try { reqUrl = new URL(request.url); } catch { return; }
   if (reqUrl.origin !== self.location.origin) return;
 
-  if (isNetworkFirst(request.url)) {
+  if (isNetworkFirst(request.url, request)) {
     // Network-first: always try to get the latest version from the server.
     // The no-cache pragma ensures intermediate proxies don't serve stale content.
     // Only falls back to the cache if the network is unavailable (offline).
