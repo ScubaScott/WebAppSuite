@@ -1191,7 +1191,42 @@
         }
 
         function formatLocalLabel(date) {
-            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(/\s+/g, '');
+        }
+
+        // Format ISO timestamp into local time string without date (e.g. 4:05pm).
+        function formatEventTime(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(timestamp);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(/\s+/g, '');
+            }
+            return String(timestamp);
+        }
+
+        // Extract period label and action details from an event entry.
+        function parseEventDetails(entry) {
+            let periodLabel = entry.periodLabel || (entry.period ? getPeriodLabel(entry.period) : '');
+            let action = '';
+            const rawText = entry.text || '';
+
+            if (entry.eventType === 'period_start' || rawText.match(/\bStart\b/i)) {
+                action = 'Start';
+            } else if (entry.eventType === 'period_end' || rawText.match(/\bEnd\b/i)) {
+                action = 'End';
+            } else if (entry.eventType === 'paused' || rawText.match(/\bPaused\b/i)) {
+                action = 'Paused';
+            } else if (entry.eventType === 'resumed' || rawText.match(/\bResumed\b/i)) {
+                action = 'Resumed';
+            }
+
+            if (!periodLabel) {
+                const pMatch = rawText.match(/\b(P\d+|OT\d*)\b/i);
+                if (pMatch) periodLabel = pMatch[1].toUpperCase();
+            }
+
+            const eventLabel = (periodLabel && action) ? `${periodLabel} ${action}` : (rawText || 'Event');
+            return { periodLabel, action, eventLabel, rawText };
         }
 
         function updateMuteButton() {
@@ -1215,8 +1250,16 @@
             whistleAudio.play().catch(() => { });
         }
 
-        function addHistoryEvent(text) {
-            scoreHistory.push({ type: 'event', text, timestamp: new Date().toISOString() });
+        function addHistoryEvent(text, eventType = 'general') {
+            scoreHistory.push({
+                id: generateUuidV4(),
+                type: 'event',
+                eventType,
+                period: currentPeriod,
+                periodLabel: getPeriodLabel(currentPeriod),
+                text,
+                timestamp: new Date().toISOString()
+            });
             renderHistory();
             saveState();
         }
@@ -1480,25 +1523,28 @@
                 const noteTitle = noteText ? escapeHtml(noteText) : 'Tap to add note';
 
                 if (entry.type === 'event') {
-                    const displayTime = entry.timestamp || '';
+                    const { eventLabel } = parseEventDetails(entry);
+                    const displayTime = formatEventTime(entry.timestamp);
                     row.innerHTML = `
-                        <td style="padding:6px 6px 6px 12px;vertical-align:middle;" class="history-event-cell" title="${escapeHtml(entry.text)}">${escapeHtml(entry.text)}</td>
+                        <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
+                            <div class="history-team-cell" title="⏱️ ${escapeHtml(eventLabel)}">
+                                <span class="history-watch-icon" style="font-size:1.05rem;line-height:1;margin-right:2px;">⏱️</span>
+                                <span class="history-event-name" style="font-weight:700;color:#f3f4f6;">${escapeHtml(eventLabel)}</span>
+                            </div>
+                        </td>
                         <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
                         <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
                     `;
                 } else if (entry.type === 'card') {
                     const isYellow = entry.cardType === 'yellow';
+                    const cardSymbol = isYellow ? '🟨' : '🟥';
                     const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
                     const displayTime = (entry.gameTime || '').replace(/^P(\d+)\s*-\s*/, 'P$1:');
-                    const degreeLabel = entry.degree || (isYellow ? 'Yellow Card' : 'Red Card');
                     row.innerHTML = `
                         <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
-                            <div class="history-team-cell" title="${escapeHtml(entry.teamName)} - ${escapeHtml(degreeLabel)}">
-                                <span class="history-dot" style="background:${color};"></span>
+                            <div class="history-team-cell" title="${cardSymbol} ${escapeHtml(entry.teamName)}">
+                                <span class="history-card-icon" style="font-size:1.05rem;line-height:1;margin-right:2px;">${cardSymbol}</span>
                                 <span class="history-team-name" style="color:${color};">${escapeHtml(entry.teamName)}</span>
-                                <span class="history-card-badge ${isYellow ? 'yellow' : 'red'}">
-                                    ${isYellow ? '🟨' : '🟥'} ${escapeHtml(degreeLabel)}
-                                </span>
                             </div>
                         </td>
                         <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
@@ -1510,7 +1556,7 @@
                     row.innerHTML = `
                         <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
                             <div class="history-team-cell" title="${escapeHtml(entry.teamName)} (${entry.currentScore})">
-                                <span class="history-dot" style="background:${color};"></span>
+                                <span class="history-goal-icon" style="font-size:1.05rem;line-height:1;margin-right:2px;">🥅</span>
                                 <span class="history-team-name" style="color:${color};">${escapeHtml(entry.teamName)}</span>
                                 <span class="history-score-tag">(${entry.currentScore})</span>
                             </div>
@@ -1531,17 +1577,19 @@
 
             if (entry.type === 'score') {
                 const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
-                historyPreviewEvent.innerHTML = `<span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)} (${entry.currentScore})</span>`;
+                historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">🥅</span><span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)} (${entry.currentScore})</span>`;
                 historyPreviewMeta.textContent = `Game Time: ${entry.gameTime || 'N/A'}`;
             } else if (entry.type === 'card') {
                 const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
-                const isYellow = entry.cardType === 'yellow';
-                const degreeLabel = entry.degree || (isYellow ? 'Yellow Card' : 'Red Card');
-                historyPreviewEvent.innerHTML = `<span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)} - ${isYellow ? '🟨' : '🟥'} ${escapeHtml(degreeLabel)}</span>`;
+                const isYellow = (entry.cardType === 'yellow' || (entry.degree && entry.degree.toLowerCase().includes('yellow')));
+                const cardSymbol = isYellow ? '🟨' : '🟥';
+                historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">${cardSymbol}</span><span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)}</span>`;
                 historyPreviewMeta.textContent = `Game Time: ${entry.gameTime || 'N/A'}`;
             } else {
-                historyPreviewEvent.innerHTML = `<span>${escapeHtml(entry.text)}</span>`;
-                historyPreviewMeta.textContent = `Time: ${entry.timestamp || 'N/A'}`;
+                const { eventLabel } = parseEventDetails(entry);
+                const localTime = formatEventTime(entry.timestamp);
+                historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">⏱️</span><span>${escapeHtml(eventLabel)}</span>`;
+                historyPreviewMeta.textContent = `Time: ${localTime || 'N/A'}`;
             }
 
             if (entry.note) {
@@ -1614,23 +1662,27 @@
             let shareText = '';
 
             if (entry.type === 'score') {
-                const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
-                shareText = `${entry.teamName} scored (${entry.currentScore}) at ${entry.gameTime || ''}${noteSuffix}`;
+                shareText = `GOAL! ${entry.teamName} ${entry.currentScore}`;
             } else if (entry.type === 'card') {
                 const isYellow = (entry.cardType === 'yellow' || (entry.degree && entry.degree.toLowerCase().includes('yellow')));
                 const cardSymbol = isYellow ? '🟨' : '🟥';
                 const noteSuffix = entry.note ? ` (${entry.note})` : '';
-                shareText = `${cardSymbol} ${entry.teamName} at ${entry.gameTime || ''}${noteSuffix}`;
+                shareText = `${cardSymbol} ${entry.teamName}${noteSuffix}`;
             } else {
-                const isFinalEvent = (entry.text && entry.text.includes('(Final)'));
-                if (isFinalEvent) {
-                    const currentScore = `${homeScore}-${awayScore}`;
-                    const noteSuffix = entry.note ? ` - ${entry.note}` : '';
-                    shareText = `Game! (${currentScore})${noteSuffix}`;
-                } else {
-                    const noteSuffix = entry.note ? ` (Note: ${entry.note})` : '';
-                    shareText = `${entry.text}${noteSuffix}`;
+                const { action, eventLabel } = parseEventDetails(entry);
+                const localTime = formatEventTime(entry.timestamp);
+                const isPeriodEnd = (action === 'End' || (entry.text && entry.text.includes('End')));
+
+                let scorePart = '';
+                if (isPeriodEnd) {
+                    const score = entry.scoreSnapshot || `${homeScore}-${awayScore}`;
+                    scorePart = ` (${score})`;
                 }
+
+                const timePart = localTime ? ` ${localTime}` : '';
+                const noteSuffix = entry.note ? ` (${entry.note})` : '';
+
+                shareText = `${eventLabel}${timePart}${scorePart}${noteSuffix}`;
             }
 
             closeHistoryOptions();
@@ -1722,9 +1774,12 @@
             const entry = scoreHistory[index];
             if (!entry) return;
 
-            // Period rollback: if deleting an "End of P{n}" or "End of OT..." event
-            const periodMatch = entry.type === 'event' && entry.text && entry.text.match(/^End of (P\d+|OT\d*)/);
-            if (periodMatch && entry.period) {
+            // Period rollback: if deleting an "End of P{n}" or "{Pn} End" event
+            const isPeriodEnd = entry.type === 'event' && (
+                entry.eventType === 'period_end' ||
+                (entry.text && (entry.text.match(/^End of (P\d+|OT\d*)/i) || entry.text.match(/^(P\d+|OT\d*)\s+End/i)))
+            );
+            if (isPeriodEnd && entry.period) {
                 // Decrement currentPeriod back to the deleted period's index
                 currentPeriod = entry.period;
                 periodDisplay.textContent = getPeriodLabel(currentPeriod);
@@ -2079,12 +2134,22 @@
                     pauseStartUtc = null;
                 }
                 if (logPauseResume) {
-                    addHistoryEvent(`Resumed ${getPeriodLabel(currentPeriod)} ${formatLocalLabel(new Date())}`);
+                    addHistoryEvent(`${getPeriodLabel(currentPeriod)} Resumed`, 'resumed');
                 }
                 isPaused = false;
             } else {
                 if (logPeriodStartStop) {
-                    addHistoryEvent(`Start of ${getPeriodLabel(currentPeriod)} ${formatLocalLabel(new Date())}`);
+                    const label = getPeriodLabel(currentPeriod);
+                    scoreHistory.push({
+                        id: generateUuidV4(),
+                        type: 'event',
+                        eventType: 'period_start',
+                        period: currentPeriod,
+                        periodLabel: label,
+                        text: `${label} Start`,
+                        timestamp: new Date().toISOString()
+                    });
+                    renderHistory();
                 }
             }
 
@@ -2104,7 +2169,7 @@
             }
             pauseStartUtc = now;
             if (logPauseResume) {
-                addHistoryEvent(`Paused ${getPeriodLabel(currentPeriod)} ${formatLocalLabel(new Date())}`);
+                addHistoryEvent(`${getPeriodLabel(currentPeriod)} Paused`, 'paused');
             }
             startTime = null;
             timerRunning = false;
@@ -2116,12 +2181,15 @@
         // Record a structured period completion entry in the history ledger.
         function logPeriodEnd(periodNum, elapsedMs, suffix = '') {
             const label = getPeriodLabel(periodNum);
-            const text = `End of ${label}${suffix ? ' ' + suffix : ''}`;
+            const text = `${label} End${suffix ? ' ' + suffix : ''}`;
             scoreHistory.push({
                 id: generateUuidV4(),
                 type: 'event',
+                eventType: 'period_end',
                 text: text,
                 period: periodNum,
+                periodLabel: label,
+                scoreSnapshot: `${homeScore}-${awayScore}`,
                 periodElapsedMs: elapsedMs,
                 gameTime: `${label}: ${formatTime(elapsedMs)}`,
                 timestamp: new Date().toISOString()
@@ -2859,7 +2927,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '3.6';
+        const VERSION = '3.9';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running
@@ -2874,7 +2942,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">3.6</span></p>
+        <p>Version <span id="appVersion">3.9</span></p>
     </footer>
 </body>
 
