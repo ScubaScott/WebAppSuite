@@ -3,7 +3,7 @@
 // Handles match synchronization, active games directory, and user game archive persistence.
 
 // API endpoint version identifier
-$GAMES_API_VERSION = '1.0';
+$GAMES_API_VERSION = '1.1';
 
 // Inactivity threshold (in hours) after which a live game is automatically finalized
 define('GAME_TIMEOUT_HOURS', 3);
@@ -111,7 +111,7 @@ if ($action === 'sync') {
     $stateJson = json_encode($snapshot, JSON_UNESCAPED_UNICODE);
 
     // Check if the game row already exists
-    $stmt = $pdo->prepare('SELECT id, owner_id, write_token_hash, visibility, status, rev FROM suite_games WHERE game_id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, owner_id, write_token_hash, visibility, status, rev, ended_at FROM suite_games WHERE game_id = ? LIMIT 1');
     $stmt->execute([$gameId]);
     $existing = $stmt->fetch();
 
@@ -187,7 +187,8 @@ if ($action === 'sync') {
             $targetVisibility = $isOwner ? $visibility : $existing['visibility'];
         }
 
-        $effectiveEndedAt = ($status === 'final') ? ($existing['status'] === 'final' ? $existing['ended_at'] : $nowUtc) : null;
+        // Retain original completion timestamp if already final, otherwise set to nowUtc
+        $effectiveEndedAt = ($status === 'final') ? (!empty($existing['ended_at']) ? $existing['ended_at'] : $nowUtc) : null;
 
         $updateSql = 'UPDATE suite_games SET
             owner_id = ?,
@@ -247,7 +248,7 @@ if ($action === 'list_public') {
             FROM suite_games
             WHERE visibility = "public"
               AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
-              AND (status = "live" OR ended_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
+              AND (status = "live" OR COALESCE(ended_at, last_activity_at) > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
             ORDER BY last_activity_at DESC
             LIMIT 50';
 
