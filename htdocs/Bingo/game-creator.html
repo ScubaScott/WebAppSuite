@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -894,6 +894,19 @@
         // ---- Initial page load ----
         fetchServerGames();  // Load game list and populate dropdown
         renderPatternsList(); // Render empty patterns list
+
+        // Application version identifier
+        const VERSION = '1.1';
+        const APP_VERSION = VERSION;
+        const versionEl = document.getElementById('appVersion');
+        if (versionEl) versionEl.textContent = VERSION;
     </script>
+
+    <footer style="margin-top: 32px; text-align: center; font-size: 0.75rem; color: var(--text-subtle);">
+        <p>Version <span id="appVersion">1.1</span></p>
+    </footer>
+
+    <!-- Shared Suite Profile and service worker registration -->
+    <script src="../media/suite-profile.js"></script>
 </body>
 </html>

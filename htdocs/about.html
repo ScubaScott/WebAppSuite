@@ -65,12 +65,15 @@
 
     <footer class="app-footer">
         <p class="app-footer-text">Built with pride for good times and easy scoring.</p>
-        <small class="app-footer-version">v<span id="footerVersion">1.1</span></small>
+        <small class="app-footer-version">v<span id="footerVersion">1.2</span></small>
     </footer>
+
+    <!-- Shared Suite Profile and service worker registration -->
+    <script src="./media/suite-profile.js"></script>
 
     <script>
         // About page application version identifier
-        const VERSION = '1.1';
+        const VERSION = '1.2';
         document.getElementById('footerVersion').textContent = VERSION;
 
         // Render PayPal hosted donation button when SDK is available

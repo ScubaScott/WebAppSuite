@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.5';
+const SUITE_PROFILE_VERSION = '1.6';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -937,6 +937,46 @@ const SUITE_PROFILE_VERSION = '1.5';
         }
         return await res.json();
     }
+
+    /**
+     * Registers the root WebAppSuite service worker across all sub-apps and triggers an update check.
+     */
+    function registerSuiteServiceWorker() {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+        // Calculate relative path to root sw.js and scope based on pathname depth
+        const path = window.location.pathname;
+        let swPath = './sw.js';
+        let swScope = './';
+
+        if (path.indexOf('/Bingo/scan/') !== -1) {
+            swPath = '../../sw.js';
+            swScope = '../../';
+        } else if (
+            path.indexOf('/ScoreBoard') !== -1 ||
+            path.indexOf('/ScoreKeeper') !== -1 ||
+            path.indexOf('/Bingo') !== -1 ||
+            path.indexOf('/BagScore') !== -1 ||
+            path.indexOf('/DriverScore') !== -1 ||
+            path.indexOf('/FarkleScore') !== -1 ||
+            path.indexOf('/HarleyVinDecoder') !== -1
+        ) {
+            swPath = '../sw.js';
+            swScope = '../';
+        }
+
+        navigator.serviceWorker.register(swPath, { scope: swScope }).then(reg => {
+            // Proactively check for new service worker on page load
+            if (reg && typeof reg.update === 'function') {
+                reg.update().catch(() => {});
+            }
+        }).catch(err => {
+            console.warn('WebAppSuite SW registration error:', err);
+        });
+    }
+
+    // Auto-register service worker whenever SuiteProfile is loaded
+    registerSuiteServiceWorker();
 
     return {
         VERSION: SUITE_PROFILE_VERSION,
