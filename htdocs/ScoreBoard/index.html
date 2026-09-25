@@ -1204,6 +1204,29 @@
             return String(timestamp);
         }
 
+        // Format period elapsed time into MM:SS format without period prefix or subseconds (e.g. 03:02).
+        function formatGameTimeMmSs(entry) {
+            if (!entry) return '';
+            if (entry.periodElapsedMs !== undefined && entry.periodElapsedMs !== null && !isNaN(entry.periodElapsedMs)) {
+                const absMs = Math.abs(entry.periodElapsedMs);
+                const totalSeconds = Math.floor(absMs / 1000);
+                const totalMinutes = Math.floor(totalSeconds / 60);
+                const s = totalSeconds % 60;
+                const pad = (n) => n.toString().padStart(2, '0');
+                return `${pad(totalMinutes)}:${pad(s)}`;
+            }
+            if (entry.gameTime) {
+                let t = entry.gameTime.replace(/^(?:P(?:eriod)?\s*\d+|OT\d*)\s*[:-]\s*/i, '').trim();
+                t = t.replace(/\.\d+$/, '');
+                const parts = t.split(':');
+                if (parts.length === 2) {
+                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+                }
+                return t;
+            }
+            return '';
+        }
+
         // Extract period label and action details from an event entry.
         function parseEventDetails(entry) {
             let periodLabel = entry.periodLabel || (entry.period ? getPeriodLabel(entry.period) : '');
@@ -1539,7 +1562,7 @@
                     const isYellow = entry.cardType === 'yellow';
                     const cardSymbol = isYellow ? '🟨' : '🟥';
                     const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
-                    const displayTime = (entry.gameTime || '').replace(/^P(\d+)\s*-\s*/, 'P$1:');
+                    const displayTime = formatGameTimeMmSs(entry);
                     row.innerHTML = `
                         <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
                             <div class="history-team-cell" title="${cardSymbol} ${escapeHtml(entry.teamName)}">
@@ -1552,7 +1575,7 @@
                     `;
                 } else {
                     const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
-                    const displayTime = (entry.gameTime || '').replace(/^P(\d+)\s*-\s*/, 'P$1:');
+                    const displayTime = formatGameTimeMmSs(entry);
                     row.innerHTML = `
                         <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
                             <div class="history-team-cell" title="${escapeHtml(entry.teamName)} (${entry.currentScore})">
@@ -1577,14 +1600,14 @@
 
             if (entry.type === 'score') {
                 const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
-                historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">🥅</span><span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)} (${entry.currentScore})</span>`;
-                historyPreviewMeta.textContent = `Game Time: ${entry.gameTime || 'N/A'}`;
+                historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">🥅</span><span>${escapeHtml(entry.teamName)} (${entry.currentScore})</span>`;
+                historyPreviewMeta.textContent = `Time: ${formatGameTimeMmSs(entry) || 'N/A'}`;
             } else if (entry.type === 'card') {
                 const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
                 const isYellow = (entry.cardType === 'yellow' || (entry.degree && entry.degree.toLowerCase().includes('yellow')));
                 const cardSymbol = isYellow ? '🟨' : '🟥';
-                historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">${cardSymbol}</span><span class="history-dot" style="background:${color};"></span><span>${escapeHtml(entry.teamName)}</span>`;
-                historyPreviewMeta.textContent = `Game Time: ${entry.gameTime || 'N/A'}`;
+                historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">${cardSymbol}</span><span>${escapeHtml(entry.teamName)}</span>`;
+                historyPreviewMeta.textContent = `Time: ${formatGameTimeMmSs(entry) || 'N/A'}`;
             } else {
                 const { eventLabel } = parseEventDetails(entry);
                 const localTime = formatEventTime(entry.timestamp);
@@ -2927,7 +2950,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '3.9';
+        const VERSION = '4.1';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running
@@ -2942,7 +2965,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">3.9</span></p>
+        <p>Version <span id="appVersion">4.1</span></p>
     </footer>
 </body>
 
