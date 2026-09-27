@@ -893,6 +893,9 @@
     <!-- Tesseract.js for OCR digit recognition -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
+    <!-- Suite Profile & Bingo Sync engine -->
+    <script src="../../media/suite-profile.js"></script>
+    <script src="../sync.js"></script>
     <script src="utils.js"></script>
     <script src="ocr.js"></script>
 </head>
@@ -919,7 +922,10 @@
                 Back to Bingo
             </button>
             <span id="editorPageTitle" class="scan-page-title">Add Card</span>
-            <span id="editorModeBadge" class="target-card-badge">New Card</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div id="scanSyncBadgeWrap"></div>
+                <span id="editorModeBadge" class="target-card-badge">New Card</span>
+            </div>
         </header>
 
         <!-- Card Name & Serial Number Inputs (always visible) -->
@@ -1214,7 +1220,10 @@
         <!-- ===== Panel: Load from Server ===== -->
         <div class="editor-panel hidden" data-panel="server" id="panelServer">
             <div class="scan-card">
-                <div class="card-title">Saved Server Cards</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <div class="card-title" style="margin-bottom:0;">Saved Server Cards</div>
+                    <div id="serverCardsCacheBadgeWrap"></div>
+                </div>
                 <div id="serverCardsList">
                     <p style="text-align: center; color: var(--text-subtle); font-size: 14px; padding: 20px 0;">
                         Loading saved cards...
@@ -1249,12 +1258,12 @@
 
     <!-- Footer: page version -->
     <footer class="app-footer">
-        <p>Card Editor v<span id="editorVersion">1.3</span></p>
+        <p>Card Editor v<span id="editorVersion">1.4</span></p>
     </footer>
 
     <script>
         // Card editor page version identifier
-        const SCAN_VERSION = '1.3';
+        const SCAN_VERSION = '1.4';
         document.getElementById('editorVersion').textContent = SCAN_VERSION;
 
         // ============================================================
@@ -1285,6 +1294,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const currentMode = urlParams.get('mode') || 'add'; // 'add' | 'edit'
         const targetCardId = urlParams.get('cardId');
+        let loadedServerCardId = null;
 
         // DOM element refs
         const cardNameInput = document.getElementById('cardNameInput');
@@ -1589,7 +1599,7 @@
                 // Push a new card into the session
                 const num = sessionObj.cards.length + 1;
                 sessionObj.cards.push({
-                    id: Date.now(),
+                    id: (crypto.randomUUID ? crypto.randomUUID() : ('card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6))),
                     label: name || `Card ${num}`,
                     serial: serial,
                     squares: squares,
@@ -1620,27 +1630,25 @@
             if (saveServerBtn) saveServerBtn.disabled = true;
 
             try {
-                const res = await fetch('../php/cards.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: (currentMode === 'edit' && targetCardId) ? parseInt(targetCardId) : Date.now(),
-                        name: name,
-                        serial: serial,
-                        squares: squares
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    // Invalidate server cache so Load from Server tab refreshes
-                    serverCardsLoaded = false;
-                    alert(`✓ Card "${name}" saved to server!`);
-                } else {
-                    alert('Error saving to server: ' + (data.error || 'Unknown error'));
-                }
+                const cardId = loadedServerCardId || (currentMode === 'edit' && targetCardId ? String(targetCardId) : (crypto.randomUUID ? crypto.randomUUID() : 'card_' + Date.now()));
+                loadedServerCardId = cardId;
+
+                const cardPayload = {
+                    id: cardId,
+                    label: name,
+                    name: name,
+                    serial: serial,
+                    squares: squares,
+                    createdBy: (window.SuiteProfile && !SuiteProfile.isGuest()) ? (SuiteProfile.getUser().username || SuiteProfile.getUser().id) : null,
+                    updatedAt: new Date().toISOString()
+                };
+
+                BingoSync.queueCardUpsert(cardPayload);
+                serverCardsLoaded = false;
+                alert(`✓ Card "${name}" saved! (Syncing with library)`);
             } catch (err) {
                 console.error(err);
-                alert('Server error. Ensure PHP backend is available.');
+                alert('Error saving to server: ' + err.message);
             } finally {
                 if (saveServerBtn) saveServerBtn.disabled = false;
             }
@@ -1650,33 +1658,57 @@
         // CARD EDITOR — load from server tab
         // ============================================================
 
+        function formatRelativeTime(timestamp) {
+            if (!timestamp) return 'recently';
+            const diff = Math.floor((Date.now() - timestamp) / 1000);
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
+        }
+
         async function loadServerCards() {
-            // Avoid refetching on every tab switch
-            if (serverCardsLoaded) return;
             const container = document.getElementById('serverCardsList');
             if (!container) return;
+            const badgeWrap = document.getElementById('serverCardsCacheBadgeWrap');
 
             container.innerHTML = '<p style="text-align:center; color:var(--text-subtle); padding:20px 0;">Loading saved cards...</p>';
 
             try {
-                const res = await fetch('../php/cards.php');
-                const savedCards = await res.json();
+                const res = await BingoSync.loadCardLibrary();
                 serverCardsLoaded = true;
 
+                if (badgeWrap) {
+                    if (res.fromCache) {
+                        const timeStr = res.lastUpdated ? formatRelativeTime(res.lastUpdated) : 'recently';
+                        badgeWrap.innerHTML = `<span class="cached-badge" title="Served from local offline cache">Cached — updated ${timeStr}</span>`;
+                    } else {
+                        badgeWrap.innerHTML = '';
+                    }
+                }
+
+                const savedCards = res.cards || [];
                 if (!Array.isArray(savedCards) || savedCards.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:var(--text-subtle); font-size:14px; padding:20px 0;">No cards saved on server yet.<br>Save a card using the "Save to Server" button on the Manual Entry tab.</p>';
+                    container.innerHTML = '<p style="text-align:center; color:var(--text-subtle); font-size:14px; padding:20px 0;">No cards saved in library yet.<br>Save a card using the "Save to Server" button on the Manual Entry tab.</p>';
                     return;
                 }
 
+                // Sort: favorites first, then by updatedAt desc
+                savedCards.sort((a, b) => {
+                    if (a.isFavorite && !b.isFavorite) return -1;
+                    if (!a.isFavorite && b.isFavorite) return 1;
+                    return (new Date(b.updatedAt || 0)) - (new Date(a.updatedAt || 0));
+                });
+
                 container.innerHTML = '';
-                savedCards.forEach(savedCard => container.appendChild(renderServerCardItem(savedCard)));
+                savedCards.forEach(savedCard => container.appendChild(renderServerCardItem(savedCard, res.fromCache)));
             } catch (err) {
-                container.innerHTML = '<p style="text-align:center; color:#d93025; font-size:14px; padding:20px 0;">Could not reach server.<br>Check that the PHP backend is available.</p>';
-                serverCardsLoaded = false; // allow retry on next tab switch
+                container.innerHTML = '<p style="text-align:center; color:#d93025; font-size:14px; padding:20px 0;">Could not load card library.</p>';
+                serverCardsLoaded = false;
             }
         }
 
-        function renderServerCardItem(savedCard) {
+        function renderServerCardItem(savedCard, isCached) {
             const item = document.createElement('div');
             item.className = 'server-card-item';
 
@@ -1699,7 +1731,7 @@
 
             const nameEl = document.createElement('span');
             nameEl.className = 'server-card-name';
-            nameEl.textContent = savedCard.name || 'Card';
+            nameEl.textContent = savedCard.label || savedCard.name || 'Card';
 
             const serialEl = document.createElement('span');
             serialEl.className = 'server-card-serial';
@@ -1708,9 +1740,34 @@
             info.appendChild(nameEl);
             info.appendChild(serialEl);
 
-            // Load + Delete action buttons
+            // Load + Favorite + Delete action buttons
             const actions = document.createElement('div');
             actions.className = 'server-card-actions';
+
+            // Favorite star toggle for SuiteProfile users
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                const favBtn = document.createElement('button');
+                favBtn.type = 'button';
+                favBtn.className = 'favorite-star-btn' + (savedCard.isFavorite ? ' favorited' : '');
+                favBtn.title = isCached ? 'Favorites unavailable offline' : (savedCard.isFavorite ? 'Remove from favorites' : 'Add to favorites');
+                favBtn.disabled = isCached || !navigator.onLine;
+                favBtn.innerHTML = savedCard.isFavorite ? '★' : '☆';
+                favBtn.onclick = async () => {
+                    try {
+                        favBtn.disabled = true;
+                        await BingoSync.toggleFavorite(savedCard.id, !savedCard.isFavorite);
+                        savedCard.isFavorite = !savedCard.isFavorite;
+                        favBtn.className = 'favorite-star-btn' + (savedCard.isFavorite ? ' favorited' : '');
+                        favBtn.innerHTML = savedCard.isFavorite ? '★' : '☆';
+                        favBtn.title = savedCard.isFavorite ? 'Remove from favorites' : 'Add to favorites';
+                    } catch (err) {
+                        alert(err.message);
+                    } finally {
+                        favBtn.disabled = false;
+                    }
+                };
+                actions.appendChild(favBtn);
+            }
 
             const loadBtn = document.createElement('button');
             loadBtn.type = 'button';
@@ -1718,10 +1775,10 @@
             loadBtn.style.cssText = 'padding: 8px 16px; font-size: 13px; width: auto;';
             loadBtn.textContent = 'Load';
             loadBtn.onclick = () => {
-                // Pre-populate card state from server card and switch to Manual Entry tab
+                loadedServerCardId = savedCard.id;
                 cardSquares = [...squares];
                 cardSquares[FREE_CELL_IDX] = 'FREE';
-                cardNameInput.value = savedCard.name || '';
+                cardNameInput.value = savedCard.label || savedCard.name || '';
                 cardSerialInput.value = savedCard.serial || '';
                 activePickerCellIdx = -1;
                 switchTab('manual');
@@ -1732,16 +1789,12 @@
             deleteBtn.type = 'button';
             deleteBtn.className = 'btn btn-secondary';
             deleteBtn.style.cssText = 'padding: 8px 10px; font-size: 13px; width: auto;';
-            deleteBtn.title = 'Delete from server';
+            deleteBtn.title = 'Delete from library';
             deleteBtn.textContent = '🗑';
-            deleteBtn.onclick = async () => {
-                if (!confirm(`Delete "${savedCard.name}" from server?`)) return;
-                try {
-                    await fetch(`../php/cards.php?id=${savedCard.id}`, { method: 'DELETE' });
-                    item.remove();
-                } catch (err) {
-                    console.error(err);
-                }
+            deleteBtn.onclick = () => {
+                if (!confirm(`Delete "${savedCard.label || savedCard.name}" from library?`)) return;
+                BingoSync.queueCardDelete(savedCard.id);
+                item.remove();
             };
 
             actions.appendChild(loadBtn);
@@ -2181,20 +2234,24 @@
         if (ocrBtn) ocrBtn.onclick = doOCR;
 
         // Application version identifier
-        const VERSION = '1.3';
-        const APP_VERSION = VERSION;
+        const SCAN_PAGE_VERSION = '1.4';
+        const APP_VERSION = SCAN_PAGE_VERSION;
         const versionEl = document.getElementById('appVersion');
-        if (versionEl) versionEl.textContent = VERSION;
+        if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;
 
         initCardState();
+
+        // Initialize sync badge in header
+        const syncBadgeWrap = document.getElementById('scanSyncBadgeWrap');
+        if (syncBadgeWrap && window.BingoSync) {
+            BingoSync.renderSyncBadge(syncBadgeWrap);
+            BingoSync.onStateChange(() => BingoSync.renderSyncBadge(syncBadgeWrap));
+        }
     </script>
 
     <footer style="margin-top: 32px; text-align: center; font-size: 0.75rem; color: var(--text-subtle);">
-        <p>Version <span id="appVersion">1.3</span></p>
+        <p>Version <span id="appVersion">1.4</span></p>
     </footer>
-
-    <!-- Shared Suite Profile and service worker registration -->
-    <script src="../../media/suite-profile.js"></script>
 </body>
 
 </html>

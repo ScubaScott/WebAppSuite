@@ -1,5 +1,6 @@
 // OCR module version identifier
-const VERSION = '1.3';
+const OCR_VERSION = '1.4';
+const VERSION = OCR_VERSION;
 
 
 // Standard 75-ball bingo column ranges (B-I-N-G-O). Used as a sanity check: if a recognized

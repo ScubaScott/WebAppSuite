@@ -26,3 +26,17 @@
         Header set Expires 0
     </FilesMatch>
 </IfModule>
+
+# URL Routing for API endpoints
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Route Bingo API endpoints
+    RewriteRule ^api/health/?$ api/bingo.php?endpoint=health [QSA,L]
+    RewriteRule ^api/cards/?$ api/bingo.php?endpoint=cards [QSA,L]
+    RewriteRule ^api/cards/([^/]+)/?$ api/bingo.php?endpoint=cards&id=$1 [QSA,L]
+    RewriteRule ^api/favorites/([^/]+)/?$ api/bingo.php?endpoint=favorites&id=$1 [QSA,L]
+    RewriteRule ^api/games/?$ api/bingo.php?endpoint=games [QSA,L]
+    RewriteRule ^api/games/([^/]+)/?$ api/bingo.php?endpoint=games&id=$1 [QSA,L]
+</IfModule>
+

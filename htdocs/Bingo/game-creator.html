@@ -7,6 +7,9 @@
     <meta name="description" content="Create, load, and manage custom Bingo game modes and win patterns.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="../media/suite-profile.js"></script>
+    <script src="sync.js"></script>
     <style>
         /* ---- Design tokens ---- */
         :root {
@@ -427,7 +430,10 @@
 </head>
 <body>
 
-    <h1>&#x270F;&#xFE0F; Create / Manage Games</h1>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <h1 style="margin: 0;">&#x270F;&#xFE0F; Create / Manage Games</h1>
+        <div id="creatorSyncBadgeWrap"></div>
+    </div>
 
     <!-- ========== LOAD EXISTING GAME ========== -->
     <div class="section-label">Load Existing Game</div>
@@ -507,9 +513,10 @@
 
     <script>
         // Game creator version identifier
-        const VERSION = '1.1';
+        const VERSION = '1.2';
+        const APP_VERSION = VERSION;
 
-        const GAMES_API  = './php/games.php'; // REST endpoint for all game operations
+        const GAMES_API  = BingoSync.resolveApiUrl('api/games'); // REST endpoint for all game operations
         const WORD       = 'BINGO';           // Column header letters
         const FREE_CELL  = 12;                // Index of the FREE center cell
 
@@ -630,16 +637,22 @@
             statusEl.className   = 'status-msg';
 
             try {
-                const res = await fetch(GAMES_API, {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ name: nameValue, patterns: patterns })
-                });
+                const gameId = (crypto.randomUUID ? crypto.randomUUID() : ('game_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)));
+                const cleanPatterns = patterns.map((p, idx) => ({
+                    id: (crypto.randomUUID ? crypto.randomUUID() : ('pat_' + Date.now() + '_' + idx)),
+                    name: p.name,
+                    cells: p.cells,
+                    sortOrder: idx
+                }));
 
-                if (!res.ok) {
-                    const err = await res.json().catch(function() { return {}; });
-                    throw new Error(err.error || ('Server error ' + res.status));
-                }
+                const gamePayload = {
+                    id: gameId,
+                    name: nameValue,
+                    patterns: cleanPatterns,
+                    updatedAt: new Date().toISOString()
+                };
+
+                BingoSync.queueGameUpsert(gamePayload);
 
                 statusEl.textContent = '\u2713 Game saved! You can close this window.';
                 statusEl.className   = 'status-msg success';
@@ -854,14 +867,7 @@
             statusEl.className   = 'status-msg';
 
             try {
-                const res = await fetch(GAMES_API + '?id=' + encodeURIComponent(id), {
-                    method: 'DELETE'
-                });
-
-                if (!res.ok) {
-                    const err = await res.json().catch(function() { return {}; });
-                    throw new Error(err.error || ('Server error ' + res.status));
-                }
+                BingoSync.queueGameDelete(id);
 
                 statusEl.textContent = '\u2713 "' + name + '" has been deleted.';
                 statusEl.className   = 'status-msg success';
@@ -892,21 +898,21 @@
         });
 
         // ---- Initial page load ----
-        fetchServerGames();  // Load game list and populate dropdown
+        fetchServerGames();   // Load game list and populate dropdown
         renderPatternsList(); // Render empty patterns list
 
-        // Application version identifier
-        const VERSION = '1.1';
-        const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = VERSION;
+
+        const syncBadgeWrap = document.getElementById('creatorSyncBadgeWrap');
+        if (syncBadgeWrap && window.BingoSync) {
+            BingoSync.renderSyncBadge(syncBadgeWrap);
+            BingoSync.onStateChange(() => BingoSync.renderSyncBadge(syncBadgeWrap));
+        }
     </script>
 
     <footer style="margin-top: 32px; text-align: center; font-size: 0.75rem; color: var(--text-subtle);">
-        <p>Version <span id="appVersion">1.1</span></p>
+        <p>Version <span id="appVersion">1.2</span></p>
     </footer>
-
-    <!-- Shared Suite Profile and service worker registration -->
-    <script src="../media/suite-profile.js"></script>
 </body>
 </html>

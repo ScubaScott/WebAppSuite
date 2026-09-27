@@ -1,0 +1,16 @@
+# WebAppSuite API Routing Configuration
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Don't rewrite existing physical files
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Route Bingo API endpoints
+    RewriteRule ^health/?$ bingo.php?endpoint=health [QSA,L]
+    RewriteRule ^cards/?$ bingo.php?endpoint=cards [QSA,L]
+    RewriteRule ^cards/([^/]+)/?$ bingo.php?endpoint=cards&id=$1 [QSA,L]
+    RewriteRule ^favorites/([^/]+)/?$ bingo.php?endpoint=favorites&id=$1 [QSA,L]
+    RewriteRule ^games/?$ bingo.php?endpoint=games [QSA,L]
+    RewriteRule ^games/([^/]+)/?$ bingo.php?endpoint=games&id=$1 [QSA,L]
+</IfModule>

@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '3.9';
+const VERSION = '4.0';
 
 
 // ============================================================
@@ -225,6 +225,10 @@ function updateUI() {
     const selectedGame = getSelectedGame();
     if (selectedGameNameEl) {
         selectedGameNameEl.textContent = selectedGame ? selectedGame.name : "— None selected —";
+    }
+    const cachedGamesIndicator = document.getElementById("cachedGamesIndicator");
+    if (cachedGamesIndicator) {
+        cachedGamesIndicator.classList.toggle("hidden", !isOperatingFromCachedGames);
     }
     // Show the Double badge only when double mode is active
     if (doubleModeBadge) {
@@ -594,25 +598,72 @@ if (dauberOpacitySlider) {
 // GAME MODES — server sync & menu
 // ============================================================
 
+let isOperatingFromCachedGames = false;
+
 async function loadGames() {
     try {
-        const res = await fetch("./php/games.php");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-            availableGames = data;
-            if (!session.gameId && availableGames.length > 0) {
-                session.gameId = availableGames[0].id;
-                saveSession();
+        if (window.BingoSync) {
+            const res = await BingoSync.loadGamesList();
+            if (Array.isArray(res.games) && res.games.length > 0) {
+                availableGames = res.games;
+                isOperatingFromCachedGames = res.fromCache;
+                if (!session.gameId && availableGames.length > 0) {
+                    session.gameId = availableGames[0].id;
+                    saveSession();
+                }
+            }
+        } else {
+            const cacheRaw = localStorage.getItem("bingoGamesCache");
+            if (cacheRaw) {
+                try {
+                    availableGames = JSON.parse(cacheRaw);
+                    isOperatingFromCachedGames = true;
+                } catch (e) {}
+            }
+            const res = await fetch("../api/games");
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    availableGames = data;
+                    isOperatingFromCachedGames = false;
+                    localStorage.setItem("bingoGamesCache", JSON.stringify(data));
+                    if (!session.gameId && availableGames.length > 0) {
+                        session.gameId = availableGames[0].id;
+                        saveSession();
+                    }
+                }
             }
         }
     } catch (err) {
-        console.warn("Could not load games from server:", err);
+        console.warn("Could not load games from server, checking local cache:", err);
+        if (!availableGames || availableGames.length === 0) {
+            try {
+                const cacheRaw = localStorage.getItem("bingoGamesCache");
+                if (cacheRaw) {
+                    availableGames = JSON.parse(cacheRaw);
+                    isOperatingFromCachedGames = true;
+                }
+            } catch (e) {}
+        }
     }
     updateUI();
 }
 
 function getSelectedGame() {
-    return availableGames.find(g => g.id === session.gameId) || null;
+    let found = availableGames.find(g => g.id === session.gameId);
+    if (!found) {
+        try {
+            const cacheRaw = localStorage.getItem("bingoGamesCache");
+            if (cacheRaw) {
+                const cachedGames = JSON.parse(cacheRaw);
+                found = cachedGames.find(g => g.id === session.gameId) || null;
+                if (found && (!availableGames || availableGames.length === 0)) {
+                    availableGames = cachedGames;
+                }
+            }
+        } catch (e) {}
+    }
+    return found || null;
 }
 
 function selectGame(gameId) {
@@ -1613,6 +1664,13 @@ async function initBingoSettings() {
     initFlashboardConfig();
     initCardSize();
 
+    // Render sync badge
+    const topbarSyncBadge = document.getElementById("topbarSyncBadge");
+    if (topbarSyncBadge && window.BingoSync) {
+        BingoSync.renderSyncBadge(topbarSyncBadge);
+        BingoSync.onStateChange(() => BingoSync.renderSyncBadge(topbarSyncBadge));
+    }
+
     // Initialization complete: future user changes are allowed to sync
     isInitializingSettings = false;
 }
@@ -1629,6 +1687,9 @@ window.addEventListener('suite-profile-changed', (e) => {
         updateUI();
     } else if (detail.action === 'login') {
         initBingoSettings();
+        if (window.BingoSync) {
+            BingoSync.claimGuestCardsOnLogin();
+        }
     }
 });
 

@@ -3,7 +3,7 @@
 // Executes schema.sql to create needed tables in the configured MySQL database.
 
 // Setup utility version identifier
-$SETUP_VERSION = '1.1';
+$SETUP_VERSION = '1.2';
 
 require_once __DIR__ . '/config.php';
 
@@ -50,7 +50,7 @@ header('Content-Type: text/html; charset=utf-8');
                 // Execute multi-query schema script
                 $pdo->exec($sql);
                 echo '<div class="success">';
-                echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, and <code>suite_games</code> have been successfully initialized or verified.';
+                echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, <code>suite_games</code>, <code>cards</code>, <code>card_favorites</code>, <code>games</code>, and <code>game_patterns</code> have been successfully initialized or verified.';
                 echo '</div>';
                 echo '<p><a href="../index.html">&larr; Return to App Suite Launcher</a></p>';
             } catch (PDOException $e) {

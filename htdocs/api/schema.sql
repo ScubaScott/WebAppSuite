@@ -82,4 +82,88 @@ CREATE TABLE IF NOT EXISTS `suite_games` (
         REFERENCES `suite_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 5. Bingo Cards table: stores shared global card library
+CREATE TABLE IF NOT EXISTS `cards` (
+    `id`          VARCHAR(36)   NOT NULL,
+    `label`       VARCHAR(100)  NOT NULL DEFAULT '',
+    `serial`      VARCHAR(50)   NOT NULL DEFAULT '',
+    `squares`     LONGTEXT      NOT NULL,
+    `created_by`  VARCHAR(100)  DEFAULT NULL,
+    `created_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`  DATETIME      DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `idx_cards_updated` (`updated_at`),
+    INDEX `idx_cards_created_by` (`created_by`),
+    INDEX `idx_cards_deleted` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 6. Bingo Card Favorites table: per-user favorites
+CREATE TABLE IF NOT EXISTS `card_favorites` (
+    `user_id`       VARCHAR(100)  NOT NULL,
+    `card_id`       VARCHAR(36)   NOT NULL,
+    `favorited_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`user_id`, `card_id`),
+    INDEX `idx_favorites_user` (`user_id`),
+    CONSTRAINT `fk_favorites_card`
+        FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. Bingo Games table: game mode definitions
+CREATE TABLE IF NOT EXISTS `games` (
+    `id`          VARCHAR(36)   NOT NULL,
+    `name`        VARCHAR(100)  NOT NULL,
+    `builtin`     TINYINT(1)    NOT NULL DEFAULT 0,
+    `created_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`  DATETIME      DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `idx_games_builtin` (`builtin`),
+    INDEX `idx_games_deleted` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. Bingo Game Patterns table: win patterns belonging to a game
+CREATE TABLE IF NOT EXISTS `game_patterns` (
+    `id`          VARCHAR(36)   NOT NULL,
+    `game_id`     VARCHAR(36)   NOT NULL,
+    `name`        VARCHAR(100)  NOT NULL,
+    `cells`       LONGTEXT      NOT NULL,
+    `sort_order`  INT           NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    INDEX `idx_patterns_game` (`game_id`),
+    CONSTRAINT `fk_patterns_game`
+        FOREIGN KEY (`game_id`) REFERENCES `games` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed built-in Bingo games if table is empty
+INSERT IGNORE INTO `games` (`id`, `name`, `builtin`) VALUES
+('00000000-0000-4000-8000-000000000001', 'Regular Bingo', 1),
+('00000000-0000-4000-8000-000000000002', 'Four Corners', 1),
+('00000000-0000-4000-8000-000000000003', 'Blackout', 1),
+('00000000-0000-4000-8000-000000000004', 'X Pattern', 1),
+('00000000-0000-4000-8000-000000000005', 'T-Shape', 1),
+('00000000-0000-4000-8000-000000000006', 'L-Shape', 1);
+
+-- Seed built-in game patterns
+INSERT IGNORE INTO `game_patterns` (`id`, `game_id`, `name`, `cells`, `sort_order`) VALUES
+('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', 'Row 1', '[0,1,2,3,4]', 0),
+('10000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', 'Row 2', '[5,6,7,8,9]', 1),
+('10000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000001', 'Row 3', '[10,11,12,13,14]', 2),
+('10000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-000000000001', 'Row 4', '[15,16,17,18,19]', 3),
+('10000000-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000001', 'Row 5', '[20,21,22,23,24]', 4),
+('10000000-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001', 'Col B', '[0,5,10,15,20]', 5),
+('10000000-0000-4000-8000-000000000007', '00000000-0000-4000-8000-000000000001', 'Col I', '[1,6,11,16,21]', 6),
+('10000000-0000-4000-8000-000000000008', '00000000-0000-4000-8000-000000000001', 'Col N', '[2,7,12,17,22]', 7),
+('10000000-0000-4000-8000-000000000009', '00000000-0000-4000-8000-000000000001', 'Col G', '[3,8,13,18,23]', 8),
+('10000000-0000-4000-8000-000000000010', '00000000-0000-4000-8000-000000000001', 'Col O', '[4,9,14,19,24]', 9),
+('10000000-0000-4000-8000-000000000011', '00000000-0000-4000-8000-000000000001', 'Diagonal \\', '[0,6,12,18,24]', 10),
+('10000000-0000-4000-8000-000000000012', '00000000-0000-4000-8000-000000000001', 'Diagonal /', '[4,8,12,16,20]', 11),
+('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002', 'Four Corners', '[0,4,20,24]', 0),
+('30000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000003', 'Blackout', '[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]', 0),
+('40000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000004', 'X Pattern', '[0,4,6,8,12,16,18,20,24]', 0),
+('50000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000005', 'T-Shape', '[0,1,2,3,4,7,12,17,22]', 0),
+('60000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000006', 'L-Shape', '[0,5,10,15,20,21,22,23,24]', 0);
+
 SET FOREIGN_KEY_CHECKS = 1;

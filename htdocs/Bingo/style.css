@@ -1,6 +1,6 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "3.2";
+    --version: "3.3";
 
     /* Flashboard Call Balls Custom Configuration */
     --flashboard-ball-size: 27px;
@@ -2743,3 +2743,165 @@ body {
     color: #ff6b6b;
     border-color: rgba(229, 57, 53, 0.35);
 }
+
+/* ================================================================
+   SYNC INDICATOR, OUTBOX MODAL & OFFLINE CACHE UI
+================================================================ */
+
+.bingo-sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-subtle);
+    user-select: none;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.bingo-sync-badge:hover {
+    background: var(--surface-strong);
+    color: var(--text);
+}
+
+.bingo-sync-badge .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.bingo-sync-badge.syncing .sync-dot {
+    animation: syncPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes syncPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+/* Outbox modal styles */
+.bingo-sync-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.bingo-sync-modal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.outbox-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.outbox-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.outbox-modal-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.outbox-modal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.outbox-modal-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.outbox-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+/* Cached badge in modal headers or selector */
+.cached-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+/* Favorite star button */
+.favorite-star-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--text-subtle);
+    padding: 6px;
+    border-radius: 4px;
+    transition: transform 0.15s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.favorite-star-btn:hover:not(:disabled) {
+    transform: scale(1.15);
+    color: #eab308;
+}
+
+.favorite-star-btn.favorited {
+    color: #eab308;
+}
+
+.favorite-star-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}

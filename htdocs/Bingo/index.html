@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="../media/suite-profile.css">
     <script src="../media/suite-profile.js" defer></script>
+    <script src="sync.js" defer></script>
     <script src="tracking.js" defer></script>
 </head>
 
@@ -18,7 +19,10 @@
             <a href="../index.html" class="back-link">← Back to Apps</a>
             <h1>Bingo Number Tracker</h1>
         </div>
-        <button id="newSessionBtn" class="btn primary-btn" title="Change Game Name">Game Name</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <div id="topbarSyncBadge"></div>
+            <button id="newSessionBtn" class="btn primary-btn" title="Change Game Name">Game Name</button>
+        </div>
     </header>
 
     <main class="page-content">
@@ -54,6 +58,7 @@
                     <div class="game-info">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span class="stat-label">Game Mode</span>
+                            <span class="cached-badge hidden" id="cachedGamesIndicator">Cached</span>
                             <span class="lastman-status standing hidden" id="lastManStatus">Last man: Standing</span>
                         </div>
                         <div class="game-name-row">
@@ -251,12 +256,12 @@
     </div>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">3.9</span></p>
+        <p>Version <span id="appVersion">4.0</span></p>
     </footer>
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '3.9';
+        const INDEX_VERSION = '4.0';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
