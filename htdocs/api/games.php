@@ -3,7 +3,7 @@
 // Handles match synchronization, active games directory, and user game archive persistence.
 
 // API endpoint version identifier
-$GAMES_API_VERSION = '1.1';
+$GAMES_API_VERSION = '1.2';
 
 // Inactivity threshold (in hours) after which a live game is automatically finalized
 define('GAME_TIMEOUT_HOURS', 3);
@@ -63,7 +63,7 @@ if ($action === 'sync') {
     $rev = isset($payload['rev']) ? (int)$payload['rev'] : 0;
     $visibility = isset($payload['visibility']) && $payload['visibility'] === 'private' ? 'private' : 'public';
     $status = isset($payload['status']) && $payload['status'] === 'final' ? 'final' : 'live';
-    $endedBy = isset($payload['ended_by']) && in_array($payload['ended_by'], ['user', 'new_game', 'timeout'], true) ? $payload['ended_by'] : null;
+    $endedBy = isset($payload['ended_by']) && in_array($payload['ended_by'], ['user', 'new_game', 'timeout', 'abandoned'], true) ? $payload['ended_by'] : null;
     $snapshot = isset($payload['snapshot']) && is_array($payload['snapshot']) ? $payload['snapshot'] : [];
 
     // Validate game UUID and write token format (64-character hex string)
@@ -101,10 +101,17 @@ if ($action === 'sync') {
     $writeTokenHash = hash('sha256', $writeToken);
     $nowUtc = gmdate('Y-m-d H:i:s');
 
-    // Started and ended timestamp calculations
+    // Started and ended timestamp calculations (supports millisecond epoch or ISO 8601 string)
     $startedAt = $nowUtc;
-    if (!empty($snapshot['startedAt']) && is_numeric($snapshot['startedAt'])) {
-        $startedAt = gmdate('Y-m-d H:i:s', (int)($snapshot['startedAt'] / 1000));
+    if (!empty($snapshot['startedAt'])) {
+        if (is_numeric($snapshot['startedAt'])) {
+            $startedAt = gmdate('Y-m-d H:i:s', (int)($snapshot['startedAt'] / 1000));
+        } else {
+            $parsedTs = strtotime($snapshot['startedAt']);
+            if ($parsedTs !== false) {
+                $startedAt = gmdate('Y-m-d H:i:s', $parsedTs);
+            }
+        }
     }
     $endedAt = ($status === 'final') ? $nowUtc : null;
 
@@ -116,6 +123,17 @@ if ($action === 'sync') {
     $existing = $stmt->fetch();
 
     if (!$existing) {
+        // Reject final-on-create: games must have a live phase before reaching final status
+        if ($status === 'final') {
+            http_response_code(409);
+            echo json_encode([
+                'success' => false,
+                'error_code' => 'final_without_live',
+                'error' => 'Cannot create a game directly in final status.'
+            ]);
+            exit;
+        }
+
         // --- CREATE NEW GAME ---
         $ownerId = $user ? (int)$user['id'] : null;
         // For guest games, force visibility to public and set 24-hour expiration
@@ -548,14 +566,43 @@ if ($action === 'delete') {
         exit;
     }
 
-    $deleteStmt = $pdo->prepare('DELETE FROM suite_games WHERE game_id = ? AND owner_id = ?');
-    $deleteStmt->execute([$gameId, $user['id']]);
+    // Check game existence, ownership, and activity status
+    $stmt = $pdo->prepare('SELECT id, owner_id, status, last_activity_at, TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds FROM suite_games WHERE game_id = ? LIMIT 1');
+    $stmt->execute([$gameId]);
+    $game = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($deleteStmt->rowCount() === 0) {
+    if (!$game || (int)$game['owner_id'] !== (int)$user['id']) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Game not found or not owned by user.']);
         exit;
     }
+
+    $ageSeconds = max(0, (int)$game['age_seconds']);
+    $timeoutSeconds = GAME_TIMEOUT_HOURS * 3600;
+    $effectiveStatus = $game['status'];
+
+    // Lazily finalize live games that exceeded the timeout threshold so they can be deleted
+    if ($game['status'] === 'live' && $ageSeconds >= $timeoutSeconds) {
+        $effectiveStatus = 'final';
+        try {
+            $finalizeStmt = $pdo->prepare('UPDATE suite_games SET status = "final", ended_by = "timeout", ended_at = last_activity_at, timer_running = 0 WHERE id = ?');
+            $finalizeStmt->execute([$game['id']]);
+        } catch (Exception $e) { }
+    }
+
+    // Reject deletion of currently active games
+    if ($effectiveStatus !== 'final') {
+        http_response_code(409);
+        echo json_encode([
+            'success' => false,
+            'error_code' => 'game_live',
+            'error' => 'Game is still live. End it before deleting.'
+        ]);
+        exit;
+    }
+
+    $deleteStmt = $pdo->prepare('DELETE FROM suite_games WHERE id = ?');
+    $deleteStmt->execute([$game['id']]);
 
     echo json_encode([
         'success' => true,

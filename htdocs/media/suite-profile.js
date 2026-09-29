@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.6';
+const SUITE_PROFILE_VERSION = '1.7';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -750,6 +750,9 @@ const SUITE_PROFILE_VERSION = '1.6';
                 const data = await res.json();
 
                 if (res.status === 409) {
+                    if (data && data.error_code === 'final_without_live') {
+                        return { success: false, error_code: 'final_without_live', error: data.error };
+                    }
                     // Revision conflict: server has equal or newer revision
                     const serverRev = data.rev || payload.rev;
                     localGameRevs[gameId] = Math.max(localGameRevs[gameId] || 0, serverRev);
@@ -933,7 +936,14 @@ const SUITE_PROFILE_VERSION = '1.6';
             throw new Error('Session expired. Please sign in again.');
         }
         if (!res.ok) {
-            throw new Error('Failed to delete game.');
+            let errorData = null;
+            try { errorData = await res.json(); } catch (_) { }
+            const errorMsg = (errorData && errorData.error) ? errorData.error : 'Failed to delete game.';
+            const err = new Error(errorMsg);
+            if (errorData && errorData.error_code) {
+                err.error_code = errorData.error_code;
+            }
+            throw err;
         }
         return await res.json();
     }

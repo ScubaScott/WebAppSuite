@@ -614,12 +614,26 @@
                 });
                 actionsCell.appendChild(toggleVisBtn);
 
-                // Delete button
+                // Delete button (enabled only for games in final status)
                 const deleteBtn = document.createElement('button');
                 deleteBtn.type = 'button';
                 deleteBtn.className = 'btn-table-action btn-table-danger';
                 deleteBtn.textContent = 'Delete';
+                if (isFinal) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.title = 'Delete this completed match';
+                } else {
+                    deleteBtn.disabled = true;
+                    deleteBtn.title = 'End the game before deleting';
+                    deleteBtn.style.opacity = '0.4';
+                    deleteBtn.style.cursor = 'not-allowed';
+                }
+
                 deleteBtn.addEventListener('click', async () => {
+                    if (!isFinal) {
+                        alert('This game is still live. End it before deleting.');
+                        return;
+                    }
                     if (!confirm(`Permanently delete game: ${homeName} vs ${awayName}?`)) return;
                     deleteBtn.disabled = true;
                     try {
@@ -631,8 +645,13 @@
                             deleteBtn.disabled = false;
                         }
                     } catch (e) {
-                        alert('Network error deleting game.');
-                        deleteBtn.disabled = false;
+                        if (e && (e.error_code === 'game_live' || (e.message && e.message.toLowerCase().includes('live')))) {
+                            alert('This game is still live. End it before deleting.');
+                            loadGamesPage();
+                        } else {
+                            alert('Network error deleting game.');
+                            deleteBtn.disabled = false;
+                        }
                     }
                 });
                 actionsCell.appendChild(deleteBtn);
@@ -700,7 +719,7 @@
         }
 
         // My Games version identifier
-        const VERSION = '1.4';
+        const VERSION = '1.5';
         const APP_VERSION = VERSION;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -720,7 +739,7 @@
     </script>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.4</span></p>
+        <p>Version <span id="appVersion">1.5</span></p>
     </footer>
 </body>
 </html>

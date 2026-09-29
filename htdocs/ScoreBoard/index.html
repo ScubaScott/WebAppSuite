@@ -109,6 +109,7 @@
                             <div id="timer-display"
                                 style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;">
                                 00:40:00.0</div>
+                            <div id="draft-status-badge" class="draft-badge hidden">READY — awaiting start</div>
                             <div id="overage-badge" class="overage-badge hidden">Overage</div>
                         </div>
 
@@ -530,8 +531,7 @@
             <div class="modal-footer">
                 <button type="button" id="btn-setup-cancel"
                     class="modal-action-btn modal-action-btn-secondary">Cancel</button>
-                <button type="button" id="btn-setup-submit" class="modal-action-btn modal-action-btn-primary">Start
-                    Match</button>
+                <button type="button" id="btn-setup-submit" class="modal-action-btn modal-action-btn-primary">Ready</button>
             </div>
         </div>
     </div>
@@ -665,6 +665,7 @@
         const timerDisplay = document.getElementById('timer-display');
         const elapsedTimeDisplay = document.getElementById('elapsed-time-display');
         const overageBadge = document.getElementById('overage-badge');
+        const draftStatusBadge = document.getElementById('draft-status-badge');
         const boardControlsWrap = document.getElementById('board-controls-wrap');
         const btnCardMenu = document.getElementById('btn-card-menu');
         const btnNewGame = document.getElementById('btn-new-game');
@@ -777,7 +778,8 @@
         let activeGameWriteToken = null;
         let activeGameRev = 0;
         let activeGameVisibility = 'public';
-        let activeGameStarted = false;
+        let gameLifecycle = 'idle'; // 'idle' | 'draft' | 'live' | 'final'
+        let gameCommitted = false;  // Committed to server upon first clock start
         let activeGameEnded = false;
         let activeGameStartedAt = null;
         let selectedTheme = 'saber-dark'; // Active theme name persisted to localStorage
@@ -973,7 +975,7 @@
         }
 
         function updateActiveGameEntry(statusOverride = null) {
-            if (!activeGameId || !activeGameStarted) return;
+            if (!activeGameId || !gameCommitted) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             const games = pruneStaleActiveGames(getActiveGames());
@@ -1027,7 +1029,7 @@
 
         // Synchronize active game snapshot with database through SuiteProfile.games.sync
         async function syncActiveGameWithServer(statusOverride = null, endedByOverride = null) {
-            if (!activeGameId || !activeGameStarted) return;
+            if (!activeGameId || !gameCommitted) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             activeGameRev = (activeGameRev || 0) + 1;
@@ -1069,9 +1071,16 @@
             if (window.SuiteProfile && SuiteProfile.games) {
                 try {
                     const res = await SuiteProfile.games.sync(payload, 2000);
+                    if (res && res.error_code === 'final_without_live') {
+                        // Terminal: server rejected final status on uncommitted game, stop retrying
+                        return;
+                    }
                     if (res && res.conflict) {
                         if (res.rev) activeGameRev = Math.max(activeGameRev, res.rev);
-                        if (res.stopped) activeGameEnded = true;
+                        if (res.stopped) {
+                            activeGameEnded = true;
+                            gameLifecycle = 'final';
+                        }
                     }
                 } catch (e) {
                     // Fail silently in offline mode
@@ -1081,7 +1090,7 @@
 
         // Flush game state immediately using sendBeacon on page unload/visibilitychange
         function flushBeaconSync(statusOverride = null, endedByOverride = null) {
-            if (!activeGameId || !activeGameStarted || !navigator.sendBeacon) return;
+            if (!activeGameId || !gameCommitted || !navigator.sendBeacon) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             activeGameRev = (activeGameRev || 0) + 1;
@@ -1126,6 +1135,7 @@
         }
 
         function publishActiveGameState(statusOverride = null, endedByOverride = null) {
+            if (!gameCommitted) return;
             try {
                 updateActiveGameEntry(statusOverride);
             } catch (error) {
@@ -1151,13 +1161,16 @@
                 splashOnHome, splashOnAway,
                 showPenaltyCards,
                 activeGameId, activeGameWriteToken, activeGameRev,
-                activeGameVisibility, activeGameStarted, activeGameEnded,
+                activeGameVisibility, activeGameEnded,
                 activeGameStartedAt,
+                gameLifecycle, gameCommitted,
                 selectedTheme,
                 lastSavedAt: Date.now()
             };
             safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
-            publishActiveGameState();
+            if (gameCommitted) {
+                publishActiveGameState();
+            }
             if (window.SuiteProfile) {
                 SuiteProfile.saveAppData('scoreboard', state);
             }
@@ -1963,8 +1976,8 @@
         }
 
         function addScore(teamId) {
-            // Disallow score adjustments when the clock is stopped
-            if (!timerRunning || matchState !== 'running') {
+            // Disallow score adjustments when clock is stopped or game is not live
+            if (!timerRunning || matchState !== 'running' || gameLifecycle !== 'live') {
                 showToast('Clock is stopped');
                 return;
             }
@@ -2013,33 +2026,38 @@
 
         /**
          * Updates match state machine and synchronizes button matrix, board controls,
-         * and the card menu button according to the technical specification.
+         * draft badge, and the card menu button according to the technical specification.
          *
          * @param {'idle' | 'ready' | 'running' | 'paused' | 'final'} newState
          */
         function updateMatchState(newState) {
             matchState = newState;
 
-            // 1. Board controls lock/dim state (score tiles, cards, period, timer clicks)
-            const isBoardLocked = (matchState === 'idle' || matchState === 'final');
+            // 1. Board controls lock/dim state (locked during idle, final, or draft pre-whistle)
+            const isBoardLocked = (matchState === 'idle' || matchState === 'final' || gameLifecycle === 'draft');
             if (boardControlsWrap) {
                 boardControlsWrap.classList.toggle('board-locked', isBoardLocked);
             }
 
-            // 2. Visual indicators for scoring and card availability while clock is running
-            const isClockRunning = (matchState === 'running');
-            if (scoreHomeEl) scoreHomeEl.classList.toggle('score-disabled', !isClockRunning);
-            if (scoreAwayEl) scoreAwayEl.classList.toggle('score-disabled', !isClockRunning);
+            // 2. Visual indicators for scoring and card availability while clock is running in live match
+            const isScoringAllowed = (matchState === 'running' && gameLifecycle === 'live');
+            if (scoreHomeEl) scoreHomeEl.classList.toggle('score-disabled', !isScoringAllowed);
+            if (scoreAwayEl) scoreAwayEl.classList.toggle('score-disabled', !isScoringAllowed);
             const cardBtns = document.querySelectorAll('.foul-card-btn');
-            cardBtns.forEach(btn => btn.classList.toggle('card-btn-disabled', !isClockRunning));
+            cardBtns.forEach(btn => btn.classList.toggle('card-btn-disabled', !isScoringAllowed));
 
-            // 3. Top-right ellipsis menu visibility (visible during ready and paused)
+            // 3. Draft awaiting start visual badge near clock
+            if (draftStatusBadge) {
+                draftStatusBadge.classList.toggle('hidden', gameLifecycle !== 'draft');
+            }
+
+            // 4. Top-right ellipsis menu visibility (editable during ready/draft and paused)
             const canEdit = (matchState === 'ready' || matchState === 'paused');
             if (btnCardMenu) {
                 btnCardMenu.classList.toggle('hidden', !canEdit);
             }
 
-            // 3. Control bar buttons visibility
+            // 5. Control bar buttons visibility
             if (btnNewGame) btnNewGame.classList.add('hidden');
             if (btnStart) btnStart.classList.add('hidden');
             if (btnPause) btnPause.classList.add('hidden');
@@ -2054,7 +2072,8 @@
 
                 case 'ready':
                     if (btnStart) btnStart.classList.remove('hidden');
-                    if (btnEndOt) btnEndOt.classList.remove('hidden');
+                    // In draft, End/OT is disallowed; only available in live ready states
+                    if (btnEndOt && gameLifecycle !== 'draft') btnEndOt.classList.remove('hidden');
                     break;
 
                 case 'running':
@@ -2136,15 +2155,20 @@
 
         // Start the timer and update match state.
         function startTimer(isResuming = false) {
-            if (!activeGameStarted) {
-                activeGameId = loadOrCreateActiveGameId();
-                activeGameWriteToken = loadOrCreateWriteToken();
-                activeGameRev = activeGameRev || 1;
-                activeGameStarted = true;
+            if (gameLifecycle === 'idle') {
+                openMatchSetup('create');
+                return;
+            }
+            if (gameLifecycle === 'final') {
+                return;
+            }
+            if (gameLifecycle === 'draft') {
+                // First whistle start: commit game to server and record whistle timestamp
+                gameLifecycle = 'live';
+                gameCommitted = true;
+                activeGameStartedAt = new Date().toISOString();
+                activeGameRev = 1;
                 activeGameEnded = false;
-                activeGameStartedAt = activeGameStartedAt || Date.now();
-                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
-                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, activeGameWriteToken);
             }
 
             const now = Date.now();
@@ -2223,6 +2247,7 @@
 
         // Conclude the current period, advance to the next, and reset timer to ready state.
         function endCurrentPeriod() {
+            if (gameLifecycle !== 'live') return;
             if (timerRunning) {
                 pauseTimer();
             }
@@ -2248,10 +2273,12 @@
 
         // Finalize the current active game without resetting scores.
         async function endCurrentGame() {
+            if (gameLifecycle !== 'live') return;
             closeEndOtModal();
             if (timerRunning) {
                 pauseTimer();
             }
+            gameLifecycle = 'final';
             activeGameEnded = true;
             updateMatchState('final');
             publishActiveGameState('final', 'user');
@@ -2275,7 +2302,7 @@
             if (matchSetupTitle) {
                 if (mode === 'create') {
                     matchSetupTitle.textContent = 'New Game Setup';
-                    if (btnSetupSubmit) btnSetupSubmit.textContent = 'Start Match';
+                    if (btnSetupSubmit) btnSetupSubmit.textContent = 'Ready';
                     tempTotalPeriods = 2;
                     tempTimeLimit = 2400000;
                 } else if (mode === 'overtime') {
@@ -2376,22 +2403,23 @@
             scoreAwayEl.style.color = awayTeamColor;
 
             if (matchSetupMode === 'create') {
-                // If previous game was active, finalize it on server
-                if (activeGameStarted && !activeGameEnded) {
+                // If previous game was committed and live, finalize it on server
+                if (gameCommitted && gameLifecycle === 'live' && !activeGameEnded) {
                     publishActiveGameState('final', 'new_game');
                 }
 
-                // Initialize brand-new game session
+                // Initialize draft match session (local only; server row created upon first whistle start)
                 if (timerRunning) {
                     clearInterval(timerInterval);
                     timerRunning = false;
                 }
                 activeGameId = generateUuidV4();
                 activeGameWriteToken = generateWriteToken();
-                activeGameRev = 1;
-                activeGameStarted = true;
+                activeGameRev = 0;
+                gameLifecycle = 'draft';
+                gameCommitted = false;
                 activeGameEnded = false;
-                activeGameStartedAt = new Date().toISOString();
+                activeGameStartedAt = null;
                 safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
                 safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, activeGameWriteToken);
 
@@ -2415,7 +2443,7 @@
                 periodDisplay.textContent = getPeriodLabel(currentPeriod);
                 updateTimer();
                 updateMatchState('ready');
-                showToast('New game configured');
+                showToast('Game ready — press Start at the whistle');
             } else if (matchSetupMode === 'overtime') {
                 // Update existing scoreHistory team references
                 scoreHistory.forEach(entry => {
@@ -2475,7 +2503,7 @@
 
         // Check if background drift occurred past the period duration limit
         function checkBackgroundDrift() {
-            if (!timerRunning || !activeGameStarted || activeGameEnded) return;
+            if (!timerRunning || !gameCommitted || activeGameEnded) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
 
@@ -2722,6 +2750,7 @@
             btnStaleFinish.addEventListener('click', () => {
                 if (staleResumeModal) staleResumeModal.classList.add('hidden');
                 activeGameEnded = true;
+                gameLifecycle = 'final';
                 publishActiveGameState('final', 'abandoned');
                 saveState();
             });
@@ -2773,18 +2802,28 @@
 
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
                 if (cloudState) {
-                    // Finalize any distinct active local game before adopting cloud state
-                    if (localSaved && localSaved.activeGameStarted && !localSaved.activeGameEnded && localSaved.activeGameId !== cloudState.activeGameId) {
-                        try {
-                            SuiteProfile.games.sync({
-                                game_id: localSaved.activeGameId,
-                                write_token: localSaved.activeGameWriteToken,
-                                rev: (localSaved.activeGameRev || 0) + 1,
-                                status: 'final',
-                                ended_by: 'new_game',
-                                snapshot: localSaved
-                            });
-                        } catch (e) { }
+                    // Finalize any distinct committed local game before adopting cloud state; discard uncommitted drafts
+                    if (localSaved && localSaved.activeGameId !== cloudState.activeGameId) {
+                        const localIsCommitted = (localSaved.gameCommitted !== undefined)
+                            ? !!localSaved.gameCommitted
+                            : (!!localSaved.activeGameStarted && (
+                                !!localSaved.periodStartTimeUtc ||
+                                (localSaved.accumulatedTime && localSaved.accumulatedTime > 0) ||
+                                (Array.isArray(localSaved.scoreHistory) && localSaved.scoreHistory.some(e => e.eventType === 'period_start'))
+                            ));
+                        const localIsFinal = (localSaved.gameLifecycle === 'final') || !!localSaved.activeGameEnded;
+                        if (localIsCommitted && !localIsFinal) {
+                            try {
+                                SuiteProfile.games.sync({
+                                    game_id: localSaved.activeGameId,
+                                    write_token: localSaved.activeGameWriteToken,
+                                    rev: (localSaved.activeGameRev || 0) + 1,
+                                    status: 'final',
+                                    ended_by: 'new_game',
+                                    snapshot: localSaved
+                                });
+                            } catch (e) { }
+                        }
                     }
                     saved = cloudState;
                     safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
@@ -2820,14 +2859,46 @@
                 logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
                 splashOnHome = saved.splashOnHome !== undefined ? !!saved.splashOnHome : true;
                 splashOnAway = saved.splashOnAway !== undefined ? !!saved.splashOnAway : true;
-                activeGameStarted = !!saved.activeGameStarted;
-                activeGameId = activeGameStarted ? saved.activeGameId || null : null;
-                activeGameWriteToken = saved.activeGameWriteToken || null;
+
+                // Map lifecycle state and handle legacy format migration
+                if (saved.gameLifecycle !== undefined) {
+                    gameLifecycle = saved.gameLifecycle;
+                    gameCommitted = !!saved.gameCommitted;
+                } else if (saved.activeGameEnded) {
+                    gameLifecycle = 'final';
+                    gameCommitted = true;
+                } else if (saved.activeGameStarted) {
+                    const clockHasRun = !!saved.periodStartTimeUtc ||
+                        (saved.accumulatedTime && saved.accumulatedTime > 0) ||
+                        (Array.isArray(saved.scoreHistory) && saved.scoreHistory.some(e => e.eventType === 'period_start'));
+                    if (clockHasRun) {
+                        gameLifecycle = 'live';
+                        gameCommitted = true;
+                    } else {
+                        // Configured but never started: restore as draft with freshly minted UUID
+                        gameLifecycle = 'draft';
+                        gameCommitted = false;
+                        saved.activeGameId = generateUuidV4();
+                        saved.activeGameWriteToken = generateWriteToken();
+                        saved.activeGameRev = 0;
+                        saved.activeGameStartedAt = null;
+                        safeLocalStorageSet(ACTIVE_GAME_ID_KEY, saved.activeGameId);
+                        safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, saved.activeGameWriteToken);
+                    }
+                } else {
+                    gameLifecycle = 'idle';
+                    gameCommitted = false;
+                    saved.activeGameId = null;
+                    saved.activeGameWriteToken = null;
+                }
+
+                activeGameId = (gameLifecycle === 'idle') ? null : (saved.activeGameId || null);
+                activeGameWriteToken = (gameLifecycle === 'idle') ? null : (saved.activeGameWriteToken || null);
                 activeGameRev = saved.activeGameRev || 0;
                 activeGameVisibility = saved.activeGameVisibility || 'public';
-                activeGameEnded = !!saved.activeGameEnded;
+                activeGameEnded = (gameLifecycle === 'final') || !!saved.activeGameEnded;
                 activeGameStartedAt = saved.activeGameStartedAt || null;
-                matchState = saved.matchState || (activeGameEnded ? 'final' : (activeGameStarted ? (saved.running ? 'running' : 'paused') : 'idle'));
+                matchState = saved.matchState || (gameLifecycle === 'final' ? 'final' : (gameLifecycle === 'live' ? (saved.running ? 'running' : 'paused') : (gameLifecycle === 'draft' ? 'ready' : 'idle')));
 
                 homeTeamName = saved.homeTeamName || saved.redTeamName || homeTeamName;
                 awayTeamName = saved.awayTeamName || saved.blueTeamName || awayTeamName;
@@ -2890,7 +2961,8 @@
                 pauseStartUtc = null;
                 overageResolvedForCurrentPeriod = false;
                 isPaused = false;
-                activeGameStarted = false;
+                gameLifecycle = 'idle';
+                gameCommitted = false;
                 activeGameId = null;
                 activeGameWriteToken = null;
                 activeGameRev = 0;
@@ -2950,13 +3022,13 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '4.1';
+        const VERSION = '4.2';
         const APP_VERSION = VERSION;
 
-        // Heartbeat: ping server every 20 seconds ONLY while timer is running
+        // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
         try {
             setInterval(() => {
-                if (timerRunning && activeGameId && activeGameStarted) {
+                if (timerRunning && gameCommitted && gameLifecycle === 'live') {
                     publishActiveGameState();
                 }
             }, 20 * 1000);
@@ -2965,7 +3037,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">4.1</span></p>
+        <p>Version <span id="appVersion">4.2</span></p>
     </footer>
 </body>
 

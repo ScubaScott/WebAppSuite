@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS `suite_games` (
     `write_token_hash` CHAR(64) NOT NULL,       -- sha256 of client-generated per-game secret
     `visibility` ENUM('public','private') NOT NULL DEFAULT 'public',
     `status` ENUM('live','final') NOT NULL DEFAULT 'live',
-    `ended_by` ENUM('user','new_game','timeout') NULL,
+    `ended_by` ENUM('user','new_game','timeout','abandoned') NULL,
     `rev` INT UNSIGNED NOT NULL DEFAULT 0,
     -- Denormalized columns for fast list views
     `home_name` VARCHAR(60) NOT NULL DEFAULT 'Home',

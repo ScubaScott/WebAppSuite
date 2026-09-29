@@ -1652,6 +1652,20 @@ footer {
     margin-top: 4px;
 }
 
+/* Draft awaiting start indicator badge */
+.draft-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-top: 4px;
+}
+
 /* Streamlined control bar */
 .control-bar {
     width: 100%;

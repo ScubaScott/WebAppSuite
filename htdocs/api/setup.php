@@ -3,7 +3,7 @@
 // Executes schema.sql to create needed tables in the configured MySQL database.
 
 // Setup utility version identifier
-$SETUP_VERSION = '1.2';
+$SETUP_VERSION = '1.3';
 
 require_once __DIR__ . '/config.php';
 
@@ -52,6 +52,21 @@ header('Content-Type: text/html; charset=utf-8');
                 echo '<div class="success">';
                 echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, <code>suite_games</code>, <code>cards</code>, <code>card_favorites</code>, <code>games</code>, and <code>game_patterns</code> have been successfully initialized or verified.';
                 echo '</div>';
+
+                // Idempotent migration: Ensure suite_games.ended_by includes 'abandoned'
+                try {
+                    $colStmt = $pdo->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'suite_games' AND COLUMN_NAME = 'ended_by'");
+                    $colType = $colStmt ? $colStmt->fetchColumn() : '';
+                    if ($colType && strpos($colType, "'abandoned'") === false) {
+                        $pdo->exec("ALTER TABLE `suite_games` MODIFY COLUMN `ended_by` ENUM('user','new_game','timeout','abandoned') NULL");
+                        echo '<div class="success"><strong>Migration Applied:</strong> Column <code>suite_games.ended_by</code> updated to include <code>abandoned</code>.</div>';
+                    } else {
+                        echo '<div class="success"><strong>Schema Verified:</strong> Column <code>suite_games.ended_by</code> includes <code>abandoned</code>.</div>';
+                    }
+                } catch (PDOException $migrationEx) {
+                    echo '<div class="error"><strong>Migration Warning:</strong> Unable to verify <code>ended_by</code> ENUM: ' . htmlspecialchars($migrationEx->getMessage()) . '</div>';
+                }
+
                 echo '<p><a href="../index.html">&larr; Return to App Suite Launcher</a></p>';
             } catch (PDOException $e) {
                 echo '<div class="error">';
