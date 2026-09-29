@@ -202,12 +202,12 @@
 
             <!-- Actions below the game control window -->
             <div class="card-bottom-actions">
-                <a href="ScoreBoardActiveGames.html" id="btn-view-active-games" class="btn-active-games"
+                <a href="ScoreBoardGames.html?tab=active" id="btn-view-active-games" class="btn-active-games"
                     title="View Active Games">
                     <span class="live-pulse-dot"></span>
                     <span>View Active Games</span>
                 </a>
-                <a href="ScoreBoardMyGames.html" id="link-my-games" class="my-games-sublink hidden">My Games</a>
+                <a href="ScoreBoardGames.html?tab=mine" id="link-my-games" class="my-games-sublink hidden">My Games</a>
             </div>
         </div><!-- end max-width wrapper -->
     </div><!-- end min-height centering wrapper -->
@@ -659,6 +659,7 @@
 
     <!-- Shared Suite Profile and Cloud Sync Manager -->
     <script src="../media/suite-profile.js"></script>
+    <script src="scoreboard-shared.js"></script>
 
     <script>
         // DOM references for the visible timer, score, and control elements.
@@ -1075,12 +1076,20 @@
                         // Terminal: server rejected final status on uncommitted game, stop retrying
                         return;
                     }
+                    if (res && res.error_code === 'game_deleted') {
+                        activeGameEnded = true;
+                        gameLifecycle = 'final';
+                        return;
+                    }
                     if (res && res.conflict) {
                         if (res.rev) activeGameRev = Math.max(activeGameRev, res.rev);
                         if (res.stopped) {
                             activeGameEnded = true;
                             gameLifecycle = 'final';
                         }
+                    }
+                    if (res && res.visibility) {
+                        activeGameVisibility = res.visibility;
                     }
                 } catch (e) {
                     // Fail silently in offline mode
@@ -3022,7 +3031,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '4.2';
+        const VERSION = '4.3';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
@@ -3037,7 +3046,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">4.2</span></p>
+        <p>Version <span id="appVersion">4.3</span></p>
     </footer>
 </body>
 

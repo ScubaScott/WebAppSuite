@@ -1,609 +1,520 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ScoreBoard — Viewer</title>
-    <style>
-        :root {
-            color-scheme: dark;
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-
-        /* Mobile-first base styles */
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: radial-gradient(circle at top, #29395f 0%, #090d18 40%, #02040b 100%);
-            color: #eef2ff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 12px;
-            box-sizing: border-box;
-        }
-
-        .scoreboard {
-            width: 100%;
-            max-width: 980px;
-            background: linear-gradient(180deg, rgba(17,24,39,0.96), rgba(15,23,42,0.98));
-            border: 2px solid rgba(96,165,250,0.3);
-            border-radius: 20px;
-            box-shadow: 0 16px 36px rgba(0,0,0,0.42);
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-
-        .header-row {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            padding: 16px 16px 10px;
-            gap: 12px;
-        }
-
-        .header-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .title {
-            margin: 0;
-            font-size: clamp(1.15rem, 4.5vw, 1.35rem);
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            line-height: 1.2;
-        }
-
-        .meta {
-            margin: 0;
-            color: #94a3b8;
-            font-size: 0.88rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .header-nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            width: 100%;
-        }
-
-        .back-link {
-            min-height: 44px;
-            min-width: 44px;
-            box-sizing: border-box;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            color: #7dd3fc;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.88rem;
-            padding: 10px 16px;
-            border-radius: 12px;
-            background: rgba(125,211,252,0.1);
-            border: 1px solid rgba(125,211,252,0.25);
-            transition: background 0.15s ease, border-color 0.15s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .back-link:hover {
-            background: rgba(125,211,252,0.2);
-            border-color: rgba(125,211,252,0.4);
-        }
-
-        .back-link:active {
-            background: rgba(125,211,252,0.28);
-        }
-
-        /* Mobile arena stack */
-        .court {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 14px;
-            padding: 14px 16px 20px;
-            box-sizing: border-box;
-        }
-
-        .center-panel {
-            order: -1;
-            width: 100%;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 14px 12px;
-            border-radius: 20px;
-            background: radial-gradient(circle at top, rgba(59,130,246,0.18), rgba(15,23,42,0.92));
-            border: 1px solid rgba(59,130,246,0.35);
-        }
-
-        .clock {
-            font-family: 'Digital-7', monospace;
-            font-size: clamp(2.8rem, 16vw, 3.8rem);
-            letter-spacing: 0.05em;
-            color: #f8fafc;
-            text-shadow: 0 0 24px rgba(59,130,246,0.45);
-            line-height: 1;
-        }
-
-        .period {
-            font-size: 0.95rem;
-            color: #c7d2fe;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-
-        .team-panel {
-            width: 100%;
-            box-sizing: border-box;
-            text-align: center;
-            padding: 16px 14px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(148,163,184,0.12);
-        }
-
-        .team-name {
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: #a5b4fc;
-            margin-bottom: 8px;
-            word-break: break-word;
-        }
-
-        .team-score {
-            font-size: clamp(3.6rem, 16vw, 5rem);
-            font-weight: 900;
-            letter-spacing: -0.04em;
-            margin: 0;
-            color: #f8fafc;
-            line-height: 1.05;
-        }
-
-        .history-section {
-            margin: 0 16px 16px;
-            background: rgba(15,23,42,0.95);
-            border: 1px solid rgba(148,163,184,0.14);
-            border-radius: 20px;
-            overflow: hidden;
-        }
-
-        .history-title {
-            margin: 0;
-            padding: 14px 16px;
-            font-size: 0.92rem;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: #e2e8f0;
-            border-bottom: 1px solid rgba(148,163,184,0.1);
-            background: rgba(15,23,42,0.9);
-            font-weight: 700;
-        }
-
-        .history-list {
-            max-height: 320px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 6px;
-            align-items: flex-start;
-            padding: 12px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .history-item:last-child {
-            border-bottom: none;
-        }
-
-        .entry-label {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .entry-label strong {
-            color: #f8fafc;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            word-break: break-word;
-        }
-
-        .entry-label span {
-            color: #94a3b8;
-            font-size: 0.84rem;
-        }
-
-        .entry-time {
-            color: #94a3b8;
-            font-size: 0.8rem;
-            white-space: normal;
-            text-align: left;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .status-live { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
-        .status-paused { background: rgba(234,179,8,0.2); color: #facc15; border: 1px solid rgba(234,179,8,0.4); }
-        .status-stalled { background: rgba(249,115,22,0.2); color: #fb923c; border: 1px solid rgba(249,115,22,0.4); }
-        .status-final { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4); }
-
-        .app-footer {
-            margin-top: 24px;
-            font-size: 0.75rem;
-            color: #64748b;
-            text-align: center;
-        }
-
-        /* Desktop progressive enhancement */
-        @media (min-width: 720px) {
-            body {
-                padding: 24px 16px;
-            }
-
-            .scoreboard {
-                border-radius: 32px;
-                box-shadow: 0 24px 64px rgba(0,0,0,0.45);
-            }
-
-            .header-row {
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-                padding: 20px 24px 12px;
-            }
-
-            .header-nav {
-                width: auto;
-            }
-
-            .court {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-                gap: 16px;
-                padding: 16px 24px 24px;
-            }
-
-            .center-panel {
-                order: 0;
-                width: 220px;
-                padding: 18px 14px;
-                border-radius: 24px;
-            }
-
-            .clock {
-                font-size: clamp(3rem, 5vw, 4rem);
-            }
-
-            .period {
-                font-size: 1rem;
-            }
-
-            .team-panel {
-                flex: 1;
-                padding: 18px 14px;
-                border-radius: 22px;
-            }
-
-            .team-score {
-                font-size: clamp(3.6rem, 7vw, 5.5rem);
-            }
-
-            .history-section {
-                margin: 0 24px 24px;
-                border-radius: 26px;
-            }
-
-            .history-title {
-                padding: 16px 20px;
-                font-size: 0.98rem;
-            }
-
-            .history-list {
-                max-height: 360px;
-            }
-
-            .history-item {
-                grid-template-columns: 1fr auto;
-                gap: 12px;
-                align-items: center;
-                padding: 14px 20px;
-            }
-
-            .entry-time {
-                white-space: nowrap;
-                text-align: right;
-                font-size: 0.82rem;
-            }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreBoard — Match Viewer</title>
+    <meta name="description" content="Real-time read-only spectator view of live ScoreBoard matches.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="scoreboard.css">
+    <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
-<body>
-<div class="scoreboard">
-    <div class="header-row">
-        <div class="header-info">
-            <h1 class="title" id="title">Game Viewer</h1>
-            <p class="meta" id="meta">Connecting to live feed…</p>
-        </div>
-        <div class="header-nav">
-            <a class="back-link" href="ScoreBoardActiveGames.html">← Active Games</a>
-            <a class="back-link" href="index.html">← ScoreBoard</a>
+
+<body style="margin:0;padding:0;min-height:100vh;">
+
+    <!-- Reconnecting status banner (displayed when network encounters temporary drops) -->
+    <div id="reconnecting-banner" class="viewer-reconnecting-banner" style="display:none;position:sticky;top:0;z-index:999;">
+        Connecting to live feed…
+    </div>
+
+    <!-- Main scoreboard viewport wrapper -->
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
+        <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+
+            <!-- Top navigation: single fixed back target computed from origin tab -->
+            <a href="ScoreBoardGames.html?tab=active" id="btn-back" class="back-link" style="align-self:flex-start;">
+                ← Back
+            </a>
+
+            <!-- Unavailable State Box (Terminal 404: deleted, private, or not found) -->
+            <div id="unavailable-view" class="empty-games-box" style="display:none;width:100%;background:rgba(17,24,39,0.82);border:1px solid #374151;">
+                <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
+                <h3 style="margin:0 0 8px;color:#f8fafc;font-size:1.25rem;">Game Unavailable</h3>
+                <p style="margin:0;color:#94a3b8;font-size:0.9rem;">
+                    This game is private, completed, or no longer exists.
+                </p>
+            </div>
+
+            <!-- Loading State Box -->
+            <div id="loading-view" class="empty-games-box" style="width:100%;background:rgba(17,24,39,0.82);border:1px solid #374151;">
+                <div style="font-size:1.75rem;margin-bottom:8px;">⏳</div>
+                <h3 style="margin:0 0 6px;color:#f8fafc;font-size:1.15rem;">Connecting to Game…</h3>
+                <p style="margin:0;color:#94a3b8;font-size:0.88rem;">Synchronizing match feed</p>
+            </div>
+
+            <!-- Main Scoreboard Card (Layout mirrors operator console index.html) -->
+            <div id="scoreboard-card" style="display:none;background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px;width:100%;flex-direction:column;align-items:center;gap:20px;position:relative;box-sizing:border-box;">
+
+                <!-- Viewer header bar: Title and Status pill with age indicator -->
+                <div class="viewer-header-info">
+                    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:12px;">
+                        <h2 id="match-title" style="margin:0;font-size:1.1rem;font-weight:800;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            Match Viewer
+                        </h2>
+                        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                            <span id="status-pill" class="status-pill pill-live">
+                                <span class="pill-live-dot"></span>
+                                <span>Live</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div id="stalled-age-indicator" style="display:none;font-size:0.75rem;color:#fdba74;font-weight:600;text-align:right;">
+                        Last update 30m ago
+                    </div>
+                </div>
+
+                <!-- Scores row: Home team, Period, Away team -->
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;box-sizing:border-box;">
+                    <!-- Home team -->
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <div id="home-team-name" style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                            Home
+                        </div>
+                        <div id="score-home" style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;user-select:none;cursor:default;">
+                            0
+                        </div>
+                    </div>
+
+                    <!-- Period display -->
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">
+                            Period
+                        </div>
+                        <div id="period-display" style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;user-select:none;cursor:default;">
+                            P1
+                        </div>
+                    </div>
+
+                    <!-- Away team -->
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <div id="away-team-name" style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                            Away
+                        </div>
+                        <div id="score-away" style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;user-select:none;cursor:default;">
+                            0
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clock displays: Countdown / Elapsed Time -->
+                <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:12px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                        <div id="clock-label" style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                            Remaining
+                        </div>
+                        <div id="timer-display" style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;line-height:1;">
+                            00:00:00.0
+                        </div>
+                        <div id="overage-badge" class="overage-badge hidden">Overage</div>
+                    </div>
+                </div>
+
+                <!-- Score History table (Read-only mirror of scorer log) -->
+                <div id="score-history-container" style="width:100%;background:#1f2937;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:1px solid #374151;box-sizing:border-box;">
+                    <div style="background:#374151;padding:8px 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#d1d5db;">
+                        Score History
+                    </div>
+                    <div class="history-table" style="max-height:192px;overflow-y:auto;">
+                        <table style="width:100%;text-align:left;font-size:0.875rem;table-layout:fixed;">
+                            <colgroup>
+                                <col style="width:42%;">
+                                <col style="width:34%;">
+                                <col style="width:24%;">
+                            </colgroup>
+                            <thead style="background:#1f2937;position:sticky;top:0;z-index:2;">
+                                <tr style="color:#6b7280;font-size:10px;text-transform:uppercase;white-space:nowrap;">
+                                    <th style="padding:8px 10px 8px 12px;">Team (Score)</th>
+                                    <th style="padding:8px 6px;">Note</th>
+                                    <th style="padding:8px 12px 8px 6px;text-align:right;">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div><!-- end scoreboard-card -->
+
+            <!-- Application Version Footer -->
+            <footer class="app-footer">
+                <p>Version <span id="appVersion">1.4</span></p>
+            </footer>
+
         </div>
     </div>
-    <div class="court">
-        <div class="team-panel">
-            <div class="team-name" id="homeName">Home</div>
-            <p class="team-score" id="homeScore">0</p>
-        </div>
-        <div class="center-panel">
-            <div class="clock" id="timer">00:00.0</div>
-            <div class="period" id="period">P1</div>
-        </div>
-        <div class="team-panel">
-            <div class="team-name" id="awayName">Away</div>
-            <p class="team-score" id="awayScore">0</p>
-        </div>
-    </div>
-    <section class="history-section">
-        <div class="history-title">Activity Log</div>
-        <div class="history-list" id="historyList"></div>
-    </section>
-</div>
 
-<!-- Shared Suite Profile and Games Client -->
-<script src="../media/suite-profile.js"></script>
+    <!-- Shared application scripts -->
+    <script src="../media/suite-profile.js"></script>
+    <script src="scoreboard-shared.js"></script>
 
-<script>
-    // Extract query parameter helper
-    function qs(name) { return new URLSearchParams(location.search).get(name); }
-    const gameId = qs('id');
+    <script>
+        // Viewer tool version constant
+        const APP_VERSION = '1.4';
 
-    // DOM element references
-    const homeNameEl = document.getElementById('homeName');
-    const awayNameEl = document.getElementById('awayName');
-    const homeScoreEl = document.getElementById('homeScore');
-    const awayScoreEl = document.getElementById('awayScore');
-    const timerEl = document.getElementById('timer');
-    const periodEl = document.getElementById('period');
-    const titleEl = document.getElementById('title');
-    const metaEl = document.getElementById('meta');
-    const historyList = document.getElementById('historyList');
+        // Polling configuration
+        const BASE_POLL_INTERVAL_MS = 4000;
+        let pollTimer = null;
+        let tickerTimer = null;
+        let consecutiveErrors = 0;
 
-    let current = null;
-    let tickInterval = null;
-    let pollInterval = null;
+        // URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get('id');
+        const fromParam = (urlParams.get('from') || 'active').toLowerCase();
 
-    // Millisecond clock time formatter
-    function formatTimeMs(ms) {
-        const totalSeconds = Math.floor(Math.abs(ms) / 1000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        const tenths = Math.floor((Math.abs(ms) % 1000) / 100);
-        return `${minutes}:${String(seconds).padStart(2,'0')}.${tenths}`;
-    }
+        // DOM elements
+        const btnBack = document.getElementById('btn-back');
+        const loadingView = document.getElementById('loading-view');
+        const unavailableView = document.getElementById('unavailable-view');
+        const scoreboardCard = document.getElementById('scoreboard-card');
+        const reconnectingBanner = document.getElementById('reconnecting-banner');
+        const matchTitleEl = document.getElementById('match-title');
+        const statusPillEl = document.getElementById('status-pill');
+        const stalledAgeIndicator = document.getElementById('stalled-age-indicator');
+        const homeTeamNameEl = document.getElementById('home-team-name');
+        const awayTeamNameEl = document.getElementById('away-team-name');
+        const scoreHomeEl = document.getElementById('score-home');
+        const scoreAwayEl = document.getElementById('score-away');
+        const periodDisplayEl = document.getElementById('period-display');
+        const clockLabelEl = document.getElementById('clock-label');
+        const timerDisplayEl = document.getElementById('timer-display');
+        const overageBadgeEl = document.getElementById('overage-badge');
+        const historyBodyEl = document.getElementById('history-body');
 
-    // Relative age formatter
-    function formatAgeMs(ms) {
-        const seconds = Math.floor(ms / 1000);
-        if (seconds < 10) return 'just now';
-        if (seconds < 60) return `${seconds}s ago`;
-        const minutes = Math.floor(seconds / 60);
-        return `${minutes}m ago`;
-    }
+        // State model for spectator display
+        let currentModel = null;
+        let serverClockOffset = 0; // server_now - client Date.now()
 
-    // Render scoreboard presentation from current snapshot
-    function render() {
-        if (!current) return;
-
-        // Team names and scores
-        homeNameEl.textContent = current.homeTeamName || 'Home';
-        awayNameEl.textContent = current.awayTeamName || 'Away';
-        homeScoreEl.textContent = current.homeScore || 0;
-        awayScoreEl.textContent = current.awayScore || 0;
-
-        // Optional custom colors
-        if (current.homeTeamColor) {
-            homeNameEl.style.color = current.homeTeamColor;
-            homeScoreEl.style.color = current.homeTeamColor;
-        }
-        if (current.awayTeamColor) {
-            awayNameEl.style.color = current.awayTeamColor;
-            awayScoreEl.style.color = current.awayTeamColor;
-        }
-
-        periodEl.textContent = `P${current.currentPeriod || 1}`;
-        titleEl.textContent = `${homeNameEl.textContent} vs ${awayNameEl.textContent}`;
-
-        renderMeta();
-        renderHistory();
-    }
-
-    // Update status badge and age indicator
-    function renderMeta() {
-        if (!current) return;
-        const now = Date.now();
-        const effectiveAge = (current.age_ms || 0) + (now - (current.fetchTime || now));
-
-        if (current.status === 'final') {
-            metaEl.innerHTML = '<span class="status-badge status-final">Final</span> <span>Game concluded</span>';
-        } else if (current.isPaused) {
-            metaEl.innerHTML = `<span class="status-badge status-paused">Paused</span> <span>Last update ${formatAgeMs(effectiveAge)}</span>`;
-        } else if ((current.age_ms || 0) >= 60000) {
-            metaEl.innerHTML = `<span class="status-badge status-stalled">Stalled</span> <span>Last update ${formatAgeMs(effectiveAge)}</span>`;
-        } else {
-            metaEl.innerHTML = `<span class="status-badge status-live">Live</span> <span>Updated ${formatAgeMs(effectiveAge)}</span>`;
-        }
-    }
-
-    // Render activity history log with penalty card and scoring distinctions
-    function renderHistory() {
-        historyList.innerHTML = '';
-        const hist = Array.isArray(current.scoreHistory) ? current.scoreHistory.slice().reverse() : [];
-        if (hist.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'history-item';
-            empty.style.color = '#94a3b8';
-            empty.textContent = 'No recorded events yet.';
-            historyList.appendChild(empty);
-            return;
-        }
-
-        hist.forEach(entry => {
-            const item = document.createElement('div');
-            item.className = 'history-item';
-
-            const entryLabel = document.createElement('div');
-            entryLabel.className = 'entry-label';
-            const entryTitle = document.createElement('strong');
-            const entrySub = document.createElement('span');
-
-            if (entry.type === 'event') {
-                entryTitle.textContent = entry.text || '';
-                entrySub.textContent = entry.timestamp || entry.time || '';
-            } else if (entry.type === 'card') {
-                const isYellow = entry.cardType === 'yellow';
-                const teamName = entry.teamName || (entry.teamId === 'home' ? (current.homeTeamName || 'Home') : (current.awayTeamName || 'Away'));
-                const degreeLabel = entry.degree || (isYellow ? 'Yellow Card' : 'Red Card');
-                entryTitle.textContent = `${isYellow ? '🟨' : '🟥'} ${teamName} — ${degreeLabel}`;
-                entrySub.textContent = entry.gameTime || (entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
-            } else {
-                const teamName = entry.teamName || (entry.teamId === 'home' ? (current.homeTeamName || 'Home') : (current.awayTeamName || 'Away'));
-                entryTitle.textContent = `${teamName} scored`;
-                entrySub.textContent = `${entry.currentScore !== undefined ? entry.currentScore : ''} • ${entry.gameTime || (entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '')}`;
-            }
-
-            entryLabel.appendChild(entryTitle);
-            if (entrySub.textContent) entryLabel.appendChild(entrySub);
-
-            const timeEl = document.createElement('div');
-            timeEl.className = 'entry-time';
-            if (entry.timestamp) {
-                timeEl.textContent = new Date(entry.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-            }
-
-            item.appendChild(entryLabel);
-            if (timeEl.textContent) item.appendChild(timeEl);
-            historyList.appendChild(item);
-        });
-    }
-
-    // High frequency ticker for skew-free smooth clock display
-    function startTicker() {
-        if (tickInterval) clearInterval(tickInterval);
-        tickInterval = setInterval(() => {
-            if (!current) return;
-            const now = Date.now();
-            let elapsed = Number(current.elapsedMs) || 0;
-            const isLive = (current.status === 'live');
-            const isStalled = isLive && (current.age_ms >= 60000);
-
-            // Extrapolate time only when live, running, unpaused, and sync is active (< 60s age)
-            if (isLive && current.timerRunning && !current.isPaused && !isStalled) {
-                const timeSinceFetch = Math.max(0, now - (current.fetchTime || now));
-                elapsed += (current.age_ms || 0) + timeSinceFetch;
-            }
-
-            let displayMs = elapsed;
-            if (current.isCountingUp === false && current.timeLimit > 0) {
-                displayMs = Math.max(0, current.timeLimit - elapsed);
-            }
-
-            timerEl.textContent = formatTimeMs(displayMs);
-            renderMeta();
-        }, 100);
-    }
-
-    // Fetch latest game snapshot from API
-    async function loadGame() {
-        if (!gameId) {
-            document.body.innerHTML = '<div style="padding:24px; color:#fff; text-align:center;"><h2>Missing Game ID</h2><p><a href="ScoreBoardActiveGames.html" style="color:#7dd3fc;">← View Active Games</a></p></div>';
-            return;
-        }
-
-        try {
-            let res = null;
-            if (window.SuiteProfile && SuiteProfile.games) {
-                res = await SuiteProfile.games.get(gameId);
-            } else {
-                const fetchRes = await fetch(`../api/games.php?action=get&id=${encodeURIComponent(gameId)}`);
-                res = await fetchRes.json();
-            }
-
-            if (!res || !res.success || !res.game) {
-                if (!current) {
-                    document.body.innerHTML = '<div style="padding:24px; color:#fff; text-align:center;"><h2>Game Not Found</h2><p>This game may be private, expired, or removed.</p><p><a href="ScoreBoardActiveGames.html" style="color:#7dd3fc;">← View Active Games</a></p></div>';
+        /**
+         * Resolves the navigation back link href per section 3.2.
+         * If origin was 'mine' but viewing user is a guest, back resolves to ?tab=active.
+         */
+        function configureBackLink() {
+            let backTab = (fromParam === 'mine') ? 'mine' : 'active';
+            if (backTab === 'mine') {
+                if (!window.SuiteProfile || SuiteProfile.isGuest()) {
+                    backTab = 'active';
                 }
+            }
+            btnBack.href = `ScoreBoardGames.html?tab=${backTab}`;
+        }
+
+        /**
+         * Fetches latest match snapshot from API and updates presentation state.
+         */
+        async function fetchGameSnapshot() {
+            if (!gameId) {
+                showUnavailableState();
                 return;
             }
 
-            const game = res.game;
-            const snap = game.snapshot || game;
+            try {
+                let res = null;
+                if (window.SuiteProfile && SuiteProfile.games) {
+                    res = await SuiteProfile.games.get(gameId);
+                } else {
+                    const fetchRes = await fetch(`../api/games.php?action=get&id=${encodeURIComponent(gameId)}`);
+                    if (fetchRes.status === 404) {
+                        showUnavailableState();
+                        return;
+                    }
+                    res = await fetchRes.json();
+                }
 
-            current = {
-                ...game,
-                ...snap,
-                status: game.status,
-                age_ms: typeof res.age_ms === 'number' ? res.age_ms : (typeof game.age_ms === 'number' ? game.age_ms : 0),
-                fetchTime: Date.now(),
-                ended_by: game.ended_by
-            };
+                if (!res || !res.success || !res.game) {
+                    // Section 5.5: Terminal 404 enters Unavailable state
+                    showUnavailableState();
+                    return;
+                }
 
-            render();
-            startTicker();
+                consecutiveErrors = 0;
+                hideReconnectingBanner();
 
-            // Stop polling when game is final
-            if (current.status === 'final' && pollInterval) {
-                clearInterval(pollInterval);
-                pollInterval = null;
+                const serverNow = (typeof res.server_now === 'number') ? res.server_now : Date.now();
+                serverClockOffset = serverNow - Date.now();
+
+                const game = res.game;
+                const snap = game.snapshot || game;
+
+                // Merge server response into viewer presentation model
+                currentModel = {
+                    id: game.game_id || game.id,
+                    homeTeamName: game.homeTeamName || snap.homeTeamName || 'Home',
+                    awayTeamName: game.awayTeamName || snap.awayTeamName || 'Away',
+                    homeScore: (game.homeScore !== undefined) ? Number(game.homeScore) : (snap.homeScore || 0),
+                    awayScore: (game.awayScore !== undefined) ? Number(game.awayScore) : (snap.awayScore || 0),
+                    homeTeamColor: snap.homeTeamColor || game.homeTeamColor || '#ef4444',
+                    awayTeamColor: snap.awayTeamColor || game.awayTeamColor || '#3b82f6',
+                    currentPeriod: game.currentPeriod || snap.currentPeriod || 1,
+                    totalPeriods: snap.totalPeriods || 2,
+                    basePeriods: snap.basePeriods || 2,
+                    status: (game.status || snap.status || 'live').toLowerCase(),
+                    timerRunning: Boolean(game.timerRunning !== undefined ? game.timerRunning : snap.timerRunning),
+                    isPaused: Boolean(game.isPaused !== undefined ? game.isPaused : snap.isPaused),
+                    isCountingUp: Boolean(snap.isCountingUp),
+                    timeLimit: (snap.timeLimit !== undefined) ? Number(snap.timeLimit) : 0,
+                    elapsedMs: (game.elapsedMs !== undefined) ? Number(game.elapsedMs) : (snap.elapsedMs || 0),
+                    lastUpdate: (typeof game.lastUpdate === 'number') ? game.lastUpdate : (serverNow - (res.age_ms || 0)),
+                    ageMs: (typeof res.age_ms === 'number') ? res.age_ms : (game.age_ms || 0),
+                    scoreHistory: Array.isArray(snap.scoreHistory) ? snap.scoreHistory : (Array.isArray(game.scoreHistory) ? game.scoreHistory : []),
+                    fetchLocalTs: Date.now()
+                };
+
+                renderBoard();
+
+                // Section 5.5: Stop polling when game is final
+                if (currentModel.status === 'final') {
+                    stopPolling();
+                }
+
+            } catch (err) {
+                // Section 5.5: Network error or 5xx never transitions to Unavailable; keep last state & reconnect
+                consecutiveErrors++;
+                if (currentModel) {
+                    showReconnectingBanner();
+                } else {
+                    // Check if initial fetch was a 404 or network failure
+                    if (err && (err.message && err.message.includes('404'))) {
+                        showUnavailableState();
+                    } else {
+                        showReconnectingBanner();
+                    }
+                }
             }
-        } catch (e) {
-            // Keep existing display if temporary fetch error occurs
         }
-    }
 
-    // Viewer tool version identifier
-    const VERSION = '1.3';
-    const APP_VERSION = VERSION;
+        /**
+         * Renders static board elements (scores, names, colors, period, history).
+         */
+        function renderBoard() {
+            if (!currentModel) return;
 
-    window.addEventListener('DOMContentLoaded', () => {
-        const versionEl = document.getElementById('viewerVersion');
-        if (versionEl) versionEl.textContent = VERSION;
-    });
+            loadingView.style.display = 'none';
+            unavailableView.style.display = 'none';
+            scoreboardCard.style.display = 'flex';
 
-    // Start polling and load initial state
-    pollInterval = setInterval(loadGame, 4000);
-    loadGame();
-</script>
+            // Match title
+            matchTitleEl.textContent = `${currentModel.homeTeamName} vs ${currentModel.awayTeamName}`;
 
-<footer class="app-footer">
-    <p>Version <span id="viewerVersion">1.3</span></p>
-</footer>
+            // Team names & scores
+            homeTeamNameEl.textContent = currentModel.homeTeamName;
+            awayTeamNameEl.textContent = currentModel.awayTeamName;
+            scoreHomeEl.textContent = currentModel.homeScore;
+            scoreAwayEl.textContent = currentModel.awayScore;
+
+            // Apply custom team colors
+            homeTeamNameEl.style.color = currentModel.homeTeamColor;
+            scoreHomeEl.style.color = currentModel.homeTeamColor;
+            awayTeamNameEl.style.color = currentModel.awayTeamColor;
+            scoreAwayEl.style.color = currentModel.awayTeamColor;
+
+            // Period label
+            periodDisplayEl.textContent = getPeriodLabel(currentModel.currentPeriod, currentModel.totalPeriods, currentModel.basePeriods);
+
+            // Render score history using shared component in read-only mode
+            renderHistoryRows(historyBodyEl, currentModel.scoreHistory, {
+                interactive: false,
+                homeTeamName: currentModel.homeTeamName,
+                awayTeamName: currentModel.awayTeamName,
+                homeTeamColor: currentModel.homeTeamColor,
+                awayTeamColor: currentModel.awayTeamColor,
+                totalPeriods: currentModel.totalPeriods,
+                basePeriods: currentModel.basePeriods
+            });
+
+            // Update clock and status pills
+            updateClockDisplay();
+        }
+
+        /**
+         * High-frequency display update implementing the server-anchored clock model (section 5.4).
+         * Calculates extrapolated elapsed time and renders remaining time without mutating state.
+         */
+        function updateClockDisplay() {
+            if (!currentModel) return;
+
+            const now = Date.now();
+            const serverNowEst = now + serverClockOffset;
+            const elapsedSinceUpdate = Math.max(0, serverNowEst - currentModel.lastUpdate);
+
+            // Compute current age in ms for status derivation
+            const currentEffectiveAgeMs = (currentModel.ageMs || 0) + (now - currentModel.fetchLocalTs);
+
+            // Derive status pill
+            const pillInfo = deriveStatusPill({
+                status: currentModel.status,
+                isPaused: currentModel.isPaused,
+                timerRunning: currentModel.timerRunning,
+                ageMs: currentEffectiveAgeMs
+            });
+
+            // Render status pill
+            statusPillEl.className = `status-pill ${pillInfo.className}`;
+            statusPillEl.innerHTML = '';
+            if (pillInfo.type === 'live') {
+                const dot = document.createElement('span');
+                dot.className = 'pill-live-dot';
+                statusPillEl.appendChild(dot);
+            }
+            statusPillEl.appendChild(document.createTextNode(pillInfo.text));
+
+            // Section 5.2: Age indicator shown ONLY when Stalled
+            if (pillInfo.type === 'stalled') {
+                stalledAgeIndicator.textContent = `Last update ${formatAgeMinutes(currentEffectiveAgeMs)}`;
+                stalledAgeIndicator.style.display = 'block';
+            } else {
+                stalledAgeIndicator.style.display = 'none';
+            }
+
+            // Section 5.4: Clock extrapolation logic
+            let extrapolatedElapsed = currentModel.elapsedMs;
+            const canExtrapolate = (
+                currentModel.status !== 'final' &&
+                currentModel.timerRunning &&
+                !currentModel.isPaused
+            );
+
+            if (canExtrapolate) {
+                const sinceUpdateClamped = Math.min(elapsedSinceUpdate, STALL_THRESHOLD_MS);
+                const runningExtrapolated = currentModel.elapsedMs + sinceUpdateClamped;
+
+                // Stop condition: clamp at period timeLimit unless scorer has already reported overage
+                if (currentModel.timeLimit > 0 && currentModel.elapsedMs < currentModel.timeLimit) {
+                    extrapolatedElapsed = Math.min(runningExtrapolated, currentModel.timeLimit);
+                } else {
+                    extrapolatedElapsed = runningExtrapolated;
+                }
+            }
+
+            // Calculate display milliseconds
+            const timeLimit = currentModel.timeLimit;
+            let displayMs = 0;
+            let isOverage = false;
+
+            if (currentModel.isCountingUp) {
+                clockLabelEl.textContent = 'Elapsed';
+                displayMs = extrapolatedElapsed;
+                if (timeLimit > 0 && extrapolatedElapsed > timeLimit) {
+                    isOverage = true;
+                }
+            } else {
+                clockLabelEl.textContent = 'Remaining';
+                if (timeLimit > 0) {
+                    displayMs = timeLimit - extrapolatedElapsed;
+                    if (extrapolatedElapsed > timeLimit) {
+                        isOverage = true;
+                    }
+                } else {
+                    displayMs = extrapolatedElapsed;
+                }
+            }
+
+            timerDisplayEl.textContent = formatTime(displayMs);
+
+            if (isOverage) {
+                overageBadgeEl.classList.remove('hidden');
+            } else {
+                overageBadgeEl.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Transitions viewer to terminal Unavailable state.
+         */
+        function showUnavailableState() {
+            stopPolling();
+            stopTicker();
+            loadingView.style.display = 'none';
+            scoreboardCard.style.display = 'none';
+            hideReconnectingBanner();
+            unavailableView.style.display = 'block';
+        }
+
+        function showReconnectingBanner() {
+            reconnectingBanner.style.display = 'block';
+        }
+
+        function hideReconnectingBanner() {
+            reconnectingBanner.style.display = 'none';
+        }
+
+        /**
+         * Starts periodic polling with backoff during network errors.
+         */
+        function startPolling() {
+            stopPolling();
+            const delay = consecutiveErrors > 0 ? Math.min(10000, BASE_POLL_INTERVAL_MS * (consecutiveErrors + 1)) : BASE_POLL_INTERVAL_MS;
+            pollTimer = setTimeout(async () => {
+                if (!document.hidden) {
+                    await fetchGameSnapshot();
+                }
+                startPolling();
+            }, delay);
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                clearTimeout(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        function startTicker() {
+            stopTicker();
+            tickerTimer = setInterval(() => {
+                if (!document.hidden && currentModel) {
+                    updateClockDisplay();
+                }
+            }, 100);
+        }
+
+        function stopTicker() {
+            if (tickerTimer) {
+                clearInterval(tickerTimer);
+                tickerTimer = null;
+            }
+        }
+
+        // Mobile lifecycle: pause polling and ticker on hidden, resume immediately on visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopPolling();
+                stopTicker();
+            } else {
+                if (currentModel && currentModel.status === 'final') {
+                    // Do not resume polling for final match
+                    return;
+                }
+                fetchGameSnapshot();
+                startPolling();
+                startTicker();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const versionEl = document.getElementById('appVersion');
+            if (versionEl) versionEl.textContent = APP_VERSION;
+
+            if (window.SuiteProfile) {
+                SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+            }
+
+            // Apply viewing user's selected theme (read-only)
+            applySavedThemeReadOnly();
+
+            // Set up dynamic back button
+            configureBackLink();
+
+            // Initial fetch and timer activation
+            fetchGameSnapshot().then(() => {
+                startTicker();
+                startPolling();
+            });
+        });
+    </script>
 </body>
+
 </html>

@@ -3,7 +3,7 @@
 // Handles match synchronization, active games directory, and user game archive persistence.
 
 // API endpoint version identifier
-$GAMES_API_VERSION = '1.2';
+$GAMES_API_VERSION = '1.3';
 
 // Inactivity threshold (in hours) after which a live game is automatically finalized
 define('GAME_TIMEOUT_HOURS', 3);
@@ -22,6 +22,16 @@ if (!$pdo) {
         'error' => 'Database service unavailable. Operating in local cache mode.'
     ]);
     exit;
+}
+
+// Ensure tombstone table exists to prevent sync resurrection of deleted games
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `suite_game_tombstones` (
+        `game_id` VARCHAR(36) NOT NULL PRIMARY KEY,
+        `deleted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+} catch (Exception $e) {
+    // Continue if table exists or permissions are restricted
 }
 
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
@@ -76,6 +86,25 @@ if ($action === 'sync') {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Invalid or missing write_token (must be 64 hex characters).']);
         exit;
+    }
+
+    // Check tombstone registry: reject sync if game was previously deleted
+    try {
+        $tombStmt = $pdo->prepare('SELECT game_id FROM suite_game_tombstones WHERE game_id = ? LIMIT 1');
+        $tombStmt->execute([$gameId]);
+        if ($tombStmt->fetch()) {
+            http_response_code(410);
+            echo json_encode([
+                'success' => false,
+                'stopped' => true,
+                'conflict' => true,
+                'error_code' => 'game_deleted',
+                'error' => 'This game was deleted and cannot be modified.'
+            ]);
+            exit;
+        }
+    } catch (Exception $e) {
+        // Continue if tombstone check encounters temporary error
     }
 
     // Extract denormalized summary fields from the snapshot
@@ -194,19 +223,20 @@ if ($action === 'sync') {
         if ($existing['owner_id'] === null && $user !== null && $tokenMatches) {
             $ownerId = (int)$user['id'];
             $expiresAt = null;
-            // Retain existing visibility on auto-claim
-            $targetVisibility = in_array($visibility, ['public', 'private'], true) ? $visibility : $existing['visibility'];
         } elseif ($existing['owner_id'] === null) {
-            // Unowned guest game: keep public and refresh 24-hour expiration
-            $targetVisibility = 'public';
+            // Unowned guest game: refresh 24-hour expiration
             $expiresAt = gmdate('Y-m-d H:i:s', time() + 86400);
-        } else {
-            // Owned game: update visibility only if requested by owner
-            $targetVisibility = $isOwner ? $visibility : $existing['visibility'];
         }
 
-        // Retain original completion timestamp if already final, otherwise set to nowUtc
-        $effectiveEndedAt = ($status === 'final') ? (!empty($existing['ended_at']) ? $existing['ended_at'] : $nowUtc) : null;
+        // Section 8.2: Visibility is authoritative from server for existing games.
+        // Sync payload visibility is ignored on updates; visibility changes only via set_visibility.
+        $targetVisibility = $existing['visibility'];
+
+        // Preserve finalized state: if existing match is final, do not revert to live
+        $effectiveStatus = ($existing['status'] === 'final') ? 'final' : $status;
+
+        // Retain original completion timestamp if already final, otherwise set to nowUtc if newly final
+        $effectiveEndedAt = ($effectiveStatus === 'final') ? (!empty($existing['ended_at']) ? $existing['ended_at'] : $nowUtc) : null;
 
         $updateSql = 'UPDATE suite_games SET
             owner_id = ?,
@@ -230,7 +260,7 @@ if ($action === 'sync') {
 
         $updateStmt = $pdo->prepare($updateSql);
         $updateStmt->execute([
-            $ownerId, $targetVisibility, $status, $endedBy, $rev,
+            $ownerId, $targetVisibility, $effectiveStatus, $endedBy, $rev,
             $homeName, $awayName, $homeScore, $awayScore, $currentPeriod, $timerRunning, $isPaused, $elapsedMs,
             $stateJson, $effectiveEndedAt, $nowUtc, $expiresAt, $existing['id']
         ]);
@@ -238,7 +268,7 @@ if ($action === 'sync') {
         echo json_encode([
             'success' => true,
             'rev' => $rev,
-            'status' => $status,
+            'status' => $effectiveStatus,
             'visibility' => $targetVisibility
         ]);
         exit;
@@ -259,16 +289,16 @@ if ($action === 'list_public') {
     $nowUtc = gmdate('Y-m-d H:i:s');
     $nowTs = time();
 
-    // Query active games and recent games finished within the past 24 hours
-    $sql = 'SELECT game_id, home_name, away_name, home_score, away_score, current_period,
+    // Query public active games and recent games finished within the past 24 hours
+    $sql = 'SELECT game_id, visibility, home_name, away_name, home_score, away_score, current_period,
                    status, timer_running, is_paused, elapsed_ms, started_at, ended_at, last_activity_at,
                    TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
             FROM suite_games
             WHERE visibility = "public"
               AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
-              AND (status = "live" OR COALESCE(ended_at, last_activity_at) > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
+              AND (status = "live" OR COALESCE(ended_at, last_activity_at) >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
             ORDER BY last_activity_at DESC
-            LIMIT 50';
+            LIMIT 100';
 
     $stmt = $pdo->query($sql);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -307,10 +337,31 @@ if ($action === 'list_public') {
             'elapsedMs' => (int)$row['elapsed_ms'],
             'age_ms' => $ageSeconds * 1000,
             'lastUpdate' => ($nowTs - $ageSeconds) * 1000,
+            'visibility' => $row['visibility'] ?? 'public',
             'startedAt' => $row['started_at'],
             'endedAt' => $row['ended_at'],
+            'last_activity_at' => $row['last_activity_at'],
             'gameTitle' => $row['home_name'] . ' vs ' . $row['away_name']
         ];
+    }
+
+    // Sort: Non-final games first ordered by last_activity_at descending; then finals ordered by ended_at descending
+    usort($games, function($a, $b) {
+        $aFinal = ($a['status'] === 'final') ? 1 : 0;
+        $bFinal = ($b['status'] === 'final') ? 1 : 0;
+        if ($aFinal !== $bFinal) {
+            return $aFinal - $bFinal;
+        }
+        if (!$aFinal) {
+            return strcmp($b['last_activity_at'] ?? '', $a['last_activity_at'] ?? '');
+        }
+        $aEnd = !empty($a['endedAt']) ? $a['endedAt'] : ($a['last_activity_at'] ?? '');
+        $bEnd = !empty($b['endedAt']) ? $b['endedAt'] : ($b['last_activity_at'] ?? '');
+        return strcmp($bEnd, $aEnd);
+    });
+
+    if (count($games) > 50) {
+        $games = array_slice($games, 0, 50);
     }
 
     echo json_encode([
@@ -437,9 +488,10 @@ if ($action === 'list_mine') {
     $countStmt->execute([$user['id']]);
     $total = (int)$countStmt->fetchColumn();
 
-    // Query paginated games list
+    // Query paginated games list including timer and pause fields for unified row derivation
     $listStmt = $pdo->prepare('SELECT game_id, visibility, status, ended_by,
                                       home_name, away_name, home_score, away_score, current_period,
+                                      timer_running, is_paused, elapsed_ms,
                                       started_at, ended_at, last_activity_at,
                                       TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
                                FROM suite_games
@@ -471,6 +523,11 @@ if ($action === 'list_mine') {
             'awayScore' => (int)$row['away_score'],
             'currentPeriod' => (int)$row['current_period'],
             'status' => $effectiveStatus,
+            'timerRunning' => (int)$row['timer_running'] === 1,
+            'isPaused' => (int)$row['is_paused'] === 1,
+            'elapsedMs' => (int)$row['elapsed_ms'],
+            'age_ms' => $ageSeconds * 1000,
+            'age_seconds' => $ageSeconds,
             'visibility' => $row['visibility'],
             'startedAt' => $row['started_at'],
             'endedAt' => $row['ended_at'],
@@ -603,6 +660,13 @@ if ($action === 'delete') {
 
     $deleteStmt = $pdo->prepare('DELETE FROM suite_games WHERE id = ?');
     $deleteStmt->execute([$game['id']]);
+
+    // Register deleted game in tombstones table to prevent resurrection by open scorer tabs
+    try {
+        $tombInsert = $pdo->prepare('INSERT INTO suite_game_tombstones (game_id, deleted_at) VALUES (?, UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE deleted_at = UTC_TIMESTAMP()');
+        $tombInsert->execute([$gameId]);
+        $pdo->exec('DELETE FROM suite_game_tombstones WHERE deleted_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)');
+    } catch (Exception $e) {}
 
     echo json_encode([
         'success' => true,

@@ -10,12 +10,14 @@ ScoreBoard is a versatile multi-sport digital scoreboard and match management ut
 
 ### Primary Files
 - `index.html`: Main operator console and scoreboard controller.
-- `ScoreBoardViewer.html`: Clean spectator display featuring skew-free clock extrapolation using server `age_ms`.
-- `ScoreBoardActiveGames.html`: Real-time public match broadcast directory showing live, paused, stalled, and final games.
-- `ScoreBoardMyGames.html`: Authenticated match management dashboard for signed-in users (visibility toggles, viewer links, deletion, pagination).
+- `ScoreBoardGames.html`: Unified two-tab matches screen (Active Games public broadcast directory and authenticated My Games archive).
+- `ScoreBoardViewer.html`: Read-only spectator display mirroring scoring console layout with server-anchored clock extrapolation.
+- `scoreboard-shared.js`: Shared timing helpers, status pill derivation, history table formatting, and read-only theme application.
+- `ScoreBoardActiveGames.html`: Legacy redirect stub forwarding to `ScoreBoardGames.html?tab=active`.
+- `ScoreBoardMyGames.html`: Legacy redirect stub forwarding to `ScoreBoardGames.html?tab=mine`.
 - `ScoreBoardHelp.html`: Operating guide and keyboard shortcut instructions.
 - `scoreboard.css`: High-contrast dark scoreboard styling, large LED-style score boxes, and responsive control panels.
-- `../api/games.php`: Database-backed game tracking API interfacing with `suite_games` and `suite_sessions`.
+- `../api/games.php`: Database-backed game tracking API interfacing with `suite_games`, `suite_game_tombstones`, and `suite_sessions`.
 
 ---
 
@@ -46,12 +48,13 @@ ScoreBoard is a versatile multi-sport digital scoreboard and match management ut
   - 20-second heartbeat pings fire **only while the timer is actively running**.
   - Immediate beacon flushes (`navigator.sendBeacon`) dispatch on `pagehide` and `visibilitychange: hidden`.
 - **Spectator Clock Extrapolation (`ScoreBoardViewer.html`)**:
-  - Reads `age_ms` (milliseconds since last operator sync) from the server.
-  - Extrapolates clock: `displayTime = elapsedMs + age_ms + timeSinceFetch` only when `status === 'live'`, timer is running, and `age_ms < 60000`.
-  - When `age_ms >= 60000`, the clock freezes and the match is marked as `Stalled`.
+  - Uses server-anchored clock model with `server_now` time offset calculation.
+  - Extrapolates clock display only when `status !== 'final'`, timer is running, and `isPaused === false`.
+  - Clamps at period limit unless reported in overage, and caps extrapolation at `STALL_THRESHOLD_MS` (30 minutes).
+  - When `age_ms >= 30 * 60 * 1000`, the clock freezes and the match is marked as `Stalled`.
   - When `status === 'final'`, polling ceases immediately and clock displays final frozen time.
 - **XSS Prevention**:
-  - Dynamic content in `ScoreBoardActiveGames.html`, `ScoreBoardViewer.html`, and `ScoreBoardMyGames.html` uses safe DOM assignment (`textContent`) and `encodeURIComponent` for all identifiers.
+  - Dynamic content in `ScoreBoardGames.html`, `ScoreBoardViewer.html`, and `index.html` uses safe DOM assignment (`textContent`) and `encodeURIComponent` for all identifiers.
 
 ---
 

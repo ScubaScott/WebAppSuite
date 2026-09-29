@@ -1,6 +1,6 @@
 /* ============================================================
    ScoreBoard — scoreboard.css
-   Version: 2.5
+   Version: 2.6
    All visual styles for the ScoreBoard application.
    ============================================================ */
 
@@ -1988,5 +1988,457 @@ footer {
 .setup-roller-box.hidden {
     display: none !important;
 }
+
+/* ============================================================
+   Unified Games Screen & Viewer Styles (v2.6)
+   ============================================================ */
+
+/* Page shell & container */
+.unified-page-shell {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
+}
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.page-header-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #f8fafc;
+}
+
+/* Tab controls */
+.games-tab-bar {
+    display: flex;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.games-tab-btn {
+    flex: 1;
+    min-height: 44px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.games-tab-btn:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.games-tab-btn.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Game Cards List */
+.games-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.game-card-row {
+    background: rgba(17, 24, 39, 0.82);
+    backdrop-filter: blur(8px);
+    border: 1px solid #374151;
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.game-card-row:hover {
+    background: rgba(31, 41, 55, 0.95);
+    border-color: #4b5563;
+}
+
+.game-card-row:active {
+    transform: scale(0.99);
+}
+
+.game-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.game-row-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+}
+
+.game-row-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.game-row-date {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.2;
+}
+
+.game-row-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.game-row-score-wrap {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.game-row-score {
+    font-size: 1.75rem;
+    font-weight: 800;
+    font-family: monospace;
+    letter-spacing: -0.02em;
+    color: #38bdf8;
+    line-height: 1;
+}
+
+/* Status Pills */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 9999px;
+    padding: 3px 9px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.pill-live {
+    background: rgba(34, 197, 94, 0.18);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.pill-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+    display: inline-block;
+}
+
+.pill-paused {
+    background: rgba(234, 179, 8, 0.18);
+    color: #fde047;
+    border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.pill-stalled {
+    background: rgba(249, 115, 22, 0.18);
+    color: #fdba74;
+    border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.pill-final {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.pill-public {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.pill-private {
+    background: rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+/* Empty state container */
+.empty-games-box {
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px dashed #374151;
+    border-radius: 16px;
+    padding: 36px 20px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+/* Pagination controls */
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 4px 4px;
+}
+
+.pagination-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 16px;
+    background: rgba(31, 41, 55, 0.85);
+    border: 1px solid #374151;
+    border-radius: 10px;
+    color: #f3f4f6;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-align: center;
+}
+
+/* Action Sheet Modal (My Games tap action) */
+.action-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.action-sheet {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 448px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+}
+
+.action-sheet-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-bottom: 1px solid #374151;
+    padding-bottom: 12px;
+}
+
+.action-sheet-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.action-sheet-meta {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sheet-btn {
+    min-height: 48px;
+    width: 100%;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-btn-primary {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.sheet-btn-primary:hover {
+    background: #1d4ed8;
+}
+
+.sheet-btn-secondary {
+    background: rgba(255, 255, 255, 0.06);
+    color: #e2e8f0;
+    border-color: #374151;
+}
+
+.sheet-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.sheet-btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.sheet-btn-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.28);
+    border-color: rgba(239, 68, 68, 0.55);
+}
+
+.sheet-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.sheet-btn-cancel {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+}
+
+.sheet-btn-cancel:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* History row interaction states */
+.history-row-readonly {
+    cursor: default;
+}
+
+.history-row-readonly:hover {
+    background-color: transparent !important;
+}
+
+.history-row-interactive {
+    cursor: pointer;
+}
+
+/* Viewer specific headers & badges */
+.viewer-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.viewer-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.viewer-reconnecting-banner {
+    width: 100%;
+    padding: 6px 12px;
+    background: rgba(234, 179, 8, 0.18);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    color: #fef08a;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.app-footer {
+    margin-top: 32px;
+    padding-bottom: 24px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.app-footer small,
+.app-footer p {
+    margin: 0;
+    font-size: inherit;
+    color: inherit;
+}
+
 
 

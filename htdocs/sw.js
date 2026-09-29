@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '3.5';
+const SW_VERSION = '3.6';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Static app-shell assets pre-cached on install for offline functionality.
@@ -48,6 +48,8 @@ const APP_SHELL = [
   './ScoreBoard/',
   './ScoreBoard/index.html',
   './ScoreBoard/scoreboard.css',
+  './ScoreBoard/scoreboard-shared.js',
+  './ScoreBoard/ScoreBoardGames.html',
   './ScoreBoard/ScoreBoardActiveGames.html',
   './ScoreBoard/ScoreBoardMyGames.html',
   './ScoreBoard/ScoreBoardViewer.html',
