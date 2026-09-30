@@ -3,7 +3,7 @@
 // Provides endpoints for health check, cards CRUD, favorites, and games CRUD.
 
 // API endpoint version identifier
-$BINGO_API_VERSION = '1.0';
+$BINGO_API_VERSION = '1.1';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -93,15 +93,15 @@ if ($endpoint === 'cards') {
             $sql = 'SELECT c.id, c.label, c.serial, c.squares, c.created_by, c.created_at, c.updated_at,
                            CASE WHEN f.card_id IS NOT NULL THEN 1 ELSE 0 END AS is_favorite,
                            f.favorited_at
-                    FROM cards c
-                    LEFT JOIN card_favorites f ON f.card_id = c.id AND f.user_id = ?
+                    FROM bingo_cards c
+                    LEFT JOIN bingo_card_favorites f ON f.card_id = c.id AND f.user_id = ?
                     WHERE c.deleted_at IS NULL
                     ORDER BY is_favorite DESC, f.favorited_at DESC, c.updated_at DESC';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$userId]);
         } else {
             $sql = 'SELECT id, label, serial, squares, created_by, created_at, updated_at
-                    FROM cards
+                    FROM bingo_cards
                     WHERE deleted_at IS NULL
                     ORDER BY updated_at DESC';
             $stmt = $pdo->prepare($sql);
@@ -175,7 +175,7 @@ if ($endpoint === 'cards') {
         $updatedAt = !empty($body['updatedAt']) ? date('Y-m-d H:i:s', strtotime($body['updatedAt'])) : gmdate('Y-m-d H:i:s');
         $squaresJson = json_encode($squares);
 
-        $sql = 'INSERT INTO cards (id, label, serial, squares, created_by, created_at, updated_at, deleted_at)
+        $sql = 'INSERT INTO bingo_cards (id, label, serial, squares, created_by, created_at, updated_at, deleted_at)
                 VALUES (?, ?, ?, ?, ?, NOW(), ?, NULL)
                 ON DUPLICATE KEY UPDATE
                     label = VALUES(label),
@@ -215,7 +215,7 @@ if ($endpoint === 'cards') {
             exit;
         }
 
-        $stmt = $pdo->prepare('UPDATE cards SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL');
+        $stmt = $pdo->prepare('UPDATE bingo_cards SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL');
         $stmt->execute([$cardId]);
 
         if ($stmt->rowCount() === 0) {
@@ -262,7 +262,7 @@ if ($endpoint === 'favorites') {
 
     // PUT /api/favorites/{cardId} - add favorite
     if ($method === 'PUT' || $method === 'POST') {
-        $stmt = $pdo->prepare('INSERT INTO card_favorites (user_id, card_id, favorited_at)
+        $stmt = $pdo->prepare('INSERT INTO bingo_card_favorites (user_id, card_id, favorited_at)
                                VALUES (?, ?, NOW())
                                ON DUPLICATE KEY UPDATE favorited_at = favorited_at');
         $stmt->execute([$userId, $cardId]);
@@ -273,7 +273,7 @@ if ($endpoint === 'favorites') {
 
     // DELETE /api/favorites/{cardId} - remove favorite
     if ($method === 'DELETE') {
-        $stmt = $pdo->prepare('DELETE FROM card_favorites WHERE user_id = ? AND card_id = ?');
+        $stmt = $pdo->prepare('DELETE FROM bingo_card_favorites WHERE user_id = ? AND card_id = ?');
         $stmt->execute([$userId, $cardId]);
 
         if ($stmt->rowCount() === 0) {
@@ -299,10 +299,10 @@ if ($endpoint === 'games') {
 
     // GET /api/games - return all active games with their patterns
     if ($method === 'GET') {
-        $gamesStmt = $pdo->query('SELECT id, name, builtin FROM games WHERE deleted_at IS NULL ORDER BY builtin DESC, name ASC');
+        $gamesStmt = $pdo->query('SELECT id, name, builtin FROM bingo_games WHERE deleted_at IS NULL ORDER BY builtin DESC, name ASC');
         $games = $gamesStmt->fetchAll();
 
-        $patternsStmt = $pdo->query('SELECT id, game_id, name, cells, sort_order FROM game_patterns ORDER BY sort_order ASC, name ASC');
+        $patternsStmt = $pdo->query('SELECT id, game_id, name, cells, sort_order FROM bingo_patterns ORDER BY sort_order ASC, name ASC');
         $patterns = $patternsStmt->fetchAll();
 
         $patternsByGame = [];
@@ -363,7 +363,7 @@ if ($endpoint === 'games') {
         }
 
         // Prevent modification of built-in games
-        $checkStmt = $pdo->prepare('SELECT builtin FROM games WHERE id = ? LIMIT 1');
+        $checkStmt = $pdo->prepare('SELECT builtin FROM bingo_games WHERE id = ? LIMIT 1');
         $checkStmt->execute([$gameId]);
         $existing = $checkStmt->fetch();
         if ($existing && !empty($existing['builtin'])) {
@@ -377,7 +377,7 @@ if ($endpoint === 'games') {
         $pdo->beginTransaction();
         try {
             // Upsert game record
-            $gameSql = 'INSERT INTO games (id, name, builtin, created_at, updated_at, deleted_at)
+            $gameSql = 'INSERT INTO bingo_games (id, name, builtin, created_at, updated_at, deleted_at)
                         VALUES (?, ?, 0, NOW(), ?, NULL)
                         ON DUPLICATE KEY UPDATE
                             name = VALUES(name),
@@ -387,10 +387,10 @@ if ($endpoint === 'games') {
             $gameStmt->execute([$gameId, $name, $updatedAt]);
 
             // Replace patterns
-            $delPatterns = $pdo->prepare('DELETE FROM game_patterns WHERE game_id = ?');
+            $delPatterns = $pdo->prepare('DELETE FROM bingo_patterns WHERE game_id = ?');
             $delPatterns->execute([$gameId]);
 
-            $insertPattern = $pdo->prepare('INSERT INTO game_patterns (id, game_id, name, cells, sort_order) VALUES (?, ?, ?, ?, ?)');
+            $insertPattern = $pdo->prepare('INSERT INTO bingo_patterns (id, game_id, name, cells, sort_order) VALUES (?, ?, ?, ?, ?)');
             $savedPatterns = [];
 
             foreach ($patterns as $idx => $p) {
@@ -439,7 +439,7 @@ if ($endpoint === 'games') {
             exit;
         }
 
-        $checkStmt = $pdo->prepare('SELECT builtin FROM games WHERE id = ? LIMIT 1');
+        $checkStmt = $pdo->prepare('SELECT builtin FROM bingo_games WHERE id = ? LIMIT 1');
         $checkStmt->execute([$gameId]);
         $game = $checkStmt->fetch();
 
@@ -455,7 +455,7 @@ if ($endpoint === 'games') {
             exit;
         }
 
-        $delStmt = $pdo->prepare('UPDATE games SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL');
+        $delStmt = $pdo->prepare('UPDATE bingo_games SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL');
         $delStmt->execute([$gameId]);
 
         http_response_code(204);
@@ -480,7 +480,7 @@ function ensureBingoTablesInitialized($pdo) {
 
     try {
         // Check if cards table exists
-        $test = $pdo->query("SHOW TABLES LIKE 'cards'")->fetch();
+        $test = $pdo->query("SHOW TABLES LIKE 'bingo_cards'")->fetch();
         if (!$test) {
             $schemaFile = __DIR__ . '/schema.sql';
             if (file_exists($schemaFile)) {
@@ -502,10 +502,10 @@ function ensureBingoTablesInitialized($pdo) {
 function migrateLegacyJsonData($pdo) {
     $cardsJsonFile = dirname(__DIR__) . '/Bingo/php/cards.json';
     if (file_exists($cardsJsonFile)) {
-        $cardCount = (int)$pdo->query("SELECT COUNT(*) FROM cards")->fetchColumn();
+        $cardCount = (int)$pdo->query("SELECT COUNT(*) FROM bingo_cards")->fetchColumn();
         if ($cardCount === 0) {
             $jsonCards = json_decode(file_get_contents($cardsJsonFile), true) ?: [];
-            $insert = $pdo->prepare('INSERT IGNORE INTO cards (id, label, serial, squares, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, NOW(), NOW())');
+            $insert = $pdo->prepare('INSERT IGNORE INTO bingo_cards (id, label, serial, squares, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, NOW(), NOW())');
             foreach ($jsonCards as $c) {
                 if (empty($c['squares']) || !is_array($c['squares'])) continue;
                 $cId = !empty($c['id']) ? (string)$c['id'] : sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x', mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0x0fff) | 0x4000, mt_rand(0, 0x3fff) | 0x8000, mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff));
@@ -518,11 +518,11 @@ function migrateLegacyJsonData($pdo) {
 
     $gamesJsonFile = dirname(__DIR__) . '/Bingo/php/games.json';
     if (file_exists($gamesJsonFile)) {
-        $customCount = (int)$pdo->query("SELECT COUNT(*) FROM games WHERE builtin = 0")->fetchColumn();
+        $customCount = (int)$pdo->query("SELECT COUNT(*) FROM bingo_games WHERE builtin = 0")->fetchColumn();
         if ($customCount === 0) {
             $jsonGames = json_decode(file_get_contents($gamesJsonFile), true) ?: [];
-            $insertGame = $pdo->prepare('INSERT IGNORE INTO games (id, name, builtin, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())');
-            $insertPattern = $pdo->prepare('INSERT IGNORE INTO game_patterns (id, game_id, name, cells, sort_order) VALUES (?, ?, ?, ?, ?)');
+            $insertGame = $pdo->prepare('INSERT IGNORE INTO bingo_games (id, name, builtin, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())');
+            $insertPattern = $pdo->prepare('INSERT IGNORE INTO bingo_patterns (id, game_id, name, cells, sort_order) VALUES (?, ?, ?, ?, ?)');
             foreach ($jsonGames as $g) {
                 if (!empty($g['builtin'])) continue; // built-ins are already seeded
                 $gId = !empty($g['id']) ? (string)$g['id'] : sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x', mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0x0fff) | 0x4000, mt_rand(0, 0x3fff) | 0x8000, mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff));

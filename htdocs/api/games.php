@@ -3,7 +3,7 @@
 // Handles match synchronization, active games directory, and user game archive persistence.
 
 // API endpoint version identifier
-$GAMES_API_VERSION = '1.4';
+$GAMES_API_VERSION = '1.5';
 
 // Inactivity threshold (in hours) after which a live game is automatically finalized
 define('GAME_TIMEOUT_HOURS', 3);
@@ -80,7 +80,7 @@ if ($action === 'sync') {
 
     // Check tombstone registry: reject sync if game was previously deleted
     try {
-        $tombStmt = $pdo->prepare('SELECT game_id FROM suite_game_tombstones WHERE game_id = ? LIMIT 1');
+        $tombStmt = $pdo->prepare('SELECT game_id FROM scoreboard_game_tombstones WHERE game_id = ? LIMIT 1');
         $tombStmt->execute([$gameId]);
         if ($tombStmt->fetch()) {
             http_response_code(410);
@@ -137,7 +137,7 @@ if ($action === 'sync') {
     $stateJson = json_encode($snapshot, JSON_UNESCAPED_UNICODE);
 
     // Check if the game row already exists
-    $stmt = $pdo->prepare('SELECT id, owner_id, write_token_hash, visibility, status, ended_by, rev, ended_at FROM suite_games WHERE game_id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, owner_id, write_token_hash, visibility, status, ended_by, rev, ended_at FROM scoreboard_games WHERE game_id = ? LIMIT 1');
     $stmt->execute([$gameId]);
     $existing = $stmt->fetch();
 
@@ -163,7 +163,7 @@ if ($action === 'sync') {
             $expiresAt = null; // Owned games are kept until deleted
         }
 
-        $insertSql = 'INSERT INTO suite_games (
+        $insertSql = 'INSERT INTO scoreboard_games (
             game_id, app_id, owner_id, write_token_hash, visibility, status, ended_by, rev,
             home_name, away_name, home_score, away_score, current_period, timer_running, is_paused, elapsed_ms,
             state_json, started_at, ended_at, last_activity_at, expires_at
@@ -231,7 +231,7 @@ if ($action === 'sync') {
         // Retain original completion timestamp if already final, otherwise set to nowUtc if newly final
         $effectiveEndedAt = ($effectiveStatus === 'final') ? (!empty($existing['ended_at']) ? $existing['ended_at'] : $nowUtc) : null;
 
-        $updateSql = 'UPDATE suite_games SET
+        $updateSql = 'UPDATE scoreboard_games SET
             owner_id = ?,
             visibility = ?,
             status = ?,
@@ -274,7 +274,7 @@ if ($action === 'sync') {
 if ($action === 'list_public') {
     // Opportunistically prune expired guest records
     try {
-        $pdo->exec('DELETE FROM suite_games WHERE expires_at IS NOT NULL AND expires_at < UTC_TIMESTAMP() LIMIT 100');
+        $pdo->exec('DELETE FROM scoreboard_games WHERE expires_at IS NOT NULL AND expires_at < UTC_TIMESTAMP() LIMIT 100');
     } catch (Exception $e) {
         // Continue if opportunistic purge encounters locks
     }
@@ -286,7 +286,7 @@ if ($action === 'list_public') {
     $sql = 'SELECT game_id, visibility, home_name, away_name, home_score, away_score, current_period,
                    status, timer_running, is_paused, elapsed_ms, started_at, ended_at, last_activity_at,
                    TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
-            FROM suite_games
+            FROM scoreboard_games
             WHERE visibility = "public"
               AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
               AND (status = "live" OR COALESCE(ended_at, last_activity_at) >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
@@ -311,7 +311,7 @@ if ($action === 'list_public') {
 
             // Lazily persist timeout finalization to database
             try {
-                $finalizeStmt = $pdo->prepare('UPDATE suite_games SET status = "final", ended_by = "timeout", ended_at = last_activity_at, timer_running = 0 WHERE game_id = ? AND status = "live"');
+                $finalizeStmt = $pdo->prepare('UPDATE scoreboard_games SET status = "final", ended_by = "timeout", ended_at = last_activity_at, timer_running = 0 WHERE game_id = ? AND status = "live"');
                 $finalizeStmt->execute([$row['game_id']]);
             } catch (Exception $e) {}
         }
@@ -386,7 +386,7 @@ if ($action === 'get') {
                                   timer_running, is_paused, elapsed_ms, state_json,
                                   started_at, ended_at, last_activity_at,
                                   TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
-                           FROM suite_games
+                           FROM scoreboard_games
                            WHERE game_id = ?
                            LIMIT 1');
     $stmt->execute([$gameId]);
@@ -417,7 +417,7 @@ if ($action === 'get') {
         $effectiveStatus = 'final';
         $timerRunning = false;
         try {
-            $finalizeStmt = $pdo->prepare('UPDATE suite_games SET status = "final", ended_by = "timeout", ended_at = last_activity_at, timer_running = 0 WHERE game_id = ? AND status = "live"');
+            $finalizeStmt = $pdo->prepare('UPDATE scoreboard_games SET status = "final", ended_by = "timeout", ended_at = last_activity_at, timer_running = 0 WHERE game_id = ? AND status = "live"');
             $finalizeStmt->execute([$game['game_id']]);
         } catch (Exception $e) {}
     }
@@ -477,7 +477,7 @@ if ($action === 'list_mine') {
     $offset = isset($payload['offset']) ? max(0, (int)$payload['offset']) : 0;
 
     // Count total owned games
-    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM suite_games WHERE owner_id = ?');
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM scoreboard_games WHERE owner_id = ?');
     $countStmt->execute([$user['id']]);
     $total = (int)$countStmt->fetchColumn();
 
@@ -487,7 +487,7 @@ if ($action === 'list_mine') {
                                       timer_running, is_paused, elapsed_ms,
                                       started_at, ended_at, last_activity_at,
                                       TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
-                               FROM suite_games
+                               FROM scoreboard_games
                                WHERE owner_id = ?
                                ORDER BY started_at DESC
                                LIMIT ? OFFSET ?');
@@ -568,7 +568,7 @@ if ($action === 'set_visibility') {
     }
 
     // Verify ownership
-    $stmt = $pdo->prepare('SELECT id, owner_id FROM suite_games WHERE game_id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, owner_id FROM scoreboard_games WHERE game_id = ? LIMIT 1');
     $stmt->execute([$gameId]);
     $game = $stmt->fetch();
 
@@ -578,7 +578,7 @@ if ($action === 'set_visibility') {
         exit;
     }
 
-    $updateStmt = $pdo->prepare('UPDATE suite_games SET visibility = ? WHERE id = ?');
+    $updateStmt = $pdo->prepare('UPDATE scoreboard_games SET visibility = ? WHERE id = ?');
     $updateStmt->execute([$visibility, $game['id']]);
 
     echo json_encode([
@@ -617,7 +617,7 @@ if ($action === 'delete') {
     }
 
     // Check game existence, ownership, and activity status
-    $stmt = $pdo->prepare('SELECT id, owner_id, status, last_activity_at, TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds FROM suite_games WHERE game_id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, owner_id, status, last_activity_at, TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds FROM scoreboard_games WHERE game_id = ? LIMIT 1');
     $stmt->execute([$gameId]);
     $game = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -635,7 +635,7 @@ if ($action === 'delete') {
     if ($game['status'] === 'live' && $ageSeconds >= $timeoutSeconds) {
         $effectiveStatus = 'final';
         try {
-            $finalizeStmt = $pdo->prepare('UPDATE suite_games SET status = "final", ended_by = "timeout", ended_at = last_activity_at, timer_running = 0 WHERE id = ?');
+            $finalizeStmt = $pdo->prepare('UPDATE scoreboard_games SET status = "final", ended_by = "timeout", ended_at = last_activity_at, timer_running = 0 WHERE id = ?');
             $finalizeStmt->execute([$game['id']]);
         } catch (Exception $e) { }
     }
@@ -651,14 +651,14 @@ if ($action === 'delete') {
         exit;
     }
 
-    $deleteStmt = $pdo->prepare('DELETE FROM suite_games WHERE id = ?');
+    $deleteStmt = $pdo->prepare('DELETE FROM scoreboard_games WHERE id = ?');
     $deleteStmt->execute([$game['id']]);
 
     // Register deleted game in tombstones table to prevent resurrection by open scorer tabs
     try {
-        $tombInsert = $pdo->prepare('INSERT INTO suite_game_tombstones (game_id, deleted_at) VALUES (?, UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE deleted_at = UTC_TIMESTAMP()');
+        $tombInsert = $pdo->prepare('INSERT INTO scoreboard_game_tombstones (game_id, deleted_at) VALUES (?, UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE deleted_at = UTC_TIMESTAMP()');
         $tombInsert->execute([$gameId]);
-        $pdo->exec('DELETE FROM suite_game_tombstones WHERE deleted_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)');
+        $pdo->exec('DELETE FROM scoreboard_game_tombstones WHERE deleted_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)');
     } catch (Exception $e) {}
 
     echo json_encode([

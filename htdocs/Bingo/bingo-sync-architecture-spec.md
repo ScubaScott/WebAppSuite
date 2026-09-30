@@ -35,18 +35,14 @@ The Bingo app is a browser-based bar bingo tracker. It currently stores cards an
 | Favorites | SuiteProfile-authenticated users only | Guests get read-only library access |
 | Games/patterns offline | Cached locally for read; creation allowed offline | Same outbox pattern as cards |
 | Sync mechanism | Outbox queue in `localStorage`, drained on reconnect | Simple, reliable, no service worker required |
-| Server reachability | Explicit HEAD ping to `/api/health` before drain | `navigator.onLine` alone is insufficient |
+| Server reachability | Explicit HEAD ping to `/api/health` before drain | `navigator.onLine` alone is insufficient |## 3. SQL Schema
 
----
-
-## 3. SQL Schema
-
-### 3.1 `cards`
+### 3.1 `bingo_cards`
 Stores the global shared card library. One row per unique card.
 
 ```sql
-CREATE TABLE cards (
-    id          VARCHAR(36)   NOT NULL,          -- client-generated UUID
+CREATE TABLE bingo_cards (
+    id          VARCHAR(36)   NOT NULL,           -- client-generated UUID
     label       VARCHAR(100)  NOT NULL DEFAULT '',
     serial      VARCHAR(50)   NOT NULL DEFAULT '',
     squares     JSON          NOT NULL,           -- 25-element array; index 12 = 'FREE'
@@ -55,8 +51,8 @@ CREATE TABLE cards (
     updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at  DATETIME      DEFAULT NULL,       -- soft delete; NULL = active
     PRIMARY KEY (id),
-    INDEX idx_cards_updated (updated_at),
-    INDEX idx_cards_created_by (created_by)
+    INDEX idx_bingo_cards_updated (updated_at),
+    INDEX idx_bingo_cards_created_by (created_by)
 );
 ```
 
@@ -67,17 +63,17 @@ CREATE TABLE cards (
 
 ---
 
-### 3.2 `card_favorites`
+### 3.2 `bingo_card_favorites`
 Junction table for per-user card favorites. Authenticated users only.
 
 ```sql
-CREATE TABLE card_favorites (
+CREATE TABLE bingo_card_favorites (
     user_id       VARCHAR(100)  NOT NULL,         -- SuiteProfile userId
-    card_id       VARCHAR(36)   NOT NULL,         -- FK → cards.id
+    card_id       VARCHAR(36)   NOT NULL,         -- FK → bingo_cards.id
     favorited_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, card_id),
-    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE,
-    INDEX idx_favorites_user (user_id)
+    FOREIGN KEY (card_id) REFERENCES bingo_cards(id) ON DELETE CASCADE,
+    INDEX idx_bingo_favorites_user (user_id)
 );
 ```
 
@@ -87,11 +83,11 @@ CREATE TABLE card_favorites (
 
 ---
 
-### 3.3 `games`
+### 3.3 `bingo_games`
 Stores game mode definitions. Built-in games are seeded at deploy time.
 
 ```sql
-CREATE TABLE games (
+CREATE TABLE bingo_games (
     id          VARCHAR(36)   NOT NULL,           -- client-generated UUID
     name        VARCHAR(100)  NOT NULL,
     builtin     TINYINT(1)    NOT NULL DEFAULT 0, -- 1 = system game, cannot be deleted
@@ -99,25 +95,25 @@ CREATE TABLE games (
     updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at  DATETIME      DEFAULT NULL,
     PRIMARY KEY (id),
-    INDEX idx_games_builtin (builtin)
+    INDEX idx_bingo_games_builtin (builtin)
 );
 ```
 
 ---
 
-### 3.4 `game_patterns`
+### 3.4 `bingo_patterns`
 Stores win patterns belonging to a game. Each game has 1–N patterns.
 
 ```sql
-CREATE TABLE game_patterns (
+CREATE TABLE bingo_patterns (
     id          VARCHAR(36)   NOT NULL,           -- client-generated UUID
-    game_id     VARCHAR(36)   NOT NULL,           -- FK → games.id
+    game_id     VARCHAR(36)   NOT NULL,           -- FK → bingo_games.id
     name        VARCHAR(100)  NOT NULL,
     cells       JSON          NOT NULL,           -- array of cell indices (0–24); 12 = FREE always included
     sort_order  INT           NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
-    INDEX idx_patterns_game (game_id)
+    FOREIGN KEY (game_id) REFERENCES bingo_games(id) ON DELETE CASCADE,
+    INDEX idx_bingo_patterns_game (game_id)
 );
 ```
 
@@ -263,7 +259,7 @@ Error: `403` if attempting to modify a built-in game.
 ```
 DELETE  /api/games/{gameId}
 ```
-Soft-deletes the game. Cascades to `game_patterns`.  
+Soft-deletes the game. Cascades to `bingo_patterns`.  
 Response: `204 No Content`.  
 Error: `403` if `builtin = 1`.
 
@@ -395,7 +391,7 @@ In the event the server detects a UUID collision (same `id`, different `squares`
 - This path must exist in code but is not expected to fire in production
 
 ### 7.7 Favorites on Deleted Cards
-Handled at the database level via `ON DELETE CASCADE` on `card_favorites.card_id`. No client-side handling required. The next `GET /api/cards` refresh will not return the deleted card, and the favorite entry will already be gone.
+Handled at the database level via `ON DELETE CASCADE` on `bingo_card_favorites.card_id`. No client-side handling required. The next `GET /api/cards` refresh will not return the deleted card, and the favorite entry will already be gone.
 
 ### 7.8 Games List Stale Mid-Game
 If `availableGames` is empty (server unreachable on load), all win detection silently returns `null`. This is the current bug. Mitigation:
@@ -464,7 +460,7 @@ The existing `cards.php` and `games.php` files use flat JSON file storage. They 
 
 ### Migration approach
 1. Deploy new SQL tables (§3) alongside existing JSON files
-2. Seed built-in games into the `games` and `game_patterns` tables
+2. Seed built-in games into the `bingo_games` and `bingo_patterns` tables
 3. Migrate any existing JSON card/game data into SQL as part of deploy
 4. Replace `cards.php` and `games.php` with new router-based handlers (`/api/cards`, `/api/games`, `/api/favorites`, `/api/health`)
 5. Update all `fetch()` call URLs in `scan.html`, `tracking.js`, and `game-creator.html` from `./php/cards.php` and `./php/games.php` to `/api/cards` and `/api/games`
@@ -472,7 +468,7 @@ The existing `cards.php` and `games.php` files use flat JSON file storage. They 
 ### PHP endpoint behavior for upsert
 ```
 PUT /api/cards/{cardId}
-→ INSERT INTO cards (...) VALUES (...)
+→ INSERT INTO bingo_cards (...) VALUES (...)
   ON DUPLICATE KEY UPDATE
     label = VALUES(label),
     serial = VALUES(serial),

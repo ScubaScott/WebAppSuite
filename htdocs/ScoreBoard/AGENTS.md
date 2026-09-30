@@ -17,7 +17,7 @@ ScoreBoard is a versatile multi-sport digital scoreboard and match management ut
 - `ScoreBoardMyGames.html`: Legacy redirect stub forwarding to `ScoreBoardGames.html?tab=mine`.
 - `ScoreBoardHelp.html`: Operating guide and keyboard shortcut instructions.
 - `scoreboard.css`: High-contrast dark scoreboard styling, large LED-style score boxes, and responsive control panels.
-- `../api/games.php`: Database-backed game tracking API interfacing with `suite_games`, `suite_game_tombstones`, and `suite_sessions`.
+- `../api/games.php`: Database-backed game tracking API interfacing with `scoreboard_games`, `scoreboard_game_tombstones`, and `suite_sessions`.
 
 ---
 
@@ -39,7 +39,7 @@ ScoreBoard is a versatile multi-sport digital scoreboard and match management ut
 ## 3. Database Sync & Remote Spectator Architecture
 
 - **Backend Integration (`../api/games.php`)**:
-  - Games are persisted in the `suite_games` table in MySQL/MariaDB with JSON snapshots, monotonic revision counters (`rev`), 64-hex write tokens, and guest 24-hour expiration.
+  - Games are persisted in the `scoreboard_games` table in MySQL/MariaDB with JSON snapshots, monotonic revision counters (`rev`), 64-hex write tokens, and guest 24-hour expiration.
   - Authenticated sessions are tracked via `suite_sessions` storing SHA-256 token hashes per device.
   - Guest games are automatically claimed by signed-in users on login or next sync.
 - **Operator Sync Lifecycle (`index.html`)**:

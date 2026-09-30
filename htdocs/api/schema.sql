@@ -5,7 +5,7 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- 1. Users table: stores user profiles with optional password hash
+-- 1. Central Users table: stores user profiles with optional password hash across the entire suite
 CREATE TABLE IF NOT EXISTS `suite_users` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `username` VARCHAR(64) NOT NULL UNIQUE,
@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS `suite_sessions` (
         REFERENCES `suite_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. Suite Games table: stores match records, snapshots, and denormalized scores
-CREATE TABLE IF NOT EXISTS `suite_games` (
+-- 4. Scoreboard Games table: stores match records, snapshots, and denormalized scores
+CREATE TABLE IF NOT EXISTS `scoreboard_games` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `game_id` CHAR(36) NOT NULL UNIQUE,         -- client-generated UUIDv4
     `app_id` VARCHAR(32) NOT NULL DEFAULT 'scoreboard',
@@ -75,21 +75,21 @@ CREATE TABLE IF NOT EXISTS `suite_games` (
     `last_activity_at` DATETIME NOT NULL,
     `expires_at` DATETIME NULL,                 -- set for guest games only; NULL = keep until deleted
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_games_owner` (`owner_id`, `started_at`),
-    INDEX `idx_games_public` (`visibility`, `status`, `last_activity_at`),
-    INDEX `idx_games_expires` (`expires_at`),
-    CONSTRAINT `fk_games_owner` FOREIGN KEY (`owner_id`)
+    INDEX `idx_scoreboard_games_owner` (`owner_id`, `started_at`),
+    INDEX `idx_scoreboard_games_public` (`visibility`, `status`, `last_activity_at`),
+    INDEX `idx_scoreboard_games_expires` (`expires_at`),
+    CONSTRAINT `fk_scoreboard_games_owner` FOREIGN KEY (`owner_id`)
         REFERENCES `suite_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4b. Suite Game Tombstones table: stores IDs of permanently deleted games to prevent sync resurrection
-CREATE TABLE IF NOT EXISTS `suite_game_tombstones` (
+-- 4b. Scoreboard Game Tombstones table: stores IDs of permanently deleted games to prevent sync resurrection
+CREATE TABLE IF NOT EXISTS `scoreboard_game_tombstones` (
     `game_id` VARCHAR(36) NOT NULL PRIMARY KEY,
     `deleted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Bingo Cards table: stores shared global card library
-CREATE TABLE IF NOT EXISTS `cards` (
+CREATE TABLE IF NOT EXISTS `bingo_cards` (
     `id`          VARCHAR(36)   NOT NULL,
     `label`       VARCHAR(100)  NOT NULL DEFAULT '',
     `serial`      VARCHAR(50)   NOT NULL DEFAULT '',
@@ -99,25 +99,25 @@ CREATE TABLE IF NOT EXISTS `cards` (
     `updated_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`  DATETIME      DEFAULT NULL,
     PRIMARY KEY (`id`),
-    INDEX `idx_cards_updated` (`updated_at`),
-    INDEX `idx_cards_created_by` (`created_by`),
-    INDEX `idx_cards_deleted` (`deleted_at`)
+    INDEX `idx_bingo_cards_updated` (`updated_at`),
+    INDEX `idx_bingo_cards_created_by` (`created_by`),
+    INDEX `idx_bingo_cards_deleted` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. Bingo Card Favorites table: per-user favorites
-CREATE TABLE IF NOT EXISTS `card_favorites` (
+CREATE TABLE IF NOT EXISTS `bingo_card_favorites` (
     `user_id`       VARCHAR(100)  NOT NULL,
     `card_id`       VARCHAR(36)   NOT NULL,
     `favorited_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`user_id`, `card_id`),
-    INDEX `idx_favorites_user` (`user_id`),
-    CONSTRAINT `fk_favorites_card`
-        FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`)
+    INDEX `idx_bingo_favorites_user` (`user_id`),
+    CONSTRAINT `fk_bingo_favorites_card`
+        FOREIGN KEY (`card_id`) REFERENCES `bingo_cards` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. Bingo Games table: game mode definitions
-CREATE TABLE IF NOT EXISTS `games` (
+CREATE TABLE IF NOT EXISTS `bingo_games` (
     `id`          VARCHAR(36)   NOT NULL,
     `name`        VARCHAR(100)  NOT NULL,
     `builtin`     TINYINT(1)    NOT NULL DEFAULT 0,
@@ -125,26 +125,26 @@ CREATE TABLE IF NOT EXISTS `games` (
     `updated_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`  DATETIME      DEFAULT NULL,
     PRIMARY KEY (`id`),
-    INDEX `idx_games_builtin` (`builtin`),
-    INDEX `idx_games_deleted` (`deleted_at`)
+    INDEX `idx_bingo_games_builtin` (`builtin`),
+    INDEX `idx_bingo_games_deleted` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Bingo Game Patterns table: win patterns belonging to a game
-CREATE TABLE IF NOT EXISTS `game_patterns` (
+-- 8. Bingo Win Patterns table: win patterns belonging to a bingo game
+CREATE TABLE IF NOT EXISTS `bingo_patterns` (
     `id`          VARCHAR(36)   NOT NULL,
     `game_id`     VARCHAR(36)   NOT NULL,
     `name`        VARCHAR(100)  NOT NULL,
     `cells`       LONGTEXT      NOT NULL,
     `sort_order`  INT           NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
-    INDEX `idx_patterns_game` (`game_id`),
-    CONSTRAINT `fk_patterns_game`
-        FOREIGN KEY (`game_id`) REFERENCES `games` (`id`)
+    INDEX `idx_bingo_patterns_game` (`game_id`),
+    CONSTRAINT `fk_bingo_patterns_game`
+        FOREIGN KEY (`game_id`) REFERENCES `bingo_games` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Seed built-in Bingo games if table is empty
-INSERT IGNORE INTO `games` (`id`, `name`, `builtin`) VALUES
+INSERT IGNORE INTO `bingo_games` (`id`, `name`, `builtin`) VALUES
 ('00000000-0000-4000-8000-000000000001', 'Regular Bingo', 1),
 ('00000000-0000-4000-8000-000000000002', 'Four Corners', 1),
 ('00000000-0000-4000-8000-000000000003', 'Blackout', 1),
@@ -153,7 +153,7 @@ INSERT IGNORE INTO `games` (`id`, `name`, `builtin`) VALUES
 ('00000000-0000-4000-8000-000000000006', 'L-Shape', 1);
 
 -- Seed built-in game patterns
-INSERT IGNORE INTO `game_patterns` (`id`, `game_id`, `name`, `cells`, `sort_order`) VALUES
+INSERT IGNORE INTO `bingo_patterns` (`id`, `game_id`, `name`, `cells`, `sort_order`) VALUES
 ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', 'Row 1', '[0,1,2,3,4]', 0),
 ('10000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', 'Row 2', '[5,6,7,8,9]', 1),
 ('10000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000001', 'Row 3', '[10,11,12,13,14]', 2),
