@@ -794,6 +794,7 @@
         let matchSetupMode = 'create';
         let tempTotalPeriods = 2;
         let tempTimeLimit = 2400000;
+        let lastStopReason = null; // 'pause' | 'score' | 'expiry' | 'period_end' | 'final'
 
         /**
          * Generates a standard RFC4122 version 4 UUID.
@@ -1165,7 +1166,7 @@
                 periodStartTimeUtc, totalPeriodPausedMs, overageResolvedForCurrentPeriod,
                 scoreHistory, homeTeamName, awayTeamName,
                 homeTeamColor, awayTeamColor, muted,
-                pauseOnScore, isPaused,
+                pauseOnScore, isPaused, lastStopReason,
                 logPauseResume, logPeriodStartStop,
                 splashOnHome, splashOnAway,
                 showPenaltyCards,
@@ -1249,29 +1250,77 @@
             return '';
         }
 
-        // Extract period label and action details from an event entry.
-        function parseEventDetails(entry) {
-            let periodLabel = entry.periodLabel || (entry.period ? getPeriodLabel(entry.period) : '');
-            let action = '';
-            const rawText = entry.text || '';
+        // Internal clock primitive: run the timer without logging or side effects
+        function runClock() {
+            const now = Date.now();
+            if (!startTime) startTime = now;
+            if (!periodStartTimeUtc) periodStartTimeUtc = now;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 100);
+            timerRunning = true;
+            updateMatchState('running');
+        }
 
-            if (entry.eventType === 'period_start' || rawText.match(/\bStart\b/i)) {
-                action = 'Start';
-            } else if (entry.eventType === 'period_end' || rawText.match(/\bEnd\b/i)) {
-                action = 'End';
-            } else if (entry.eventType === 'paused' || rawText.match(/\bPaused\b/i)) {
-                action = 'Paused';
-            } else if (entry.eventType === 'resumed' || rawText.match(/\bResumed\b/i)) {
-                action = 'Resumed';
+        // Internal clock primitive: stop the timer and update duration bookkeeping
+        function stopClock(reason) {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            const now = Date.now();
+            if (startTime) {
+                accumulatedTime += now - startTime;
+            }
+            startTime = null;
+            timerRunning = false;
+            lastStopReason = reason;
+
+            if (reason === 'pause' || reason === 'score') {
+                isPaused = true;
+                pauseStartUtc = now;
+            }
+        }
+
+        // Standardized history logging primitive for clock events (labelVersion 2)
+        function logClockEvent(eventType, options = {}) {
+            const qualifier = options.qualifier || null;
+            const endReason = options.endReason || null;
+            const periodNum = (options.period !== undefined && options.period !== null) ? Number(options.period) : currentPeriod;
+            const periodLbl = getPeriodLabel(periodNum, totalPeriods, basePeriods);
+
+            const actionLabel = (eventType === 'period_start') ? 'Start' :
+                                (eventType === 'paused') ? 'Paused' :
+                                (eventType === 'resumed') ? 'Resumed' :
+                                (eventType === 'period_end') ? 'End' : 'Event';
+            const qualSuffix = (qualifier === 'score') ? ' (Score)' :
+                               (qualifier === 'final') ? ' (Final)' : '';
+            const text = `${periodLbl} - ${actionLabel}${qualSuffix}`;
+
+            const entry = {
+                id: generateUuidV4(),
+                type: 'event',
+                eventType: eventType,
+                period: periodNum,
+                qualifier: qualifier,
+                endReason: endReason,
+                labelVersion: 2,
+                timestamp: options.timestamp || new Date().toISOString(),
+                text: text,
+                note: options.note || ''
+            };
+
+            if (eventType === 'period_end') {
+                const elapsed = (options.periodElapsedMs !== undefined && options.periodElapsedMs !== null) ? options.periodElapsedMs : accumulatedTime;
+                entry.periodLabel = periodLbl;
+                entry.scoreSnapshot = `${homeScore}-${awayScore}`;
+                entry.periodElapsedMs = elapsed;
+                entry.gameTime = `${periodLbl}: ${formatTime(elapsed)}`;
             }
 
-            if (!periodLabel) {
-                const pMatch = rawText.match(/\b(P\d+|OT\d*)\b/i);
-                if (pMatch) periodLabel = pMatch[1].toUpperCase();
-            }
-
-            const eventLabel = (periodLabel && action) ? `${periodLabel} ${action}` : (rawText || 'Event');
-            return { periodLabel, action, eventLabel, rawText };
+            scoreHistory.push(entry);
+            renderHistory();
+            saveState();
+            return entry;
         }
 
         function updateMuteButton() {
@@ -1296,17 +1345,23 @@
         }
 
         function addHistoryEvent(text, eventType = 'general') {
-            scoreHistory.push({
-                id: generateUuidV4(),
-                type: 'event',
-                eventType,
-                period: currentPeriod,
-                periodLabel: getPeriodLabel(currentPeriod),
-                text,
-                timestamp: new Date().toISOString()
-            });
-            renderHistory();
-            saveState();
+            if (eventType === 'paused') {
+                logClockEvent('paused');
+            } else if (eventType === 'resumed') {
+                logClockEvent('resumed');
+            } else {
+                scoreHistory.push({
+                    id: generateUuidV4(),
+                    type: 'event',
+                    eventType,
+                    period: currentPeriod,
+                    periodLabel: getPeriodLabel(currentPeriod, totalPeriods, basePeriods),
+                    text,
+                    timestamp: new Date().toISOString()
+                });
+                renderHistory();
+                saveState();
+            }
         }
 
         // Set the active countdown time limit.
@@ -1568,7 +1623,7 @@
                 const noteTitle = noteText ? escapeHtml(noteText) : 'Tap to add note';
 
                 if (entry.type === 'event') {
-                    const { eventLabel } = parseEventDetails(entry);
+                    const { eventLabel } = parseEventDetails(entry, totalPeriods, basePeriods);
                     const displayTime = formatEventTime(entry.timestamp);
                     row.innerHTML = `
                         <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
@@ -1631,7 +1686,7 @@
                 historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">${cardSymbol}</span><span>${escapeHtml(entry.teamName)}</span>`;
                 historyPreviewMeta.textContent = `Time: ${formatGameTimeMmSs(entry) || 'N/A'}`;
             } else {
-                const { eventLabel } = parseEventDetails(entry);
+                const { eventLabel } = parseEventDetails(entry, totalPeriods, basePeriods);
                 const localTime = formatEventTime(entry.timestamp);
                 historyPreviewEvent.innerHTML = `<span style="font-size:1.1rem;line-height:1;">⏱️</span><span>${escapeHtml(eventLabel)}</span>`;
                 historyPreviewMeta.textContent = `Time: ${localTime || 'N/A'}`;
@@ -1714,7 +1769,7 @@
                 const noteSuffix = entry.note ? ` (${entry.note})` : '';
                 shareText = `${cardSymbol} ${entry.teamName}${noteSuffix}`;
             } else {
-                const { action, eventLabel } = parseEventDetails(entry);
+                const { action, eventLabel } = parseEventDetails(entry, totalPeriods, basePeriods);
                 const localTime = formatEventTime(entry.timestamp);
                 const isPeriodEnd = (action === 'End' || (entry.text && entry.text.includes('End')));
 
@@ -1955,8 +2010,8 @@
 
         // Record a yellow or red penalty card foul for the designated team in the history log.
         function recordFoulCard(teamId, cardType) {
-            // Disallow recording penalty cards when the clock is stopped
-            if (!timerRunning || matchState !== 'running') {
+            // Disallow recording penalty cards when the clock is stopped or game is not live
+            if (!timerRunning || matchState !== 'running' || gameLifecycle !== 'live') {
                 showToast('Clock is stopped');
                 return;
             }
@@ -2014,7 +2069,12 @@
             if (teamId === 'home' && splashOnHome) triggerScoreSplash('home', teamColor);
             if (teamId === 'away' && splashOnAway) triggerScoreSplash('away', teamColor);
             if (pauseOnScore && timerRunning) {
-                pauseTimer();
+                stopClock('score');
+                if (logPauseResume) {
+                    logClockEvent('paused', { qualifier: 'score' });
+                }
+                updateMatchState('paused');
+                saveState();
             } else {
                 saveState();
             }
@@ -2137,14 +2197,18 @@
             // Live field expiration at 00:00.0
             if (remaining <= 0 && timerRunning && !overageResolvedForCurrentPeriod) {
                 playWhistle();
-                pauseTimer();
+                stopClock('expiry');
 
                 if (currentPeriod < totalPeriods) {
                     // Log period completion
-                    logPeriodEnd(currentPeriod, timeLimit, '(Time)');
+                    logClockEvent('period_end', {
+                        period: currentPeriod,
+                        endReason: 'time',
+                        periodElapsedMs: timeLimit
+                    });
                     // Auto-advance to next period
                     currentPeriod++;
-                    periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                    periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
                     // Reset period clocks to ready state
                     accumulatedTime = 0;
                     startTime = null;
@@ -2157,6 +2221,7 @@
                     saveState();
                 } else {
                     // Final period expiration: prompt operator for completion or overtime
+                    updateMatchState('paused');
                     openEndOtModal();
                 }
             }
@@ -2181,90 +2246,64 @@
             }
 
             const now = Date.now();
-            if (!startTime) startTime = now;
-            if (!periodStartTimeUtc) periodStartTimeUtc = now;
-
             if (isResuming) {
                 if (pauseStartUtc) {
                     totalPeriodPausedMs += (now - pauseStartUtc);
                     pauseStartUtc = null;
                 }
-                if (logPauseResume) {
-                    addHistoryEvent(`${getPeriodLabel(currentPeriod)} Resumed`, 'resumed');
+                // Log resume only if previous stop was a pause or score pause
+                if (logPauseResume && (lastStopReason === 'pause' || lastStopReason === 'score')) {
+                    logClockEvent('resumed');
                 }
                 isPaused = false;
+                lastStopReason = null;
             } else {
                 if (logPeriodStartStop) {
-                    const label = getPeriodLabel(currentPeriod);
-                    scoreHistory.push({
-                        id: generateUuidV4(),
-                        type: 'event',
-                        eventType: 'period_start',
-                        period: currentPeriod,
-                        periodLabel: label,
-                        text: `${label} Start`,
-                        timestamp: new Date().toISOString()
-                    });
-                    renderHistory();
+                    logClockEvent('period_start');
                 }
+                isPaused = false;
+                lastStopReason = null;
             }
 
-            timerInterval = setInterval(updateTimer, 100);
-            timerRunning = true;
-            updateMatchState('running');
+            runClock();
             saveState();
         }
 
-        // Pause the timer without ending the period.
+        // Pause the timer from the operator Pause button.
         function pauseTimer() {
             if (!timerRunning) return;
-            clearInterval(timerInterval);
-            const now = Date.now();
-            if (startTime) {
-                accumulatedTime += now - startTime;
-            }
-            pauseStartUtc = now;
+            stopClock('pause');
             if (logPauseResume) {
-                addHistoryEvent(`${getPeriodLabel(currentPeriod)} Paused`, 'paused');
+                logClockEvent('paused');
             }
-            startTime = null;
-            timerRunning = false;
-            isPaused = true;
             updateMatchState('paused');
             saveState();
         }
 
         // Record a structured period completion entry in the history ledger.
         function logPeriodEnd(periodNum, elapsedMs, suffix = '') {
-            const label = getPeriodLabel(periodNum);
-            const text = `${label} End${suffix ? ' ' + suffix : ''}`;
-            scoreHistory.push({
-                id: generateUuidV4(),
-                type: 'event',
-                eventType: 'period_end',
-                text: text,
+            logClockEvent('period_end', {
                 period: periodNum,
-                periodLabel: label,
-                scoreSnapshot: `${homeScore}-${awayScore}`,
                 periodElapsedMs: elapsedMs,
-                gameTime: `${label}: ${formatTime(elapsedMs)}`,
-                timestamp: new Date().toISOString()
+                endReason: 'manual'
             });
-            renderHistory();
-            saveState();
         }
 
         // Conclude the current period, advance to the next, and reset timer to ready state.
         function endCurrentPeriod() {
             if (gameLifecycle !== 'live') return;
             if (timerRunning) {
-                pauseTimer();
+                stopClock('period_end');
             }
             const periodElapsed = accumulatedTime;
-            logPeriodEnd(currentPeriod, periodElapsed);
+            logClockEvent('period_end', {
+                period: currentPeriod,
+                endReason: 'manual',
+                periodElapsedMs: periodElapsed
+            });
 
             currentPeriod++;
-            periodDisplay.textContent = getPeriodLabel(currentPeriod);
+            periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
 
             // Reset clocks for the next period
             accumulatedTime = 0;
@@ -2277,21 +2316,57 @@
             updateTimer();
             updateMatchState('ready');
             saveState();
-            showToast(`${getPeriodLabel(currentPeriod - 1)} ended`);
+            showToast(`${getPeriodLabel(currentPeriod - 1, totalPeriods, basePeriods)} ended`);
         }
 
         // Finalize the current active game without resetting scores.
         async function endCurrentGame() {
             if (gameLifecycle !== 'live') return;
             closeEndOtModal();
-            if (timerRunning) {
-                pauseTimer();
+            stopClock('final');
+
+            const currentPeriodHasStarted = (periodStartTimeUtc !== null);
+            const currentPeriodEndEntry = [...scoreHistory].reverse().find(e => e.type === 'event' && e.eventType === 'period_end' && e.period === currentPeriod);
+
+            if (currentPeriodHasStarted && currentPeriodEndEntry) {
+                // Condition 1: Current period has started and a period_end entry already exists for currentPeriod (drift End on Time in final period)
+                currentPeriodEndEntry.qualifier = 'final';
+                currentPeriodEndEntry.labelVersion = 2;
+                const pLabel = getPeriodLabel(currentPeriodEndEntry.period, totalPeriods, basePeriods);
+                currentPeriodEndEntry.text = `${pLabel} - End (Final)`;
+            } else if (currentPeriodHasStarted && !currentPeriodEndEntry) {
+                // Condition 2: Current period has started and no period_end exists for it (final-period expiry -> Finalize, or paused mid-period -> Finalize)
+                logClockEvent('period_end', {
+                    period: currentPeriod,
+                    qualifier: 'final',
+                    endReason: 'final',
+                    timestamp: new Date().toISOString()
+                });
+            } else if (!currentPeriodHasStarted) {
+                // Condition 3: Current period has not started (between periods: last period ended and next was never started)
+                const lastPeriodEndEntry = [...scoreHistory].reverse().find(e => e.type === 'event' && e.eventType === 'period_end');
+                if (lastPeriodEndEntry) {
+                    lastPeriodEndEntry.qualifier = 'final';
+                    lastPeriodEndEntry.labelVersion = 2;
+                    const pLabel = getPeriodLabel(lastPeriodEndEntry.period, totalPeriods, basePeriods);
+                    lastPeriodEndEntry.text = `${pLabel} - End (Final)`;
+                } else {
+                    // Fallback: no period_end exists anywhere
+                    logClockEvent('period_end', {
+                        period: currentPeriod,
+                        qualifier: 'final',
+                        endReason: 'final',
+                        timestamp: new Date().toISOString()
+                    });
+                }
             }
+
             gameLifecycle = 'final';
             activeGameEnded = true;
             updateMatchState('final');
             publishActiveGameState('final', 'user');
             saveState();
+            renderHistory();
             showToast('Match Finalized');
         }
 
@@ -2443,6 +2518,7 @@
                 accumulatedTime = 0;
                 startTime = null;
                 periodStartTimeUtc = null;
+                lastStopReason = null;
                 totalPeriodPausedMs = 0;
                 pauseStartUtc = null;
                 overageResolvedForCurrentPeriod = false;
@@ -2468,7 +2544,16 @@
 
                 // Advance to OT period with the chosen overtime duration
                 if (timerRunning) {
-                    pauseTimer();
+                    stopClock('period_end');
+                }
+                // Ensure the regulation/prior period being closed has a period_end entry
+                const existingPeriodEnd = [...scoreHistory].reverse().find(e => e.type === 'event' && e.eventType === 'period_end' && e.period === currentPeriod);
+                if (!existingPeriodEnd) {
+                    logClockEvent('period_end', {
+                        period: currentPeriod,
+                        endReason: 'manual',
+                        periodElapsedMs: accumulatedTime
+                    });
                 }
                 currentPeriod++;
                 timeLimit = tempTimeLimit;
@@ -2479,10 +2564,10 @@
                 pauseStartUtc = null;
                 overageResolvedForCurrentPeriod = false;
 
-                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
                 updateTimer();
                 updateMatchState('ready');
-                showToast(`Overtime (${getPeriodLabel(currentPeriod)}) added`);
+                showToast(`Overtime (${getPeriodLabel(currentPeriod, totalPeriods, basePeriods)}) added`);
             } else {
                 // Update existing scoreHistory team references
                 scoreHistory.forEach(entry => {
@@ -2623,12 +2708,16 @@
         if (btnDriftEndOnTime) {
             btnDriftEndOnTime.addEventListener('click', () => {
                 if (overageDriftModal) overageDriftModal.classList.add('hidden');
-                if (timerRunning) pauseTimer();
-                logPeriodEnd(currentPeriod, timeLimit);
+                if (timerRunning) stopClock('period_end');
+                logClockEvent('period_end', {
+                    period: currentPeriod,
+                    endReason: 'drift',
+                    periodElapsedMs: timeLimit
+                });
 
                 if (currentPeriod < totalPeriods) {
                     currentPeriod++;
-                    periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                    periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
                     accumulatedTime = 0;
                     startTime = null;
                     periodStartTimeUtc = null;
@@ -2639,6 +2728,7 @@
                     updateMatchState('ready');
                     saveState();
                 } else {
+                    updateMatchState('paused');
                     openEndOtModal();
                 }
             });
@@ -2767,7 +2857,7 @@
         if (btnStaleResume) {
             btnStaleResume.addEventListener('click', () => {
                 if (staleResumeModal) staleResumeModal.classList.add('hidden');
-                startTimer(false);
+                startTimer(true);
                 saveState();
             });
         }
@@ -2864,6 +2954,7 @@
                 muted = !!saved.muted;
                 pauseOnScore = !!saved.pauseOnScore;
                 isPaused = !!saved.isPaused;
+                lastStopReason = saved.lastStopReason || null;
                 logPauseResume = !!saved.logPauseResume;
                 logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
                 splashOnHome = saved.splashOnHome !== undefined ? !!saved.splashOnHome : true;
@@ -2942,7 +3033,7 @@
                         updateTimer();
                     } else {
                         accumulatedTime += drift;
-                        startTimer(false);
+                        runClock();
                         checkBackgroundDrift();
                     }
                 } else {
@@ -2968,6 +3059,7 @@
                 periodStartTimeUtc = null;
                 totalPeriodPausedMs = 0;
                 pauseStartUtc = null;
+                lastStopReason = null;
                 overageResolvedForCurrentPeriod = false;
                 isPaused = false;
                 gameLifecycle = 'idle';
@@ -3031,7 +3123,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '4.3';
+        const VERSION = '4.4';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
@@ -3046,7 +3138,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">4.3</span></p>
+        <p>Version <span id="appVersion">4.4</span></p>
     </footer>
 </body>
 

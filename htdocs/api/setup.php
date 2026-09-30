@@ -3,7 +3,7 @@
 // Executes schema.sql to create needed tables in the configured MySQL database.
 
 // Setup utility version identifier
-$SETUP_VERSION = '1.3';
+$SETUP_VERSION = '1.4';
 
 require_once __DIR__ . '/config.php';
 
@@ -65,6 +65,23 @@ header('Content-Type: text/html; charset=utf-8');
                     }
                 } catch (PDOException $migrationEx) {
                     echo '<div class="error"><strong>Migration Warning:</strong> Unable to verify <code>ended_by</code> ENUM: ' . htmlspecialchars($migrationEx->getMessage()) . '</div>';
+                }
+
+                // Idempotent migration: Ensure suite_game_tombstones table exists
+                try {
+                    $tableCheck = $pdo->query("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'suite_game_tombstones'");
+                    $tableExists = $tableCheck && $tableCheck->fetchColumn();
+                    if (!$tableExists) {
+                        $pdo->exec("CREATE TABLE IF NOT EXISTS `suite_game_tombstones` (
+                            `game_id` VARCHAR(36) NOT NULL PRIMARY KEY,
+                            `deleted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+                        echo '<div class="success"><strong>Migration Applied:</strong> Table <code>suite_game_tombstones</code> created.</div>';
+                    } else {
+                        echo '<div class="success"><strong>Schema Verified:</strong> Table <code>suite_game_tombstones</code> verified.</div>';
+                    }
+                } catch (PDOException $tombEx) {
+                    echo '<div class="error"><strong>Migration Warning:</strong> Unable to verify <code>suite_game_tombstones</code> table: ' . htmlspecialchars($tombEx->getMessage()) . '</div>';
                 }
 
                 echo '<p><a href="../index.html">&larr; Return to App Suite Launcher</a></p>';

@@ -6,7 +6,7 @@
  */
 
 // Shared module version constant
-const SCOREBOARD_SHARED_VERSION = '1.0';
+const SCOREBOARD_SHARED_VERSION = '1.1';
 
 // Inactivity threshold (30 minutes in ms) after which an active game is considered stalled
 const STALL_THRESHOLD_MS = 30 * 60 * 1000;
@@ -136,6 +136,7 @@ function formatEventTime(timestamp) {
 
 /**
  * Extracts period label and action details from an event entry.
+ * Supports structured labelVersion: 2 entries as well as legacy entries.
  *
  * @param {Object} entry
  * @param {number} [totalPeriods=2]
@@ -143,9 +144,38 @@ function formatEventTime(timestamp) {
  * @returns {{periodLabel: string, action: string, eventLabel: string, rawText: string}}
  */
 function parseEventDetails(entry, totalPeriods = 2, basePeriods = 2) {
+    if (!entry) return { periodLabel: '', action: '', eventLabel: '', rawText: '' };
+    const rawText = entry.text || '';
+
+    // Structured clock events (labelVersion: 2)
+    if (entry.labelVersion === 2) {
+        const periodNum = (entry.period !== undefined && entry.period !== null) ? Number(entry.period) : 1;
+        const periodLabel = getPeriodLabel(periodNum, totalPeriods, basePeriods);
+        let action = 'Event';
+        if (entry.eventType === 'period_start') {
+            action = 'Start';
+        } else if (entry.eventType === 'paused') {
+            action = 'Paused';
+        } else if (entry.eventType === 'resumed') {
+            action = 'Resumed';
+        } else if (entry.eventType === 'period_end') {
+            action = 'End';
+        }
+
+        let qualSuffix = '';
+        if (entry.qualifier === 'score') {
+            qualSuffix = ' (Score)';
+        } else if (entry.qualifier === 'final') {
+            qualSuffix = ' (Final)';
+        }
+
+        const eventLabel = `${periodLabel} - ${action}${qualSuffix}`;
+        return { periodLabel, action, eventLabel, rawText };
+    }
+
+    // Legacy entries without labelVersion 2: preserve existing stored text
     let periodLabel = entry.periodLabel || (entry.period ? getPeriodLabel(entry.period, totalPeriods, basePeriods) : '');
     let action = '';
-    const rawText = entry.text || '';
 
     if (entry.eventType === 'period_start' || rawText.match(/\bStart\b/i)) {
         action = 'Start';
@@ -162,7 +192,7 @@ function parseEventDetails(entry, totalPeriods = 2, basePeriods = 2) {
         if (pMatch) periodLabel = pMatch[1].toUpperCase();
     }
 
-    const eventLabel = (periodLabel && action) ? `${periodLabel} ${action}` : (rawText || 'Event');
+    const eventLabel = rawText || ((periodLabel && action) ? `${periodLabel} ${action}` : 'Event');
     return { periodLabel, action, eventLabel, rawText };
 }
 

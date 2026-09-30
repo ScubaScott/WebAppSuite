@@ -82,6 +82,12 @@ CREATE TABLE IF NOT EXISTS `suite_games` (
         REFERENCES `suite_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 4b. Suite Game Tombstones table: stores IDs of permanently deleted games to prevent sync resurrection
+CREATE TABLE IF NOT EXISTS `suite_game_tombstones` (
+    `game_id` VARCHAR(36) NOT NULL PRIMARY KEY,
+    `deleted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 5. Bingo Cards table: stores shared global card library
 CREATE TABLE IF NOT EXISTS `cards` (
     `id`          VARCHAR(36)   NOT NULL,

@@ -3,7 +3,7 @@
 // Handles match synchronization, active games directory, and user game archive persistence.
 
 // API endpoint version identifier
-$GAMES_API_VERSION = '1.3';
+$GAMES_API_VERSION = '1.4';
 
 // Inactivity threshold (in hours) after which a live game is automatically finalized
 define('GAME_TIMEOUT_HOURS', 3);
@@ -22,16 +22,6 @@ if (!$pdo) {
         'error' => 'Database service unavailable. Operating in local cache mode.'
     ]);
     exit;
-}
-
-// Ensure tombstone table exists to prevent sync resurrection of deleted games
-try {
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `suite_game_tombstones` (
-        `game_id` VARCHAR(36) NOT NULL PRIMARY KEY,
-        `deleted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-} catch (Exception $e) {
-    // Continue if table exists or permissions are restricted
 }
 
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
@@ -147,7 +137,7 @@ if ($action === 'sync') {
     $stateJson = json_encode($snapshot, JSON_UNESCAPED_UNICODE);
 
     // Check if the game row already exists
-    $stmt = $pdo->prepare('SELECT id, owner_id, write_token_hash, visibility, status, rev, ended_at FROM suite_games WHERE game_id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, owner_id, write_token_hash, visibility, status, ended_by, rev, ended_at FROM suite_games WHERE game_id = ? LIMIT 1');
     $stmt->execute([$gameId]);
     $existing = $stmt->fetch();
 
@@ -235,6 +225,9 @@ if ($action === 'sync') {
         // Preserve finalized state: if existing match is final, do not revert to live
         $effectiveStatus = ($existing['status'] === 'final') ? 'final' : $status;
 
+        // Retain existing ended_by reason if already final; only set ended_by on transition from live to final
+        $effectiveEndedBy = ($existing['status'] === 'final') ? $existing['ended_by'] : $endedBy;
+
         // Retain original completion timestamp if already final, otherwise set to nowUtc if newly final
         $effectiveEndedAt = ($effectiveStatus === 'final') ? (!empty($existing['ended_at']) ? $existing['ended_at'] : $nowUtc) : null;
 
@@ -260,7 +253,7 @@ if ($action === 'sync') {
 
         $updateStmt = $pdo->prepare($updateSql);
         $updateStmt->execute([
-            $ownerId, $targetVisibility, $effectiveStatus, $endedBy, $rev,
+            $ownerId, $targetVisibility, $effectiveStatus, $effectiveEndedBy, $rev,
             $homeName, $awayName, $homeScore, $awayScore, $currentPeriod, $timerRunning, $isPaused, $elapsedMs,
             $stateJson, $effectiveEndedAt, $nowUtc, $expiresAt, $existing['id']
         ]);
