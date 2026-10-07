@@ -1769,20 +1769,30 @@
                 const noteSuffix = entry.note ? ` (${entry.note})` : '';
                 shareText = `${cardSymbol} ${entry.teamName}${noteSuffix}`;
             } else {
-                const { action, eventLabel } = parseEventDetails(entry, totalPeriods, basePeriods);
+                const { action, eventLabel, periodLabel } = parseEventDetails(entry, totalPeriods, basePeriods);
                 const localTime = formatEventTime(entry.timestamp);
                 const isPeriodEnd = (action === 'End' || (entry.text && entry.text.includes('End')));
+                const isGameStart = (action === 'Start' && periodLabel === 'P1') ||
+                    (entry.eventType === 'period_start' && Number(entry.period || 1) === 1);
 
-                let scorePart = '';
-                if (isPeriodEnd) {
-                    const score = entry.scoreSnapshot || `${homeScore}-${awayScore}`;
-                    scorePart = ` (${score})`;
+                if (isGameStart) {
+                    // Match kickoff announcement formatting for the start of game / P1
+                    const homeName = (entry.homeTeamName || homeTeamName || 'Home').trim();
+                    const awayName = (entry.awayTeamName || awayTeamName || 'Away').trim();
+                    const noteSuffix = entry.note ? ` (${entry.note})` : '';
+                    shareText = `Game on! ${homeName} vs. ${awayName}${noteSuffix}`;
+                } else {
+                    let scorePart = '';
+                    if (isPeriodEnd) {
+                        const score = entry.scoreSnapshot || `${homeScore}-${awayScore}`;
+                        scorePart = ` (${score})`;
+                    }
+
+                    const timePart = localTime ? ` ${localTime}` : '';
+                    const noteSuffix = entry.note ? ` (${entry.note})` : '';
+
+                    shareText = `${eventLabel}${timePart}${scorePart}${noteSuffix}`;
                 }
-
-                const timePart = localTime ? ` ${localTime}` : '';
-                const noteSuffix = entry.note ? ` (${entry.note})` : '';
-
-                shareText = `${eventLabel}${timePart}${scorePart}${noteSuffix}`;
             }
 
             closeHistoryOptions();
@@ -3123,7 +3133,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '4.4';
+        const VERSION = '4.5';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
@@ -3138,7 +3148,7 @@
 
     <!-- Footer displaying application version -->
     <footer>
-        <p>Version <span id="appVersion">4.4</span></p>
+        <p>Version <span id="appVersion">4.5</span></p>
     </footer>
 </body>
 
