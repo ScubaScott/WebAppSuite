@@ -1,0 +1,274 @@
+/* Admin Page Stylesheet - Scuba's App Suite */
+
+:root {
+    --md-surface: #f8f9fa;
+    --md-primary: #1a73e8;
+    --md-primary-soft: #e8f0fe;
+    --md-text-main: #202124;
+    --md-text-sub: #5f6368;
+    --md-card-bg: #ffffff;
+    --md-border: #dadce0;
+    --md-toggle-off: #bdc1c6;
+    --md-danger: #c5221f;
+    --md-chip-bg: #fef7e0;
+    --md-chip-text: #b06000;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--md-surface);
+    color: var(--md-text-main);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header navigation */
+header {
+    background-color: var(--md-card-bg);
+    border-bottom: 1px solid var(--md-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    min-height: 56px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--md-primary);
+    font-family: 'Google Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 20px;
+    min-height: 44px;
+    transition: background-color 0.2s ease;
+}
+
+.back-link:hover,
+.back-link:active {
+    background-color: var(--md-primary-soft);
+}
+
+.header-title {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--md-text-main);
+}
+
+/* Page layout */
+main {
+    flex: 1;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.content-card {
+    background-color: var(--md-card-bg);
+    border: 1px solid var(--md-border);
+    border-radius: 12px;
+    padding: 20px 16px;
+}
+
+.content-card h2 {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 18px;
+    margin: 0 0 8px;
+}
+
+.content-card p {
+    color: var(--md-text-sub);
+    line-height: 1.5;
+    margin: 0 0 12px;
+}
+
+.panel-hint {
+    font-size: 14px;
+}
+
+/* Search box */
+.search-label {
+    display: block;
+    font-size: 13px;
+    color: var(--md-text-sub);
+    margin-bottom: 4px;
+}
+
+.search-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid var(--md-border);
+    border-radius: 8px;
+    background-color: var(--md-card-bg);
+    color: var(--md-text-main);
+}
+
+.search-input:focus {
+    outline: 2px solid var(--md-primary);
+    outline-offset: 1px;
+}
+
+/* User rows */
+.user-list {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+}
+
+.user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 56px;
+    padding: 8px 0;
+    border-top: 1px solid var(--md-border);
+}
+
+.user-info {
+    min-width: 0;
+}
+
+.user-name {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.user-meta {
+    font-size: 12px;
+    color: var(--md-text-sub);
+    margin-top: 2px;
+}
+
+.lock-badge {
+    margin-left: 4px;
+}
+
+.admin-chip {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    border-radius: 12px;
+    background-color: var(--md-chip-bg);
+    color: var(--md-chip-text);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Special toggle switch: the button is the 44px+ touch target, the track and knob are drawn inside */
+.toggle {
+    flex-shrink: 0;
+    position: relative;
+    width: 56px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.toggle::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 4px;
+    width: 48px;
+    height: 24px;
+    border-radius: 12px;
+    background-color: var(--md-toggle-off);
+    transition: background-color 0.2s ease;
+}
+
+.toggle::after {
+    content: '';
+    position: absolute;
+    top: 13px;
+    left: 7px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    transition: transform 0.2s ease;
+}
+
+.toggle[aria-checked="true"]::before {
+    background-color: var(--md-primary);
+}
+
+.toggle[aria-checked="true"]::after {
+    transform: translateX(24px);
+}
+
+.toggle:active::after {
+    width: 22px;
+}
+
+.toggle:focus-visible {
+    outline: 2px solid var(--md-primary);
+    border-radius: 8px;
+}
+
+.toggle:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+.empty-text {
+    margin-top: 16px;
+}
+
+/* Message card */
+.message-card a {
+    color: var(--md-primary);
+}
+
+/* Toast notification */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 20px);
+    max-width: calc(100% - 32px);
+    padding: 12px 20px;
+    border-radius: 8px;
+    background-color: #323232;
+    color: #ffffff;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* Footer */
+.app-footer {
+    text-align: center;
+    padding: 16px;
+    color: var(--md-text-sub);
+}
+
+.app-footer-version {
+    font-size: 12px;
+}

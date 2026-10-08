@@ -3,7 +3,7 @@
 // Manages PDO database connection for MySQL / MariaDB on InfinityFree.
 
 // API configuration version identifier
-$API_CONFIG_VERSION = '1.0';
+$API_CONFIG_VERSION = '1.1';
 
 // Database connection parameters. Update these with your InfinityFree MySQL details.
 // You can obtain these from your InfinityFree Client Area -> MySQL Databases.
@@ -12,6 +12,10 @@ define('DB_NAME', 'epiz_xxxxxxx_suite');     // Your database name
 define('DB_USER', 'epiz_xxxxxxx');           // Your database username
 define('DB_PASS', 'your_password_here');     // Your database account password
 define('DB_CHARSET', 'utf8mb4');
+
+// Username of the single profile that setup.php places in the Admin group.
+// The profile must already exist and must have a password for Admin access to be active.
+define('SUITE_ADMIN_USERNAME', 'your_username_here');
 
 /**
  * Establishes and returns a shared PDO database connection.

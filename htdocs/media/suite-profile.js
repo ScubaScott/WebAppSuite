@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.7';
+const SUITE_PROFILE_VERSION = '1.8';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -201,6 +201,80 @@ const SUITE_PROFILE_VERSION = '1.7';
         window.dispatchEvent(new CustomEvent('suite-profile-changed', {
             detail: { session, action }
         }));
+        // Group-based app visibility depends on the session, so notify listeners as well
+        window.dispatchEvent(new CustomEvent('suite-access-changed'));
+    }
+
+    /**
+     * Copies the server-provided access summary (groups, admin flag, allowed restricted apps)
+     * onto a session object.
+     *
+     * @param {Object} session - Session to update in place
+     * @param {Object} data - API response containing groups, isAdmin and allowedApps
+     * @returns {Object} The updated session
+     */
+    function applyAccessToSession(session, data) {
+        session.groups = Array.isArray(data.groups) ? data.groups : ['general'];
+        session.isAdmin = !!data.isAdmin;
+        session.allowedApps = Array.isArray(data.allowedApps) ? data.allowedApps : [];
+        return session;
+    }
+
+    /**
+     * Checks whether the current user may see a group-restricted app.
+     * Guests never see restricted apps.
+     *
+     * @param {string} appId
+     * @returns {boolean}
+     */
+    function canSeeApp(appId) {
+        const user = getUser();
+        return !!(user && user.token && Array.isArray(user.allowedApps) && user.allowedApps.indexOf(appId) !== -1);
+    }
+
+    /**
+     * Checks whether the current user holds an active Admin group membership.
+     *
+     * @returns {boolean}
+     */
+    function isAdmin() {
+        const user = getUser();
+        return !!(user && user.token && user.isAdmin);
+    }
+
+    /**
+     * Refreshes group membership and allowed apps from the server for the signed-in user.
+     * Keeps cached values when offline or when the request fails.
+     *
+     * @returns {Promise<void>}
+     */
+    async function refreshAccess() {
+        const user = getUser();
+        if (!user || !user.token || !navigator.onLine) {
+            return;
+        }
+
+        try {
+            const url = getApiUrl('profile.php') + '?action=status&token=' + encodeURIComponent(user.token);
+            const res = await fetch(url, {
+                headers: { 'Authorization': 'Bearer ' + user.token }
+            });
+            const data = await res.json();
+            if (!data.loggedIn) {
+                // Server no longer recognizes this session token
+                setSession(null, 'expired');
+                return;
+            }
+            // Re-read the session in case it changed while the request was in flight
+            const latest = getUser();
+            if (latest && latest.token === user.token) {
+                // Store directly and fire only the access event so sub-app profile listeners do not resync
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(applyAccessToSession(latest, data)));
+                window.dispatchEvent(new CustomEvent('suite-access-changed'));
+            }
+        } catch (err) {
+            // Offline or server error: keep the cached access values
+        }
     }
 
     /**
@@ -228,6 +302,7 @@ const SUITE_PROFILE_VERSION = '1.7';
             token: data.token,
             hasPassword: !!data.hasPassword
         };
+        applyAccessToSession(session, data);
         // Reset any pending queue from prior session
         localStorage.removeItem(PENDING_SYNC_KEY);
         setSession(session, 'login');
@@ -269,6 +344,8 @@ const SUITE_PROFILE_VERSION = '1.7';
         }
 
         user.hasPassword = true;
+        // Setting a password can activate Admin access, so adopt the recomputed access summary
+        applyAccessToSession(user, data);
         setSession(user, 'update');
         return true;
     }
@@ -995,6 +1072,9 @@ const SUITE_PROFILE_VERSION = '1.7';
         login,
         logout,
         setPassword,
+        refreshAccess,
+        canSeeApp,
+        isAdmin,
         loadAppData,
         saveAppData,
         renderFooterIndicator,

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Scuba's App Suite</title>
+
+    <!-- Web App & Icon Metadata -->
+    <link rel="icon" type="image/png" href="./media/scuba.png">
+    <link rel="apple-touch-icon" href="./media/scuba_apple.png">
+    <meta name="theme-color" content="#3d2210">
+
+    <!-- Fonts & Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./admin.css">
+</head>
+
+<body>
+
+    <header>
+        <a href="./index.html" class="back-link" aria-label="Back to Apps">
+            &#8592; Back to Apps
+        </a>
+        <span class="header-title">Admin Tools</span>
+    </header>
+
+    <main>
+        <!-- Message card shown when the user cannot use admin tools (not signed in, offline, no access) -->
+        <section id="messageCard" class="content-card message-card" hidden>
+            <h2 id="messageTitle"></h2>
+            <p id="messageText"></p>
+        </section>
+
+        <!-- User management list, shown only to Admin users -->
+        <section id="userPanel" class="content-card" hidden>
+            <h2>Special Group Members</h2>
+            <p class="panel-hint">Turn on <strong>Special</strong> to let a user see Special-only apps on the launcher.</p>
+
+            <label class="search-label" for="userSearch">Search users</label>
+            <input type="search" id="userSearch" class="search-input" placeholder="Search by username" autocomplete="off">
+
+            <ul id="userList" class="user-list" aria-live="polite"></ul>
+            <p id="emptyText" class="empty-text" hidden>No users match your search.</p>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <small class="app-footer-version">v<span id="footerVersion">1.0</span></small>
+    </footer>
+
+    <!-- Feedback toast for failed or completed changes -->
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <!-- Shared Suite Profile (provides the signed-in session token) -->
+    <script src="./media/suite-profile.js"></script>
+    <script src="./admin.js"></script>
+</body>
+
+</html>

@@ -48,6 +48,45 @@ CREATE TABLE IF NOT EXISTS `suite_sessions` (
         REFERENCES `suite_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 3b. User Groups table: named access tiers. A higher rank includes the access of lower ranks.
+CREATE TABLE IF NOT EXISTS `suite_groups` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `slug` VARCHAR(32) NOT NULL UNIQUE,         -- value checked by code: general, special, admin
+    `name` VARCHAR(64) NOT NULL,                -- display name
+    `rank` TINYINT UNSIGNED NOT NULL,           -- access check is user_max_rank >= required_rank
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed fixed-id groups so foreign keys and seeds stay stable
+INSERT IGNORE INTO `suite_groups` (`id`, `slug`, `name`, `rank`) VALUES
+(1, 'general', 'General', 0),
+(2, 'special', 'Special', 10),
+(3, 'admin', 'Admin', 100);
+
+-- 3c. User Group Membership table: only special/admin rows are stored (General is implicit for signed-in users)
+CREATE TABLE IF NOT EXISTS `suite_user_groups` (
+    `user_id` INT UNSIGNED NOT NULL,
+    `group_id` INT UNSIGNED NOT NULL,
+    `granted_by` INT UNSIGNED NULL,             -- admin who added the member; NULL = seeded or set by hand
+    `granted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`user_id`, `group_id`),
+    INDEX `idx_user_groups_group` (`group_id`),
+    CONSTRAINT `fk_user_groups_user` FOREIGN KEY (`user_id`)
+        REFERENCES `suite_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_user_groups_group` FOREIGN KEY (`group_id`)
+        REFERENCES `suite_groups` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_user_groups_granted_by` FOREIGN KEY (`granted_by`)
+        REFERENCES `suite_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3d. App Access table: lowest group allowed to see an app. Apps without a row are open to everyone.
+CREATE TABLE IF NOT EXISTS `suite_app_access` (
+    `app_id` VARCHAR(32) NOT NULL PRIMARY KEY,  -- matches suite_user_data.app_id and the launcher data-app-id
+    `min_group_id` INT UNSIGNED NOT NULL,
+    CONSTRAINT `fk_app_access_group` FOREIGN KEY (`min_group_id`)
+        REFERENCES `suite_groups` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 4. Scoreboard Games table: stores match records, snapshots, and denormalized scores
 CREATE TABLE IF NOT EXISTS `scoreboard_games` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

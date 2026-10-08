@@ -3,7 +3,7 @@
 // Handles profile authentication, password management, and app settings synchronization.
 
 // API endpoint version identifier
-$API_VERSION = '1.2';
+$API_VERSION = '1.3';
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
@@ -38,11 +38,11 @@ if ($action === 'status') {
         echo json_encode(['loggedIn' => false]);
         exit;
     }
-    echo json_encode([
+    echo json_encode(array_merge([
         'loggedIn' => true,
         'username' => $user['username'],
         'hasPassword' => !empty($user['password_hash'])
-    ]);
+    ], getUserAccess($pdo, $user)));
     exit;
 }
 
@@ -94,13 +94,13 @@ if ($action === 'auth') {
         $update = $pdo->prepare('UPDATE suite_users SET last_login = NOW() WHERE id = ?');
         $update->execute([$existing['id']]);
 
-        echo json_encode([
+        echo json_encode(array_merge([
             'success' => true,
             'token' => $token,
             'username' => $existing['username'],
             'hasPassword' => !empty($existing['password_hash']),
             'isNew' => false
-        ]);
+        ], getUserAccess($pdo, $existing)));
         exit;
     } else {
         // New user: register profile
@@ -115,13 +115,15 @@ if ($action === 'auth') {
         $insertSession = $pdo->prepare('INSERT INTO suite_sessions (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 DAY))');
         $insertSession->execute([$newUserId, $tokenHash]);
 
-        echo json_encode([
+        // New profiles are General only; access is resolved from the freshly created record
+        $newUser = ['id' => $newUserId, 'username' => $username, 'password_hash' => $passwordHash];
+        echo json_encode(array_merge([
             'success' => true,
             'token' => $token,
             'username' => $username,
             'hasPassword' => !empty($passwordHash),
             'isNew' => true
-        ]);
+        ], getUserAccess($pdo, $newUser)));
         exit;
     }
 }
@@ -150,7 +152,9 @@ if ($action === 'set_password') {
     $stmt = $pdo->prepare('UPDATE suite_users SET password_hash = ? WHERE id = ?');
     $stmt->execute([$newHash, $user['id']]);
 
-    echo json_encode(['success' => true, 'hasPassword' => true]);
+    // Setting a password can activate Admin access, so return the recomputed access summary
+    $user['password_hash'] = $newHash;
+    echo json_encode(array_merge(['success' => true, 'hasPassword' => true], getUserAccess($pdo, $user)));
     exit;
 }
 

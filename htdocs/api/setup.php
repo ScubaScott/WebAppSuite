@@ -3,7 +3,7 @@
 // Executes schema.sql and migrations to create or rename needed tables in the configured MySQL database.
 
 // Setup utility version identifier
-$SETUP_VERSION = '1.5';
+$SETUP_VERSION = '1.6';
 
 require_once __DIR__ . '/config.php';
 
@@ -74,7 +74,7 @@ header('Content-Type: text/html; charset=utf-8');
                 // Execute multi-query schema script
                 $pdo->exec($sql);
                 echo '<div class="success">';
-                echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, <code>scoreboard_games</code>, <code>scoreboard_game_tombstones</code>, <code>bingo_cards</code>, <code>bingo_card_favorites</code>, <code>bingo_games</code>, and <code>bingo_patterns</code> have been successfully initialized or verified.';
+                echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, <code>suite_groups</code>, <code>suite_user_groups</code>, <code>suite_app_access</code>, <code>scoreboard_games</code>, <code>scoreboard_game_tombstones</code>, <code>bingo_cards</code>, <code>bingo_card_favorites</code>, <code>bingo_games</code>, and <code>bingo_patterns</code> have been successfully initialized or verified.';
                 echo '</div>';
 
                 // Idempotent migration: Ensure scoreboard_games.ended_by includes 'abandoned'
@@ -106,6 +106,30 @@ header('Content-Type: text/html; charset=utf-8');
                     }
                 } catch (PDOException $tombEx) {
                     echo '<div class="error"><strong>Migration Warning:</strong> Unable to verify <code>scoreboard_game_tombstones</code> table: ' . htmlspecialchars($tombEx->getMessage()) . '</div>';
+                }
+
+                // Seed the Admin group membership for the profile named in SUITE_ADMIN_USERNAME
+                try {
+                    $adminName = defined('SUITE_ADMIN_USERNAME') ? SUITE_ADMIN_USERNAME : '';
+                    $adminStmt = $pdo->prepare('SELECT id, password_hash FROM suite_users WHERE username = ? LIMIT 1');
+                    $adminStmt->execute([$adminName]);
+                    $adminUser = $adminStmt->fetch();
+
+                    if ($adminName === '' || $adminName === 'your_username_here') {
+                        echo '<div class="error"><strong>Admin Not Seeded:</strong> Set <code>SUITE_ADMIN_USERNAME</code> in <code>config.php</code>, then re-run setup.</div>';
+                    } elseif (!$adminUser) {
+                        echo '<div class="error"><strong>Admin Not Seeded:</strong> No profile named <code>' . htmlspecialchars($adminName) . '</code> exists. Sign in once as that user and set a password, then re-run setup.</div>';
+                    } else {
+                        // INSERT IGNORE keeps repeated setup runs from creating duplicate rows
+                        $seedStmt = $pdo->prepare('INSERT IGNORE INTO suite_user_groups (user_id, group_id) SELECT ?, id FROM suite_groups WHERE slug = \'admin\'');
+                        $seedStmt->execute([$adminUser['id']]);
+                        echo '<div class="success"><strong>Admin Seeded:</strong> <code>' . htmlspecialchars($adminName) . '</code> is in the Admin group.</div>';
+                        if (empty($adminUser['password_hash'])) {
+                            echo '<div class="error"><strong>Password Required:</strong> <code>' . htmlspecialchars($adminName) . '</code> has no password, so Admin access stays inactive until one is set on the profile.</div>';
+                        }
+                    }
+                } catch (PDOException $adminEx) {
+                    echo '<div class="error"><strong>Admin Seed Warning:</strong> ' . htmlspecialchars($adminEx->getMessage()) . '</div>';
                 }
 
                 echo '<p><a href="../index.html">&larr; Return to App Suite Launcher</a></p>';
