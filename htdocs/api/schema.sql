@@ -87,6 +87,10 @@ CREATE TABLE IF NOT EXISTS `suite_app_access` (
         REFERENCES `suite_groups` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Seed default access restriction for the toys app (restricted to Special group and above)
+INSERT IGNORE INTO `suite_app_access` (`app_id`, `min_group_id`) VALUES
+('toys', 2);
+
 -- 4. Scoreboard Games table: stores match records, snapshots, and denormalized scores
 CREATE TABLE IF NOT EXISTS `scoreboard_games` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

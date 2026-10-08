@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.8';
+const SUITE_PROFILE_VERSION = '1.9';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -57,7 +57,8 @@ const SUITE_PROFILE_VERSION = '1.8';
             path.indexOf('/BagScore') !== -1 ||
             path.indexOf('/DriverScore') !== -1 ||
             path.indexOf('/FarkleScore') !== -1 ||
-            path.indexOf('/HarleyVinDecoder') !== -1) {
+            path.indexOf('/HarleyVinDecoder') !== -1 ||
+            path.indexOf('/Toys') !== -1) {
             return '../api/' + endpoint;
         }
         return './api/' + endpoint;
@@ -1046,7 +1047,8 @@ const SUITE_PROFILE_VERSION = '1.8';
             path.indexOf('/BagScore') !== -1 ||
             path.indexOf('/DriverScore') !== -1 ||
             path.indexOf('/FarkleScore') !== -1 ||
-            path.indexOf('/HarleyVinDecoder') !== -1
+            path.indexOf('/HarleyVinDecoder') !== -1 ||
+            path.indexOf('/Toys') !== -1
         ) {
             swPath = '../sw.js';
             swScope = '../';

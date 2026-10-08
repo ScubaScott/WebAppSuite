@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Lush Multi-Toy Remote 🎀</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Suite Profile stylesheet for footer sync indicator -->
+  <link rel="stylesheet" href="../media/suite-profile.css">
+</head>
+<body>
+
+  <div class="container">
+    <!-- Topbar navigation linking back to root app launcher -->
+    <div class="topbar">
+      <a href="../index.html" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Apps
+      </a>
+    </div>
+
+    <!-- Header -->
+    <div class="header-box">
+      <h1><span>🎀</span> Lush Remote <span>🎀</span></h1>
+      <div class="header-subtitle">✨ Sweet Wireless Bluetooth Controller ✨</div>
+    </div>
+
+    <!-- Connection & Paired Devices Card -->
+    <div class="card">
+      <h2>
+        <span>💖 Paired Toys</span>
+        <span id="toyCountBadge" style="font-size: 12px; font-weight: 800; color: var(--text-muted);">0 saved</span>
+      </h2>
+
+      <!-- Primary Action: Pair New Toy -->
+      <button class="primary-btn" id="scanBtn" onclick="scanAndAddNewToy()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M14.83 7.76L12.59 10 17 14.41l-4.41 4.41 2.24 2.24L21.47 14.41 14.83 7.76zM12 12V2L6.59 7.41 10.17 11 2 11v2h8.17l-3.58 3.59L12 22V12z"/>
+        </svg>
+        Scan & Add New Toy
+      </button>
+
+      <!-- Auto-Scan / Auto-Reconnect Periodic Bar -->
+      <div class="auto-scan-bar">
+        <div class="auto-scan-status">
+          <span class="pulsing-heart" id="autoScanHeart">💗</span>
+          <span id="autoScanLabel">Auto-reconnect: Active (5s)</span>
+        </div>
+        <button class="action-pill-btn" id="toggleAutoScanBtn" onclick="toggleAutoScan()">Pause</button>
+      </div>
+
+      <!-- Remembered Device List -->
+      <div class="device-list" id="deviceList">
+        <div class="empty-state" id="emptyState">
+          No toys paired yet. Click <strong>Scan & Add New Toy</strong> above to connect your first Lush!
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Intensity & Vibration Panel -->
+    <div class="card">
+      <h2><span>🌸 Vibration Intensity</span></h2>
+
+      <div class="slider-box">
+        <div class="slider-header">
+          <span>Level</span>
+          <span class="intensity-val" id="valDisplay">0</span>
+        </div>
+        <input 
+          type="range" 
+          id="intensitySlider" 
+          min="0" 
+          max="20" 
+          value="0" 
+          oninput="onIntensityInput(this.value)"
+        >
+      </div>
+
+      <!-- Momentary Mode Toggle -->
+      <div class="toggle-row">
+        <span>Momentary Mode (Release to 0) 🧸</span>
+        <label class="switch">
+          <input type="checkbox" id="momentaryToggle" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+
+      <!-- Quick Preset Controls -->
+      <div class="quick-btns">
+        <button onclick="setDirectIntensity(5)">🌸 Gentle 5</button>
+        <button onclick="setDirectIntensity(10)">💖 Medium 10</button>
+        <button onclick="setDirectIntensity(20)">🔥 Max 20</button>
+        <button class="stop" onclick="setDirectIntensity(0)">🛑 Emergency Stop (0)</button>
+      </div>
+    </div>
+
+    <!-- Activity Status Log -->
+    <div id="log">Ready. Checking remembered devices...</div>
+
+    <!-- Mandatory Version Footer -->
+    <footer class="app-footer">
+      <small>v1.3</small>
+    </footer>
+  </div>
+
+  <!-- Rename Toy Modal -->
+  <div class="modal-overlay" id="renameModal" style="display: none;">
+    <div class="modal-card">
+      <h3>🎀 Rename Toy</h3>
+      <input type="text" id="renameInput" class="modal-input" maxlength="28" placeholder="Give your toy a sweet name...">
+      <div class="modal-btn-row">
+        <button class="modal-btn cancel" onclick="closeRenameModal()">Cancel</button>
+        <button class="modal-btn save" onclick="saveToyRename()">Save Name</button>
+      </div>
+    </div>
+  </div>
+
+<!-- Shared Suite Profile and Cloud Sync Manager -->
+<script src="../media/suite-profile.js"></script>
+
+<script>
+  /**
+   * Version constant tracking application updates.
+   */
+  const APP_VERSION = "1.3";
+
+  /**
+   * Local storage keys for toy nicknames and preferences.
+   */
+  const STORAGE_KEY_TOY_REGISTRY = "lush_toy_registry";
+  const STORAGE_KEY_AUTOSCAN = "lush_toy_autoscan_enabled";
+
+  /**
+   * Runtime state managing remembered toys and active Bluetooth sessions.
+   * Items schema:
+   * {
+   *   id: string,                 // Origin-persistent BluetoothDevice.id
+   *   device: BluetoothDevice,     // Browser BluetoothDevice object
+   *   gatt: BluetoothRemoteGATTServer,
+   *   tx: BluetoothRemoteGATTCharacteristic,
+   *   customName: string,         // User-assigned friendly nickname
+   *   originalName: string,       // Raw broadcasted device name (e.g. LVS-Lush3-B9)
+   *   status: 'connected' | 'connecting' | 'disconnected',
+   *   isConnecting: boolean,      // Concurrency lock for GATT connection attempts
+   *   selected: boolean           // Included in multi-toy broadcast commands
+   * }
+   */
+  let managedToys = [];
+  let isTransmitting = false;
+  let pendingIntensity = null;
+  let autoScanTimer = null;
+  let isAutoScanActive = true;
+  let renamingDeviceId = null;
+
+  const slider = document.getElementById('intensitySlider');
+  const valDisplay = document.getElementById('valDisplay');
+  const momentaryToggle = document.getElementById('momentaryToggle');
+  const logBox = document.getElementById('log');
+  const autoScanLabel = document.getElementById('autoScanLabel');
+  const toggleAutoScanBtn = document.getElementById('toggleAutoScanBtn');
+  const autoScanHeart = document.getElementById('autoScanHeart');
+
+  /**
+   * Generates comprehensive list of Lovense GATT service UUIDs covering
+   * Gen 1, Gen 2, and all Gen 3 variations for dynamic discovery.
+   */
+  function getLovenseServices() {
+    const services = [
+      '0000fff0-0000-1000-8000-00805f9b34fb', // Gen 1
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  // Gen 2 (Nordic UART)
+    ];
+    // Gen 3 dynamic service prefixes covering Lush, Hush, Domi, Edge, etc.
+    const prefixes = ['4', '5'];
+    const hex = '0123456789abcdef';
+    const subVersions = ['0023', '0024', '0025'];
+
+    for (let p of prefixes) {
+      for (let h of hex) {
+        for (let sub of subVersions) {
+          services.push(`${p}${h}300001-${sub}-4bd4-bbd5-a6920e4c5653`);
+        }
+      }
+    }
+    return services;
+  }
+
+  /**
+   * Retrieves persistent device nicknames registry from localStorage.
+   * Returns a map keyed by device ID containing custom and original names.
+   */
+  function getStoredRegistry() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_TOY_REGISTRY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return typeof parsed === 'object' && parsed !== null ? parsed : {};
+    } catch (e) {
+      console.warn("Could not read toy registry from localStorage:", e);
+      return {};
+    }
+  }
+
+  /**
+   * Saves device registry to localStorage.
+   */
+  function saveStoredRegistry(registry) {
+    try {
+      localStorage.setItem(STORAGE_KEY_TOY_REGISTRY, JSON.stringify(registry));
+    } catch (e) {
+      console.warn("Could not write toy registry to localStorage:", e);
+    }
+  }
+
+  /**
+   * Stores or updates a specific toy's metadata in localStorage.
+   * Cleans up stale device ID references if an ID remapping occurs.
+   */
+  function persistToyMetadata(deviceId, customName, originalName, oldDeviceId = null) {
+    const registry = getStoredRegistry();
+    if (oldDeviceId && oldDeviceId !== deviceId && registry[oldDeviceId]) {
+      delete registry[oldDeviceId];
+    }
+    registry[deviceId] = {
+      id: deviceId,
+      customName: customName || (registry[deviceId]?.customName) || originalName || "Lovense Lush",
+      originalName: originalName || (registry[deviceId]?.originalName) || "LVS-Device",
+      lastSeen: Date.now()
+    };
+    saveStoredRegistry(registry);
+  }
+
+  /**
+   * Removes a toy from persistent localStorage.
+   */
+  function removeToyMetadata(deviceId) {
+    const registry = getStoredRegistry();
+    if (registry[deviceId]) {
+      delete registry[deviceId];
+      saveStoredRegistry(registry);
+    }
+  }
+
+  /**
+   * Updates user-facing log message box.
+   */
+  function updateLog(message) {
+    if (logBox) {
+      logBox.innerText = message;
+    }
+  }
+
+  /**
+   * Initializes application on page load:
+   * 1. Restores user auto-scan preference.
+   * 2. Populates managed toys list immediately from localStorage.
+   * 3. Renders saved toys so cards stay visible across browser restarts/tab closures.
+   * 4. Queries navigator.bluetooth.getDevices() for active browser-granted sessions.
+   * 5. Starts background auto-reconnect timer loop.
+   */
+  async function initApp() {
+    // Restore auto-scan preference from localStorage
+    const storedAutoScan = localStorage.getItem(STORAGE_KEY_AUTOSCAN);
+    if (storedAutoScan !== null) {
+      isAutoScanActive = storedAutoScan === "true";
+      updateAutoScanUi();
+    }
+
+    // 1. Load all saved toys directly from localStorage into runtime collection
+    const registry = getStoredRegistry();
+    Object.entries(registry).forEach(([storedId, meta]) => {
+      addOrUpdateManagedToy(
+        null,
+        storedId,
+        meta.customName || "Lovense Lush",
+        meta.originalName || "LVS-Device",
+        false
+      );
+    });
+
+    // Render list immediately to display remembered devices without waiting
+    renderDeviceList();
+
+    if (!navigator.bluetooth) {
+      updateLog("Web Bluetooth is not supported in this browser.");
+      return;
+    }
+
+    // 2. Query browser permissions backend for active BluetoothDevice instances
+    if (navigator.bluetooth.getDevices) {
+      try {
+        const authorizedDevices = await navigator.bluetooth.getDevices();
+        authorizedDevices.forEach(device => {
+          const meta = registry[device.id] || {};
+          const customName = meta.customName || device.name || "Lovense Lush";
+          const originalName = meta.originalName || device.name || "LVS-Device";
+
+          // Ensure device exists in local registry
+          persistToyMetadata(device.id, customName, originalName);
+
+          // Attach active BluetoothDevice object to managed toy record
+          addOrUpdateManagedToy(device, device.id, customName, originalName, false);
+        });
+
+        renderDeviceList();
+      } catch (err) {
+        console.warn("Error accessing navigator.bluetooth.getDevices():", err);
+      }
+    }
+
+    // Update log box status
+    if (managedToys.length > 0) {
+      updateLog(`Found ${managedToys.length} saved toy(s). Ready to connect.`);
+    } else {
+      updateLog("Ready. Click 'Scan & Add New Toy' to connect your first Lush.");
+    }
+
+    // 3. Start auto-scan loop
+    startAutoScanLoop();
+
+    // 4. Trigger auto-reconnect if any toy has an active device object
+    if (managedToys.some(t => t.device)) {
+      attemptAutoReconnect();
+    }
+  }
+
+  /**
+   * Adds or updates a device record in runtime state.
+   * Matches by ID or original broadcast name to retain custom user nicknames.
+   */
+  function addOrUpdateManagedToy(device, deviceId, customName, originalName, isConnected) {
+    const targetId = deviceId || (device ? device.id : null);
+    if (!targetId && !device) return null;
+
+    // Look for existing record by ID or by broadcasted device name
+    let existing = managedToys.find(t =>
+      t.id === targetId ||
+      (device && t.originalName && t.originalName === device.name) ||
+      (originalName && t.originalName && t.originalName === originalName)
+    );
+
+    if (!existing) {
+      existing = {
+        id: targetId,
+        device: device || null,
+        gatt: (isConnected && device) ? device.gatt : null,
+        tx: null,
+        customName: customName || (device ? device.name : "Lovense Lush"),
+        originalName: originalName || (device ? device.name : "LVS-Device"),
+        status: isConnected ? 'connected' : 'disconnected',
+        isConnecting: false,
+        selected: true
+      };
+
+      if (device) {
+        device.ongattserverdisconnected = () => handleDisconnect(existing.id);
+      }
+
+      managedToys.push(existing);
+    } else {
+      if (device) {
+        const oldId = existing.id;
+        existing.device = device;
+        existing.id = device.id;
+        device.ongattserverdisconnected = () => handleDisconnect(existing.id);
+        if (oldId !== device.id) {
+          persistToyMetadata(device.id, existing.customName, existing.originalName, oldId);
+        }
+      }
+      if (customName) existing.customName = customName;
+      if (originalName) existing.originalName = originalName;
+      if (isConnected) existing.status = 'connected';
+    }
+
+    return existing;
+  }
+
+  /**
+   * Performs user-prompted Bluetooth scan for Lovense toys.
+   */
+  async function scanAndAddNewToy() {
+    if (!navigator.bluetooth) {
+      alert("Web Bluetooth is not available in this browser. Please use Chrome, Edge, or Bluefy.");
+      return;
+    }
+
+    try {
+      updateLog("Searching for Lovense toys... 🌸");
+
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ namePrefix: 'LVS-' }],
+        optionalServices: getLovenseServices()
+      });
+
+      updateLog(`Connecting to ${device.name}... ⏳`);
+      const toyRecord = addOrUpdateManagedToy(device, device.id, null, device.name, false);
+      renderDeviceList();
+
+      await connectToToyGatt(toyRecord);
+      persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName);
+      renderDeviceList();
+
+    } catch (err) {
+      if (err.name === 'NotFoundError') {
+        updateLog("Scan cancelled or no device selected.");
+      } else {
+        console.error("Connection Error:", err);
+        updateLog(`Connection failed: ${err.message}`);
+      }
+    }
+  }
+
+  /**
+   * Establishes GATT connection and locates writable TX characteristic.
+   */
+  async function connectToToyGatt(toyRecord) {
+    if (!toyRecord.device) {
+      throw new Error("No active Bluetooth session. Please pair device.");
+    }
+
+    if (toyRecord.isConnecting || (toyRecord.gatt && toyRecord.gatt.connected)) {
+      return true;
+    }
+
+    toyRecord.isConnecting = true;
+    toyRecord.status = 'connecting';
+    renderDeviceList();
+
+    try {
+      const server = await toyRecord.device.gatt.connect();
+      const services = await server.getPrimaryServices();
+      let txChar = null;
+
+      for (const service of services) {
+        try {
+          const chars = await service.getCharacteristics();
+          for (const char of chars) {
+            if (char.properties.write || char.properties.writeWithoutResponse) {
+              txChar = char;
+              break;
+            }
+          }
+        } catch (e) {
+          // Ignore restricted services
+        }
+        if (txChar) break;
+      }
+
+      if (!txChar) {
+        throw new Error("No writable UART characteristic found.");
+      }
+
+      toyRecord.gatt = server;
+      toyRecord.tx = txChar;
+      toyRecord.status = 'connected';
+      toyRecord.isConnecting = false;
+      updateLog(`🎀 Connected to ${toyRecord.customName}!`);
+      renderDeviceList();
+      return true;
+
+    } catch (err) {
+      toyRecord.isConnecting = false;
+      toyRecord.status = 'disconnected';
+      renderDeviceList();
+      throw err;
+    }
+  }
+
+  /**
+   * Auto-reconnect routine executed periodically for remembered toys.
+   */
+  async function attemptAutoReconnect() {
+    if (!isAutoScanActive) return;
+
+    // Refresh authorized devices from browser permissions
+    if (navigator.bluetooth && navigator.bluetooth.getDevices) {
+      try {
+        const authorizedDevices = await navigator.bluetooth.getDevices();
+        const registry = getStoredRegistry();
+
+        authorizedDevices.forEach(device => {
+          const meta = registry[device.id] || {};
+          addOrUpdateManagedToy(device, device.id, meta.customName, meta.originalName || device.name, false);
+        });
+      } catch (e) {
+        // Silent catch for background polling
+      }
+    }
+
+    // Try silent reconnect on disconnected toys that have an active BluetoothDevice instance
+    for (const toy of managedToys) {
+      if (!toy.device) continue;
+      const isConnected = toy.device && toy.device.gatt && toy.device.gatt.connected;
+      if (!isConnected && !toy.isConnecting) {
+        try {
+          await connectToToyGatt(toy);
+        } catch (err) {
+          // Silent catch: Toy is off or out of range
+          toy.status = 'disconnected';
+        }
+      }
+    }
+    renderDeviceList();
+  }
+
+  /**
+   * Starts periodic timer running auto-reconnect every 5 seconds.
+   */
+  function startAutoScanLoop() {
+    if (autoScanTimer) clearInterval(autoScanTimer);
+    autoScanTimer = setInterval(() => {
+      attemptAutoReconnect();
+    }, 5000);
+  }
+
+  /**
+   * Toggles periodic background auto-reconnect on and off.
+   */
+  function toggleAutoScan() {
+    isAutoScanActive = !isAutoScanActive;
+    localStorage.setItem(STORAGE_KEY_AUTOSCAN, isAutoScanActive ? "true" : "false");
+    updateAutoScanUi();
+    if (isAutoScanActive) {
+      attemptAutoReconnect();
+    }
+  }
+
+  /**
+   * Updates Auto-Scan banner UI elements.
+   */
+  function updateAutoScanUi() {
+    if (isAutoScanActive) {
+      autoScanLabel.innerText = "Auto-reconnect: Active (5s)";
+      toggleAutoScanBtn.innerText = "Pause";
+      autoScanHeart.style.display = "inline-block";
+    } else {
+      autoScanLabel.innerText = "Auto-reconnect: Paused";
+      toggleAutoScanBtn.innerText = "Resume";
+      autoScanHeart.style.display = "none";
+    }
+  }
+
+  /**
+   * Handles device disconnect events.
+   */
+  function handleDisconnect(deviceId) {
+    const toy = managedToys.find(t => t.id === deviceId);
+    if (toy) {
+      toy.status = 'disconnected';
+      toy.tx = null;
+      updateLog(`💤 ${toy.customName} disconnected.`);
+      renderDeviceList();
+    }
+  }
+
+  /**
+   * Toggles whether a toy receives vibration commands.
+   */
+  function toggleSelectToy(index) {
+    managedToys[index].selected = !managedToys[index].selected;
+    renderDeviceList();
+  }
+
+  /**
+   * Opens custom name editing modal.
+   */
+  function openRenameModal(deviceId, currentName) {
+    renamingDeviceId = deviceId;
+    const input = document.getElementById('renameInput');
+    input.value = currentName;
+    document.getElementById('renameModal').style.display = 'flex';
+    input.focus();
+  }
+
+  /**
+   * Closes rename modal.
+   */
+  function closeRenameModal() {
+    renamingDeviceId = null;
+    document.getElementById('renameModal').style.display = 'none';
+  }
+
+  /**
+   * Saves updated custom toy nickname to memory and localStorage.
+   */
+  function saveToyRename() {
+    if (!renamingDeviceId) return;
+    const input = document.getElementById('renameInput');
+    const newName = input.value.trim();
+
+    if (newName) {
+      const toy = managedToys.find(t => t.id === renamingDeviceId);
+      if (toy) {
+        toy.customName = newName;
+        persistToyMetadata(toy.id, toy.customName, toy.originalName);
+        updateLog(`Renamed to "${newName}" 🎀`);
+        renderDeviceList();
+      }
+    }
+    closeRenameModal();
+  }
+
+  /**
+   * Forgets a toy: disconnects GATT session, clears localStorage entry,
+   * and revokes permissions via device.forget() where supported.
+   */
+  async function forgetToy(deviceId) {
+    const idx = managedToys.findIndex(t => t.id === deviceId);
+    if (idx === -1) return;
+
+    const toy = managedToys[idx];
+    if (confirm(`Forget "${toy.customName}"? The toy will be removed from your saved list.`)) {
+      if (toy.device && toy.device.gatt && toy.device.gatt.connected) {
+        toy.device.gatt.disconnect();
+      }
+
+      // Revoke browser permission if device.forget() is implemented
+      if (toy.device && toy.device.forget) {
+        try {
+          await toy.device.forget();
+        } catch (e) {
+          console.warn("device.forget error:", e);
+        }
+      }
+
+      removeToyMetadata(deviceId);
+      managedToys.splice(idx, 1);
+      updateLog(`Removed ${toy.customName}`);
+      renderDeviceList();
+    }
+  }
+
+  /**
+   * Manually initiates connection for a specific toy card.
+   * If live Bluetooth session was lost after tab close, prompts user gesture to pair.
+   */
+  async function manualConnectToy(deviceId) {
+    const toy = managedToys.find(t => t.id === deviceId);
+    if (!toy) return;
+
+    try {
+      toy.isConnecting = true;
+      toy.status = 'connecting';
+      renderDeviceList();
+
+      // If active BluetoothDevice instance is not present, request user gesture selection
+      if (!toy.device) {
+        updateLog(`Reconnecting ${toy.customName}... ⏳`);
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'LVS-' }],
+          optionalServices: getLovenseServices()
+        });
+
+        // Rebind acquired device to saved toy record
+        const oldId = toy.id;
+        toy.device = device;
+        toy.id = device.id;
+        toy.originalName = device.name || toy.originalName;
+        device.ongattserverdisconnected = () => handleDisconnect(toy.id);
+
+        persistToyMetadata(toy.id, toy.customName, toy.originalName, oldId);
+      }
+
+      updateLog(`Connecting to ${toy.customName}... ⏳`);
+      await connectToToyGatt(toy);
+    } catch (err) {
+      toy.isConnecting = false;
+      toy.status = 'disconnected';
+      renderDeviceList();
+      if (err.name === 'NotFoundError') {
+        updateLog(`Connection cancelled for ${toy.customName}.`);
+      } else {
+        updateLog(`Could not connect: ${err.message}`);
+      }
+    }
+  }
+
+  /**
+   * Renders paired device list with custom nicknames and status badges.
+   */
+  function renderDeviceList() {
+    const listEl = document.getElementById('deviceList');
+    const badgeEl = document.getElementById('toyCountBadge');
+    badgeEl.innerText = `${managedToys.length} saved`;
+
+    listEl.innerHTML = '';
+
+    if (managedToys.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          No toys paired yet. Click <strong>Scan & Add New Toy</strong> above to connect your first Lush!
+        </div>
+      `;
+      return;
+    }
+
+    managedToys.forEach((toy, idx) => {
+      const item = document.createElement('div');
+      item.className = `device-item ${toy.selected ? 'selected' : ''}`;
+
+      // Build status badge
+      let statusHtml = '';
+      if (toy.status === 'connected') {
+        statusHtml = `<span class="status-badge online">● Connected</span>`;
+      } else if (toy.status === 'connecting') {
+        statusHtml = `<span class="status-badge connecting">⏳ Connecting...</span>`;
+      } else {
+        statusHtml = `<span class="status-badge offline">💤 Standby</span>`;
+      }
+
+      // Build manual connect button if disconnected
+      const connectActionHtml = toy.status !== 'connected' && !toy.isConnecting
+        ? `<button class="action-pill-btn" onclick="manualConnectToy('${toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">Connect</button>`
+        : '';
+
+      const safeId = toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeCustomName = toy.customName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+      item.innerHTML = `
+        <div class="device-main-row">
+          <div class="device-info" onclick="toggleSelectToy(${idx})">
+            <div class="custom-checkbox">${toy.selected ? '✓' : ''}</div>
+            <div class="device-text">
+              <span class="device-name">${toy.customName}</span>
+              <span class="device-sub">${toy.originalName}</span>
+            </div>
+          </div>
+          ${statusHtml}
+        </div>
+        <div class="device-actions">
+          ${connectActionHtml}
+          <button class="action-pill-btn" onclick="openRenameModal('${safeId}', '${safeCustomName}')">✏️ Rename</button>
+          <button class="action-pill-btn danger" onclick="forgetToy('${safeId}')">🗑️ Forget</button>
+        </div>
+      `;
+
+      listEl.appendChild(item);
+    });
+  }
+
+  /**
+   * Handles user input from the vibration intensity slider.
+   */
+  function onIntensityInput(val) {
+    valDisplay.innerText = val;
+    queueTransmission(parseInt(val));
+  }
+
+  /**
+   * Sets slider and sends direct intensity preset value.
+   */
+  function setDirectIntensity(val) {
+    slider.value = val;
+    valDisplay.innerText = val;
+    queueTransmission(val);
+  }
+
+  /**
+   * Queues vibration command and prevents UART packet flooding.
+   */
+  async function queueTransmission(intensity) {
+    pendingIntensity = intensity;
+    if (isTransmitting) return;
+
+    isTransmitting = true;
+    while (pendingIntensity !== null) {
+      const target = pendingIntensity;
+      pendingIntensity = null;
+      await broadcastCommand(`Vibrate:${target};`);
+    }
+    isTransmitting = false;
+  }
+
+  /**
+   * Broadcasts ASCII command string to all connected and selected toys.
+   */
+  async function broadcastCommand(cmd) {
+    const targets = managedToys.filter(t => t.selected && t.status === 'connected' && t.tx);
+    if (targets.length === 0) return;
+
+    const payload = new TextEncoder().encode(cmd);
+
+    await Promise.all(targets.map(async (toy) => {
+      try {
+        if (toy.tx.properties.writeWithoutResponse) {
+          await toy.tx.writeValueWithoutResponse(payload);
+        } else {
+          await toy.tx.writeValue(payload);
+        }
+      } catch (e) {
+        console.warn(`Write fail on ${toy.customName}:`, e);
+      }
+    }));
+  }
+
+  /**
+   * Handles momentary touch/mouse release back to zero.
+   */
+  function handleRelease() {
+    if (momentaryToggle.checked && slider.value !== "0") {
+      slider.value = 0;
+      valDisplay.innerText = "0";
+      queueTransmission(0);
+    }
+  }
+
+  slider.addEventListener('mouseup', handleRelease);
+  slider.addEventListener('touchend', handleRelease);
+  slider.addEventListener('pointerup', handleRelease);
+
+  // Initialize application on DOM load and mount SuiteProfile footer indicator
+  window.addEventListener('DOMContentLoaded', () => {
+    initApp();
+    if (window.SuiteProfile) {
+      SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer'));
+    }
+  });
+</script>
+</body>
+</html>

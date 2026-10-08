@@ -48,5 +48,6 @@ Each sub-application folder under `htdocs/` contains its own dedicated `AGENTS.m
 | `htdocs/FarkleScore/` | Farkle 10,000 | `htdocs/FarkleScore/AGENTS.md` | 10k dice scoring, combo calculations, multi-player standings |
 | `htdocs/HarleyVinDecoder/` | Harley VIN Decoder | `htdocs/HarleyVinDecoder/AGENTS.md` | 17-digit VIN parsing, checksum validation, OCR image preprocessing |
 | `htdocs/ScoreBoard/` | ScoreBoard Multi-Sport | `htdocs/ScoreBoard/AGENTS.md` | Multi-sport scoreboard, game timer, active games viewer & sync |
+| `htdocs/Toys/` | Toys Lovense Controller | `htdocs/Toys/AGENTS.md` | Bluetooth remote, multi-toy vibration manager, special group restricted |
 
 When modifying any specific sub-app, always refer to and follow both this root `AGENTS.md` and the app-specific `AGENTS.md`.
