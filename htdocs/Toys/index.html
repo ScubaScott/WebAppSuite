@@ -106,7 +106,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v1.3</small>
+      <small>v1.4</small>
     </footer>
   </div>
 
@@ -129,7 +129,7 @@
   /**
    * Version constant tracking application updates.
    */
-  const APP_VERSION = "1.3";
+  const APP_VERSION = "1.4";
 
   /**
    * Local storage keys for toy nicknames and preferences.
@@ -331,6 +331,14 @@
   }
 
   /**
+   * Attaches GATT disconnection listeners to BluetoothDevice instance.
+   */
+  function bindDeviceListeners(toy) {
+    if (!toy || !toy.device) return;
+    toy.device.ongattserverdisconnected = () => handleDisconnect(toy.id);
+  }
+
+  /**
    * Adds or updates a device record in runtime state.
    * Matches by ID or original broadcast name to retain custom user nicknames.
    */
@@ -359,7 +367,7 @@
       };
 
       if (device) {
-        device.ongattserverdisconnected = () => handleDisconnect(existing.id);
+        bindDeviceListeners(existing);
       }
 
       managedToys.push(existing);
@@ -368,7 +376,7 @@
         const oldId = existing.id;
         existing.device = device;
         existing.id = device.id;
-        device.ongattserverdisconnected = () => handleDisconnect(existing.id);
+        bindDeviceListeners(existing);
         if (oldId !== device.id) {
           persistToyMetadata(device.id, existing.customName, existing.originalName, oldId);
         }
@@ -420,12 +428,20 @@
    * Establishes GATT connection and locates writable TX characteristic.
    */
   async function connectToToyGatt(toyRecord) {
-    if (!toyRecord.device) {
+    if (!toyRecord || !toyRecord.device) {
       throw new Error("No active Bluetooth session. Please pair device.");
     }
 
-    if (toyRecord.isConnecting || (toyRecord.gatt && toyRecord.gatt.connected)) {
+    // Already connected with active TX characteristic
+    if (toyRecord.gatt && toyRecord.gatt.connected && toyRecord.tx) {
+      toyRecord.status = 'connected';
+      toyRecord.isConnecting = false;
       return true;
+    }
+
+    // Prevent re-entry if this device is already in-flight
+    if (toyRecord.isConnecting) {
+      return false;
     }
 
     toyRecord.isConnecting = true;
@@ -433,7 +449,13 @@
     renderDeviceList();
 
     try {
-      const server = await toyRecord.device.gatt.connect();
+      // Connect to GATT server with a 10s timeout to prevent hanging GATT promises
+      const connectPromise = toyRecord.device.gatt.connect();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Bluetooth connection timed out")), 10000)
+      );
+      const server = await Promise.race([connectPromise, timeoutPromise]);
+
       const services = await server.getPrimaryServices();
       let txChar = null;
 
@@ -460,6 +482,7 @@
       toyRecord.tx = txChar;
       toyRecord.status = 'connected';
       toyRecord.isConnecting = false;
+      bindDeviceListeners(toyRecord);
       updateLog(`🎀 Connected to ${toyRecord.customName}!`);
       renderDeviceList();
       return true;
@@ -467,8 +490,11 @@
     } catch (err) {
       toyRecord.isConnecting = false;
       toyRecord.status = 'disconnected';
+      toyRecord.tx = null;
       renderDeviceList();
       throw err;
+    } finally {
+      toyRecord.isConnecting = false;
     }
   }
 
@@ -553,7 +579,12 @@
     const toy = managedToys.find(t => t.id === deviceId);
     if (toy) {
       toy.status = 'disconnected';
+      toy.isConnecting = false;
       toy.tx = null;
+      if (toy.gatt) {
+        try { toy.gatt.disconnect(); } catch (_) {}
+      }
+      toy.gatt = null;
       updateLog(`💤 ${toy.customName} disconnected.`);
       renderDeviceList();
     }
@@ -638,20 +669,18 @@
 
   /**
    * Manually initiates connection for a specific toy card.
-   * If live Bluetooth session was lost after tab close, prompts user gesture to pair.
+   * Prompts user pairing gesture if active device handle is missing or disconnected.
    */
   async function manualConnectToy(deviceId) {
     const toy = managedToys.find(t => t.id === deviceId);
     if (!toy) return;
+    if (toy.isConnecting) return;
 
     try {
-      toy.isConnecting = true;
-      toy.status = 'connecting';
-      renderDeviceList();
+      updateLog(`Connecting to ${toy.customName}... ⏳`);
 
-      // If active BluetoothDevice instance is not present, request user gesture selection
+      // 1. If active BluetoothDevice instance is not present, request user gesture selection
       if (!toy.device) {
-        updateLog(`Reconnecting ${toy.customName}... ⏳`);
         const device = await navigator.bluetooth.requestDevice({
           filters: [{ namePrefix: 'LVS-' }],
           optionalServices: getLovenseServices()
@@ -662,13 +691,32 @@
         toy.device = device;
         toy.id = device.id;
         toy.originalName = device.name || toy.originalName;
-        device.ongattserverdisconnected = () => handleDisconnect(toy.id);
-
+        bindDeviceListeners(toy);
         persistToyMetadata(toy.id, toy.customName, toy.originalName, oldId);
       }
 
-      updateLog(`Connecting to ${toy.customName}... ⏳`);
-      await connectToToyGatt(toy);
+      // 2. Connect to GATT server. If cached device instance is stale, fallback to re-pairing
+      try {
+        await connectToToyGatt(toy);
+      } catch (gattErr) {
+        console.warn("Direct GATT connect failed on cached device, requesting fresh pairing gesture:", gattErr);
+        updateLog(`Re-selecting ${toy.customName}... ⏳`);
+
+        const freshDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'LVS-' }],
+          optionalServices: getLovenseServices()
+        });
+
+        const oldId = toy.id;
+        toy.device = freshDevice;
+        toy.id = freshDevice.id;
+        toy.originalName = freshDevice.name || toy.originalName;
+        bindDeviceListeners(toy);
+        persistToyMetadata(toy.id, toy.customName, toy.originalName, oldId);
+
+        await connectToToyGatt(toy);
+      }
+
     } catch (err) {
       toy.isConnecting = false;
       toy.status = 'disconnected';
