@@ -36,8 +36,8 @@
 
         <!-- User management list, shown only to Admin users -->
         <section id="userPanel" class="content-card" hidden>
-            <h2>Special Group Members</h2>
-            <p class="panel-hint">Turn on <strong>Special</strong> to let a user see Special-only apps on the launcher.</p>
+            <h2>User Management</h2>
+            <p class="panel-hint">Turn on <strong>Special</strong> to grant access to restricted apps. Use <strong>🔑 Password</strong> to reset or remove a user's password.</p>
 
             <label class="search-label" for="userSearch">Search users</label>
             <input type="search" id="userSearch" class="search-input" placeholder="Search by username" autocomplete="off">
@@ -48,11 +48,55 @@
     </main>
 
     <footer class="app-footer">
-        <small class="app-footer-version">v<span id="footerVersion">1.0</span></small>
+        <small class="app-footer-version">v<span id="footerVersion">1.1</span></small>
     </footer>
 
     <!-- Feedback toast for failed or completed changes -->
     <div id="toast" class="toast" aria-live="polite"></div>
+
+    <!-- Password Management Modal Dialog -->
+    <div id="passwordModal" class="modal-backdrop" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-header">
+                <h3 id="modalTitle">Manage User Password</h3>
+                <button type="button" id="modalCloseBtn" class="modal-close" aria-label="Close dialog">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-user-meta">
+                    <span class="modal-username-label">User:</span>
+                    <strong id="modalUsername" class="modal-username"></strong>
+                    <span id="modalPasswordStatus" class="status-chip"></span>
+                </div>
+
+                <!-- Form: Reset / Set new password -->
+                <form id="resetPasswordForm" class="modal-form" autocomplete="off">
+                    <label for="adminNewPassword" class="form-label">New Password</label>
+                    <div class="input-with-button">
+                        <input type="text" id="adminNewPassword" class="form-input" placeholder="Enter new password (min 3 chars)" minlength="3" required autocomplete="off">
+                        <button type="button" id="generatePasswordBtn" class="btn-subtle" title="Generate random password">Generate</button>
+                    </div>
+                    <p class="field-hint">User must enter this new password on their next sign in.</p>
+
+                    <div class="modal-actions">
+                        <button type="submit" id="savePasswordBtn" class="btn-primary">Set New Password</button>
+                    </div>
+                </form>
+
+                <hr class="modal-divider">
+
+                <!-- Section: Remove password option -->
+                <div id="removePasswordSection" class="remove-section">
+                    <div class="remove-info">
+                        <strong>Remove Password Protection</strong>
+                        <p class="field-hint">Clears the password so this user profile can be accessed without a password.</p>
+                    </div>
+                    <button type="button" id="removePasswordBtn" class="btn-danger-outline">Remove Password</button>
+                    <p id="removeSelfNotice" class="field-hint self-notice" hidden>You cannot remove the password from your own admin account.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Shared Suite Profile (provides the signed-in session token) -->
     <script src="./media/suite-profile.js"></script>

@@ -231,6 +231,62 @@ main {
     cursor: wait;
 }
 
+/* User row action container and password button */
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-pwd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 12px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--md-primary);
+    background-color: var(--md-card-bg);
+    border: 1px solid var(--md-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-pwd:hover {
+    background-color: var(--md-primary-soft);
+    border-color: var(--md-primary);
+}
+
+.btn-pwd:active {
+    transform: scale(0.97);
+}
+
+.btn-pwd:focus-visible {
+    outline: 2px solid var(--md-primary);
+    outline-offset: 1px;
+}
+
+.btn-pwd-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+@media (max-width: 440px) {
+    .btn-pwd-text {
+        display: none;
+    }
+    .btn-pwd {
+        padding: 8px;
+        width: 44px;
+    }
+}
+
 .empty-text {
     margin-top: 16px;
 }
@@ -238,6 +294,291 @@ main {
 /* Message card */
 .message-card a {
     color: var(--md-primary);
+}
+
+/* Modal dialog backdrop */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+    animation: modalFadeIn 0.15s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Modal dialog card */
+.modal-card {
+    background-color: var(--md-card-bg);
+    border: 1px solid var(--md-border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: modalSlideUp 0.15s ease-out;
+}
+
+@keyframes modalSlideUp {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--md-border);
+}
+
+.modal-header h3 {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 17px;
+    margin: 0;
+    color: var(--md-text-main);
+}
+
+.modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    color: var(--md-text-sub);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.modal-close:hover {
+    background-color: var(--md-primary-soft);
+    color: var(--md-text-main);
+}
+
+.modal-close:focus-visible {
+    outline: 2px solid var(--md-primary);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-user-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.modal-username-label {
+    color: var(--md-text-sub);
+    font-size: 14px;
+}
+
+.modal-username {
+    font-size: 15px;
+    color: var(--md-text-main);
+}
+
+.status-chip {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.status-locked {
+    background-color: var(--md-primary-soft);
+    color: var(--md-primary);
+}
+
+.status-unlocked {
+    background-color: #f1f3f4;
+    color: var(--md-text-sub);
+}
+
+/* Modal form controls */
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--md-text-sub);
+}
+
+.input-with-button {
+    display: flex;
+    gap: 8px;
+}
+
+.form-input {
+    flex: 1;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 15px;
+    border: 1px solid var(--md-border);
+    border-radius: 8px;
+    background-color: var(--md-card-bg);
+    color: var(--md-text-main);
+}
+
+.form-input:focus {
+    outline: 2px solid var(--md-primary);
+    outline-offset: 1px;
+}
+
+.btn-subtle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 14px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--md-text-main);
+    background-color: #f1f3f4;
+    border: 1px solid var(--md-border);
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s ease;
+}
+
+.btn-subtle:hover {
+    background-color: #e8eaed;
+}
+
+.btn-subtle:focus-visible {
+    outline: 2px solid var(--md-primary);
+}
+
+.field-hint {
+    font-size: 12px;
+    color: var(--md-text-sub);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.modal-actions {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 18px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    background-color: var(--md-primary);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #1765cc;
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.btn-primary:focus-visible {
+    outline: 2px solid var(--md-primary);
+    outline-offset: 2px;
+}
+
+.modal-divider {
+    border: 0;
+    border-top: 1px solid var(--md-border);
+    margin: 20px 0 16px;
+}
+
+/* Remove password section */
+.remove-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.remove-info strong {
+    display: block;
+    font-size: 14px;
+    color: var(--md-text-main);
+    margin-bottom: 2px;
+}
+
+.btn-danger-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 16px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--md-danger);
+    background-color: transparent;
+    border: 1px solid var(--md-danger);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+    background-color: #fce8e6;
+}
+
+.btn-danger-outline:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-danger-outline:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-danger-outline:focus-visible {
+    outline: 2px solid var(--md-danger);
+    outline-offset: 1px;
+}
+
+.self-notice {
+    color: #d93025;
+    font-weight: 500;
 }
 
 /* Toast notification */

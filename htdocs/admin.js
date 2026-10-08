@@ -1,7 +1,7 @@
 // Admin page application version identifier
-const APP_VERSION = "1.0";
+const APP_VERSION = "1.1";
 
-// Admin page logic: loads all profiles from admin.php and toggles Special group membership.
+// Admin page logic: loads all profiles from admin.php, toggles Special group membership, and manages user passwords.
 (function () {
     const API_URL = './api/admin.php';
 
@@ -14,8 +14,21 @@ const APP_VERSION = "1.0";
     const searchInput = document.getElementById('userSearch');
     const toastEl = document.getElementById('toast');
 
+    // Password management modal elements
+    const passwordModal = document.getElementById('passwordModal');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalUsername = document.getElementById('modalUsername');
+    const modalPasswordStatus = document.getElementById('modalPasswordStatus');
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
+    const adminNewPassword = document.getElementById('adminNewPassword');
+    const generatePasswordBtn = document.getElementById('generatePasswordBtn');
+    const savePasswordBtn = document.getElementById('savePasswordBtn');
+    const removePasswordBtn = document.getElementById('removePasswordBtn');
+    const removeSelfNotice = document.getElementById('removeSelfNotice');
+
     // Full user list from the server; the search box filters this client-side
     let allUsers = [];
+    let activeUser = null;
     let toastTimer = null;
 
     document.getElementById('footerVersion').textContent = APP_VERSION;
@@ -105,7 +118,160 @@ const APP_VERSION = "1.0";
     }
 
     /**
-     * Builds one list row for a user: name, details, and a Special toggle (or Admin chip).
+     * Generates an easy-to-read random temporary password.
+     *
+     * @returns {string}
+     */
+    function generateRandomPassword() {
+        const words = ['Pass', 'Blue', 'Star', 'Safe', 'Gate', 'Key', 'Lock', 'Port'];
+        const word = words[Math.floor(Math.random() * words.length)];
+        const num = Math.floor(1000 + Math.random() * 9000);
+        return word + '-' + num;
+    }
+
+    /**
+     * Opens the password management modal dialog for the selected user.
+     *
+     * @param {Object} user
+     */
+    function openPasswordModal(user) {
+        activeUser = user;
+        modalUsername.textContent = user.username;
+
+        if (user.hasPassword) {
+            modalPasswordStatus.textContent = '🔒 Has Password';
+            modalPasswordStatus.className = 'status-chip status-locked';
+        } else {
+            modalPasswordStatus.textContent = '🔓 No Password';
+            modalPasswordStatus.className = 'status-chip status-unlocked';
+        }
+
+        adminNewPassword.value = '';
+
+        // Prevent the logged-in admin from removing the password from their own profile
+        const currentAdmin = SuiteProfile.getUser();
+        const isSelf = currentAdmin && currentAdmin.username && currentAdmin.username.toLowerCase() === user.username.toLowerCase();
+
+        if (isSelf) {
+            removePasswordBtn.disabled = true;
+            removePasswordBtn.title = 'You cannot remove the password from your own admin account';
+            removeSelfNotice.hidden = false;
+        } else if (!user.hasPassword) {
+            removePasswordBtn.disabled = true;
+            removePasswordBtn.title = 'User does not currently have a password';
+            removeSelfNotice.hidden = true;
+        } else {
+            removePasswordBtn.disabled = false;
+            removePasswordBtn.title = '';
+            removeSelfNotice.hidden = true;
+        }
+
+        passwordModal.hidden = false;
+        adminNewPassword.focus();
+    }
+
+    /**
+     * Closes the password management modal dialog and resets state.
+     */
+    function closePasswordModal() {
+        passwordModal.hidden = true;
+        activeUser = null;
+        adminNewPassword.value = '';
+    }
+
+    /**
+     * Handles resetting the password for the active modal user.
+     *
+     * @param {Event} e
+     */
+    async function submitResetPassword(e) {
+        e.preventDefault();
+        if (!activeUser) return;
+
+        const newPassword = adminNewPassword.value.trim();
+        if (newPassword.length < 3) {
+            showToast('Password must be at least 3 characters.');
+            return;
+        }
+
+        savePasswordBtn.disabled = true;
+
+        try {
+            const { status, data } = await callApi('reset_password', {
+                userId: activeUser.id,
+                newPassword: newPassword
+            });
+
+            if (!data.success) {
+                if (status === 401 || status === 403) {
+                    showAccessError(status, data);
+                } else {
+                    showToast(data.error || 'Failed to reset password.');
+                }
+                return;
+            }
+
+            // Update user record in cached allUsers list
+            const index = allUsers.findIndex(u => u.id === activeUser.id);
+            if (index !== -1) {
+                allUsers[index] = data.user;
+            }
+
+            const targetUsername = activeUser.username;
+            closePasswordModal();
+            renderList();
+            showToast('Password updated for ' + targetUsername);
+        } catch (err) {
+            showToast('Network error. Password was not updated.');
+        } finally {
+            savePasswordBtn.disabled = false;
+        }
+    }
+
+    /**
+     * Handles removing password protection from the active modal user.
+     */
+    async function handleRemovePassword() {
+        if (!activeUser || removePasswordBtn.disabled) return;
+
+        const targetUsername = activeUser.username;
+        const confirmed = window.confirm('Remove password protection for "' + targetUsername + '"? Anyone will be able to access this profile without a password.');
+        if (!confirmed) return;
+
+        removePasswordBtn.disabled = true;
+
+        try {
+            const { status, data } = await callApi('remove_password', {
+                userId: activeUser.id
+            });
+
+            if (!data.success) {
+                if (status === 401 || status === 403) {
+                    showAccessError(status, data);
+                } else {
+                    showToast(data.error || 'Failed to remove password.');
+                }
+                return;
+            }
+
+            // Update user record in cached allUsers list
+            const index = allUsers.findIndex(u => u.id === activeUser.id);
+            if (index !== -1) {
+                allUsers[index] = data.user;
+            }
+
+            closePasswordModal();
+            renderList();
+            showToast('Password removed for ' + targetUsername);
+        } catch (err) {
+            showToast('Network error. Password was not removed.');
+        } finally {
+            removePasswordBtn.disabled = false;
+        }
+    }
+
+    /**
+     * Builds one list row for a user: name, details, Special toggle (or Admin chip), and Password button.
      *
      * @param {Object} user
      * @returns {HTMLLIElement}
@@ -136,12 +302,15 @@ const APP_VERSION = "1.0";
         info.appendChild(meta);
         row.appendChild(info);
 
+        const actions = document.createElement('div');
+        actions.className = 'user-actions';
+
         if (user.groups.indexOf('admin') !== -1) {
             // Admins already have Special access, so they get a chip instead of a toggle
             const chip = document.createElement('span');
             chip.className = 'admin-chip';
             chip.textContent = 'Admin';
-            row.appendChild(chip);
+            actions.appendChild(chip);
         } else {
             const isSpecial = user.groups.indexOf('special') !== -1;
             const toggle = document.createElement('button');
@@ -151,8 +320,30 @@ const APP_VERSION = "1.0";
             toggle.setAttribute('aria-checked', String(isSpecial));
             toggle.setAttribute('aria-label', 'Special access for ' + user.username);
             toggle.addEventListener('click', () => toggleSpecial(user, toggle));
-            row.appendChild(toggle);
+            actions.appendChild(toggle);
         }
+
+        // Button to open password reset and removal options
+        const pwdBtn = document.createElement('button');
+        pwdBtn.type = 'button';
+        pwdBtn.className = 'btn-pwd';
+        pwdBtn.setAttribute('aria-label', 'Manage password for ' + user.username);
+        pwdBtn.title = 'Reset or remove password';
+
+        const pwdIcon = document.createElement('span');
+        pwdIcon.className = 'btn-pwd-icon';
+        pwdIcon.textContent = '🔑';
+
+        const pwdText = document.createElement('span');
+        pwdText.className = 'btn-pwd-text';
+        pwdText.textContent = 'Password';
+
+        pwdBtn.appendChild(pwdIcon);
+        pwdBtn.appendChild(pwdText);
+        pwdBtn.addEventListener('click', () => openPasswordModal(user));
+        actions.appendChild(pwdBtn);
+
+        row.appendChild(actions);
 
         return row;
     }
@@ -236,6 +427,25 @@ const APP_VERSION = "1.0";
         }
         loadUsers();
     }
+
+    // Modal dialog event listeners
+    modalCloseBtn.addEventListener('click', closePasswordModal);
+    passwordModal.addEventListener('click', (e) => {
+        if (e.target === passwordModal) {
+            closePasswordModal();
+        }
+    });
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !passwordModal.hidden) {
+            closePasswordModal();
+        }
+    });
+    generatePasswordBtn.addEventListener('click', () => {
+        adminNewPassword.value = generateRandomPassword();
+        adminNewPassword.focus();
+    });
+    resetPasswordForm.addEventListener('submit', submitResetPassword);
+    removePasswordBtn.addEventListener('click', handleRemovePassword);
 
     searchInput.addEventListener('input', renderList);
     init();

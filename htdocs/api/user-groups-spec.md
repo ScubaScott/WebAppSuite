@@ -110,10 +110,14 @@ Same header/CORS/OPTIONS/DB-unavailable boilerplate as `profile.php`.
 | `list_users` | GET | — | `{ success, users:[{ id, username, hasPassword, createdAt, lastLogin, groups:[slugs] }] }`, sorted by username. `groups` are the **stored** rows (plus `general`), so the admin sees raw membership. |
 | `grant` | POST JSON | `{ userId, group }` | `INSERT IGNORE` with `granted_by` = admin's id. Returns `{ success, user }` (the updated user record). |
 | `revoke` | POST JSON | `{ userId, group }` | `DELETE` the row. Returns `{ success, user }`. |
+| `reset_password` | POST JSON | `{ userId, newPassword }` | Updates user's `password_hash` with bcrypt/default hash, purges old sessions for target user. Returns `{ success, user }`. |
+| `remove_password` | POST JSON | `{ userId }` | Sets `password_hash = NULL`, purges active sessions. Refuses if admin is targeting their own id. Returns `{ success, user }`. |
 
 **Validation:**
 - `group` must be exactly `special`. Anything else → 400 `'Only the Special group can be managed here.'` (prevents granting or revoking Admin, including revoking your own).
 - `userId` must be a positive int that exists → else 404.
+- `newPassword` on `reset_password` must be >= 3 characters.
+- `remove_password` on own admin account is forbidden → 400.
 - Body limit 256 KB, matching `profile.php`.
 
 ---

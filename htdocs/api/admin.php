@@ -1,9 +1,9 @@
 <?php
 // WebAppSuite Admin API
-// Lets Admin-group users list profiles and grant or revoke Special group membership.
+// Lets Admin-group users list profiles, manage Special group membership, and reset or remove user passwords.
 
 // API endpoint version identifier
-$ADMIN_API_VERSION = '1.0';
+$ADMIN_API_VERSION = '1.1';
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
@@ -170,6 +170,64 @@ if ($action === 'grant' || $action === 'revoke') {
                                WHERE ug.user_id = ? AND g.slug = ?');
         $stmt->execute([$userId, $group]);
     }
+
+    echo json_encode(['success' => true, 'user' => adminLoadUser($pdo, $userId)]);
+    exit;
+}
+
+// 3. Reset a user's password
+if ($action === 'reset_password') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        adminFail(405, 'POST required.');
+    }
+
+    $userId = isset($payload['userId']) ? (int)$payload['userId'] : 0;
+    $newPassword = isset($payload['newPassword']) ? trim((string)$payload['newPassword']) : '';
+
+    if ($userId <= 0 || !adminLoadUser($pdo, $userId)) {
+        adminFail(404, 'User not found.');
+    }
+    if (empty($newPassword) || strlen($newPassword) < 3) {
+        adminFail(400, 'Password must be at least 3 characters.');
+    }
+
+    $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare('UPDATE suite_users SET password_hash = ? WHERE id = ?');
+    $stmt->execute([$newHash, $userId]);
+
+    // Invalidate active sessions so the user must sign in using the new password
+    if ($userId !== (int)$admin['id']) {
+        $stmtSessions = $pdo->prepare('DELETE FROM suite_sessions WHERE user_id = ?');
+        $stmtSessions->execute([$userId]);
+    }
+
+    echo json_encode(['success' => true, 'user' => adminLoadUser($pdo, $userId)]);
+    exit;
+}
+
+// 4. Remove password protection from a user profile
+if ($action === 'remove_password') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        adminFail(405, 'POST required.');
+    }
+
+    $userId = isset($payload['userId']) ? (int)$payload['userId'] : 0;
+
+    if ($userId <= 0 || !adminLoadUser($pdo, $userId)) {
+        adminFail(404, 'User not found.');
+    }
+
+    // Protect the authenticated admin from removing their own password and locking themselves out
+    if ($userId === (int)$admin['id']) {
+        adminFail(400, 'You cannot remove the password from your own admin account.');
+    }
+
+    $stmt = $pdo->prepare('UPDATE suite_users SET password_hash = NULL WHERE id = ?');
+    $stmt->execute([$userId]);
+
+    // Invalidate active sessions
+    $stmtSessions = $pdo->prepare('DELETE FROM suite_sessions WHERE user_id = ?');
+    $stmtSessions->execute([$userId]);
 
     echo json_encode(['success' => true, 'user' => adminLoadUser($pdo, $userId)]);
     exit;
