@@ -31,6 +31,13 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Pass Authorization header to PHP environment in FastCGI/CGI setups
+    <IfModule mod_authz_core.c>
+        CGIPassAuth On
+    </IfModule>
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     # Route Bingo API endpoints
     RewriteRule ^api/health/?$ api/bingo.php?endpoint=health [QSA,L]
     RewriteRule ^api/cards/?$ api/bingo.php?endpoint=cards [QSA,L]

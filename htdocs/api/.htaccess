@@ -2,6 +2,13 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Pass Authorization header to PHP environment in FastCGI/CGI setups
+    <IfModule mod_authz_core.c>
+        CGIPassAuth On
+    </IfModule>
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     # Don't rewrite existing physical files
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]

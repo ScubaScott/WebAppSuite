@@ -3,7 +3,7 @@
 // Provides session token extraction and validation against suite_sessions.
 
 // Endpoint version identifier
-$AUTH_VERSION = '1.1';
+$AUTH_VERSION = '1.2';
 
 /**
  * Extracts bearer or session token from JSON payload, query parameters, POST body, or HTTP Authorization headers.
@@ -22,18 +22,36 @@ function getAuthToken($payload = null) {
     if (!empty($_POST['token'])) {
         return trim($_POST['token']);
     }
-    if (!empty($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
-        return $matches[1];
+    if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+            return $matches[1];
+        }
+        $rawHeader = trim($_SERVER['HTTP_AUTHORIZATION']);
+        if (preg_match('/^[a-f0-9]{32,64}$/i', $rawHeader)) {
+            return $rawHeader;
+        }
     }
-    if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(\S+)/i', $_SERVER['REDIRECT_HTTP_AUTHORIZATION'], $matches)) {
-        return $matches[1];
+    if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['REDIRECT_HTTP_AUTHORIZATION'], $matches)) {
+            return $matches[1];
+        }
+        $rawHeader = trim($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+        if (preg_match('/^[a-f0-9]{32,64}$/i', $rawHeader)) {
+            return $rawHeader;
+        }
     }
     if (function_exists('getallheaders')) {
         $headers = getallheaders();
         if (is_array($headers)) {
             foreach ($headers as $key => $val) {
-                if (strcasecmp($key, 'Authorization') === 0 && preg_match('/Bearer\s+(\S+)/i', $val, $matches)) {
-                    return $matches[1];
+                if (strcasecmp($key, 'Authorization') === 0) {
+                    if (preg_match('/Bearer\s+(\S+)/i', $val, $matches)) {
+                        return $matches[1];
+                    }
+                    $rawHeader = trim($val);
+                    if (preg_match('/^[a-f0-9]{32,64}$/i', $rawHeader)) {
+                        return $rawHeader;
+                    }
                 }
             }
         }

@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../style.css">
 
     <style>
-        /* Card editor page layout — version 1.3 */
+        /* Card editor page layout — version 1.5 */
         body {
             padding: 16px 16px 48px;
             display: flex;
@@ -1256,15 +1256,7 @@
         </div>
     </div>
 
-    <!-- Footer: page version -->
-    <footer class="app-footer">
-        <p>Card Editor v<span id="editorVersion">1.4</span></p>
-    </footer>
-
     <script>
-        // Card editor page version identifier
-        const SCAN_VERSION = '1.4';
-        document.getElementById('editorVersion').textContent = SCAN_VERSION;
 
         // ============================================================
         // BINGO COLUMN CONSTANTS
@@ -1658,6 +1650,9 @@
         // CARD EDITOR — load from server tab
         // ============================================================
 
+        let currentServerCards = [];
+        let currentServerFromCache = false;
+
         function formatRelativeTime(timestamp) {
             if (!timestamp) return 'recently';
             const diff = Math.floor((Date.now() - timestamp) / 1000);
@@ -1665,6 +1660,37 @@
             if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
             if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
             return `${Math.floor(diff / 86400)}d ago`;
+        }
+
+        function sortAndRenderServerCards(cards, isCached) {
+            const container = document.getElementById('serverCardsList');
+            if (!container) return;
+
+            // Sort: favorites always first, then by favoritedAt desc, then by updatedAt desc
+            cards.sort((a, b) => {
+                const aFav = !!a.isFavorite;
+                const bFav = !!b.isFavorite;
+                if (aFav && !bFav) return -1;
+                if (!aFav && bFav) return 1;
+
+                if (aFav && bFav) {
+                    const timeA = a.favoritedAt ? new Date(a.favoritedAt).getTime() : 0;
+                    const timeB = b.favoritedAt ? new Date(b.favoritedAt).getTime() : 0;
+                    if (timeA !== timeB) return timeB - timeA;
+                }
+
+                const updatedA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                const updatedB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+                return updatedB - updatedA;
+            });
+
+            container.innerHTML = '';
+            if (!Array.isArray(cards) || cards.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-subtle); font-size:14px; padding:20px 0;">No cards saved in library yet.<br>Save a card using the "Save to Server" button on the Manual Entry tab.</p>';
+                return;
+            }
+
+            cards.forEach(savedCard => container.appendChild(renderServerCardItem(savedCard, isCached)));
         }
 
         async function loadServerCards() {
@@ -1677,6 +1703,8 @@
             try {
                 const res = await BingoSync.loadCardLibrary();
                 serverCardsLoaded = true;
+                currentServerFromCache = !!res.fromCache;
+                currentServerCards = Array.isArray(res.cards) ? [...res.cards] : [];
 
                 if (badgeWrap) {
                     if (res.fromCache) {
@@ -1687,21 +1715,7 @@
                     }
                 }
 
-                const savedCards = res.cards || [];
-                if (!Array.isArray(savedCards) || savedCards.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:var(--text-subtle); font-size:14px; padding:20px 0;">No cards saved in library yet.<br>Save a card using the "Save to Server" button on the Manual Entry tab.</p>';
-                    return;
-                }
-
-                // Sort: favorites first, then by updatedAt desc
-                savedCards.sort((a, b) => {
-                    if (a.isFavorite && !b.isFavorite) return -1;
-                    if (!a.isFavorite && b.isFavorite) return 1;
-                    return (new Date(b.updatedAt || 0)) - (new Date(a.updatedAt || 0));
-                });
-
-                container.innerHTML = '';
-                savedCards.forEach(savedCard => container.appendChild(renderServerCardItem(savedCard, res.fromCache)));
+                sortAndRenderServerCards(currentServerCards, currentServerFromCache);
             } catch (err) {
                 container.innerHTML = '<p style="text-align:center; color:#d93025; font-size:14px; padding:20px 0;">Could not load card library.</p>';
                 serverCardsLoaded = false;
@@ -1755,14 +1769,18 @@
                 favBtn.onclick = async () => {
                     try {
                         favBtn.disabled = true;
-                        await BingoSync.toggleFavorite(savedCard.id, !savedCard.isFavorite);
-                        savedCard.isFavorite = !savedCard.isFavorite;
-                        favBtn.className = 'favorite-star-btn' + (savedCard.isFavorite ? ' favorited' : '');
-                        favBtn.innerHTML = savedCard.isFavorite ? '★' : '☆';
-                        favBtn.title = savedCard.isFavorite ? 'Remove from favorites' : 'Add to favorites';
+                        const nextFav = !savedCard.isFavorite;
+                        await BingoSync.toggleFavorite(savedCard.id, nextFav);
+                        savedCard.isFavorite = nextFav;
+                        if (nextFav) {
+                            savedCard.favoritedAt = new Date().toISOString();
+                        } else {
+                            delete savedCard.favoritedAt;
+                        }
+                        // Re-sort and render immediately so favorited cards float to the top
+                        sortAndRenderServerCards(currentServerCards, currentServerFromCache);
                     } catch (err) {
                         alert(err.message);
-                    } finally {
                         favBtn.disabled = false;
                     }
                 };
@@ -1794,7 +1812,9 @@
             deleteBtn.onclick = () => {
                 if (!confirm(`Delete "${savedCard.label || savedCard.name}" from library?`)) return;
                 BingoSync.queueCardDelete(savedCard.id);
-                item.remove();
+                const idx = currentServerCards.findIndex(c => String(c.id) === String(savedCard.id));
+                if (idx !== -1) currentServerCards.splice(idx, 1);
+                sortAndRenderServerCards(currentServerCards, currentServerFromCache);
             };
 
             actions.appendChild(loadBtn);
@@ -2234,12 +2254,25 @@
         if (ocrBtn) ocrBtn.onclick = doOCR;
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '1.4';
+        const SCAN_PAGE_VERSION = '1.5';
         const APP_VERSION = SCAN_PAGE_VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;
 
+        if (window.SuiteProfile) {
+            SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+        }
+
         initCardState();
+
+        // Listen for profile changes to refresh user-specific card library
+        window.addEventListener('suite-profile-changed', () => {
+            serverCardsLoaded = false;
+            const serverPanel = document.querySelector('.editor-panel[data-panel="server"]');
+            if (serverPanel && !serverPanel.classList.contains('hidden')) {
+                loadServerCards();
+            }
+        });
 
         // Initialize sync badge in header
         const syncBadgeWrap = document.getElementById('scanSyncBadgeWrap');
@@ -2249,8 +2282,8 @@
         }
     </script>
 
-    <footer style="margin-top: 32px; text-align: center; font-size: 0.75rem; color: var(--text-subtle);">
-        <p>Version <span id="appVersion">1.4</span></p>
+    <footer class="app-footer">
+        <p>Version <span id="appVersion">1.5</span></p>
     </footer>
 </body>
 

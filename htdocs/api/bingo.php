@@ -3,7 +3,7 @@
 // Provides endpoints for health check, cards CRUD, favorites, and games CRUD.
 
 // API endpoint version identifier
-$BINGO_API_VERSION = '1.1';
+$BINGO_API_VERSION = '1.2';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -80,13 +80,12 @@ if ($endpoint === 'cards') {
 
     // GET /api/cards - list all active cards in the global library
     if ($method === 'GET') {
-        $userId = isset($_GET['userId']) ? trim($_GET['userId']) : '';
-        if (empty($userId)) {
-            $token = getAuthToken();
-            $user = authenticateUser($pdo, $token);
-            if ($user) {
-                $userId = $user['username'];
-            }
+        $token = getAuthToken();
+        $user = !empty($token) ? authenticateUser($pdo, $token) : null;
+        if ($user) {
+            $userId = $user['username'];
+        } else {
+            $userId = isset($_GET['userId']) ? trim($_GET['userId']) : '';
         }
 
         if (!empty($userId)) {
@@ -125,7 +124,8 @@ if ($endpoint === 'cards') {
                 'createdBy'  => $row['created_by'],
                 'createdAt'  => gmdate('c', strtotime($row['created_at'])),
                 'updatedAt'  => gmdate('c', strtotime($row['updated_at'])),
-                'isFavorite' => !empty($row['is_favorite'])
+                'isFavorite' => !empty($row['is_favorite']),
+                'favoritedAt'=> !empty($row['favorited_at']) ? gmdate('c', strtotime($row['favorited_at'])) : null
             ];
         }
 
@@ -250,7 +250,8 @@ if ($endpoint === 'favorites') {
     }
 
     // Authentication is required for favorites
-    $token = getAuthToken();
+    $body = getJsonPayload();
+    $token = getAuthToken($body);
     $user = authenticateUser($pdo, $token);
     if (!$user) {
         http_response_code(401);
@@ -264,7 +265,7 @@ if ($endpoint === 'favorites') {
     if ($method === 'PUT' || $method === 'POST') {
         $stmt = $pdo->prepare('INSERT INTO bingo_card_favorites (user_id, card_id, favorited_at)
                                VALUES (?, ?, NOW())
-                               ON DUPLICATE KEY UPDATE favorited_at = favorited_at');
+                               ON DUPLICATE KEY UPDATE favorited_at = NOW()');
         $stmt->execute([$userId, $cardId]);
 
         echo json_encode(['success' => true, 'cardId' => $cardId, 'isFavorite' => true]);
@@ -275,12 +276,6 @@ if ($endpoint === 'favorites') {
     if ($method === 'DELETE') {
         $stmt = $pdo->prepare('DELETE FROM bingo_card_favorites WHERE user_id = ? AND card_id = ?');
         $stmt->execute([$userId, $cardId]);
-
-        if ($stmt->rowCount() === 0) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Favorite not found']);
-            exit;
-        }
 
         http_response_code(204);
         exit;
@@ -486,6 +481,18 @@ function ensureBingoTablesInitialized($pdo) {
             if (file_exists($schemaFile)) {
                 $pdo->exec(file_get_contents($schemaFile));
             }
+        }
+
+        // Verify bingo_card_favorites table exists
+        $favTest = $pdo->query("SHOW TABLES LIKE 'bingo_card_favorites'")->fetch();
+        if (!$favTest) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `bingo_card_favorites` (
+                `user_id` VARCHAR(100) NOT NULL,
+                `card_id` VARCHAR(36) NOT NULL,
+                `favorited_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`user_id`, `card_id`),
+                INDEX `idx_bingo_favorites_user` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
         }
 
         // Migrate legacy JSON files if tables are empty

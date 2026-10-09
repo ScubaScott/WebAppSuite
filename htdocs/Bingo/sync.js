@@ -2,7 +2,7 @@
 // Implements the client sync state machine, outbox queue, local caching, and health reachability.
 
 // Sync library version identifier
-const BINGO_SYNC_VERSION = '1.0';
+const BINGO_SYNC_VERSION = '1.1';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -67,6 +67,19 @@ const BINGO_SYNC_VERSION = '1.0';
     }
 
     /**
+     * Retrieves active session token if SuiteProfile is logged in.
+     */
+    function getAuthToken() {
+        try {
+            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
+                const user = SuiteProfile.getUser();
+                return (user && user.token) ? user.token : null;
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    /**
      * Retrieves authenticated SuiteProfile user ID or username.
      */
     function getAuthUserId() {
@@ -77,6 +90,19 @@ const BINGO_SYNC_VERSION = '1.0';
             }
         } catch (e) {}
         return null;
+    }
+
+    /**
+     * Scopes card cache storage key per user so each user has their own favorites and library view.
+     */
+    function getCardsCacheKey() {
+        const userId = getAuthUserId();
+        return STORAGE_KEYS.CARDS_CACHE + (userId ? ('_' + userId) : '_guest');
+    }
+
+    function getCardsMetaKey() {
+        const userId = getAuthUserId();
+        return STORAGE_KEYS.CACHE_META + '_cards' + (userId ? ('_' + userId) : '_guest');
     }
 
     /**
@@ -269,10 +295,12 @@ const BINGO_SYNC_VERSION = '1.0';
             try {
                 let success = false;
                 let status = 0;
+                const token = getAuthToken();
+                const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
 
                 if (entry.entityType === 'card') {
                     if (entry.operation === 'upsert') {
-                        const res = await fetch(resolveApiUrl(`api/cards/${encodeURIComponent(entry.entityId)}`), {
+                        const res = await fetch(resolveApiUrl(`api/cards/${encodeURIComponent(entry.entityId)}${tokenParam}`), {
                             method: 'PUT',
                             headers: getAuthHeaders(),
                             body: JSON.stringify(entry.payload)
@@ -280,7 +308,7 @@ const BINGO_SYNC_VERSION = '1.0';
                         status = res.status;
                         success = res.ok;
                     } else if (entry.operation === 'delete') {
-                        const res = await fetch(resolveApiUrl(`api/cards/${encodeURIComponent(entry.entityId)}`), {
+                        const res = await fetch(resolveApiUrl(`api/cards/${encodeURIComponent(entry.entityId)}${tokenParam}`), {
                             method: 'DELETE',
                             headers: getAuthHeaders()
                         });
@@ -290,7 +318,7 @@ const BINGO_SYNC_VERSION = '1.0';
                     }
                 } else if (entry.entityType === 'game') {
                     if (entry.operation === 'upsert') {
-                        const res = await fetch(resolveApiUrl(`api/games/${encodeURIComponent(entry.entityId)}`), {
+                        const res = await fetch(resolveApiUrl(`api/games/${encodeURIComponent(entry.entityId)}${tokenParam}`), {
                             method: 'PUT',
                             headers: getAuthHeaders(),
                             body: JSON.stringify(entry.payload)
@@ -298,7 +326,7 @@ const BINGO_SYNC_VERSION = '1.0';
                         status = res.status;
                         success = res.ok;
                     } else if (entry.operation === 'delete') {
-                        const res = await fetch(resolveApiUrl(`api/games/${encodeURIComponent(entry.entityId)}`), {
+                        const res = await fetch(resolveApiUrl(`api/games/${encodeURIComponent(entry.entityId)}${tokenParam}`), {
                             method: 'DELETE',
                             headers: getAuthHeaders()
                         });
@@ -375,7 +403,12 @@ const BINGO_SYNC_VERSION = '1.0';
      */
     async function loadCardLibrary() {
         const userId = getAuthUserId();
-        const url = resolveApiUrl(`api/cards${userId ? `?userId=${encodeURIComponent(userId)}` : ''}`);
+        const token = getAuthToken();
+        const params = new URLSearchParams();
+        if (userId) params.set('userId', userId);
+        if (token) params.set('token', token);
+        const qs = params.toString() ? `?${params.toString()}` : '';
+        const url = resolveApiUrl(`api/cards${qs}`);
 
         if (navigator.onLine) {
             try {
@@ -383,8 +416,8 @@ const BINGO_SYNC_VERSION = '1.0';
                 if (res.ok) {
                     const cards = await res.json();
                     if (Array.isArray(cards)) {
-                        localStorage.setItem(STORAGE_KEYS.CARDS_CACHE, JSON.stringify(cards));
-                        localStorage.setItem(STORAGE_KEYS.CACHE_META + '_cards', String(Date.now()));
+                        localStorage.setItem(getCardsCacheKey(), JSON.stringify(cards));
+                        localStorage.setItem(getCardsMetaKey(), String(Date.now()));
                         return { cards, fromCache: false, lastUpdated: Date.now() };
                     }
                 }
@@ -393,10 +426,10 @@ const BINGO_SYNC_VERSION = '1.0';
             }
         }
 
-        // Offline or fetch failed: load from cache
+        // Offline or fetch failed: load from per-user cache
         try {
-            const cachedRaw = localStorage.getItem(STORAGE_KEYS.CARDS_CACHE);
-            const cachedTime = parseInt(localStorage.getItem(STORAGE_KEYS.CACHE_META + '_cards') || '0', 10);
+            const cachedRaw = localStorage.getItem(getCardsCacheKey());
+            const cachedTime = parseInt(localStorage.getItem(getCardsMetaKey()) || '0', 10);
             const cards = cachedRaw ? JSON.parse(cachedRaw) : [];
             return { cards, fromCache: true, lastUpdated: cachedTime };
         } catch (e) {
@@ -417,27 +450,40 @@ const BINGO_SYNC_VERSION = '1.0';
             throw new Error('Server is unreachable. Please try again when connection is restored.');
         }
 
-        const url = resolveApiUrl(`api/favorites/${encodeURIComponent(cardId)}`);
+        const token = getAuthToken();
+        const params = new URLSearchParams();
+        if (token) params.set('token', token);
+        const qs = params.toString() ? `?${params.toString()}` : '';
+        const url = resolveApiUrl(`api/favorites/${encodeURIComponent(cardId)}${qs}`);
         const method = shouldFavorite ? 'PUT' : 'DELETE';
-        const res = await fetch(url, {
+        const options = {
             method,
             headers: getAuthHeaders()
-        });
+        };
+        if (method !== 'DELETE') {
+            options.body = JSON.stringify({ token });
+        }
+        const res = await fetch(url, options);
 
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             throw new Error(data.error || `Failed to update favorite (HTTP ${res.status})`);
         }
 
-        // Update local card cache
+        // Update local per-user card cache
         try {
-            const cachedRaw = localStorage.getItem(STORAGE_KEYS.CARDS_CACHE);
+            const cachedRaw = localStorage.getItem(getCardsCacheKey());
             if (cachedRaw) {
                 const cards = JSON.parse(cachedRaw);
                 const target = cards.find(c => String(c.id) === String(cardId));
                 if (target) {
                     target.isFavorite = !!shouldFavorite;
-                    localStorage.setItem(STORAGE_KEYS.CARDS_CACHE, JSON.stringify(cards));
+                    if (shouldFavorite) {
+                        target.favoritedAt = new Date().toISOString();
+                    } else {
+                        delete target.favoritedAt;
+                    }
+                    localStorage.setItem(getCardsCacheKey(), JSON.stringify(cards));
                 }
             }
         } catch (e) {}
