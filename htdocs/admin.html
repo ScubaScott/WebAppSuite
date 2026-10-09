@@ -36,7 +36,9 @@
 
         <!-- User management list, shown only to Admin users -->
         <section id="userPanel" class="content-card" hidden>
-            <h2>User Management</h2>
+            <div class="panel-header-row">
+                <h2>User Management <span id="userCountBadge" class="count-badge">0</span></h2>
+            </div>
             <p class="panel-hint">Turn on <strong>Special</strong> to grant access to restricted apps. Use <strong>🔑 Password</strong> to reset or remove a user's password.</p>
 
             <label class="search-label" for="userSearch">Search users</label>
@@ -44,11 +46,143 @@
 
             <ul id="userList" class="user-list" aria-live="polite"></ul>
             <p id="emptyText" class="empty-text" hidden>No users match your search.</p>
+
+            <!-- User Pagination Controls (limits visible users at once to 10) -->
+            <div id="userPagination" class="pagination-container" hidden>
+                <button type="button" id="prevPageBtn" class="pagination-btn" aria-label="Previous page of users">&larr; Previous</button>
+                <span id="pageInfo" class="pagination-info" aria-live="polite">Page 1 of 1</span>
+                <button type="button" id="nextPageBtn" class="pagination-btn" aria-label="Next page of users">Next &rarr;</button>
+            </div>
+        </section>
+
+        <!-- Suite & Database Statistics, shown under user controls -->
+        <section id="statsPanel" class="content-card stats-panel" hidden>
+            <div class="stats-header">
+                <div>
+                    <h2>Suite &amp; Database Statistics</h2>
+                    <p class="panel-hint">Live system metrics, database entity counts, and resource utilization.</p>
+                </div>
+                <button type="button" id="refreshStatsBtn" class="btn-refresh-stats" aria-label="Refresh Statistics" title="Refresh Statistics">
+                    <span class="refresh-icon" aria-hidden="true">&#x21bb;</span>
+                    <span class="refresh-label">Refresh</span>
+                </button>
+            </div>
+
+            <!-- Loading indicator for stats -->
+            <div id="statsLoading" class="stats-loading">
+                <span class="spinner" aria-hidden="true"></span>
+                <span>Loading statistics...</span>
+            </div>
+
+            <!-- Stats dashboard grid layout -->
+            <div id="statsGrid" class="stats-grid" hidden>
+                <!-- Card: Total Users -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper user-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x1f465;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Users</span>
+                        <span id="statTotalUsers" class="stat-value">0</span>
+                        <span id="statUsersSub" class="stat-subtext">0 active (30d) &bull; 0 protected</span>
+                    </div>
+                </div>
+
+                <!-- Card: Active Sessions / Devices (Unique logged-in devices) -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper session-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x1f4f1;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Active Sessions</span>
+                        <span id="statActiveSessions" class="stat-value">0</span>
+                        <span id="statSessionsSub" class="stat-subtext">Active logged-in devices</span>
+                    </div>
+                </div>
+
+                <!-- Card: Scoreboard Games -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper scoreboard-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x1f3c6;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">ScoreBoard Games</span>
+                        <span id="statScoreboardGames" class="stat-value">0</span>
+                        <span id="statScoreboardSub" class="stat-subtext">0 live &bull; 0 final</span>
+                    </div>
+                </div>
+
+                <!-- Card: Bingo Cards -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper card-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x1f3b2;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Bingo Cards</span>
+                        <span id="statBingoCards" class="stat-value">0</span>
+                        <span class="stat-subtext">Shared card library</span>
+                    </div>
+                </div>
+
+                <!-- Card: Bingo Game Modes (not patterns) -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper game-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x1f3af;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Bingo Games</span>
+                        <span id="statBingoGames" class="stat-value">0</span>
+                        <span class="stat-subtext">Game modes (excluding patterns)</span>
+                    </div>
+                </div>
+
+                <!-- Card: Cloud Sync Datasets -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper sync-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x2601;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Cloud Sync Stores</span>
+                        <span id="statCloudSync" class="stat-value">0</span>
+                        <span id="statCloudSyncSub" class="stat-subtext">0 distinct apps synced</span>
+                    </div>
+                </div>
+
+                <!-- Card: Database Size -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper db-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x1f5c4;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total DB Size</span>
+                        <span id="statDbSize" class="stat-value">0 KB</span>
+                        <span id="statDbSub" class="stat-subtext">Across 0 tables</span>
+                    </div>
+                </div>
+
+                <!-- Card: Elevated Access (Special & Admin) -->
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper role-theme">
+                        <span class="stat-icon" aria-hidden="true">&#x1f511;</span>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Special / Admins</span>
+                        <span id="statSpecialUsers" class="stat-value">0 / 0</span>
+                        <span class="stat-subtext">Elevated privilege users</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats error display with retry button -->
+            <div id="statsError" class="stats-error" hidden>
+                <p id="statsErrorText">Unable to load database statistics.</p>
+                <button type="button" id="retryStatsBtn" class="btn-subtle">Retry</button>
+            </div>
         </section>
     </main>
 
     <footer class="app-footer">
-        <small class="app-footer-version">v<span id="footerVersion">1.1</span></small>
+        <small class="app-footer-version">v<span id="footerVersion">1.2</span></small>
     </footer>
 
     <!-- Feedback toast for failed or completed changes -->

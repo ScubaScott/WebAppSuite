@@ -3,7 +3,7 @@
 // Lets Admin-group users list profiles, manage Special group membership, and reset or remove user passwords.
 
 // API endpoint version identifier
-$ADMIN_API_VERSION = '1.1';
+$ADMIN_API_VERSION = '1.2';
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
@@ -56,6 +56,24 @@ function adminReadPayload() {
         adminFail(413, 'Request body exceeds 256 KB limit.');
     }
     return json_decode($rawInput, true) ?: [];
+}
+
+/**
+ * Formats a raw byte count into human-readable string (KB, MB, GB).
+ *
+ * @param float|int $bytes Raw bytes to convert
+ * @param int $precision Decimal precision for output
+ * @return string Formatted byte measurement
+ */
+function adminFormatBytes($bytes, $precision = 2) {
+    if ($bytes <= 0) {
+        return '0 B';
+    }
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $pow = (int)floor(log($bytes, 1024));
+    $pow = max(0, min($pow, count($units) - 1));
+    $val = $bytes / pow(1024, $pow);
+    return round($val, $precision) . ' ' . $units[$pow];
 }
 
 /**
@@ -230,6 +248,137 @@ if ($action === 'remove_password') {
     $stmtSessions->execute([$userId]);
 
     echo json_encode(['success' => true, 'user' => adminLoadUser($pdo, $userId)]);
+    exit;
+}
+
+// 5. System and database statistics
+if ($action === 'stats') {
+    $stats = [];
+
+    // Query user metrics: total accounts, password protected accounts, and active logins in last 30 days
+    $userStats = [
+        'total' => 0,
+        'passwordProtected' => 0,
+        'active30d' => 0,
+        'special' => 0,
+        'admin' => 0
+    ];
+    try {
+        $stmtUsers = $pdo->query('SELECT 
+            COUNT(*) AS total_users,
+            SUM(CASE WHEN password_hash IS NOT NULL AND password_hash != \'\' THEN 1 ELSE 0 END) AS password_users,
+            SUM(CASE WHEN last_login >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS active_users_30d
+            FROM suite_users');
+        if ($userRow = $stmtUsers->fetch(PDO::FETCH_ASSOC)) {
+            $userStats['total'] = (int)($userRow['total_users'] ?? 0);
+            $userStats['passwordProtected'] = (int)($userRow['password_users'] ?? 0);
+            $userStats['active30d'] = (int)($userRow['active_users_30d'] ?? 0);
+        }
+    } catch (PDOException $e) {
+        // Fallback default user values when table is unavailable
+    }
+
+    // Query user group membership counts for Special and Admin tiers
+    try {
+        $stmtGroups = $pdo->query('SELECT g.slug, COUNT(DISTINCT ug.user_id) AS user_count
+            FROM suite_user_groups ug
+            JOIN suite_groups g ON g.id = ug.group_id
+            WHERE g.slug IN (\'special\', \'admin\')
+            GROUP BY g.slug');
+        while ($groupRow = $stmtGroups->fetch(PDO::FETCH_ASSOC)) {
+            if ($groupRow['slug'] === 'special') {
+                $userStats['special'] = (int)$groupRow['user_count'];
+            } elseif ($groupRow['slug'] === 'admin') {
+                $userStats['admin'] = (int)$groupRow['user_count'];
+            }
+        }
+    } catch (PDOException $e) {
+        // Fallback default group values
+    }
+    $stats['users'] = $userStats;
+
+    // Query active non-expired session tokens representing unique logged-in devices
+    $activeSessions = 0;
+    try {
+        $stmtSessions = $pdo->query('SELECT COUNT(*) FROM suite_sessions WHERE expires_at > UTC_TIMESTAMP()');
+        $activeSessions = (int)($stmtSessions->fetchColumn() ?: 0);
+    } catch (PDOException $e) {
+        // Fallback session count
+    }
+    $stats['sessions'] = [
+        'active' => $activeSessions
+    ];
+
+    // Query ScoreBoard game records: overall count, live matches, and finalized archives
+    $scoreboardStats = ['total' => 0, 'live' => 0, 'final' => 0];
+    try {
+        $stmtSb = $pdo->query('SELECT 
+            COUNT(*) AS total_games,
+            SUM(CASE WHEN status = \'live\' THEN 1 ELSE 0 END) AS live_games,
+            SUM(CASE WHEN status = \'final\' THEN 1 ELSE 0 END) AS final_games
+            FROM scoreboard_games');
+        if ($sbRow = $stmtSb->fetch(PDO::FETCH_ASSOC)) {
+            $scoreboardStats['total'] = (int)($sbRow['total_games'] ?? 0);
+            $scoreboardStats['live'] = (int)($sbRow['live_games'] ?? 0);
+            $scoreboardStats['final'] = (int)($sbRow['final_games'] ?? 0);
+        }
+    } catch (PDOException $e) {
+        // Fallback when table is absent or empty
+    }
+    $stats['scoreboard'] = $scoreboardStats;
+
+    // Query Bingo records: active shared cards and game mode templates (excluding win patterns)
+    $bingoStats = ['cards' => 0, 'games' => 0];
+    try {
+        $stmtCards = $pdo->query('SELECT COUNT(*) FROM bingo_cards WHERE deleted_at IS NULL');
+        $bingoStats['cards'] = (int)($stmtCards->fetchColumn() ?: 0);
+    } catch (PDOException $e) {
+        // Fallback when table is absent
+    }
+    try {
+        $stmtGames = $pdo->query('SELECT COUNT(*) FROM bingo_games WHERE deleted_at IS NULL');
+        $bingoStats['games'] = (int)($stmtGames->fetchColumn() ?: 0);
+    } catch (PDOException $e) {
+        // Fallback when table is absent
+    }
+    $stats['bingo'] = $bingoStats;
+
+    // Query User App Data sync stores: total key-value JSON records and distinct applications synced
+    $userDataStats = ['totalRecords' => 0, 'syncedApps' => 0];
+    try {
+        $stmtData = $pdo->query('SELECT COUNT(*) AS total_records, COUNT(DISTINCT app_id) AS distinct_apps FROM suite_user_data');
+        if ($dataRow = $stmtData->fetch(PDO::FETCH_ASSOC)) {
+            $userDataStats['totalRecords'] = (int)($dataRow['total_records'] ?? 0);
+            $userDataStats['syncedApps'] = (int)($dataRow['distinct_apps'] ?? 0);
+        }
+    } catch (PDOException $e) {
+        // Fallback when table is absent
+    }
+    $stats['userData'] = $userDataStats;
+
+    // Query total database storage size and table count from information_schema
+    $databaseStats = ['sizeBytes' => 0, 'sizeFormatted' => '0 B', 'tableCount' => 0];
+    try {
+        $stmtDb = $pdo->query('SELECT 
+            SUM(data_length + index_length) AS size_bytes,
+            COUNT(*) AS table_count
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE()');
+        if ($dbRow = $stmtDb->fetch(PDO::FETCH_ASSOC)) {
+            $bytes = (float)($dbRow['size_bytes'] ?? 0);
+            $databaseStats['sizeBytes'] = $bytes;
+            $databaseStats['sizeFormatted'] = adminFormatBytes($bytes);
+            $databaseStats['tableCount'] = (int)($dbRow['table_count'] ?? 0);
+        }
+    } catch (PDOException $e) {
+        // Fallback if information_schema query fails
+    }
+    $stats['database'] = $databaseStats;
+
+    echo json_encode([
+        'success' => true,
+        'stats' => $stats
+    ]);
     exit;
 }
 

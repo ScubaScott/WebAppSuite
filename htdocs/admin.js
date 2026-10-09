@@ -1,7 +1,7 @@
 // Admin page application version identifier
-const APP_VERSION = "1.1";
+const APP_VERSION = "1.2";
 
-// Admin page logic: loads all profiles from admin.php, toggles Special group membership, and manages user passwords.
+// Admin page logic: loads all profiles from admin.php, toggles Special group membership, manages user passwords, and renders system stats.
 (function () {
     const API_URL = './api/admin.php';
 
@@ -9,10 +9,41 @@ const APP_VERSION = "1.1";
     const messageTitle = document.getElementById('messageTitle');
     const messageText = document.getElementById('messageText');
     const userPanel = document.getElementById('userPanel');
+    const userCountBadge = document.getElementById('userCountBadge');
     const userList = document.getElementById('userList');
     const emptyText = document.getElementById('emptyText');
     const searchInput = document.getElementById('userSearch');
     const toastEl = document.getElementById('toast');
+
+    // Pagination elements for 10-user display limit
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+    const userPagination = document.getElementById('userPagination');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+
+    // Stats panel and metric dashboard elements
+    const statsPanel = document.getElementById('statsPanel');
+    const statsLoading = document.getElementById('statsLoading');
+    const statsGrid = document.getElementById('statsGrid');
+    const statsError = document.getElementById('statsError');
+    const statsErrorText = document.getElementById('statsErrorText');
+    const refreshStatsBtn = document.getElementById('refreshStatsBtn');
+    const retryStatsBtn = document.getElementById('retryStatsBtn');
+
+    const statTotalUsers = document.getElementById('statTotalUsers');
+    const statUsersSub = document.getElementById('statUsersSub');
+    const statActiveSessions = document.getElementById('statActiveSessions');
+    const statScoreboardGames = document.getElementById('statScoreboardGames');
+    const statScoreboardSub = document.getElementById('statScoreboardSub');
+    const statBingoCards = document.getElementById('statBingoCards');
+    const statBingoGames = document.getElementById('statBingoGames');
+    const statCloudSync = document.getElementById('statCloudSync');
+    const statCloudSyncSub = document.getElementById('statCloudSyncSub');
+    const statDbSize = document.getElementById('statDbSize');
+    const statDbSub = document.getElementById('statDbSub');
+    const statSpecialUsers = document.getElementById('statSpecialUsers');
 
     // Password management modal elements
     const passwordModal = document.getElementById('passwordModal');
@@ -55,6 +86,7 @@ const APP_VERSION = "1.1";
         messageTitle.textContent = title;
         messageText.textContent = text;
         userPanel.hidden = true;
+        statsPanel.hidden = true;
         messageCard.hidden = false;
     }
 
@@ -349,15 +381,102 @@ const APP_VERSION = "1.1";
     }
 
     /**
-     * Renders the user list, applying the current search filter.
+     * Renders the user list, applying the current search filter and pagination limit of 10 users.
      */
     function renderList() {
         const term = searchInput.value.trim().toLowerCase();
         const visible = allUsers.filter(u => u.username.toLowerCase().indexOf(term) !== -1);
 
+        userCountBadge.textContent = allUsers.length;
         userList.textContent = '';
-        visible.forEach(user => userList.appendChild(buildRow(user)));
-        emptyText.hidden = visible.length > 0;
+
+        if (visible.length === 0) {
+            emptyText.hidden = false;
+            userPagination.hidden = true;
+            return;
+        }
+
+        emptyText.hidden = true;
+
+        // Calculate pages and clamp current page index
+        const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
+
+        // Slice subset of at most 10 users for display
+        const startIndex = (currentPage - 1) * PAGE_SIZE;
+        const pageUsers = visible.slice(startIndex, startIndex + PAGE_SIZE);
+
+        pageUsers.forEach(user => userList.appendChild(buildRow(user)));
+
+        // Update pagination status and button enabled states
+        userPagination.hidden = false;
+        pageInfo.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + visible.length + ' users)';
+        prevPageBtn.disabled = currentPage <= 1;
+        nextPageBtn.disabled = currentPage >= totalPages;
+    }
+
+    /**
+     * Loads live database metrics and application statistics from the server.
+     */
+    async function loadStats() {
+        statsLoading.hidden = false;
+        statsGrid.hidden = true;
+        statsError.hidden = true;
+        refreshStatsBtn.disabled = true;
+
+        try {
+            const { status, data } = await callApi('stats', null);
+            if (!data.success || !data.stats) {
+                statsLoading.hidden = true;
+                statsError.hidden = false;
+                statsErrorText.textContent = data.error || 'Failed to retrieve statistics.';
+                return;
+            }
+
+            const s = data.stats;
+
+            // Total users and active breakdown
+            statTotalUsers.textContent = Number(s.users.total).toLocaleString();
+            statUsersSub.textContent = Number(s.users.active30d).toLocaleString() + ' active (30d) • ' + Number(s.users.passwordProtected).toLocaleString() + ' protected';
+
+            // Active sessions (logged-in devices / unique visitors)
+            statActiveSessions.textContent = Number(s.sessions.active).toLocaleString();
+
+            // Scoreboard Games count
+            statScoreboardGames.textContent = Number(s.scoreboard.total).toLocaleString();
+            statScoreboardSub.textContent = Number(s.scoreboard.live).toLocaleString() + ' live • ' + Number(s.scoreboard.final).toLocaleString() + ' final';
+
+            // Bingo Cards in library
+            statBingoCards.textContent = Number(s.bingo.cards).toLocaleString();
+
+            // Bingo Games (game modes excluding patterns)
+            statBingoGames.textContent = Number(s.bingo.games).toLocaleString();
+
+            // User App Data cloud sync records
+            statCloudSync.textContent = Number(s.userData.totalRecords).toLocaleString();
+            statCloudSyncSub.textContent = Number(s.userData.syncedApps).toLocaleString() + ' distinct apps synced';
+
+            // Database storage size and table count
+            statDbSize.textContent = s.database.sizeFormatted || '0 B';
+            statDbSub.textContent = 'Across ' + Number(s.database.tableCount).toLocaleString() + ' tables';
+
+            // Special & Admin users
+            statSpecialUsers.textContent = Number(s.users.special).toLocaleString() + ' / ' + Number(s.users.admin).toLocaleString();
+
+            statsLoading.hidden = true;
+            statsGrid.hidden = false;
+        } catch (err) {
+            statsLoading.hidden = true;
+            statsError.hidden = false;
+            statsErrorText.textContent = 'Network error while loading statistics.';
+        } finally {
+            refreshStatsBtn.disabled = false;
+        }
     }
 
     /**
@@ -387,6 +506,7 @@ const APP_VERSION = "1.1";
             if (index !== -1) allUsers[index] = data.user;
             toggle.setAttribute('aria-checked', String(turnOn));
             showToast(user.username + (turnOn ? ' added to Special' : ' removed from Special'));
+            loadStats();
         } catch (err) {
             showToast('Network error. Change was not saved.');
         } finally {
@@ -395,7 +515,7 @@ const APP_VERSION = "1.1";
     }
 
     /**
-     * Loads all users from the server and shows the management list.
+     * Loads all users from the server, reveals panels, and triggers statistics load.
      */
     async function loadUsers() {
         try {
@@ -407,7 +527,9 @@ const APP_VERSION = "1.1";
             allUsers = data.users;
             messageCard.hidden = true;
             userPanel.hidden = false;
+            statsPanel.hidden = false;
             renderList();
+            loadStats();
         } catch (err) {
             showMessage('Unable to load admin tools', 'Could not reach the server. Check your connection and try again.');
         }
@@ -447,6 +569,33 @@ const APP_VERSION = "1.1";
     resetPasswordForm.addEventListener('submit', submitResetPassword);
     removePasswordBtn.addEventListener('click', handleRemovePassword);
 
-    searchInput.addEventListener('input', renderList);
+    // Pagination navigation button listeners
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderList();
+        }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+        const term = searchInput.value.trim().toLowerCase();
+        const visible = allUsers.filter(u => u.username.toLowerCase().indexOf(term) !== -1);
+        const totalPages = Math.ceil(visible.length / PAGE_SIZE);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderList();
+        }
+    });
+
+    // Reset pagination to first page upon search filter entry
+    searchInput.addEventListener('input', () => {
+        currentPage = 1;
+        renderList();
+    });
+
+    // Statistics manual refresh and error retry handlers
+    refreshStatsBtn.addEventListener('click', loadStats);
+    retryStatsBtn.addEventListener('click', loadStats);
+
     init();
 })();
