@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '1.9';
+const SUITE_PROFILE_VERSION = '2.0';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -1064,8 +1064,36 @@ const SUITE_PROFILE_VERSION = '1.9';
         });
     }
 
-    // Auto-register service worker whenever SuiteProfile is loaded
+    /**
+     * Periodically refreshes access and validates session status when signed in.
+     * Throttles checks to once per hour/session to avoid redundant network traffic
+     * during quick navigation while ensuring daily active status is recorded.
+     */
+    function initActiveSessionHeartbeat() {
+        if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+        const checkAndRefresh = () => {
+            const user = getUser();
+            if (!user || !user.token || !navigator.onLine) return;
+
+            const lastCheck = sessionStorage.getItem('webappsuite_last_access_refresh');
+            const now = Date.now();
+            if (!lastCheck || (now - parseInt(lastCheck, 10)) > 3600000) {
+                sessionStorage.setItem('webappsuite_last_access_refresh', String(now));
+                refreshAccess();
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkAndRefresh);
+        } else {
+            checkAndRefresh();
+        }
+    }
+
+    // Auto-register service worker and check active session whenever SuiteProfile is loaded
     registerSuiteServiceWorker();
+    initActiveSessionHeartbeat();
 
     return {
         VERSION: SUITE_PROFILE_VERSION,

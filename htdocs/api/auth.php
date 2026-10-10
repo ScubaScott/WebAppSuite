@@ -3,7 +3,7 @@
 // Provides session token extraction and validation against suite_sessions.
 
 // Endpoint version identifier
-$AUTH_VERSION = '1.2';
+$AUTH_VERSION = '1.3';
 
 /**
  * Extracts bearer or session token from JSON payload, query parameters, POST body, or HTTP Authorization headers.
@@ -74,7 +74,7 @@ function authenticateUser($pdo, $token) {
 
     $tokenHash = hash('sha256', trim($token));
 
-    $sql = 'SELECT s.id AS session_id, s.user_id, s.expires_at, u.id, u.username, u.password_hash
+    $sql = 'SELECT s.id AS session_id, s.user_id, s.expires_at, u.id, u.username, u.password_hash, u.last_login
             FROM suite_sessions s
             JOIN suite_users u ON u.id = s.user_id
             WHERE s.token_hash = ?
@@ -97,6 +97,13 @@ function authenticateUser($pdo, $token) {
     // Touch last_used_at for sliding session activity
     $updateStmt = $pdo->prepare('UPDATE suite_sessions SET last_used_at = ? WHERE id = ?');
     $updateStmt->execute([$nowUtc, $session['session_id']]);
+
+    // Throttled daily activity touch on user profile (at most once per calendar day)
+    $today = gmdate('Y-m-d');
+    if (empty($session['last_login']) || substr($session['last_login'], 0, 10) !== $today) {
+        $updateUserStmt = $pdo->prepare('UPDATE suite_users SET last_login = NOW() WHERE id = ?');
+        $updateUserStmt->execute([$session['id']]);
+    }
 
     return [
         'id' => (int)$session['id'],

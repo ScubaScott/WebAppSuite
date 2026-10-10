@@ -3,7 +3,7 @@
 // Lets Admin-group users list profiles, manage Special group membership, and reset or remove user passwords.
 
 // API endpoint version identifier
-$ADMIN_API_VERSION = '1.2';
+$ADMIN_API_VERSION = '1.3';
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
@@ -117,6 +117,7 @@ function adminFormatUser($row) {
         'hasPassword' => !empty($row['password_hash']),
         'createdAt' => $row['created_at'],
         'lastLogin' => $row['last_login'],
+        'lastActive' => $row['last_login'],
         'groups' => array_values(array_unique($groups))
     ];
 }

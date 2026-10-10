@@ -1,5 +1,5 @@
 // Admin page application version identifier
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.3";
 
 // Admin page logic: loads all profiles from admin.php, toggles Special group membership, manages user passwords, and renders system stats.
 (function () {
@@ -328,7 +328,7 @@ const APP_VERSION = "1.2";
 
         const meta = document.createElement('div');
         meta.className = 'user-meta';
-        meta.textContent = 'Last login: ' + formatDate(user.lastLogin);
+        meta.textContent = 'Last active: ' + formatDate(user.lastActive || user.lastLogin);
 
         info.appendChild(name);
         info.appendChild(meta);
