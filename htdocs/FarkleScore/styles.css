@@ -17,6 +17,14 @@
   --shadow-die:   0 3px 8px rgba(0,0,0,0.22), inset 0 1px 2px rgba(255,255,255,0.9);
   --radius-card:  20px;
   --radius-die:   10px;
+
+  /* Suite header theme tokens for Farkle */
+  --hdr-bg: #2a1507;
+  --hdr-fg: #fdf3dc;
+  --hdr-muted: rgba(253, 243, 220, 0.75);
+  --hdr-accent: #b04e1a;
+  --hdr-border: rgba(255, 255, 255, 0.08);
+  --hdr-font: "Georgia", "Times New Roman", serif;
 }
 
 /* ── Reset ──────────────────────────────────────────────────────────────── */
@@ -34,13 +42,28 @@ body {
 
 /* ── Page shell ─────────────────────────────────────────────────────────── */
 .page-shell {
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
   padding: 20px 20px 40px;
   max-width: 900px;
   margin: 0 auto;
 }
 
-/* ── Top bar ────────────────────────────────────────────────────────────── */
+/* Subbar under suite header for Farkle navigation and edition label */
+.farkle-subbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--wood-dark), var(--wood-mid));
+  padding: 12px 20px;
+  border-radius: var(--radius-card);
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── Top bar (legacy fallback) ───────────────────────────────────────────── */
 .topbar {
   display: flex;
   justify-content: space-between;

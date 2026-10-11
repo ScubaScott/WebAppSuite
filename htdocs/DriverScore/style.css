@@ -8,6 +8,13 @@
     --accent: #ff9800;
     --success: #4caf50;
     --danger: #f44336;
+
+    /* Suite header theme tokens for DriverScore */
+    --hdr-bg: #181818;
+    --hdr-fg: #ffffff;
+    --hdr-muted: #9e9e9e;
+    --hdr-accent: #2196f3;
+    --hdr-border: rgba(255, 255, 255, 0.08);
 }
 
 /* Global Body & Layout Formatting */
@@ -16,11 +23,10 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
-    padding: 20px;
+    padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     min-height: 100vh;
     box-sizing: border-box;
 }
@@ -31,6 +37,7 @@ body {
     max-width: 480px;
     background: var(--card-bg);
     padding: 25px;
+    margin: 20px 16px;
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     text-align: center;

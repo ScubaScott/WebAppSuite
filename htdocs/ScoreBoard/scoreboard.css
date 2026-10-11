@@ -11,6 +11,14 @@
     --theme-bg-color:    #6b1a1a;
     --theme-accent:      #ef4444;
     --theme-accent-glow: rgba(239,68,68,0.35);
+
+    /* Suite header theme tokens for ScoreBoard */
+    --hdr-bg: rgba(17, 24, 39, 0.88);
+    --hdr-fg: #ffffff;
+    --hdr-muted: #9ca3af;
+    --hdr-accent: var(--theme-accent);
+    --hdr-border: rgba(255, 255, 255, 0.1);
+    --hdr-font: 'Inter', sans-serif;
 }
 
 /* ---- Base Reset ---- */

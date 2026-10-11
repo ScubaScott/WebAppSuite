@@ -26,6 +26,14 @@
   --badge-searching-bg: #fef7e9;
   
   --stop-bg: linear-gradient(135deg, #e63946 0%, #ff5c6c 100%);
+
+  /* Suite header theme tokens for Toys / Lush */
+  --hdr-bg: rgba(255, 235, 245, 0.95);
+  --hdr-fg: #451b30;
+  --hdr-muted: #8c5371;
+  --hdr-accent: #ff3385;
+  --hdr-border: #ffbcd7;
+  --hdr-font: 'Nunito', system-ui, -apple-system, sans-serif;
 }
 
 /* Page Layout & Background Frills */
@@ -34,10 +42,10 @@ body {
   background: var(--bg-gradient);
   color: var(--text-dark);
   margin: 0;
-  padding: 16px 12px 28px;
+  padding: 0;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
   min-height: 100vh;
   box-sizing: border-box;
   -webkit-user-select: none;
@@ -77,11 +85,13 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 16px 12px 28px;
+  box-sizing: border-box;
   position: relative;
   z-index: 1;
 }
 
-/* Top bar with back navigation link */
+/* Top bar with back navigation link (legacy fallback) */
 .topbar {
   display: flex;
   align-items: center;
@@ -122,7 +132,8 @@ body::after {
   text-align: center;
   padding: 4px 0;
 }
-.header-box h1 {
+.header-box h1,
+.header-box h2 {
   font-family: 'Comfortaa', cursive, sans-serif;
   font-size: 24px;
   font-weight: 700;

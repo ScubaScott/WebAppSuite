@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveScore Pro - Telematics Tracker</title>
+    <!-- Shared Suite Header Stylesheet -->
+    <link rel="stylesheet" href="../media/suite-header.css">
     <!-- External stylesheet reference for UI components and theme styling -->
     <link rel="stylesheet" href="style.css">
     <!-- Suite profile styles for footer sync indicator -->
@@ -11,10 +13,21 @@
 </head>
 <body>
 
-<!-- Navigation link returning to root application dashboard -->
-<a href="../" class="back-link">← Back to Apps</a>
+<!-- Suite Header: back link, page title, spacer -->
+<header class="suite-header">
+    <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span class="suite-header__back-label-long">Back to Apps</span>
+        <span class="suite-header__back-label-short">Apps</span>
+    </a>
+    <h1 class="suite-header__title">DriveScore</h1>
+    <span class="suite-header__spacer" aria-hidden="true"></span>
+</header>
+
 <div class="container">
-    <h1>DriveScore</h1>
     <!-- Link to navigate to garage settings page -->
     <a href="VehicleSettings.html" class="settings-link">Manage Vehicles Garage →</a>
 
@@ -131,7 +144,7 @@
 
 <!-- Footer displaying application version and profile sync status -->
 <footer class="app-footer">
-    <p>Version <span id="appVersion">1.8</span></p>
+    <p>Version <span id="appVersion">1.9</span></p>
 </footer>
 
 <!-- Suite profile cloud sync library — must load before main script block -->
@@ -800,7 +813,7 @@
     });
 
     // DriveScore application version identifier
-    const VERSION = '1.7';
+    const VERSION = '1.9';
     const APP_VERSION = VERSION;
     const versionEl = document.getElementById('appVersion');
     if (versionEl) {

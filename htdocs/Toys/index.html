@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- Shared Suite Header Stylesheet -->
+  <link rel="stylesheet" href="../media/suite-header.css">
   <!-- Application Stylesheet -->
   <link rel="stylesheet" href="style.css">
   <!-- Suite Profile stylesheet for footer sync indicator -->
@@ -14,21 +16,24 @@
 </head>
 <body>
 
-  <div class="container">
-    <!-- Topbar navigation linking back to root app launcher -->
-    <div class="topbar">
-      <a href="../index.html" class="back-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        Back to Apps
-      </a>
-    </div>
+  <!-- Suite Header: back link, page title, spacer -->
+  <header class="suite-header">
+    <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span class="suite-header__back-label-long">Back to Apps</span>
+      <span class="suite-header__back-label-short">Apps</span>
+    </a>
+    <h1 class="suite-header__title">Lush</h1>
+    <span class="suite-header__spacer" aria-hidden="true"></span>
+  </header>
 
+  <div class="container">
     <!-- Header -->
     <div class="header-box">
-      <h1><span>🎀</span> Lush Remote <span>🎀</span></h1>
+      <h2><span>🎀</span> Lush Remote <span>🎀</span></h2>
       <div class="header-subtitle">✨ Sweet Wireless Bluetooth Controller ✨</div>
     </div>
 
@@ -214,7 +219,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v1.5</small>
+      <small>v1.6</small>
     </footer>
   </div>
 
@@ -237,7 +242,7 @@
   /**
    * Version constant tracking application updates.
    */
-  const APP_VERSION = "1.5";
+  const APP_VERSION = "1.6";
 
   /**
    * Local storage keys for toy nicknames, preferences, and pattern generator.

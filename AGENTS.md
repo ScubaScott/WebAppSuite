@@ -34,6 +34,16 @@ This is the overarching AI agent configuration for the entire `WebAppSuite` repo
 - **Mobile-First & Touch-Friendly**: All controls, buttons, and inputs must have adequate touch targets (minimum 44x44px where possible) with smooth active/tap states.
 - **Resilience**: Graceful error handling for device APIs (e.g., Web Audio, Wake Lock, Geolocation, Camera/MediaDevices). Always provide user-friendly fallbacks when hardware APIs are unsupported or permissions are denied.
 
+### Suite Header Protocol
+- **Shared Component**: All primary sub-application index pages must link `../media/suite-header.css` and render a standard top-line header (`<header class="suite-header">`) directly under `<body>`.
+- **Layout & Structure**:
+  - **Left**: `.suite-header__back` linking to `../index.html` with arrow SVG, full label "Back to Apps" (hidden <= 420px), and compact label "Apps" (shown <= 420px).
+  - **Center**: Single-word `<h1>` title (`.suite-header__title`).
+  - **Right**: 44x44px settings gear button (`.suite-header__gear`) on apps with settings modals, or empty spacer (`.suite-header__spacer`) on apps without settings to preserve symmetrical title centering.
+- **Scroll Behavior**: Normal document flow / static positioning (sits at top of page and scrolls off with content).
+- **Theming**: Configured via CSS custom properties on `:root` or `[data-theme]`:
+  `--hdr-bg`, `--hdr-fg`, `--hdr-muted`, `--hdr-accent`, `--hdr-border`, `--hdr-height`, `--hdr-font`.
+
 ---
 
 ## 3. Sub-App Directory Structure & Scoped Agents

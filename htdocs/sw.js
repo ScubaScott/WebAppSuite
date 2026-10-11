@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '4.2';
+const SW_VERSION = '4.3';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Static app-shell assets pre-cached on install for offline functionality.
@@ -15,6 +15,7 @@ const APP_SHELL = [
   './admin.js',
   './about.css',
   './manifest.json',
+  './media/suite-header.css',
   './media/suite-profile.css',
   './media/suite-profile.js',
   './media/scuba.png',

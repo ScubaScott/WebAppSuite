@@ -40,6 +40,26 @@
     --theme-bg-image: none;
     --theme-topbar-extra: none;
     --theme-noise: none;
+
+    /* Suite header theme tokens for basic theme */
+    --hdr-bg: #1e293b;
+    --hdr-fg: #f8fafc;
+    --hdr-muted: #94a3b8;
+    --hdr-accent: #1a73e8;
+    --hdr-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Sub-header toolbar for Bingo sync status and game name button */
+.bingo-subbar {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 16px 2px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
 }
 
 /* ================================================================
@@ -59,6 +79,13 @@
     --primary-soft: rgba(212, 160, 23, 0.15);
     --card: #61472a;
     /* worn dark wood card face */
+
+    /* Suite header theme tokens for divebar theme */
+    --hdr-bg: #140f0a;
+    --hdr-fg: #e8dcc8;
+    --hdr-muted: #9a8b76;
+    --hdr-accent: #d4a017;
+    --hdr-border: #3d3328;
 
     /* Dauber: red neon dauber for the bar vibe */
     --daub-rgb: 200, 40, 30;

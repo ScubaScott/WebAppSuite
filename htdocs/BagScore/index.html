@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cornhole Scorekeeper</title>
+    <!-- Shared Suite Header Stylesheet -->
+    <link rel="stylesheet" href="../media/suite-header.css">
     <!-- Application Stylesheet -->
     <link rel="stylesheet" href="style.css">
     <!-- Suite profile styles for footer sync indicator -->
@@ -11,66 +13,66 @@
 </head>
 <body data-theme="grass">
 
-    <!-- Notification Toast for Limit Reached Alert -->
-    <div id="limitToast" class="limit-toast">Max bags reached for this team!</div>
-
-    <!-- Header Navigation Section -->
-    <header class="topbar">
-        <a href="../index.html" class="back-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Suite Header: back link, page title, settings gear button -->
+    <header class="suite-header">
+        <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            Back to Apps
+            <span class="suite-header__back-label-long">Back to Apps</span>
+            <span class="suite-header__back-label-short">Apps</span>
         </a>
-        <div class="header-title-wrap">
-            <h1>Cornhole Scorekeeper</h1>
-            <p class="subtitle">Subtractive Scoring Mode</p>
-        </div>
-    </header>
-
-    <!-- Scoreboard showing overall scores and active round bag tallies -->
-    <section class="scoreboard" aria-label="Scoreboard">
-        <div id="red-box" class="team-box red active" onclick="teamHeaderClick('red', event)" role="button" tabindex="0" aria-label="Red Team Header">
-            <div class="team-name">TEAM RED</div>
-            <div id="red-total" class="total-score">0</div>
-            <div id="red-bag-count" class="bag-count-badge">Bags: 0 / 4</div>
-            <div id="red-round" class="round-pending">Round: +0</div>
-            <div id="red-tally" class="tally-list"></div>
-        </div>
-        <div id="blue-box" class="team-box blue" onclick="teamHeaderClick('blue', event)" role="button" tabindex="0" aria-label="Blue Team Header">
-            <div class="team-name">TEAM BLUE</div>
-            <div id="blue-total" class="total-score">0</div>
-            <div id="blue-bag-count" class="bag-count-badge">Bags: 0 / 4</div>
-            <div id="blue-round" class="round-pending">Round: +0</div>
-            <div id="blue-tally" class="tally-list"></div>
-        </div>
-    </section>
-
-    <!-- Turn Indicator Banner -->
-    <div id="turn-banner" class="turn-indicator red-turn">Red Team's Turn</div>
-
-    <!-- Interactive Cornhole Board Target -->
-    <main class="cornhole-board" id="board-element" onclick="registerScore('board', event)" aria-label="Cornhole Board (+1 Point)">
-        <div class="circle-target" id="hole-element" onclick="registerScore('hole', event)" aria-label="Hole Target (+3 Points)">
-            <span id="hole-target-label">HOLE (+3)</span>
-        </div>
-        <div class="board-text-label" id="board-target-label">BOARD (+1)</div>
-    </main>
-
-    <!-- Primary Action Buttons -->
-    <div class="btn-group">
-        <button class="action-btn btn-reset" onclick="resetGame()">Reset Game</button>
-        <button class="action-btn btn-end" onclick="endRound()">End Round</button>
-    </div>
-
-    <!-- Floating Settings Gear Button -->
-    <div class="settings-gear-wrap">
-        <button id="settingsGearBtn" class="settings-gear-btn" title="Settings" aria-label="Open settings">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <h1 class="suite-header__title">Cornhole</h1>
+        <button id="settingsGearBtn" class="suite-header__gear" type="button" aria-label="Open settings" title="Settings">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
             </svg>
         </button>
+    </header>
+
+    <!-- Notification Toast for Limit Reached Alert -->
+    <div id="limitToast" class="limit-toast">Max bags reached for this team!</div>
+
+    <!-- Main Cornhole App Container -->
+    <div class="bagscore-container">
+        <!-- Subtitle descriptor for active scoring mode -->
+        <p class="subtitle" style="margin: 0 0 16px 0; text-align: center;">Subtractive Scoring Mode</p>
+
+        <!-- Scoreboard showing overall scores and active round bag tallies -->
+        <section class="scoreboard" aria-label="Scoreboard">
+            <div id="red-box" class="team-box red active" onclick="teamHeaderClick('red', event)" role="button" tabindex="0" aria-label="Red Team Header">
+                <div class="team-name">TEAM RED</div>
+                <div id="red-total" class="total-score">0</div>
+                <div id="red-bag-count" class="bag-count-badge">Bags: 0 / 4</div>
+                <div id="red-round" class="round-pending">Round: +0</div>
+                <div id="red-tally" class="tally-list"></div>
+            </div>
+            <div id="blue-box" class="team-box blue" onclick="teamHeaderClick('blue', event)" role="button" tabindex="0" aria-label="Blue Team Header">
+                <div class="team-name">TEAM BLUE</div>
+                <div id="blue-total" class="total-score">0</div>
+                <div id="blue-bag-count" class="bag-count-badge">Bags: 0 / 4</div>
+                <div id="blue-round" class="round-pending">Round: +0</div>
+                <div id="blue-tally" class="tally-list"></div>
+            </div>
+        </section>
+
+        <!-- Turn Indicator Banner -->
+        <div id="turn-banner" class="turn-indicator red-turn">Red Team's Turn</div>
+
+        <!-- Interactive Cornhole Board Target -->
+        <main class="cornhole-board" id="board-element" onclick="registerScore('board', event)" aria-label="Cornhole Board (+1 Point)">
+            <div class="circle-target" id="hole-element" onclick="registerScore('hole', event)" aria-label="Hole Target (+3 Points)">
+                <span id="hole-target-label">HOLE (+3)</span>
+            </div>
+            <div class="board-text-label" id="board-target-label">BOARD (+1)</div>
+        </main>
+
+        <!-- Primary Action Buttons -->
+        <div class="btn-group">
+            <button class="action-btn btn-reset" onclick="resetGame()">Reset Game</button>
+            <button class="action-btn btn-end" onclick="endRound()">End Round</button>
+        </div>
     </div>
 
     <!-- Settings Modal Dialog -->
@@ -140,7 +142,7 @@
 
     <!-- Footer displaying application version and profile sync status -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.7</span></p>
+        <p>Version <span id="appVersion">1.8</span></p>
     </footer>
 
     <!-- Application JavaScript Logic -->
@@ -571,7 +573,7 @@
         });
 
         // Application version identifier
-        const VERSION = '1.6';
+        const VERSION = '1.8';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) {
