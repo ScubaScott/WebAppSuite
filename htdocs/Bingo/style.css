@@ -49,17 +49,14 @@
     --hdr-border: rgba(255, 255, 255, 0.08);
 }
 
-/* Sub-header toolbar for Bingo sync status and game name button */
-.bingo-subbar {
+/* Bottom sync indicator bar above footer */
+.bottom-sync-bar {
     width: 100%;
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 10px 16px 2px;
-    box-sizing: border-box;
+    margin: 18px auto 6px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: center;
-    gap: 8px;
 }
 
 /* ================================================================
@@ -404,76 +401,58 @@
     box-shadow: 0 0 12px rgba(212, 160, 23, 0.2) !important;
 }
 
-/* ---- Floating Total Called badge in dive bar ---- */
-[data-theme="divebar"] .floating-total-badge {
-    background: #221d16;
+/* ---- Total Called badge in dive bar ---- */
+[data-theme="divebar"] .last-six-called-badge {
+    background: rgba(0, 0, 0, 0.25);
     border-color: #3d3328;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
-[data-theme="divebar"] .floating-total-badge .ft-label {
+[data-theme="divebar"] .last-six-called-badge .ft-label {
     color: #d4a017;
 }
 
-[data-theme="divebar"] .floating-total-badge .ft-num {
+[data-theme="divebar"] .last-six-called-badge .ft-num {
     color: #e8dcc8;
 }
 
 /* ================================================================
-   FLOATING GEAR BUTTON & TOTAL CALLED CIRCLE
+   FLOATING GEAR BUTTON & SETTINGS CONTROLS
 ================================================================ */
 #settingsGearBtn:hover {
     transform: rotate(35deg) scale(1.08);
     box-shadow: 0 4px 18px rgba(60, 64, 67, 0.2);
 }
 
-.floating-total-wrap {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    z-index: 900;
-    pointer-events: auto;
+.setting-game-name-wrap {
+    width: 100%;
 }
 
-.floating-total-badge {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: var(--card);
+.setting-game-name-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
     border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
-    user-select: none;
-    /* Smooth transitions for size, color, and border changes when target mode activates */
-    transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.25s ease, height 0.25s ease,
-        border-radius 0.25s ease, border-color 0.25s ease, padding 0.25s ease;
-    cursor: default;
-    padding: 4px;
-}
-
-.floating-total-badge:hover {
-    transform: scale(1.06);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
-}
-
-.floating-total-badge .ft-label {
-    font-size: 9px;
+    background: var(--surface);
+    color: var(--text-main);
+    font-size: 16px;
     font-weight: 700;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-subtle);
-    line-height: 1;
-    margin-bottom: 2px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.floating-total-badge .ft-num {
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--primary);
-    line-height: 1;
+.setting-game-name-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.settings-help-text {
+    display: block;
+    font-size: 11px;
+    color: var(--text-subtle);
+    margin-top: 6px;
 }
 
 /* ================================================================
@@ -876,41 +855,84 @@ body {
 }
 
 /* ---- Footer row inside .last-six-card ---- */
-/* Flex row: last-man status pinned left, called count pinned right */
-.stat-footer {
+.last-six-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.last-six-called-badge {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    user-select: none;
+    transition: all 0.2s ease;
 }
 
-/* Last Man status label */
-.lastman-status {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    transition: color 0.3s ease;
+.last-six-called-badge .ft-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-subtle);
 }
 
-/* Standing = at least one card has no daubed numbers — green/encouraging */
-.lastman-status.standing {
-    color: #2e7d32;
+.last-six-called-badge .ft-num {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
 }
 
-/* Sitting = every active card has at least 1 daubed number — muted amber */
-.lastman-status.sitting {
-    color: #b45309;
+.last-six-called-badge .ft-sub {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-subtle);
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--primary-soft);
 }
 
-/* Dive Bar theme overrides for lastman and footer */
-[data-theme="divebar"] .lastman-status.standing {
+/* Per-card Last Man status icon (top right corner of card header) */
+.card-lastman-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    margin-left: auto;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.card-lastman-indicator.standing {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.14);
+}
+
+.card-lastman-indicator.sitting {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.14);
+}
+
+[data-theme="divebar"] .card-lastman-indicator.standing {
     color: #66bb6a;
-    text-shadow: 0 0 6px rgba(102, 187, 106, 0.4);
+    background: rgba(102, 187, 106, 0.18);
+    filter: drop-shadow(0 0 4px rgba(102, 187, 106, 0.4));
 }
 
-[data-theme="divebar"] .lastman-status.sitting {
-    color: #ffa726;
-    text-shadow: 0 0 6px rgba(255, 167, 38, 0.35);
+[data-theme="divebar"] .card-lastman-indicator.sitting {
+    color: #bcaaa4;
+    background: rgba(188, 170, 164, 0.12);
 }
 
 /* ================================
@@ -2559,39 +2581,19 @@ body {
    Each bingo card gets a chip showing how many balls it needs to win.
 ================================================================ */
 
-/* Badge expands to a pill when target mode is active */
-.floating-total-badge.target-active {
-    width: auto;
-    min-width: 58px;
-    height: auto;
-    border-radius: 18px;
-    padding: 7px 13px;
+/* Badge target active / reached states */
+.last-six-called-badge.target-active {
+    border-color: var(--primary);
 }
 
-/* Target has been reached or exceeded — full red state */
-.floating-total-badge.target-reached {
+.last-six-called-badge.target-reached {
     border-color: #e53935;
-    box-shadow: 0 2px 14px rgba(229, 57, 53, 0.28);
+    background: rgba(229, 57, 53, 0.08);
 }
 
-.floating-total-badge.target-reached .ft-num {
+.last-six-called-badge.target-reached .ft-num,
+.last-six-called-badge.target-reached .ft-sub {
     color: #e53935;
-}
-
-.floating-total-badge.target-reached .ft-sub {
-    color: #e53935;
-}
-
-/* Secondary sub-row label displayed below the main count */
-.floating-total-badge .ft-sub {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-subtle);
-    line-height: 1;
-    margin-top: 2px;
-    white-space: nowrap;
 }
 
 /* ---- Card needs chip ---- */
@@ -2737,13 +2739,13 @@ body {
 ================================================================ */
 
 /* Dive bar target-reached: use the amber/warm red palette */
-[data-theme="divebar"] .floating-total-badge.target-reached {
+[data-theme="divebar"] .last-six-called-badge.target-reached {
     border-color: #d4241a;
-    box-shadow: 0 4px 18px rgba(212, 36, 26, 0.35);
+    background: rgba(212, 36, 26, 0.2);
 }
 
-[data-theme="divebar"] .floating-total-badge.target-reached .ft-num,
-[data-theme="divebar"] .floating-total-badge.target-reached .ft-sub {
+[data-theme="divebar"] .last-six-called-badge.target-reached .ft-num,
+[data-theme="divebar"] .last-six-called-badge.target-reached .ft-sub {
     color: #ff6b6b;
 }
 

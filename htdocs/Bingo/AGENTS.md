@@ -41,7 +41,7 @@ The Bingo suite consists of a Bingo Number Tracker, caller system, call log, gam
 - **Recent Balls**: Maintain an active "Last 6" caller display strip and a timestamped Call Log modal.
 - **Game Modes**:
   - Support game modes such as Standard Line/Corners, Double Mode, Coverall/Blackout, and Last Man Standing.
-  - Provide clear status badges (e.g., `#lastManStatus`, `#doubleModeBadge`).
+  - Provide clear status badges (e.g., individual card standing/sitting badges, `#doubleModeBadge`).
 - **Audio Announcements**:
   - Use browser Web Speech API (`window.speechSynthesis`) for calling balls (e.g., "B-12", "I-24").
   - Ensure volume, rate, and pitch settings do not crash on mobile browsers or during rapid clicks.

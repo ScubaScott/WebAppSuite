@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '4.0';
+const VERSION = '4.2';
 
 
 // ============================================================
@@ -25,9 +25,8 @@ const trackingGrid = document.getElementById("trackingGrid");
 const sessionWordBar = document.getElementById("sessionWordBar");
 const lastSixList = document.getElementById("lastSixList");
 const totalCalledSpan = document.getElementById("totalCalled");
-const lastManStatus = document.getElementById("lastManStatus");
 const callLogLink = document.getElementById("callLogLink");
-const newSessionBtn = document.getElementById("newSessionBtn");
+const settingGameNameInput = document.getElementById("settingGameNameInput");
 const clearCardsBtn = document.getElementById("clearCardsBtn");
 const addCardBtn = document.getElementById("addCardBtn");
 
@@ -149,28 +148,9 @@ function updateUI() {
         }
     }
 
-    // Last Man: Standing = at least one active card has no daubed squares.
-    // Sitting = every active card has at least 1 daubed non-FREE square called.
-    // Only displayed if there are active cards in the session.
-    if (lastManStatus) {
-        const calledSet = new Set(session.called);
-        const activeCards = session.cards.filter(c => c.active !== false);
-
-        if (activeCards.length === 0) {
-            lastManStatus.classList.add("hidden");
-        } else {
-            lastManStatus.classList.remove("hidden");
-            // A card is "standing" if none of its non-FREE squares are in the called set
-            const isStanding = activeCards.some(c =>
-                c.squares.every((val, idx) =>
-                    idx === 12 || val === null || val === "FREE" || !calledSet.has(val)
-                )
-            );
-
-            lastManStatus.textContent = `Last man: ${isStanding ? "Standing" : "Sitting"}`;
-            lastManStatus.classList.toggle("standing", isStanding);
-            lastManStatus.classList.toggle("sitting", !isStanding);
-        }
+    // Update settings Game Name input if not currently focused
+    if (settingGameNameInput && document.activeElement !== settingGameNameInput) {
+        settingGameNameInput.value = session.word || "BINGO";
     }
 
     // 2. Last 6 called balls list — displayed as bingo-square-badge tiles
@@ -500,17 +480,28 @@ function openCallLogModal() {
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
 }
 
-// Change Game Name / Session Word button (does not clear called numbers or cards)
-if (newSessionBtn) {
-    newSessionBtn.addEventListener("click", () => {
-        const currentWord = session.word || "BINGO";
-        const newWord = prompt("Enter a 5-letter game name / session word:", currentWord);
-        if (!newWord) return;
-        if (newWord.trim().length !== 5) {
-            alert("Game name must be exactly 5 letters.");
-            return;
+// Settings Game Name / Session Word input (updates column headers across board and cards)
+if (settingGameNameInput) {
+    settingGameNameInput.value = session.word || "BINGO";
+
+    settingGameNameInput.addEventListener("input", () => {
+        const val = settingGameNameInput.value.toUpperCase();
+        settingGameNameInput.value = val;
+        if (val.trim().length === 5) {
+            session.word = val.trim();
+            saveSession();
+            renderSessionWordBar();
+            renderAllCards();
         }
-        session.word = newWord.trim().toUpperCase();
+    });
+
+    settingGameNameInput.addEventListener("blur", () => {
+        const val = (settingGameNameInput.value || "").trim().toUpperCase();
+        if (val.length === 5) {
+            session.word = val;
+        } else {
+            settingGameNameInput.value = session.word || "BINGO";
+        }
         saveSession();
         updateUI();
     });
@@ -618,7 +609,7 @@ async function loadGames() {
                 try {
                     availableGames = JSON.parse(cacheRaw);
                     isOperatingFromCachedGames = true;
-                } catch (e) {}
+                } catch (e) { }
             }
             const res = await fetch("../api/games");
             if (res.ok) {
@@ -643,7 +634,7 @@ async function loadGames() {
                     availableGames = JSON.parse(cacheRaw);
                     isOperatingFromCachedGames = true;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
     }
     updateUI();
@@ -661,7 +652,7 @@ function getSelectedGame() {
                     availableGames = cachedGames;
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
     }
     return found || null;
 }
@@ -1226,6 +1217,22 @@ function renderCard(card) {
 
     header.appendChild(titleWrap);
 
+    // ---- Last Man status icon (Standing / Sitting) ----
+    // Standing: zero called numbers on this card; Sitting: at least one number called on this card
+    const calledSet = new Set(session.called);
+    const isStanding = card.squares.every((val, idx) =>
+        idx === 12 || val === null || val === "FREE" || !calledSet.has(val)
+    );
+
+    const statusIcon = document.createElement("span");
+    statusIcon.className = `card-lastman-indicator ${isStanding ? "standing" : "sitting"}`;
+    statusIcon.title = isStanding ? "Last Man: Standing (no called numbers)" : "Last Man: Sitting (numbers called)";
+    statusIcon.setAttribute("aria-label", isStanding ? "Last Man Standing" : "Last Man Sitting");
+    statusIcon.innerHTML = isStanding
+        ? `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="2.2"/><path d="M14 8h-4a2 2 0 0 0-2 2v5h2v6h4v-6h2v-5a2 2 0 0 0-2-2z"/></svg>`
+        : `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="9" cy="4" r="2.2"/><path d="M7 8h3a2 2 0 0 1 2 2v4h4a1 1 0 0 1 1 1v5h-2v-4h-4a2 2 0 0 1-2-2v-4H7V8z"/><path d="M4 9h1.5v5h7v1.5H5.5V20H4V9zm10.5 6.5H16V20h-1.5v-4.5z"/></svg>`;
+    header.appendChild(statusIcon);
+
 
     // ---- Dropdown menu (Edit and Remove only) ----
     if (isMenuOpen) {
@@ -1665,10 +1672,10 @@ async function initBingoSettings() {
     initCardSize();
 
     // Render sync badge
-    const topbarSyncBadge = document.getElementById("topbarSyncBadge");
-    if (topbarSyncBadge && window.BingoSync) {
-        BingoSync.renderSyncBadge(topbarSyncBadge);
-        BingoSync.onStateChange(() => BingoSync.renderSyncBadge(topbarSyncBadge));
+    const bottomSyncBadge = document.getElementById("bottomSyncBadge");
+    if (bottomSyncBadge && window.BingoSync) {
+        BingoSync.renderSyncBadge(bottomSyncBadge);
+        BingoSync.onStateChange(() => BingoSync.renderSyncBadge(bottomSyncBadge));
     }
 
     // Initialization complete: future user changes are allowed to sync

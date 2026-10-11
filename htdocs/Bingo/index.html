@@ -33,12 +33,6 @@
         </button>
     </header>
 
-    <!-- Sub-header bar for Bingo Game Name action and sync badge -->
-    <div class="bingo-subbar">
-        <div id="topbarSyncBadge"></div>
-        <button id="newSessionBtn" class="btn primary-btn" title="Change Game Name">Game Name</button>
-    </div>
-
     <main class="page-content">
         <!-- Last Six Balls -->
         <section class="stats-card">
@@ -48,6 +42,13 @@
                     <button id="callLogLink" class="link-button" type="button">Call log</button>
                 </div>
                 <div id="lastSixList" class="last-six-list" aria-live="polite"></div>
+                <div class="last-six-footer" id="lastSixFooter">
+                    <div class="last-six-called-badge" id="floatingTotalBadge" title="Total Numbers Called">
+                        <span class="ft-label" id="ftLabel">Called</span>
+                        <span class="ft-num" id="totalCalled">0</span>
+                        <span class="ft-sub hidden" id="ftSub"></span>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -73,7 +74,6 @@
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span class="stat-label">Game Mode</span>
                             <span class="cached-badge hidden" id="cachedGamesIndicator">Cached</span>
-                            <span class="lastman-status standing hidden" id="lastManStatus">Last man: Standing</span>
                         </div>
                         <div class="game-name-row">
                             <span id="selectedGameName" class="selected-game-name">— None selected —</span>
@@ -102,19 +102,6 @@
     </main>
 
     <!-- ================================================
-         FLOATING TOTAL CALLED COUNTER (fixed, bottom-right)
-    ================================================ -->
-    <div class="floating-total-wrap">
-        <!-- floating-total-badge: circle shows called count; expands to pill when ball target is active -->
-        <div class="floating-total-badge" id="floatingTotalBadge" title="Total Numbers Called">
-            <span class="ft-label" id="ftLabel">Called</span>
-            <span class="ft-num" id="totalCalled">0</span>
-            <!-- ft-sub: hidden by default; shows remaining / OVER when ball target is set -->
-            <span class="ft-sub hidden" id="ftSub"></span>
-        </div>
-    </div>
-
-    <!-- ================================================
          SETTINGS MODAL (theme picker)
     ================================================ -->
     <div id="settingsModal" class="settings-modal hidden" role="dialog" aria-modal="true" aria-label="Settings">
@@ -133,6 +120,15 @@
             </div>
 
             <div class="settings-body">
+                <!-- Game Name section (top of settings) -->
+                <div class="settings-section">
+                    <div class="settings-section-label">Game Name</div>
+                    <div class="setting-game-name-wrap">
+                        <input type="text" id="settingGameNameInput" class="setting-game-name-input" maxlength="5" value="BINGO" placeholder="BINGO" autocomplete="off" spellcheck="false" aria-label="Game Name">
+                    </div>
+                    <small class="settings-help-text">5-letter column header word (e.g. BINGO)</small>
+                </div>
+
                 <!-- Game Input Mode section -->
                 <div class="settings-section">
                     <div class="settings-section-label">Input Mode</div>
@@ -254,13 +250,18 @@
         </div>
     </div>
 
+    <!-- Sync indicator pill above footer -->
+    <div class="bottom-sync-bar">
+        <div id="bottomSyncBadge"></div>
+    </div>
+
     <footer class="app-footer">
-        <p>Version <span id="appVersion">4.1</span></p>
+        <p>Version <span id="appVersion">4.2</span></p>
     </footer>
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '4.1';
+        const INDEX_VERSION = '4.2';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
