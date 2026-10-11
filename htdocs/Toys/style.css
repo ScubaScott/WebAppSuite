@@ -623,3 +623,89 @@ input:checked + .slider-toggle:before {
   font-weight: 700;
   opacity: 0.8;
 }
+
+/* Random Pattern Card & Dynamic State Styles */
+.pattern-card.active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 20px rgba(255, 51, 133, 0.28), var(--card-shadow);
+  animation: patternCardGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes patternCardGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(255, 51, 133, 0.2), var(--card-shadow);
+  }
+  50% {
+    box-shadow: 0 0 26px rgba(255, 51, 133, 0.4), var(--card-shadow);
+  }
+}
+
+.pattern-status-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--accent-subtle);
+  border: 1px dashed var(--accent-border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin: 4px 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pattern-status-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dark);
+}
+
+.pattern-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--badge-offline);
+  display: inline-block;
+  transition: background-color 0.2s ease;
+}
+
+.pattern-card.active .pattern-status-indicator {
+  background: var(--badge-online);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.pattern-settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pattern-param-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pattern-param-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pattern-param-val {
+  font-family: 'Comfortaa', cursive, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent-primary);
+}
+
+.pattern-dual-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+

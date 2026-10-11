@@ -101,12 +101,120 @@
       </div>
     </div>
 
+    <!-- Random Pattern Generator Card -->
+    <div class="card pattern-card" id="patternCard">
+      <h2>
+        <span>🎲 Random Pattern</span>
+        <label class="switch">
+          <input type="checkbox" id="patternToggle" onchange="togglePattern(this.checked)">
+          <span class="slider-toggle"></span>
+        </label>
+      </h2>
+
+      <!-- Pattern Status Box -->
+      <div class="pattern-status-box">
+        <span class="pattern-status-text">
+          <span class="pattern-status-indicator" id="patternStatusDot"></span>
+          <span id="patternStatusLabel">Off</span>
+        </span>
+        <span id="patternTargetDisplay">Target: --</span>
+      </div>
+
+      <!-- Pattern Settings Controls -->
+      <div class="pattern-settings-grid">
+        <!-- Ramp Rate Slider -->
+        <div class="pattern-param-row">
+          <div class="pattern-param-header">
+            <span>Ramp Rate (Speed)</span>
+            <span class="pattern-param-val" id="rampRateVal">3.0 /s</span>
+          </div>
+          <input 
+            type="range" 
+            id="rampRateSlider" 
+            min="0.5" 
+            max="20" 
+            step="0.5" 
+            value="3" 
+            oninput="onPatternSettingInput('rampRate', this.value)"
+          >
+        </div>
+
+        <!-- Intensity Min & Max Bounds -->
+        <div class="pattern-dual-row">
+          <div class="pattern-param-row">
+            <div class="pattern-param-header">
+              <span>Min Level</span>
+              <span class="pattern-param-val" id="patternMinVal">0</span>
+            </div>
+            <input 
+              type="range" 
+              id="patternMinSlider" 
+              min="0" 
+              max="20" 
+              step="1" 
+              value="0" 
+              oninput="onPatternSettingInput('min', this.value)"
+            >
+          </div>
+          <div class="pattern-param-row">
+            <div class="pattern-param-header">
+              <span>Max Level</span>
+              <span class="pattern-param-val" id="patternMaxVal">20</span>
+            </div>
+            <input 
+              type="range" 
+              id="patternMaxSlider" 
+              min="0" 
+              max="20" 
+              step="1" 
+              value="20" 
+              oninput="onPatternSettingInput('max', this.value)"
+            >
+          </div>
+        </div>
+
+        <!-- Min Jump & Max Hold Time -->
+        <div class="pattern-dual-row">
+          <div class="pattern-param-row">
+            <div class="pattern-param-header">
+              <span>Min Jump</span>
+              <span class="pattern-param-val" id="minJumpVal">3</span>
+            </div>
+            <input 
+              type="range" 
+              id="minJumpSlider" 
+              min="0" 
+              max="10" 
+              step="1" 
+              value="3" 
+              oninput="onPatternSettingInput('minJump', this.value)"
+            >
+          </div>
+          <div class="pattern-param-row">
+            <div class="pattern-param-header">
+              <span>Max Hold</span>
+              <span class="pattern-param-val" id="holdMaxVal">1.5 s</span>
+            </div>
+            <input 
+              type="range" 
+              id="holdMaxSlider" 
+              min="0" 
+              max="10" 
+              step="0.5" 
+              value="1.5" 
+              oninput="onPatternSettingInput('holdMax', this.value)"
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Activity Status Log -->
     <div id="log">Ready. Checking remembered devices...</div>
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v1.4</small>
+      <small>v1.5</small>
     </footer>
   </div>
 
@@ -129,13 +237,14 @@
   /**
    * Version constant tracking application updates.
    */
-  const APP_VERSION = "1.4";
+  const APP_VERSION = "1.5";
 
   /**
-   * Local storage keys for toy nicknames and preferences.
+   * Local storage keys for toy nicknames, preferences, and pattern generator.
    */
   const STORAGE_KEY_TOY_REGISTRY = "lush_toy_registry";
   const STORAGE_KEY_AUTOSCAN = "lush_toy_autoscan_enabled";
+  const STORAGE_KEY_PATTERN_SETTINGS = "lush_pattern_settings";
 
   /**
    * Runtime state managing remembered toys and active Bluetooth sessions.
@@ -159,6 +268,26 @@
   let isAutoScanActive = true;
   let renamingDeviceId = null;
 
+  /**
+   * Runtime state and user parameters for the autonomous random pattern engine.
+   */
+  let patternSettings = {
+    rampRate: 3.0,
+    min: 0,
+    max: 20,
+    minJump: 3,
+    holdMax: 1.5
+  };
+  let patternEnabled = false;
+  let patternPhase = 'off';
+  let currentPatternLevel = 0.0;
+  let nextTarget = 0;
+  let holdUntil = 0;
+  let lastTickTime = 0;
+  let lastSentPatternLevel = null;
+  let patternTimer = null;
+  let isManualHolding = false;
+
   const slider = document.getElementById('intensitySlider');
   const valDisplay = document.getElementById('valDisplay');
   const momentaryToggle = document.getElementById('momentaryToggle');
@@ -166,6 +295,22 @@
   const autoScanLabel = document.getElementById('autoScanLabel');
   const toggleAutoScanBtn = document.getElementById('toggleAutoScanBtn');
   const autoScanHeart = document.getElementById('autoScanHeart');
+
+  const patternCard = document.getElementById('patternCard');
+  const patternToggle = document.getElementById('patternToggle');
+  const patternStatusLabel = document.getElementById('patternStatusLabel');
+  const patternStatusDot = document.getElementById('patternStatusDot');
+  const patternTargetDisplay = document.getElementById('patternTargetDisplay');
+  const rampRateSlider = document.getElementById('rampRateSlider');
+  const rampRateVal = document.getElementById('rampRateVal');
+  const patternMinSlider = document.getElementById('patternMinSlider');
+  const patternMinVal = document.getElementById('patternMinVal');
+  const patternMaxSlider = document.getElementById('patternMaxSlider');
+  const patternMaxVal = document.getElementById('patternMaxVal');
+  const minJumpSlider = document.getElementById('minJumpSlider');
+  const minJumpVal = document.getElementById('minJumpVal');
+  const holdMaxSlider = document.getElementById('holdMaxSlider');
+  const holdMaxVal = document.getElementById('holdMaxVal');
 
   /**
    * Generates comprehensive list of Lovense GATT service UUIDs covering
@@ -265,6 +410,9 @@
    * 5. Starts background auto-reconnect timer loop.
    */
   async function initApp() {
+    // Restore saved pattern generator parameters
+    loadPatternSettings();
+
     // Restore auto-scan preference from localStorage
     const storedAutoScan = localStorage.getItem(STORAGE_KEY_AUTOSCAN);
     if (storedAutoScan !== null) {
@@ -793,19 +941,296 @@
   }
 
   /**
+   * Loads saved pattern settings from localStorage and synchronizes UI controls.
+   */
+  function loadPatternSettings() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_PATTERN_SETTINGS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed === 'object' && parsed !== null) {
+          if (typeof parsed.rampRate === 'number' && parsed.rampRate >= 0.5 && parsed.rampRate <= 20) {
+            patternSettings.rampRate = parsed.rampRate;
+          }
+          if (typeof parsed.min === 'number' && parsed.min >= 0 && parsed.min <= 20) {
+            patternSettings.min = parsed.min;
+          }
+          if (typeof parsed.max === 'number' && parsed.max >= 0 && parsed.max <= 20) {
+            patternSettings.max = parsed.max;
+          }
+          if (typeof parsed.minJump === 'number' && parsed.minJump >= 0 && parsed.minJump <= 10) {
+            patternSettings.minJump = parsed.minJump;
+          }
+          if (typeof parsed.holdMax === 'number' && parsed.holdMax >= 0 && parsed.holdMax <= 10) {
+            patternSettings.holdMax = parsed.holdMax;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not read pattern settings from localStorage:", e);
+    }
+
+    if (patternSettings.min > patternSettings.max) {
+      patternSettings.min = patternSettings.max;
+    }
+
+    if (rampRateSlider) {
+      rampRateSlider.value = patternSettings.rampRate;
+      rampRateVal.innerText = `${patternSettings.rampRate.toFixed(1)} /s`;
+    }
+    if (patternMinSlider) {
+      patternMinSlider.value = patternSettings.min;
+      patternMinVal.innerText = patternSettings.min;
+    }
+    if (patternMaxSlider) {
+      patternMaxSlider.value = patternSettings.max;
+      patternMaxVal.innerText = patternSettings.max;
+    }
+    if (minJumpSlider) {
+      minJumpSlider.value = patternSettings.minJump;
+      minJumpVal.innerText = patternSettings.minJump;
+    }
+    if (holdMaxSlider) {
+      holdMaxSlider.value = patternSettings.holdMax;
+      holdMaxVal.innerText = `${patternSettings.holdMax.toFixed(1)} s`;
+    }
+  }
+
+  /**
+   * Persists current pattern configuration parameters to localStorage.
+   */
+  function savePatternSettings() {
+    try {
+      localStorage.setItem(STORAGE_KEY_PATTERN_SETTINGS, JSON.stringify(patternSettings));
+    } catch (e) {
+      console.warn("Could not save pattern settings to localStorage:", e);
+    }
+  }
+
+  /**
+   * Handles user adjustments to pattern generator sliders.
+   */
+  function onPatternSettingInput(key, val) {
+    const num = parseFloat(val);
+    if (isNaN(num)) return;
+
+    if (key === 'rampRate') {
+      patternSettings.rampRate = Math.max(0.5, Math.min(20, num));
+      rampRateVal.innerText = `${patternSettings.rampRate.toFixed(1)} /s`;
+    } else if (key === 'min') {
+      patternSettings.min = Math.round(Math.max(0, Math.min(20, num)));
+      if (patternSettings.min > patternSettings.max) {
+        patternSettings.max = patternSettings.min;
+        patternMaxSlider.value = patternSettings.max;
+        patternMaxVal.innerText = patternSettings.max;
+      }
+      patternMinVal.innerText = patternSettings.min;
+    } else if (key === 'max') {
+      patternSettings.max = Math.round(Math.max(0, Math.min(20, num)));
+      if (patternSettings.max < patternSettings.min) {
+        patternSettings.min = patternSettings.max;
+        patternMinSlider.value = patternSettings.min;
+        patternMinVal.innerText = patternSettings.min;
+      }
+      patternMaxVal.innerText = patternSettings.max;
+    } else if (key === 'minJump') {
+      patternSettings.minJump = Math.round(Math.max(0, Math.min(10, num)));
+      minJumpVal.innerText = patternSettings.minJump;
+    } else if (key === 'holdMax') {
+      patternSettings.holdMax = Math.max(0, Math.min(10, num));
+      holdMaxVal.innerText = `${patternSettings.holdMax.toFixed(1)} s`;
+    }
+
+    savePatternSettings();
+
+    if (patternEnabled && (nextTarget < patternSettings.min || nextTarget > patternSettings.max)) {
+      pickNextTarget();
+    }
+  }
+
+  /**
+   * Computes the next randomized target intensity adhering to min, max, and minJump bounds.
+   */
+  function pickNextTarget() {
+    const min = patternSettings.min;
+    const max = patternSettings.max;
+    const minJump = patternSettings.minJump;
+    const currentInt = Math.round(currentPatternLevel);
+
+    const candidates = [];
+    for (let i = min; i <= max; i++) {
+      if (Math.abs(i - currentInt) >= minJump) {
+        candidates.push(i);
+      }
+    }
+
+    if (candidates.length > 0) {
+      const idx = Math.floor(Math.random() * candidates.length);
+      nextTarget = candidates[idx];
+    } else {
+      const distToMin = Math.abs(currentInt - min);
+      const distToMax = Math.abs(currentInt - max);
+      nextTarget = distToMax >= distToMin ? max : min;
+    }
+
+    patternPhase = 'ramping';
+    updatePatternStatus();
+  }
+
+  /**
+   * Activates or halts autonomous random pattern generation.
+   */
+  function togglePattern(enabled) {
+    patternEnabled = enabled;
+
+    if (patternEnabled) {
+      patternCard.classList.add('active');
+      currentPatternLevel = parseFloat(slider.value) || 0;
+      lastSentPatternLevel = Math.round(currentPatternLevel);
+      lastTickTime = performance.now();
+      pickNextTarget();
+
+      if (!patternTimer) {
+        patternTimer = setInterval(patternTick, 50);
+      }
+      updatePatternStatus();
+    } else {
+      patternPhase = 'off';
+      patternCard.classList.remove('active');
+      if (patternTimer) {
+        clearInterval(patternTimer);
+        patternTimer = null;
+      }
+      updatePatternStatus();
+    }
+  }
+
+  /**
+   * 50ms interval animation tick applying smooth intensity ramping and hold timing.
+   */
+  function patternTick() {
+    if (!patternEnabled) return;
+    if (patternPhase === 'manual') {
+      updatePatternStatus();
+      return;
+    }
+
+    const now = performance.now();
+    const dt = Math.min((now - lastTickTime) / 1000, 0.5);
+    lastTickTime = now;
+
+    if (patternPhase === 'ramping') {
+      const step = patternSettings.rampRate * dt;
+
+      if (currentPatternLevel < nextTarget) {
+        currentPatternLevel = Math.min(nextTarget, currentPatternLevel + step);
+      } else if (currentPatternLevel > nextTarget) {
+        currentPatternLevel = Math.max(nextTarget, currentPatternLevel - step);
+      }
+
+      applyPatternLevel(currentPatternLevel);
+
+      if (Math.abs(currentPatternLevel - nextTarget) < 0.001) {
+        currentPatternLevel = nextTarget;
+        applyPatternLevel(currentPatternLevel);
+
+        if (patternSettings.holdMax > 0) {
+          const holdDuration = Math.random() * patternSettings.holdMax;
+          holdUntil = now + (holdDuration * 1000);
+          patternPhase = 'holding';
+        } else {
+          pickNextTarget();
+        }
+      }
+      updatePatternStatus();
+
+    } else if (patternPhase === 'holding') {
+      if (now >= holdUntil) {
+        pickNextTarget();
+      } else {
+        updatePatternStatus();
+      }
+    }
+  }
+
+  /**
+   * Applies calculated pattern intensity to the slider, label, and Bluetooth queue.
+   */
+  function applyPatternLevel(level) {
+    const clamped = Math.max(0, Math.min(20, level));
+    const rounded = Math.round(clamped);
+
+    slider.value = rounded;
+    valDisplay.innerText = rounded;
+
+    if (rounded !== lastSentPatternLevel) {
+      lastSentPatternLevel = rounded;
+      queueTransmission(rounded);
+    }
+  }
+
+  /**
+   * Updates pattern status badge, phase description, and target readouts.
+   */
+  function updatePatternStatus() {
+    if (!patternEnabled) {
+      patternStatusLabel.innerText = "Off";
+      patternTargetDisplay.innerText = "Target: --";
+      return;
+    }
+
+    patternTargetDisplay.innerText = `Target: ${nextTarget}`;
+
+    if (patternPhase === 'manual') {
+      patternStatusLabel.innerText = "Manual Override (Paused)";
+    } else if (patternPhase === 'holding') {
+      const remainingSec = Math.max(0, (holdUntil - performance.now()) / 1000).toFixed(1);
+      patternStatusLabel.innerText = `Holding at ${Math.round(currentPatternLevel)} (${remainingSec}s)`;
+    } else if (patternPhase === 'ramping') {
+      patternStatusLabel.innerText = `Ramping ${Math.round(currentPatternLevel)} → ${nextTarget}`;
+    }
+  }
+
+  /**
+   * Handles user beginning manual interaction with the intensity slider.
+   */
+  function onManualStart() {
+    isManualHolding = true;
+    if (patternEnabled) {
+      patternPhase = 'manual';
+      updatePatternStatus();
+    }
+  }
+
+  /**
    * Handles user input from the vibration intensity slider.
    */
   function onIntensityInput(val) {
-    valDisplay.innerText = val;
-    queueTransmission(parseInt(val));
+    const intVal = parseInt(val, 10);
+    valDisplay.innerText = intVal;
+    currentPatternLevel = intVal;
+    lastSentPatternLevel = intVal;
+    queueTransmission(intVal);
+
+    if (patternEnabled) {
+      patternPhase = 'manual';
+      updatePatternStatus();
+    }
   }
 
   /**
    * Sets slider and sends direct intensity preset value.
+   * Disengages random pattern if currently active.
    */
   function setDirectIntensity(val) {
+    if (patternEnabled) {
+      patternToggle.checked = false;
+      togglePattern(false);
+    }
     slider.value = val;
     valDisplay.innerText = val;
+    currentPatternLevel = val;
+    lastSentPatternLevel = val;
     queueTransmission(val);
   }
 
@@ -848,19 +1273,52 @@
   }
 
   /**
-   * Handles momentary touch/mouse release back to zero.
+   * Handles user releasing manual slider contact.
+   * If pattern is active, resumes ramping toward target from the released intensity.
+   * If pattern is inactive, executes momentary release to zero when enabled.
    */
   function handleRelease() {
-    if (momentaryToggle.checked && slider.value !== "0") {
-      slider.value = 0;
-      valDisplay.innerText = "0";
-      queueTransmission(0);
+    if (!isManualHolding) return;
+    isManualHolding = false;
+
+    if (patternEnabled) {
+      currentPatternLevel = parseFloat(slider.value) || 0;
+      lastSentPatternLevel = Math.round(currentPatternLevel);
+      lastTickTime = performance.now();
+
+      if (Math.abs(nextTarget - currentPatternLevel) < Math.max(1, patternSettings.minJump)) {
+        pickNextTarget();
+      } else {
+        patternPhase = 'ramping';
+      }
+      updatePatternStatus();
+    } else {
+      if (momentaryToggle.checked && slider.value !== "0") {
+        slider.value = 0;
+        valDisplay.innerText = "0";
+        queueTransmission(0);
+      }
     }
   }
+
+  // Attach touch and pointer gestures for manual override and safety release
+  slider.addEventListener('pointerdown', onManualStart);
+  slider.addEventListener('touchstart', onManualStart);
+  slider.addEventListener('mousedown', onManualStart);
 
   slider.addEventListener('mouseup', handleRelease);
   slider.addEventListener('touchend', handleRelease);
   slider.addEventListener('pointerup', handleRelease);
+  slider.addEventListener('pointercancel', handleRelease);
+  slider.addEventListener('lostpointercapture', handleRelease);
+
+  // Safety shutdown on page unload
+  window.addEventListener('pagehide', () => {
+    if (patternEnabled) {
+      togglePattern(false);
+      broadcastCommand('Vibrate:0;');
+    }
+  });
 
   // Initialize application on DOM load and mount SuiteProfile footer indicator
   window.addEventListener('DOMContentLoaded', () => {

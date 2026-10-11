@@ -30,6 +30,12 @@ Toys is a wireless Web Bluetooth controller specifically engineered to manage si
 - **Device Registry**: Saved in `localStorage` under `lush_toy_registry` mapping persistent `deviceId` to friendly nicknames, original broadcast names, and timestamp.
 - **Auto-Reconnect**: Periodic 5-second polling routine that inspects `navigator.bluetooth.getDevices()` to seamlessly reconnect paired toys without requiring manual browser prompts on every reload.
 
+### Random Pattern Engine
+- **Engine Mechanics**: Generates continuous autonomous intensity shifts by calculating smooth ramps from the current level to a randomly selected `nextTarget` within configurable `[min, max]` bounds at a defined `rampRate` (units/second).
+- **Hold Interval & Minimum Jump**: Once `nextTarget` is attained, pauses for a randomized duration between `0` and `holdMax` seconds before selecting a new target that differs by at least `minJump` units.
+- **Manual Priority & Override**: Touching the manual slider temporarily pauses the pattern in `'manual'` state. Releasing contact resumes the pattern smoothly from the released intensity, overriding momentary release to 0. Presets and Emergency Stop immediately disengage pattern mode.
+- **Configuration Persistence**: Pattern parameters (`rampRate`, `min`, `max`, `minJump`, `holdMax`) are persisted under `lush_pattern_settings` in `localStorage`. The active run toggle is always initialized to `off` upon reload for safety.
+
 ---
 
 ## 3. Access Control & Group Authorization
