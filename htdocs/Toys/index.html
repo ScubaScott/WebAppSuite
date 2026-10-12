@@ -20,7 +20,7 @@
 
 <body>
 
-  <!-- Suite Header: back link, page title, spacer -->
+  <!-- Suite Header: back link, page title, settings button -->
   <header class="suite-header">
     <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
@@ -31,21 +31,25 @@
       <span class="suite-header__back-label-long">Back to Apps</span>
       <span class="suite-header__back-label-short">Apps</span>
     </a>
-    <h1 class="suite-header__title">Lush</h1>
-    <span class="suite-header__spacer" aria-hidden="true"></span>
+    <h1 class="suite-header__title" id="suiteHeaderTitle">Lush</h1>
+    <button id="settingsBtn" class="suite-header__gear" type="button" title="Settings" aria-label="Open settings" onclick="openSettingsModal()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+      </svg>
+    </button>
   </header>
 
   <div class="container">
     <!-- Header -->
     <div class="header-box">
-      <h2><span>🎀</span> Lush Remote <span>🎀</span></h2>
-      <div class="header-subtitle">✨ Sweet Wireless Bluetooth Controller ✨</div>
+      <h2 id="mainHeaderTitle"><span>🎀</span> Lush Remote <span>🎀</span></h2>
+      <div class="header-subtitle" id="mainHeaderSubtitle">✨ Sweet Wireless Bluetooth Controller ✨</div>
     </div>
 
     <!-- Connection & Paired Devices Card -->
     <div class="card">
-      <h2>
-        <span>💖 Paired Toys</span>
+      <h2 id="pairedToysHeader">
+        <span id="pairedToysTitle">💖 Paired Toys</span>
         <span id="toyCountBadge" style="font-size: 12px; font-weight: 800; color: var(--text-muted);">0 saved</span>
       </h2>
 
@@ -55,7 +59,7 @@
           <path
             d="M14.83 7.76L12.59 10 17 14.41l-4.41 4.41 2.24 2.24L21.47 14.41 14.83 7.76zM12 12V2L6.59 7.41 10.17 11 2 11v2h8.17l-3.58 3.59L12 22V12z" />
         </svg>
-        Scan & Add New Toy
+        <span id="scanBtnText">Scan & Add New Toy</span>
       </button>
 
       <!-- Auto-Scan / Auto-Reconnect Periodic Bar -->
@@ -76,12 +80,44 @@
     </div>
 
     <!-- Main Intensity & Vibration Panel -->
-    <div class="card">
-      <h2><span>🌸 Vibration Intensity</span></h2>
+    <div class="card" id="intensityCard">
+      <h2><span id="intensityCardTitle">🌸 Vibration Intensity</span></h2>
 
-      <div class="slider-box">
+      <div class="slider-box" id="intensitySliderBox">
+        <!-- WinAmp Graphic Equalizer Visualizer (Active in Music Mode) -->
+        <div class="winamp-eq-wrapper" id="winampEq">
+          <div class="winamp-eq-topbar">
+            <span class="winamp-eq-logo">WINAMP EQ</span>
+            <div class="winamp-eq-indicators">
+              <span class="winamp-eq-tag active">ON</span>
+              <span class="winamp-eq-tag">AUTO</span>
+            </div>
+            <span class="winamp-eq-rate">20-LVL DSP</span>
+          </div>
+          <div class="winamp-eq-body">
+            <div class="winamp-eq-preamp">
+              <div class="eq-preamp-track">
+                <div class="eq-preamp-thumb" id="eqPreampThumb"></div>
+              </div>
+              <span class="eq-label">GAIN</span>
+            </div>
+            <div class="winamp-eq-bars" id="eqBars">
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">60</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">170</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">310</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">600</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">1K</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">3K</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">6K</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">12K</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">14K</span></div>
+              <div class="eq-band"><div class="eq-bar-track"><div class="eq-bar-fill"></div></div><span class="eq-label">16K</span></div>
+            </div>
+          </div>
+        </div>
+
         <div class="slider-header">
-          <span>Level</span>
+          <span id="sliderLabelText">Level</span>
           <span class="intensity-val" id="valDisplay">0</span>
         </div>
         <input type="range" id="intensitySlider" min="0" max="20" value="0" oninput="onIntensityInput(this.value)">
@@ -89,7 +125,7 @@
 
       <!-- Momentary Mode Toggle -->
       <div class="toggle-row">
-        <span>Momentary Mode (Release to 0) 🧸</span>
+        <span id="momentaryLabelText">Momentary Mode (Release to 0) 🧸</span>
         <label class="switch">
           <input type="checkbox" id="momentaryToggle" checked>
           <span class="slider-toggle"></span>
@@ -98,10 +134,10 @@
 
       <!-- Quick Preset Controls -->
       <div class="quick-btns">
-        <button onclick="setDirectIntensity(5)">🌸 Gentle 5</button>
-        <button onclick="setDirectIntensity(10)">💖 Medium 10</button>
-        <button onclick="setDirectIntensity(20)">🔥 Max 20</button>
-        <button class="stop" onclick="setDirectIntensity(0)">🛑 Emergency Stop (0)</button>
+        <button id="presetBtn1" onclick="setDirectIntensity(5)">🌸 Gentle 5</button>
+        <button id="presetBtn2" onclick="setDirectIntensity(10)">💖 Medium 10</button>
+        <button id="presetBtn3" onclick="setDirectIntensity(20)">🔥 Max 20</button>
+        <button id="presetBtnStop" class="stop" onclick="setDirectIntensity(0)">🛑 Emergency Stop (0)</button>
       </div>
     </div>
 
@@ -109,7 +145,7 @@
     <div class="card pattern-card" id="patternCard">
       <div class="collapsible-header" id="patternHeader" onclick="togglePatternCollapse()">
         <h2>
-          <span>🎲 Random Pattern</span>
+          <span id="patternCardTitle">🎲 Random Pattern</span>
           <span class="collapse-icon collapsed" id="patternCollapseIcon">▼</span>
         </h2>
         <label class="switch" onclick="event.stopPropagation()">
@@ -134,7 +170,7 @@
           <!-- Ramp Rate Slider -->
           <div class="pattern-param-row">
             <div class="pattern-param-header">
-              <span>Ramp Rate (Speed)</span>
+              <span id="rampRateLabel">Ramp Rate (Speed)</span>
               <span class="pattern-param-val" id="rampRateVal">3.0 /s</span>
             </div>
             <input type="range" id="rampRateSlider" min="0.5" max="20" step="0.5" value="3"
@@ -145,7 +181,7 @@
           <div class="pattern-dual-row">
             <div class="pattern-param-row">
               <div class="pattern-param-header">
-                <span>Min Level</span>
+                <span id="patternMinLabel">Min Level</span>
                 <span class="pattern-param-val" id="patternMinVal">0</span>
               </div>
               <input type="range" id="patternMinSlider" min="0" max="20" step="1" value="0"
@@ -153,7 +189,7 @@
             </div>
             <div class="pattern-param-row">
               <div class="pattern-param-header">
-                <span>Max Level</span>
+                <span id="patternMaxLabel">Max Level</span>
                 <span class="pattern-param-val" id="patternMaxVal">20</span>
               </div>
               <input type="range" id="patternMaxSlider" min="0" max="20" step="1" value="20"
@@ -165,7 +201,7 @@
           <div class="pattern-dual-row">
             <div class="pattern-param-row">
               <div class="pattern-param-header">
-                <span>Min Jump</span>
+                <span id="minJumpLabel">Min Jump</span>
                 <span class="pattern-param-val" id="minJumpVal">3</span>
               </div>
               <input type="range" id="minJumpSlider" min="0" max="10" step="1" value="3"
@@ -173,7 +209,7 @@
             </div>
             <div class="pattern-param-row">
               <div class="pattern-param-header">
-                <span>Max Hold</span>
+                <span id="holdMaxLabel">Max Hold</span>
                 <span class="pattern-param-val" id="holdMaxVal">1.5 s</span>
               </div>
               <input type="range" id="holdMaxSlider" min="0" max="10" step="0.5" value="1.5"
@@ -187,7 +223,7 @@
     <div class="card motion-card" id="motionCard">
       <div class="collapsible-header" id="motionHeader" onclick="toggleMotionCollapse()">
         <h2>
-          <span>📱 Motion</span>
+          <span id="motionCardTitle">📱 Motion</span>
           <span class="collapse-icon collapsed" id="motionCollapseIcon">▼</span>
         </h2>
         <label class="switch" onclick="event.stopPropagation()">
@@ -210,22 +246,22 @@
         <!-- Real-Time Sensor Telemetry -->
         <div class="motion-telemetry">
           <div class="telemetry-chip">
-            <span class="telemetry-label">G-Force</span>
+            <span class="telemetry-label" id="telemetryLabelG">G-Force</span>
             <span class="telemetry-val" id="telemetryGVal">0.00 G</span>
           </div>
           <div class="telemetry-chip">
-            <span class="telemetry-label">Tilt Angle</span>
+            <span class="telemetry-label" id="telemetryLabelTilt">Tilt Angle</span>
             <span class="telemetry-val" id="telemetryTiltVal">0°</span>
           </div>
           <div class="telemetry-chip">
-            <span class="telemetry-label">Intensity</span>
+            <span class="telemetry-label" id="telemetryLabelLevel">Intensity</span>
             <span class="telemetry-val" id="telemetryLevelVal">0 / 20</span>
           </div>
         </div>
 
         <!-- Mode Selector: Any G-Force vs Vehicle Mode -->
         <div class="motion-mode-selector">
-          <div class="mode-label">Mode Selection</div>
+          <div class="mode-label" id="motionModeHeaderLabel">Mode Selection</div>
           <div class="mode-pills">
             <button type="button" class="mode-pill-btn active" id="modeBtnGforce" onclick="setMotionMode('gforce')">
               🌀 Any G-Force
@@ -239,12 +275,12 @@
         <!-- Multiplier Sensitivity Slider (0 = minor motion ignored, 20 = highest sensitivity) -->
         <div class="motion-param-row">
           <div class="motion-param-header">
-            <span>Multiplier (Sensitivity)</span>
+            <span id="motionMultiplierLabel">Multiplier (Sensitivity)</span>
             <span class="motion-param-val" id="motionMultiplierVal">10</span>
           </div>
           <input type="range" id="motionMultiplierSlider" min="0" max="20" step="1" value="10"
             oninput="onMotionMultiplierInput(this.value)">
-          <div class="motion-param-hint">
+          <div class="motion-param-hint" id="motionMultiplierHint">
             <span>0 = Minor motion ignored</span>
             <span>20 = Slight movement = High intensity</span>
           </div>
@@ -253,12 +289,12 @@
         <!-- Road & Engine Vibration Noise Filter (Used in Angle & Accel Mode) -->
         <div class="motion-param-row" id="motionNoiseFilterRow">
           <div class="motion-param-header">
-            <span>Noise Filter (Road & Engine)</span>
+            <span id="motionNoiseLabel">Noise Filter (Road & Engine)</span>
             <span class="motion-param-val" id="motionNoiseFilterVal">3</span>
           </div>
           <input type="range" id="motionNoiseFilterSlider" min="0" max="10" step="1" value="3"
             oninput="onMotionNoiseFilterInput(this.value)">
-          <div class="motion-param-hint">
+          <div class="motion-param-hint" id="motionNoiseHint">
             <span>0 = Off (Smooth EV)</span>
             <span>10 = High (Rough road / Diesel)</span>
           </div>
@@ -279,14 +315,63 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v1.8</small>
+      <small>v2.0</small>
     </footer>
+  </div>
+
+  <!-- Settings Modal (Theme Selection) -->
+  <div id="settingsModal" class="settings-modal hidden" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="settings-dialog">
+      <div class="settings-header">
+        <h2 class="settings-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="opacity:0.7;margin-right:8px;">
+            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+          </svg>
+          Settings
+        </h2>
+        <button id="settingsCloseBtn" class="settings-close-btn" aria-label="Close settings" onclick="closeSettingsModal()">&times;</button>
+      </div>
+
+      <div class="settings-body">
+        <div class="settings-section">
+          <div class="settings-section-label">Theme Selection</div>
+          <p class="settings-section-sub">Choose visual design or discreet audio player mode</p>
+          <div class="theme-grid" id="themeGrid">
+            <!-- Pink Theme Card -->
+            <button class="theme-card theme-active" id="themeOptPink" type="button" onclick="setAppTheme('pink')">
+              <div class="theme-preview theme-preview-pink">
+                <div class="tp-pink-strip"></div>
+                <div class="tp-pink-heart">💗</div>
+              </div>
+              <div class="theme-card-name">Pink</div>
+              <div class="theme-card-desc">Sweet & Frilly</div>
+              <span class="theme-check" id="checkPink">✓</span>
+            </button>
+
+            <!-- Music Theme Card -->
+            <button class="theme-card" id="themeOptMusic" type="button" onclick="setAppTheme('music')">
+              <div class="theme-preview theme-preview-music">
+                <div class="tp-music-display">
+                  <div class="tp-music-eq">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="tp-music-text">WINAMP</div>
+                </div>
+              </div>
+              <div class="theme-card-name">Music</div>
+              <div class="theme-card-desc">WinAmp / Discreet</div>
+              <span class="theme-check" id="checkMusic" style="display:none;">✓</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Rename Toy Modal -->
   <div class="modal-overlay" id="renameModal" style="display: none;">
     <div class="modal-card">
-      <h3>🎀 Rename Toy</h3>
+      <h3 id="renameModalTitle">🎀 Rename Toy</h3>
       <input type="text" id="renameInput" class="modal-input" maxlength="28"
         placeholder="Give your toy a sweet name...">
       <div class="modal-btn-row">
@@ -303,15 +388,220 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "1.8";
+    const APP_VERSION = "2.0";
 
     /**
-     * Local storage keys for toy nicknames, preferences, pattern generator, and motion engine.
+     * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
      */
     const STORAGE_KEY_TOY_REGISTRY = "lush_toy_registry";
     const STORAGE_KEY_AUTOSCAN = "lush_toy_autoscan_enabled";
     const STORAGE_KEY_PATTERN_SETTINGS = "lush_pattern_settings";
     const STORAGE_KEY_MOTION_SETTINGS = "lush_motion_settings";
+    const STORAGE_KEY_THEME = "toys_theme";
+
+    /**
+     * Runtime theme selection ('pink' | 'music').
+     */
+    let currentTheme = localStorage.getItem(STORAGE_KEY_THEME) || "pink";
+
+    /**
+     * Opens Settings modal dialog.
+     */
+    function openSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    /**
+     * Closes Settings modal dialog.
+     */
+    function closeSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    /**
+     * Sets application theme, saves preference to localStorage, and updates UI.
+     */
+    function setAppTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem(STORAGE_KEY_THEME, theme);
+      applyTheme(theme);
+    }
+
+    /**
+     * Applies theme attributes, styling tokens, dynamic labels, and visualizer state.
+     */
+    function applyTheme(theme) {
+      currentTheme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+
+      const checkPink = document.getElementById('checkPink');
+      const checkMusic = document.getElementById('checkMusic');
+      const optPink = document.getElementById('themeOptPink');
+      const optMusic = document.getElementById('themeOptMusic');
+
+      if (checkPink) checkPink.style.display = theme === 'pink' ? 'flex' : 'none';
+      if (checkMusic) checkMusic.style.display = theme === 'music' ? 'flex' : 'none';
+      if (optPink) optPink.classList.toggle('theme-active', theme === 'pink');
+      if (optMusic) optMusic.classList.toggle('theme-active', theme === 'music');
+
+      updateThemeLabels(theme);
+      renderDeviceList();
+      updateEqVisualizer(parseInt(slider.value, 10) || 0);
+    }
+
+    /**
+     * Updates text labels across controls to match active aesthetic or discrete audio player terminology.
+     */
+    function updateThemeLabels(theme) {
+      const isMusic = theme === 'music';
+
+      const suiteTitle = document.getElementById('suiteHeaderTitle');
+      if (suiteTitle) suiteTitle.innerText = isMusic ? "Player" : "Lush";
+
+      const mainHeaderTitle = document.getElementById('mainHeaderTitle');
+      if (mainHeaderTitle) {
+        mainHeaderTitle.innerHTML = isMusic
+          ? `<span>⚡</span> WINAMP AUDIO SYSTEM <span>⚡</span>`
+          : `<span>🎀</span> Lush Remote <span>🎀</span>`;
+      }
+
+      const mainHeaderSub = document.getElementById('mainHeaderSubtitle');
+      if (mainHeaderSub) {
+        mainHeaderSub.innerText = isMusic
+          ? "Classic Hi-Fi DSP Equalizer & Master Volume"
+          : "✨ Sweet Wireless Bluetooth Controller ✨";
+      }
+
+      const pairedToysTitle = document.getElementById('pairedToysTitle');
+      if (pairedToysTitle) {
+        pairedToysTitle.innerText = isMusic ? "🔊 Output Channels" : "💖 Paired Toys";
+      }
+
+      const scanBtnText = document.getElementById('scanBtnText');
+      if (scanBtnText) {
+        scanBtnText.innerText = isMusic ? "Scan & Add Audio Output" : "Scan & Add New Toy";
+      }
+
+      const intensityTitle = document.getElementById('intensityCardTitle');
+      if (intensityTitle) {
+        intensityTitle.innerText = isMusic ? "🎚 Master Volume & Equalizer" : "🌸 Vibration Intensity";
+      }
+
+      const sliderLabel = document.getElementById('sliderLabelText');
+      if (sliderLabel) {
+        sliderLabel.innerText = isMusic ? "Master Volume / Gain" : "Level";
+      }
+
+      const momentaryLabel = document.getElementById('momentaryLabelText');
+      if (momentaryLabel) {
+        momentaryLabel.innerText = isMusic
+          ? "Momentary Cue (Mute on Release) 🎛"
+          : "Momentary Mode (Release to 0) 🧸";
+      }
+
+      const pBtn1 = document.getElementById('presetBtn1');
+      const pBtn2 = document.getElementById('presetBtn2');
+      const pBtn3 = document.getElementById('presetBtn3');
+      const pBtnStop = document.getElementById('presetBtnStop');
+      if (pBtn1) pBtn1.innerText = isMusic ? "Low (-12dB)" : "🌸 Gentle 5";
+      if (pBtn2) pBtn2.innerText = isMusic ? "Mid (-6dB)" : "💖 Medium 10";
+      if (pBtn3) pBtn3.innerText = isMusic ? "Max (0dB)" : "🔥 Max 20";
+      if (pBtnStop) pBtnStop.innerText = isMusic ? "⏹ MUTE / ALL OFF" : "🛑 Emergency Stop (0)";
+
+      const patternTitle = document.getElementById('patternCardTitle');
+      if (patternTitle) {
+        patternTitle.innerText = isMusic ? "🎛 DSP Dynamic Sweep & Auto-Fade" : "🎲 Random Pattern";
+      }
+      const rampRateLabel = document.getElementById('rampRateLabel');
+      if (rampRateLabel) {
+        rampRateLabel.innerText = isMusic ? "Sweep Speed (Hz/s)" : "Ramp Rate (Speed)";
+      }
+      const patternMinLabel = document.getElementById('patternMinLabel');
+      if (patternMinLabel) {
+        patternMinLabel.innerText = isMusic ? "Min Volume" : "Min Level";
+      }
+      const patternMaxLabel = document.getElementById('patternMaxLabel');
+      if (patternMaxLabel) {
+        patternMaxLabel.innerText = isMusic ? "Max Volume" : "Max Level";
+      }
+      const minJumpLabel = document.getElementById('minJumpLabel');
+      if (minJumpLabel) {
+        minJumpLabel.innerText = isMusic ? "Min Step" : "Min Jump";
+      }
+      const holdMaxLabel = document.getElementById('holdMaxLabel');
+      if (holdMaxLabel) {
+        holdMaxLabel.innerText = isMusic ? "Sustain Hold" : "Max Hold";
+      }
+
+      const motionTitle = document.getElementById('motionCardTitle');
+      if (motionTitle) {
+        motionTitle.innerText = isMusic ? "🎚 Gyro Spatial & Dynamic EQ" : "📱 Motion";
+      }
+      const telemetryLabelLevel = document.getElementById('telemetryLabelLevel');
+      if (telemetryLabelLevel) {
+        telemetryLabelLevel.innerText = isMusic ? "Dynamic Gain" : "Intensity";
+      }
+      const modeBtnGforce = document.getElementById('modeBtnGforce');
+      if (modeBtnGforce) {
+        modeBtnGforce.innerText = isMusic ? "🌀 Omnidirectional Dynamics" : "🌀 Any G-Force";
+      }
+      const modeBtnVehicle = document.getElementById('modeBtnVehicle');
+      if (modeBtnVehicle) {
+        modeBtnVehicle.innerText = isMusic ? "🚗 In-Vehicle Tilt EQ" : "🚗 Angle & Accel";
+      }
+      const motionMultiplierLabel = document.getElementById('motionMultiplierLabel');
+      if (motionMultiplierLabel) {
+        motionMultiplierLabel.innerText = isMusic ? "Gain Sensitivity Multiplier" : "Multiplier (Sensitivity)";
+      }
+      const motionNoiseLabel = document.getElementById('motionNoiseLabel');
+      if (motionNoiseLabel) {
+        motionNoiseLabel.innerText = isMusic ? "Road / Chassis Rumble Filter" : "Noise Filter (Road & Engine)";
+      }
+      const zeroBaselineBtn = document.getElementById('zeroBaselineBtn');
+      if (zeroBaselineBtn) {
+        zeroBaselineBtn.innerText = isMusic ? "🎯 Calibrate Gyro Horizon (Neutral)" : "🎯 Zero Baseline (Set Tilt/Resting Level)";
+      }
+
+      const renameTitle = document.getElementById('renameModalTitle');
+      if (renameTitle) {
+        renameTitle.innerText = isMusic ? "🔊 Rename Audio Channel" : "🎀 Rename Toy";
+      }
+      const renameInput = document.getElementById('renameInput');
+      if (renameInput) {
+        renameInput.placeholder = isMusic ? "Enter custom channel or speaker label..." : "Give your toy a sweet name...";
+      }
+
+      updateAutoScanUi();
+    }
+
+    /**
+     * Updates WinAmp Graphic Equalizer LED visualizer bars and preamp slider.
+     */
+    function updateEqVisualizer(level) {
+      const eqBars = document.querySelectorAll('.eq-bar-fill');
+      const preampThumb = document.getElementById('eqPreampThumb');
+      const numLevel = Math.max(0, Math.min(20, Number(level) || 0));
+      const basePercent = (numLevel / 20) * 100;
+
+      if (preampThumb) {
+        preampThumb.style.bottom = `${Math.min(92, Math.max(0, basePercent * 0.92))}%`;
+      }
+
+      if (!eqBars || eqBars.length === 0) return;
+
+      const weights = [1.0, 0.94, 0.88, 0.82, 0.85, 0.90, 0.96, 0.90, 0.84, 0.78];
+      eqBars.forEach((bar, idx) => {
+        if (numLevel === 0) {
+          bar.style.height = '0%';
+        } else {
+          const weight = weights[idx % weights.length];
+          const barHeight = Math.min(100, Math.max(6, Math.round(basePercent * weight)));
+          bar.style.height = `${barHeight}%`;
+        }
+      });
+    }
 
     /**
      * Runtime state managing remembered toys and active Bluetooth sessions.
@@ -523,6 +813,9 @@
      * 5. Starts background auto-reconnect timer loop.
      */
     async function initApp() {
+      // Restore and apply active theme
+      applyTheme(currentTheme);
+
       // Restore saved pattern generator parameters
       loadPatternSettings();
 
@@ -542,7 +835,7 @@
         addOrUpdateManagedToy(
           null,
           storedId,
-          meta.customName || "Lovense Lush",
+          meta.customName || (currentTheme === 'music' ? "Audio Output" : "Lovense Lush"),
           meta.originalName || "LVS-Device",
           false
         );
@@ -562,7 +855,7 @@
           const authorizedDevices = await navigator.bluetooth.getDevices();
           authorizedDevices.forEach(device => {
             const meta = registry[device.id] || {};
-            const customName = meta.customName || device.name || "Lovense Lush";
+            const customName = meta.customName || device.name || (currentTheme === 'music' ? "Audio Output" : "Lovense Lush");
             const originalName = meta.originalName || device.name || "LVS-Device";
 
             // Ensure device exists in local registry
@@ -580,9 +873,13 @@
 
       // Update log box status
       if (managedToys.length > 0) {
-        updateLog(`Found ${managedToys.length} saved toy(s). Ready to connect.`);
+        updateLog(currentTheme === 'music'
+          ? `Found ${managedToys.length} output channel(s). Ready to link.`
+          : `Found ${managedToys.length} saved toy(s). Ready to connect.`);
       } else {
-        updateLog("Ready. Click 'Scan & Add New Toy' to connect your first Lush.");
+        updateLog(currentTheme === 'music'
+          ? "Audio engine ready. Click 'Scan & Add Audio Output' to link a Bluetooth monitor."
+          : "Ready. Click 'Scan & Add New Toy' to connect your first Lush.");
       }
 
       // 3. Start auto-scan loop
@@ -825,13 +1122,14 @@
      * Updates Auto-Scan banner UI elements.
      */
     function updateAutoScanUi() {
+      const isMusic = currentTheme === 'music';
       if (isAutoScanActive) {
-        autoScanLabel.innerText = "Auto-reconnect: Active (5s)";
-        toggleAutoScanBtn.innerText = "Pause";
+        autoScanLabel.innerText = isMusic ? "Telemetry Sync: Active (5s)" : "Auto-reconnect: Active (5s)";
+        toggleAutoScanBtn.innerText = isMusic ? "Pause Sync" : "Pause";
         autoScanHeart.style.display = "inline-block";
       } else {
-        autoScanLabel.innerText = "Auto-reconnect: Paused";
-        toggleAutoScanBtn.innerText = "Resume";
+        autoScanLabel.innerText = isMusic ? "Telemetry Sync: Paused" : "Auto-reconnect: Paused";
+        toggleAutoScanBtn.innerText = isMusic ? "Resume Sync" : "Resume";
         autoScanHeart.style.display = "none";
       }
     }
@@ -997,16 +1295,20 @@
      * Renders paired device list with custom nicknames and status badges.
      */
     function renderDeviceList() {
+      const isMusic = currentTheme === 'music';
       const listEl = document.getElementById('deviceList');
       const badgeEl = document.getElementById('toyCountBadge');
-      badgeEl.innerText = `${managedToys.length} saved`;
+      badgeEl.innerText = `${managedToys.length} ${isMusic ? 'linked' : 'saved'}`;
 
       listEl.innerHTML = '';
 
       if (managedToys.length === 0) {
+        const emptyMsg = isMusic
+          ? 'No audio devices connected. Click <strong>Scan & Add Audio Output</strong> above to link a Bluetooth monitor.'
+          : 'No toys paired yet. Click <strong>Scan & Add New Toy</strong> above to connect your first Lush!';
         listEl.innerHTML = `
         <div class="empty-state">
-          No toys paired yet. Click <strong>Scan & Add New Toy</strong> above to connect your first Lush!
+          ${emptyMsg}
         </div>
       `;
         return;
@@ -1019,16 +1321,26 @@
         // Build status badge
         let statusHtml = '';
         if (toy.status === 'connected') {
-          statusHtml = `<span class="status-badge online">● Connected</span>`;
+          statusHtml = isMusic
+            ? `<span class="status-badge online">● Online</span>`
+            : `<span class="status-badge online">● Connected</span>`;
         } else if (toy.status === 'connecting') {
-          statusHtml = `<span class="status-badge connecting">⏳ Connecting...</span>`;
+          statusHtml = isMusic
+            ? `<span class="status-badge connecting">⏳ Linking...</span>`
+            : `<span class="status-badge connecting">⏳ Connecting...</span>`;
         } else {
-          statusHtml = `<span class="status-badge offline">💤 Standby</span>`;
+          statusHtml = isMusic
+            ? `<span class="status-badge offline">💤 Standby</span>`
+            : `<span class="status-badge offline">💤 Standby</span>`;
         }
+
+        const connectLabel = isMusic ? 'Link' : 'Connect';
+        const renameLabel = isMusic ? '🏷 Rename' : '✏️ Rename';
+        const forgetLabel = isMusic ? '🗑 Disconnect' : '🗑️ Forget';
 
         // Build manual connect button if disconnected
         const connectActionHtml = toy.status !== 'connected' && !toy.isConnecting
-          ? `<button class="action-pill-btn" onclick="manualConnectToy('${toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">Connect</button>`
+          ? `<button class="action-pill-btn" onclick="manualConnectToy('${toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">${connectLabel}</button>`
           : '';
 
         const safeId = toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -1047,8 +1359,8 @@
         </div>
         <div class="device-actions">
           ${connectActionHtml}
-          <button class="action-pill-btn" onclick="openRenameModal('${safeId}', '${safeCustomName}')">✏️ Rename</button>
-          <button class="action-pill-btn danger" onclick="forgetToy('${safeId}')">🗑️ Forget</button>
+          <button class="action-pill-btn" onclick="openRenameModal('${safeId}', '${safeCustomName}')">${renameLabel}</button>
+          <button class="action-pill-btn danger" onclick="forgetToy('${safeId}')">${forgetLabel}</button>
         </div>
       `;
 
@@ -1628,10 +1940,13 @@
       if (telemetryGVal) telemetryGVal.innerText = `${gVal.toFixed(2)} G`;
       if (telemetryTiltVal) telemetryTiltVal.innerText = `${Math.round(tiltVal)}°`;
       if (telemetryLevelVal) telemetryLevelVal.innerText = `${clamped} / 20`;
-      if (motionOutputDisplay) motionOutputDisplay.innerText = `Intensity: ${clamped}`;
+      if (motionOutputDisplay) {
+        motionOutputDisplay.innerText = currentTheme === 'music' ? `Gain Output: ${clamped}` : `Intensity: ${clamped}`;
+      }
 
       slider.value = clamped;
       valDisplay.innerText = clamped;
+      updateEqVisualizer(clamped);
 
       if (clamped !== motionLastSentLevel) {
         motionLastSentLevel = clamped;
@@ -1696,6 +2011,7 @@
 
       slider.value = rounded;
       valDisplay.innerText = rounded;
+      updateEqVisualizer(rounded);
 
       if (rounded !== lastSentPatternLevel) {
         lastSentPatternLevel = rounded;
@@ -1707,8 +2023,9 @@
      * Updates pattern status badge, phase description, and target readouts.
      */
     function updatePatternStatus() {
+      const isMusic = currentTheme === 'music';
       if (!patternEnabled) {
-        patternStatusLabel.innerText = "Off";
+        patternStatusLabel.innerText = isMusic ? "Bypassed" : "Off";
         patternTargetDisplay.innerText = "Target: --";
         return;
       }
@@ -1716,12 +2033,16 @@
       patternTargetDisplay.innerText = `Target: ${nextTarget}`;
 
       if (patternPhase === 'manual') {
-        patternStatusLabel.innerText = "Manual Override (Paused)";
+        patternStatusLabel.innerText = isMusic ? "Manual Gain (Paused)" : "Manual Override (Paused)";
       } else if (patternPhase === 'holding') {
         const remainingSec = Math.max(0, (holdUntil - performance.now()) / 1000).toFixed(1);
-        patternStatusLabel.innerText = `Holding at ${Math.round(currentPatternLevel)} (${remainingSec}s)`;
+        patternStatusLabel.innerText = isMusic
+          ? `Sustain at ${Math.round(currentPatternLevel)} (${remainingSec}s)`
+          : `Holding at ${Math.round(currentPatternLevel)} (${remainingSec}s)`;
       } else if (patternPhase === 'ramping') {
-        patternStatusLabel.innerText = `Ramping ${Math.round(currentPatternLevel)} → ${nextTarget}`;
+        patternStatusLabel.innerText = isMusic
+          ? `Sweeping ${Math.round(currentPatternLevel)} → ${nextTarget}`
+          : `Ramping ${Math.round(currentPatternLevel)} → ${nextTarget}`;
       }
     }
 
@@ -1744,6 +2065,7 @@
       valDisplay.innerText = intVal;
       currentPatternLevel = intVal;
       lastSentPatternLevel = intVal;
+      updateEqVisualizer(intVal);
       queueTransmission(intVal);
 
       if (patternEnabled) {
@@ -1769,6 +2091,7 @@
       valDisplay.innerText = val;
       currentPatternLevel = val;
       lastSentPatternLevel = val;
+      updateEqVisualizer(val);
       queueTransmission(val);
     }
 
@@ -1837,6 +2160,7 @@
         if (momentaryToggle.checked && slider.value !== "0") {
           slider.value = 0;
           valDisplay.innerText = "0";
+          updateEqVisualizer(0);
           queueTransmission(0);
         }
       }
@@ -1852,6 +2176,20 @@
     slider.addEventListener('pointerup', handleRelease);
     slider.addEventListener('pointercancel', handleRelease);
     slider.addEventListener('lostpointercapture', handleRelease);
+
+    // Keyboard and overlay backdrop dismiss listeners for modal dialogs
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeSettingsModal();
+        closeRenameModal();
+      }
+    });
+
+    document.getElementById('settingsModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'settingsModal') {
+        closeSettingsModal();
+      }
+    });
 
     // Safety shutdown on page unload
     window.addEventListener('pagehide', () => {

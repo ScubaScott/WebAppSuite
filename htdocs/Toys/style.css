@@ -27,6 +27,9 @@
   
   --stop-bg: linear-gradient(135deg, #e63946 0%, #ff5c6c 100%);
 
+  --modal-overlay: rgba(50, 15, 30, 0.65);
+  --modal-bg: #ffffff;
+
   /* Suite header theme tokens for Toys / Lush */
   --hdr-bg: rgba(255, 235, 245, 0.95);
   --hdr-fg: #451b30;
@@ -162,19 +165,6 @@ body::after {
   box-shadow: var(--card-shadow);
   backdrop-filter: blur(8px);
   position: relative;
-}
-
-/* Frilly Scalloped Top Accent */
-.card::before {
-  content: "🎀";
-  position: absolute;
-  top: -12px;
-  left: 22px;
-  font-size: 16px;
-  background: #ffffff;
-  padding: 0 4px;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
 }
 
 h2, h3 { 
@@ -965,4 +955,743 @@ input:checked + .slider-toggle:before {
   color: var(--text-muted);
   text-align: center;
 }
+
+/* ============================================================
+   Music Theme Tokens - WinAmp Retro Audio Player & Discreet Mode
+   ============================================================ */
+[data-theme="music"] {
+  --bg-gradient: linear-gradient(180deg, #18191f 0%, #111216 100%);
+  --card-bg: #23252d;
+  --card-border: #383c47;
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  
+  --accent-primary: #00ff41;
+  --accent-gradient: linear-gradient(180deg, #373b47 0%, #202229 100%);
+  --accent-hover: linear-gradient(180deg, #434857 0%, #292b35 100%);
+  --accent-light: #16181f;
+  --accent-subtle: #191b22;
+  --accent-border: #3d4251;
+  
+  --text-dark: #d5dae5;
+  --text-muted: #858d9f;
+  --text-light: #00ff41;
+  
+  --badge-online: #00ff41;
+  --badge-online-bg: #092411;
+  --badge-offline: #777e8f;
+  --badge-offline-bg: #1c1d24;
+  --badge-searching: #ffb000;
+  --badge-searching-bg: #29200b;
+  
+  --stop-bg: linear-gradient(180deg, #501d1f 0%, #2e0e10 100%);
+
+  --modal-overlay: rgba(0, 0, 0, 0.85);
+  --modal-bg: #21232b;
+
+  /* Suite header tokens in Music Mode */
+  --hdr-bg: #191a21;
+  --hdr-fg: #00ff41;
+  --hdr-muted: #828c9e;
+  --hdr-accent: #00ff41;
+  --hdr-border: #343846;
+  --hdr-font: 'Consolas', 'Courier New', monospace;
+}
+
+/* ============================================================
+   Settings Modal & Theme Picker Styles
+   ============================================================ */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--modal-overlay);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.settings-modal.hidden {
+  display: none !important;
+}
+
+.settings-dialog {
+  background: var(--modal-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.settings-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  color: var(--text-dark);
+}
+
+.settings-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  transition: all 0.15s ease;
+}
+
+.settings-close-btn:hover {
+  background: var(--accent-light);
+  color: var(--text-dark);
+}
+
+.settings-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings-section-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.settings-section-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 12px 0;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.theme-card {
+  border-radius: 14px;
+  border: 2px solid var(--card-border);
+  background: var(--card-bg);
+  padding: 10px;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.theme-card.theme-active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 14px rgba(255, 51, 133, 0.3);
+}
+
+[data-theme="music"] .theme-card.theme-active {
+  box-shadow: 0 0 14px rgba(0, 255, 65, 0.35);
+}
+
+.theme-preview {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-preview-pink {
+  background: linear-gradient(135deg, #ffe0ee 0%, #ffc5de 100%);
+  border: 1px solid #ffa5cc;
+}
+
+.tp-pink-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: #ff4088;
+}
+
+.tp-pink-heart {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(255, 64, 136, 0.4));
+}
+
+.theme-preview-music {
+  background: #15171d;
+  border: 1px solid #3d4352;
+}
+
+.tp-music-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 85%;
+  background: #090b0f;
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #282c36;
+}
+
+.tp-music-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+  width: 100%;
+  justify-content: center;
+}
+
+.tp-music-eq span {
+  width: 4px;
+  background: #00ff41;
+  border-radius: 1px;
+}
+.tp-music-eq span:nth-child(1) { height: 12px; }
+.tp-music-eq span:nth-child(2) { height: 18px; }
+.tp-music-eq span:nth-child(3) { height: 8px; }
+.tp-music-eq span:nth-child(4) { height: 15px; }
+.tp-music-eq span:nth-child(5) { height: 10px; }
+
+.tp-music-text {
+  font-family: 'Consolas', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #00ff41;
+  text-shadow: 0 0 4px rgba(0, 255, 65, 0.7);
+}
+
+.theme-card-name {
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.theme-card-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.theme-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="music"] .theme-check {
+  color: #000000;
+}
+
+/* ============================================================
+   WinAmp Graphic EQ Analyzer Visualizer
+   ============================================================ */
+.winamp-eq-wrapper {
+  display: none;
+  margin-bottom: 14px;
+  background: #0a0c10;
+  border: 2px solid;
+  border-color: #12141a #474d5c #474d5c #12141a;
+  box-shadow: inset 1px 1px 0 #000, 0 4px 12px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  padding: 10px;
+  user-select: none;
+}
+
+[data-theme="music"] .winamp-eq-wrapper {
+  display: block;
+}
+
+.winamp-eq-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1f232c;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.winamp-eq-logo {
+  font-size: 11px;
+  font-weight: 800;
+  color: #00ff41;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.6);
+}
+
+.winamp-eq-indicators {
+  display: flex;
+  gap: 6px;
+}
+
+.winamp-eq-tag {
+  font-size: 9px;
+  font-weight: 800;
+  color: #4b5262;
+  background: #13151b;
+  padding: 2px 5px;
+  border: 1px solid #232732;
+  border-radius: 2px;
+}
+
+.winamp-eq-tag.active {
+  color: #00ff41;
+  border-color: #00ff41;
+  box-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+}
+
+.winamp-eq-rate {
+  font-size: 9px;
+  font-weight: 700;
+  color: #8b94a6;
+  letter-spacing: 0.5px;
+}
+
+.winamp-eq-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 4px 2px 2px 2px;
+}
+
+.winamp-eq-preamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-right: 1px solid #1f232c;
+  padding-right: 10px;
+}
+
+.eq-preamp-track {
+  width: 12px;
+  height: 64px;
+  background: #06070a;
+  border: 1px solid #262a34;
+  border-radius: 2px;
+  position: relative;
+}
+
+.eq-preamp-thumb {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: 0%;
+  height: 8px;
+  background: linear-gradient(180deg, #d3d7e2 0%, #838b9b 50%, #464a54 100%);
+  border: 1px solid #16181e;
+  border-radius: 1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  transition: bottom 0.08s ease-out;
+}
+
+.winamp-eq-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.eq-band {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.eq-bar-track {
+  width: 100%;
+  max-width: 18px;
+  height: 64px;
+  background: #050608;
+  border: 1px solid #1b1e26;
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.eq-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0%;
+  transition: height 0.08s ease-out;
+  background: repeating-linear-gradient(
+    to top,
+    #00ff41 0px, #00ff41 3px,
+    #050608 3px, #050608 5px,
+    #00ff41 5px, #00ff41 8px,
+    #050608 8px, #050608 10px,
+    #00ff41 10px, #00ff41 13px,
+    #050608 13px, #050608 15px,
+    #00ff41 15px, #00ff41 18px,
+    #050608 18px, #050608 20px,
+    #00ff41 20px, #00ff41 23px,
+    #050608 23px, #050608 25px,
+    #00ff41 25px, #00ff41 28px,
+    #050608 28px, #050608 30px,
+    #00ff41 30px, #00ff41 33px,
+    #050608 33px, #050608 35px,
+    #00ff41 35px, #00ff41 38px,
+    #050608 38px, #050608 40px,
+    #ffcc00 40px, #ffcc00 43px,
+    #050608 43px, #050608 45px,
+    #ffcc00 45px, #ffcc00 48px,
+    #050608 48px, #050608 50px,
+    #ff3300 50px, #ff3300 53px,
+    #050608 53px, #050608 55px,
+    #ff0033 55px, #ff0033 64px
+  );
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+}
+
+.eq-label {
+  font-family: 'Consolas', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #656d7e;
+  letter-spacing: 0.2px;
+}
+
+/* ============================================================
+   WinAmp Style Full Component Overrides (data-theme="music")
+   ============================================================ */
+[data-theme="music"] body {
+  background: var(--bg-gradient);
+  color: var(--text-dark);
+}
+
+[data-theme="music"] body::before,
+[data-theme="music"] body::after {
+  display: none !important;
+}
+
+/* WinAmp Window Chassis (Cards) */
+[data-theme="music"] .card {
+  background: var(--card-bg);
+  border: 2px solid;
+  border-color: #515767 #121318 #121318 #515767;
+  border-radius: 4px;
+  box-shadow: inset 1px 1px 0 #6e768a, inset -1px -1px 0 #0d0e12, 0 10px 30px rgba(0, 0, 0, 0.7);
+  padding: 16px;
+}
+
+[data-theme="music"] .header-box {
+  background: #1c1e26;
+  border: 2px solid;
+  border-color: #515767 #121318 #121318 #515767;
+  border-radius: 4px;
+  box-shadow: inset 1px 1px 0 #6e768a, inset -1px -1px 0 #0d0e12;
+  padding: 14px;
+}
+
+[data-theme="music"] .header-box h2 {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 1.25rem;
+  letter-spacing: 1.5px;
+  color: #00ff41;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+  margin-bottom: 4px;
+}
+
+[data-theme="music"] .header-subtitle {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: #8c95a8;
+}
+
+/* Card Module Titlebars */
+[data-theme="music"] .card h2,
+[data-theme="music"] .collapsible-header h2 {
+  background: linear-gradient(90deg, #1d3356 0%, #0f1c30 100%);
+  border: 1px solid #335485;
+  border-radius: 3px;
+  padding: 7px 12px;
+  margin: -4px -4px 14px -4px;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #00ff41;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="music"] .card h2 span,
+[data-theme="music"] .collapsible-header h2 span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* LCD Value Displays */
+[data-theme="music"] .intensity-val,
+[data-theme="music"] .pattern-param-val,
+[data-theme="music"] .motion-param-val,
+[data-theme="music"] .telemetry-val {
+  background: #080c09;
+  border: 1px solid #1e3323;
+  color: #00ff41;
+  font-family: 'Consolas', monospace;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 3px;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.7);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="music"] .slider-box {
+  background: #171920;
+  border: 1px solid #2f3442;
+  border-radius: 4px;
+  padding: 14px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* Sliders */
+[data-theme="music"] input[type="range"] {
+  background: #0a0c10;
+  border: 1px solid #2d323f;
+  height: 8px;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 3px #000;
+}
+
+[data-theme="music"] input[type="range"]::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #d3d7e2 0%, #808899 50%, #444853 100%);
+  border: 1px solid #16181f;
+  border-radius: 2px;
+  width: 20px;
+  height: 26px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+/* Buttons in WinAmp Style */
+[data-theme="music"] .primary-btn,
+[data-theme="music"] .action-pill-btn,
+[data-theme="music"] .quick-btns button,
+[data-theme="music"] .mode-pill-btn,
+[data-theme="music"] .zero-btn,
+[data-theme="music"] .modal-btn {
+  background: linear-gradient(180deg, #373b47 0%, #21232a 100%);
+  border: 2px solid;
+  border-color: #5b6272 #121318 #121318 #5b6272;
+  border-radius: 3px;
+  color: #dbe0eb;
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="music"] .primary-btn:hover,
+[data-theme="music"] .action-pill-btn:hover,
+[data-theme="music"] .quick-btns button:hover,
+[data-theme="music"] .mode-pill-btn:hover,
+[data-theme="music"] .zero-btn:hover {
+  background: linear-gradient(180deg, #444957 0%, #2a2c35 100%);
+  color: #00ff41;
+  border-color: #6c7487 #121318 #121318 #6c7487;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.3);
+}
+
+[data-theme="music"] .primary-btn:active,
+[data-theme="music"] .action-pill-btn:active,
+[data-theme="music"] .quick-btns button:active,
+[data-theme="music"] .zero-btn:active {
+  border-color: #121318 #5b6272 #5b6272 #121318;
+  box-shadow: inset 1px 1px 3px #000;
+  transform: translateY(1px);
+}
+
+/* Stop Button in WinAmp Style */
+[data-theme="music"] .quick-btns button.stop {
+  background: linear-gradient(180deg, #4b1a1c 0%, #280d0f 100%);
+  border-color: #7c2d30 #150607 #150607 #7c2d30;
+  color: #ff7676;
+}
+
+[data-theme="music"] .quick-btns button.stop:hover {
+  background: linear-gradient(180deg, #5e2023 0%, #351012 100%);
+  color: #ff9999;
+  box-shadow: 0 0 10px rgba(255, 50, 50, 0.4);
+}
+
+/* Toggle Switches */
+[data-theme="music"] .slider-toggle {
+  background: #13151b;
+  border: 1px solid #363b48;
+}
+
+[data-theme="music"] .switch input:checked + .slider-toggle {
+  background: #00ff41;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+}
+
+[data-theme="music"] .switch input:checked + .slider-toggle:before {
+  background: #000000;
+}
+
+/* Auto-Scan Bar */
+[data-theme="music"] .auto-scan-bar {
+  background: #171920;
+  border: 1px solid #2f3442;
+  border-radius: 4px;
+}
+
+[data-theme="music"] .pulsing-heart {
+  display: inline-block;
+  color: #00ff41;
+}
+
+/* Status Badges */
+[data-theme="music"] .status-badge.online {
+  background: #092411;
+  color: #00ff41;
+  border: 1px solid #165328;
+}
+
+[data-theme="music"] .status-badge.offline {
+  background: #171920;
+  color: #828a9c;
+  border: 1px solid #2d323f;
+}
+
+[data-theme="music"] .status-badge.connecting {
+  background: #2b2108;
+  color: #ffb000;
+  border: 1px solid #5a440e;
+}
+
+/* Device Items */
+[data-theme="music"] .device-item {
+  background: #1b1d24;
+  border: 1px solid #333744;
+  border-radius: 4px;
+}
+
+[data-theme="music"] .device-item.selected {
+  border-color: #00ff41;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.25);
+}
+
+[data-theme="music"] .custom-checkbox {
+  border-radius: 2px;
+  border-color: #4b5262;
+  background: #0d0f14;
+}
+
+[data-theme="music"] .device-item.selected .custom-checkbox {
+  background: #00ff41;
+  border-color: #00ff41;
+  color: #000000;
+}
+
+/* Status Panels */
+[data-theme="music"] .pattern-status-box,
+[data-theme="music"] .motion-status-box,
+[data-theme="music"] .motion-telemetry,
+[data-theme="music"] .motion-zero-box {
+  background: #15171d;
+  border: 1px solid #2c303c;
+  border-radius: 4px;
+}
+
+[data-theme="music"] .telemetry-chip {
+  background: #0e1015;
+  border: 1px solid #252833;
+}
+
+[data-theme="music"] .mode-pill-btn.active {
+  background: #00ff41;
+  color: #000000;
+  border-color: #00ff41;
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+}
+
+/* Log Box & Footer */
+[data-theme="music"] #log {
+  background: #0a0c10;
+  border: 1px solid #252833;
+  color: #00ff41;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+}
+
+[data-theme="music"] .app-footer {
+  color: #555c6d;
+}
+
+[data-theme="music"] .settings-dialog {
+  border-color: #4f5566 #15171e #15171e #4f5566;
+}
+
 

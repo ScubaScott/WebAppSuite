@@ -9,9 +9,17 @@ This document defines the agent parameters, Bluetooth protocols, and architectur
 Toys is a wireless Web Bluetooth controller specifically engineered to manage single or multiple Lovense devices (Lush, Hush, Domi, Edge, etc.) with low-latency UART telemetry, continuous vibration intensity control, momentary safety release, custom nicknames, and background auto-reconnect routines.
 
 ### Primary Files
-- `index.html`: Main control panel, vibration intensity slider, device list, device pairing/renaming modals, and Web Bluetooth GATT communication loop.
-- `style.css`: Sweet, pastel pink & frilly design tokens, responsive cards, touch-friendly pill buttons, toggle sliders, and status badges.
+- `index.html`: Main control panel, vibration intensity slider, device list, device pairing/renaming modals, settings modal with theme switcher, WinAmp graphic equalizer visualizer, and Web Bluetooth GATT communication loop.
+- `style.css`: Sweet pastel pink design tokens, retro WinAmp dark graphite & green phosphor LCD theme tokens, responsive cards, touch-friendly pill buttons, toggle sliders, and status badges.
 - `toys.html`: Backward compatibility redirect forwarding to `index.html`.
+
+---
+
+## 2. Theme System & Discretion Mode
+- **Pink Theme (Original)**: Sweet, frilly pastel pink design tokens, romantic heart accents, and overt Lush controller terminology.
+- **Music Theme (WinAmp / Discretion Mode)**: Retro WinAmp media player aesthetic engineered for discreet public usage. Features brushed dark graphite casings, phosphor green (`#00ff41`) LCD displays, beveled metallic controls, and an animated Graphic Equalizer (EQ) spectrum analyzer responding to intensity levels.
+- **Discreet Terminology**: In Music mode, all UI controls and status badges dynamically transform into professional audio terminology (e.g., *Output Channels*, *Scan Audio Output*, *Master Volume / Gain*, *dB Presets*, *DSP Dynamic Sweep*, *Gyro Spatial EQ*).
+- **Settings Modal & Persistence**: Triggered via the standard Suite Header gear button (`.suite-header__gear`). User selection is persisted in `localStorage` under `toys_theme`.
 
 ---
 
