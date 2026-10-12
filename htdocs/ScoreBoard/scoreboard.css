@@ -516,17 +516,201 @@ body {
 }
 
 /* ============================================================
-   Theme Selection Grid (inside settings modal)
-   Click a theme card to apply background + accent color.
+   Theme Selection (Dropdown with Thumbnail Previews)
    ============================================================ */
+.theme-dropdown {
+    position: relative;
+    width: 100%;
+    margin-bottom: 14px;
+}
+
+/* Dropdown closed trigger button */
+.theme-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 48px;
+    padding: 8px 12px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1.5px solid #334155;
+    border-radius: 12px;
+    color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    outline: none;
+}
+.theme-dropdown-trigger:hover,
+.theme-dropdown-trigger:focus-visible {
+    border-color: #10b981;
+    background: rgba(30, 41, 59, 0.95);
+}
+.theme-dropdown.open .theme-dropdown-trigger {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+/* Content container inside dropdown trigger */
+.theme-trigger-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* Thumbnail preview inside trigger */
+.theme-trigger-thumb {
+    width: 44px;
+    height: 30px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+/* Active theme name label */
+.theme-trigger-label {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Chevron indicator */
+.theme-trigger-arrow {
+    width: 18px;
+    height: 18px;
+    color: #94a3b8;
+    transition: transform 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+.theme-dropdown.open .theme-trigger-arrow {
+    transform: rotate(180deg);
+    color: #10b981;
+}
+
+/* Floating dropdown menu list */
+.theme-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 50;
+    max-height: 250px;
+    overflow-y: auto;
+    background: #0f172a;
+    border: 1.5px solid #334155;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+}
+.theme-dropdown.open .theme-dropdown-menu {
+    display: flex;
+}
+.theme-dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+}
+.theme-dropdown-menu::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+}
+.theme-dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Individual theme option item */
+.theme-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    min-height: 48px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    border: 1px solid transparent;
+    user-select: none;
+}
+.theme-dropdown-item:hover,
+.theme-dropdown-item:focus-visible {
+    background: rgba(51, 65, 85, 0.65);
+    outline: none;
+}
+.theme-dropdown-item.active {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+/* Left side of item: thumbnail + title text */
+.theme-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* Item thumbnail preview */
+.theme-item-thumb {
+    width: 52px;
+    height: 34px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+/* Item text description */
+.theme-item-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.theme-item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.theme-item-filename {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Checkmark indicator for selected item */
+.theme-item-check {
+    display: none;
+    color: #10b981;
+    font-size: 15px;
+    font-weight: bold;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+.theme-dropdown-item.active .theme-item-check {
+    display: block;
+}
+
+/* Legacy theme grid styles retained for backward compatibility */
 .theme-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     padding-bottom: 8px;
 }
-
-/* Theme preview card */
 .theme-card {
     border-radius: 14px;
     overflow: hidden;
@@ -539,20 +723,15 @@ body {
     transform: scale(1.04);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
 }
-/* Highlight the currently-active theme */
 .theme-card.theme-active {
     border-color: #10b981;
 }
-
-/* Background image preview area */
 .theme-preview {
     width: 100%;
     aspect-ratio: 3 / 2;
     background-size: cover;
     background-position: center;
 }
-
-/* Theme name label at bottom of preview */
 .theme-name {
     width: 100%;
     padding: 6px 8px;
@@ -565,8 +744,6 @@ body {
     background: rgba(0, 0, 0, 0.60);
     backdrop-filter: blur(4px);
 }
-
-/* Checkmark badge on active theme */
 .theme-check {
     display: none;
     position: absolute;

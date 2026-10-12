@@ -267,45 +267,20 @@
 
                 <!-- ── THEME ──────────────────────────────────────── -->
                 <div class="settings-section-label" style="padding-top:14px;">Theme</div>
-                <div class="theme-grid" id="theme-grid">
-
-                    <!-- Theme: Saber Dark -->
-                    <div class="theme-card" id="theme-saber-dark" data-theme="saber-dark"
-                        onclick="applyTheme('saber-dark')">
-                        <div class="theme-preview" style="background-image:url('./media/bgimages/saber.png');"></div>
-                        <div class="theme-name">Saber Dark</div>
-                        <div class="theme-check">✓</div>
-                    </div>
-
-                    <!-- Theme: Saber Intense — saber bg with deep crimson accent -->
-                    <div class="theme-card" id="theme-saber-intense" data-theme="saber-intense"
-                        onclick="applyTheme('saber-intense')">
-                        <div class="theme-preview"
-                            style="background-image:url('./media/bgimages/saber.png');filter:saturate(1.6) brightness(0.75);">
+                <div class="theme-dropdown" id="theme-dropdown">
+                    <button type="button" class="theme-dropdown-trigger" id="theme-dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
+                        <div class="theme-trigger-content">
+                            <div class="theme-trigger-thumb" id="theme-trigger-thumb"></div>
+                            <span class="theme-trigger-label" id="theme-trigger-label">Select Theme</span>
                         </div>
-                        <div class="theme-name">Saber Intense</div>
-                        <div class="theme-check">✓</div>
+                        <svg class="theme-trigger-arrow" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <div class="theme-dropdown-menu" id="theme-dropdown-menu" role="listbox" tabindex="-1">
+                        <!-- Populated dynamically with available background images -->
                     </div>
-
-                    <!-- Theme: Chill Ice -->
-                    <div class="theme-card" id="theme-chill-ice" data-theme="chill-ice"
-                        onclick="applyTheme('chill-ice')">
-                        <div class="theme-preview" style="background-image:url('./media/bgimages/chill.png');"></div>
-                        <div class="theme-name">Chill Ice</div>
-                        <div class="theme-check">✓</div>
-                    </div>
-
-                    <!-- Theme: Chill Night — chill bg darkened for night play -->
-                    <div class="theme-card" id="theme-chill-night" data-theme="chill-night"
-                        onclick="applyTheme('chill-night')">
-                        <div class="theme-preview"
-                            style="background-image:url('./media/bgimages/chill.png');filter:hue-rotate(200deg) brightness(0.55) saturate(1.4);">
-                        </div>
-                        <div class="theme-name">Chill Night</div>
-                        <div class="theme-check">✓</div>
-                    </div>
-
-                </div><!-- end theme-grid -->
+                </div>
 
                 <!-- ── TIMER SETTINGS ─────────────────────────────── -->
                 <div class="settings-section-label">Timer Settings</div>
@@ -840,9 +815,13 @@
             return token;
         }
 
-        // Theme definitions: background image and body background-color fallback.
-        // Each theme maps to a bg image file and an accent color for the page overlay.
+        // Theme definitions and catalog mapping legacy theme keys to background images and fallback styles.
         const THEMES = {
+            'EdenPrarie.png': {
+                image: 'EdenPrarie.png',
+                bgColor: '#1a1a2e',
+                label: 'Eden Prarie'
+            },
             'saber-dark': {
                 image: 'saber.png',
                 bgColor: '#4a1010',
@@ -852,7 +831,6 @@
                 image: 'saber.png',
                 bgColor: '#2d0a0a',
                 label: 'Saber Intense',
-                // CSS filter applied to the body background image via inline style
                 filter: 'saturate(1.6) brightness(0.75)'
             },
             'chill-ice': {
@@ -868,22 +846,203 @@
             }
         };
 
-        // Apply a theme by name: update body background and mark the active card.
+        // Default catalog of background images present in media/bgimages
+        const DEFAULT_BG_IMAGES = ['EdenPrarie.png', 'chill.png', 'saber.png'];
+        let availableBgImages = [...DEFAULT_BG_IMAGES];
+
+        // Format an image filename into a clean, human-readable display label
+        function formatImageLabel(filename) {
+            const base = filename.replace(/\.[^/.]+$/, '');
+            const formatted = base
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/[_-]+/g, ' ')
+                .trim();
+            return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+        }
+
+        // Restore cached background image discovery list from localStorage if available
+        try {
+            const cachedImages = localStorage.getItem('scoreboard_discovered_bgimages');
+            if (cachedImages) {
+                const parsed = JSON.parse(cachedImages);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    const set = new Set([...availableBgImages, ...parsed]);
+                    availableBgImages = Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                }
+            }
+        } catch (_) {}
+
+        // Discovers all available background images in media/bgimages via scanner endpoint
+        async function discoverBackgroundImages() {
+            try {
+                const response = await fetch('media/bgimages/list.php', { cache: 'no-cache' });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && Array.isArray(data.images) && data.images.length > 0) {
+                        const set = new Set([...data.images, ...availableBgImages]);
+                        availableBgImages = Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                        try {
+                            localStorage.setItem('scoreboard_discovered_bgimages', JSON.stringify(availableBgImages));
+                        } catch (_) {}
+                        renderThemeDropdown();
+                    }
+                }
+            } catch (_) {
+                // Keep default or cached images if endpoint is unreachable
+            }
+        }
+
+        // Render options within the custom background theme dropdown
+        function renderThemeDropdown() {
+            const menu = document.getElementById('theme-dropdown-menu');
+            if (!menu) return;
+            menu.innerHTML = '';
+
+            let currentActiveImg = selectedTheme;
+            if (THEMES[selectedTheme]) {
+                currentActiveImg = THEMES[selectedTheme].image;
+            }
+
+            availableBgImages.forEach((imgFile) => {
+                const item = document.createElement('div');
+                item.className = 'theme-dropdown-item';
+                item.setAttribute('role', 'option');
+                item.setAttribute('tabindex', '0');
+                item.dataset.value = imgFile;
+
+                const isSelected = (selectedTheme === imgFile) || (currentActiveImg === imgFile);
+                if (isSelected) {
+                    item.classList.add('active');
+                    item.setAttribute('aria-selected', 'true');
+                } else {
+                    item.setAttribute('aria-selected', 'false');
+                }
+
+                const label = formatImageLabel(imgFile);
+
+                item.innerHTML = `
+                    <div class="theme-item-left">
+                        <div class="theme-item-thumb" style="background-image:url('media/bgimages/${encodeURIComponent(imgFile)}');"></div>
+                        <div class="theme-item-info">
+                            <span class="theme-item-name">${label}</span>
+                            <span class="theme-item-filename">${imgFile}</span>
+                        </div>
+                    </div>
+                    <span class="theme-item-check">&#10003;</span>
+                `;
+
+                // Handle click selection
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    applyTheme(imgFile);
+                    closeThemeDropdown();
+                });
+
+                // Handle keyboard selection
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        applyTheme(imgFile);
+                        closeThemeDropdown();
+                    }
+                });
+
+                menu.appendChild(item);
+            });
+
+            updateThemeTriggerUI();
+        }
+
+        // Update the closed trigger button thumbnail and text with the active theme
+        function updateThemeTriggerUI() {
+            const thumbEl = document.getElementById('theme-trigger-thumb');
+            const labelEl = document.getElementById('theme-trigger-label');
+            if (!thumbEl || !labelEl) return;
+
+            let currentImg = selectedTheme;
+            let displayLabel = selectedTheme;
+
+            if (THEMES[selectedTheme]) {
+                currentImg = THEMES[selectedTheme].image;
+                displayLabel = THEMES[selectedTheme].label || formatImageLabel(currentImg);
+            } else if (/\.(png|jpe?g|webp|svg|gif)$/i.test(selectedTheme)) {
+                currentImg = selectedTheme;
+                displayLabel = formatImageLabel(selectedTheme);
+            }
+
+            thumbEl.style.backgroundImage = `url('media/bgimages/${encodeURIComponent(currentImg)}')`;
+            labelEl.textContent = displayLabel;
+
+            // Sync active state on all dropdown items
+            const items = document.querySelectorAll('.theme-dropdown-item');
+            items.forEach(it => {
+                const matches = (it.dataset.value === currentImg) || (it.dataset.value === selectedTheme);
+                it.classList.toggle('active', matches);
+                it.setAttribute('aria-selected', matches ? 'true' : 'false');
+            });
+        }
+
+        // Toggle visibility of the theme dropdown menu
+        function toggleThemeDropdown(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const dropdown = document.getElementById('theme-dropdown');
+            const trigger = document.getElementById('theme-dropdown-trigger');
+            if (!dropdown) return;
+            const isOpen = dropdown.classList.toggle('open');
+            if (trigger) trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        // Close the theme dropdown menu
+        function closeThemeDropdown() {
+            const dropdown = document.getElementById('theme-dropdown');
+            const trigger = document.getElementById('theme-dropdown-trigger');
+            if (dropdown) dropdown.classList.remove('open');
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        // Close theme dropdown when clicking anywhere outside of it
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('theme-dropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                closeThemeDropdown();
+            }
+        });
+
+        // Apply a theme or image by name: update body background and trigger UI
         function applyTheme(themeName) {
-            const theme = THEMES[themeName] || THEMES['saber-dark'];
+            let image = 'saber.png';
+            let bgColor = '#111827';
+            let filter = null;
+
+            if (THEMES[themeName]) {
+                const theme = THEMES[themeName];
+                image = theme.image;
+                bgColor = theme.bgColor || '#111827';
+                filter = theme.filter || null;
+            } else if (/\.(png|jpe?g|webp|svg|gif)$/i.test(themeName)) {
+                image = themeName;
+                bgColor = '#111827';
+            } else {
+                image = 'saber.png';
+                bgColor = '#111827';
+            }
+
             selectedTheme = themeName;
+
             // Set body background image and fallback color, anchored to lower-right corner and fixed
-            document.body.style.backgroundImage = `url("media/bgimages/${theme.image}")`;
-            document.body.style.backgroundColor = theme.bgColor;
+            document.body.style.backgroundImage = `url("media/bgimages/${image}")`;
+            document.body.style.backgroundColor = bgColor;
             document.body.style.backgroundPosition = 'right bottom';
             document.body.style.backgroundAttachment = 'fixed';
             document.body.style.backgroundRepeat = 'no-repeat';
             document.body.style.backgroundSize = 'cover';
 
-            // Apply CSS filter to body if the theme specifies one (via a fixed background overlay)
-            if (theme.filter) {
-                document.body.dataset.themeFilter = theme.filter;
-                // Apply filter to a fixed full-viewport pseudo-overlay div
+            // Apply CSS filter to body if specified (via fixed background overlay)
+            if (filter) {
+                document.body.dataset.themeFilter = filter;
                 let overlay = document.getElementById('theme-filter-overlay');
                 if (!overlay) {
                     overlay = document.createElement('div');
@@ -891,41 +1050,29 @@
                     overlay.style.cssText = [
                         'position:fixed', 'inset:0', 'z-index:-1',
                         'pointer-events:none',
-                        `background:url("media/bgimages/${theme.image}") no-repeat right bottom / cover`,
+                        `background:url("media/bgimages/${image}") no-repeat right bottom / cover`,
                         'background-attachment:fixed'
                     ].join(';');
                     document.body.appendChild(overlay);
                 } else {
-                    overlay.style.background = `url("media/bgimages/${theme.image}") no-repeat right bottom / cover`;
+                    overlay.style.background = `url("media/bgimages/${image}") no-repeat right bottom / cover`;
                     overlay.style.backgroundAttachment = 'fixed';
                 }
-                overlay.style.filter = theme.filter;
-                // Hide main body bg so only overlay shows
+                overlay.style.filter = filter;
                 document.body.style.backgroundImage = 'none';
             } else {
-                // Remove overlay if no filter needed
                 const overlay = document.getElementById('theme-filter-overlay');
                 if (overlay) overlay.remove();
-                document.body.style.backgroundImage = `url("media/bgimages/${theme.image}")`;
-                document.body.style.backgroundPosition = 'right bottom';
-                document.body.style.backgroundAttachment = 'fixed';
-                document.body.style.backgroundRepeat = 'no-repeat';
-                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundImage = `url("media/bgimages/${image}")`;
             }
-            // Mark the active theme card in the settings grid
-            syncThemeCards();
+
+            updateThemeTriggerUI();
             saveState();
         }
 
-        // Sync visual active state of theme cards with the current selectedTheme.
+        // Synchronize visual state of theme selector (supports legacy calls)
         function syncThemeCards() {
-            document.querySelectorAll('.theme-card').forEach(card => {
-                if (card.dataset.theme === selectedTheme) {
-                    card.classList.add('theme-active');
-                } else {
-                    card.classList.remove('theme-active');
-                }
-            });
+            updateThemeTriggerUI();
         }
 
         const STORAGE_KEY = 'timerStateV7';
@@ -2791,15 +2938,21 @@
             if (settingShowCards) settingShowCards.checked = showPenaltyCards;
             if (settingSharePublic) settingSharePublic.checked = (activeGameVisibility !== 'private');
 
-            // Sync the active theme card highlight
-            syncThemeCards();
+            // Refresh available background images and sync dropdown options
+            discoverBackgroundImages();
+            renderThemeDropdown();
+            updateThemeTriggerUI();
             settingsModal.classList.remove('hidden');
         }
 
         function closeSettings() {
+            closeThemeDropdown();
             settingsModal.classList.add('hidden');
             saveState();
         }
+
+        const themeDropdownTrigger = document.getElementById('theme-dropdown-trigger');
+        if (themeDropdownTrigger) themeDropdownTrigger.addEventListener('click', toggleThemeDropdown);
 
         if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
         if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
@@ -3105,6 +3258,10 @@
             initRoller();
             isInitializingScoreboard = false;
 
+            // Initialize theme dropdown options and check for newly added background images
+            renderThemeDropdown();
+            discoverBackgroundImages();
+
             // Ensure footer version is updated
             const verEl = document.getElementById('appVersion');
             if (verEl) verEl.textContent = VERSION;
@@ -3142,7 +3299,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '4.6';
+        const VERSION = '4.7';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
@@ -3157,7 +3314,7 @@
 
     <!-- Footer displaying application version -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">4.6</span></p>
+        <p>Version <span id="appVersion">4.7</span></p>
     </footer>
 </body>
 

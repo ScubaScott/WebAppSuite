@@ -13,6 +13,11 @@ const STALL_THRESHOLD_MS = 30 * 60 * 1000;
 
 // Theme configuration catalog for read-only theme application
 const SCOREBOARD_THEMES = {
+    'EdenPrarie.png': {
+        image: 'EdenPrarie.png',
+        bgColor: '#1a1a2e',
+        label: 'Eden Prarie'
+    },
     'saber-dark': {
         image: 'saber.png',
         bgColor: '#6b1a1a',
@@ -388,53 +393,66 @@ function renderHistoryRows(tbodyEl, historyList, options = {}) {
 }
 
 /**
- * Reads the viewing user's selected theme from localStorage or cache, and applies it to the document body.
+ * Reads the viewing user's selected theme or background image from localStorage or cache, and applies it to the document body.
  * Strictly read-only: performs zero writes to localStorage or SuiteProfile app data to prevent state corruption.
  */
 function applySavedThemeReadOnly() {
-    let themeName = 'saber-dark';
+    let themeOrImage = 'saber.png';
     try {
         const raw = localStorage.getItem('timerStateV7');
         if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed && parsed.selectedTheme && SCOREBOARD_THEMES[parsed.selectedTheme]) {
-                themeName = parsed.selectedTheme;
+            if (parsed && parsed.selectedTheme) {
+                themeOrImage = parsed.selectedTheme;
             }
         }
     } catch (_) {
         // Fall back to default theme
     }
 
-    const theme = SCOREBOARD_THEMES[themeName] || SCOREBOARD_THEMES['saber-dark'];
-    document.body.style.backgroundImage = `url("media/bgimages/${theme.image}")`;
-    document.body.style.backgroundColor = theme.bgColor;
+    // Resolve image filename and optional styles from catalog or direct filename
+    let imageName = 'saber.png';
+    let bgColor = '#111827';
+    let filter = null;
+
+    if (SCOREBOARD_THEMES[themeOrImage]) {
+        const theme = SCOREBOARD_THEMES[themeOrImage];
+        imageName = theme.image || 'saber.png';
+        bgColor = theme.bgColor || '#111827';
+        filter = theme.filter || null;
+    } else if (/\.(png|jpe?g|webp|svg|gif)$/i.test(themeOrImage)) {
+        imageName = themeOrImage;
+    }
+
+    document.body.style.backgroundImage = `url("media/bgimages/${imageName}")`;
+    document.body.style.backgroundColor = bgColor;
     document.body.style.backgroundPosition = 'right bottom';
     document.body.style.backgroundAttachment = 'fixed';
     document.body.style.backgroundRepeat = 'no-repeat';
     document.body.style.backgroundSize = 'cover';
 
     let overlay = document.getElementById('theme-filter-overlay');
-    if (theme.filter) {
-        document.body.dataset.themeFilter = theme.filter;
+    if (filter) {
+        document.body.dataset.themeFilter = filter;
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.id = 'theme-filter-overlay';
             overlay.style.cssText = [
                 'position:fixed', 'inset:0', 'z-index:-1',
                 'pointer-events:none',
-                `background:url("media/bgimages/${theme.image}") no-repeat right bottom / cover`,
+                `background:url("media/bgimages/${imageName}") no-repeat right bottom / cover`,
                 'background-attachment:fixed'
             ].join(';');
             document.body.appendChild(overlay);
         } else {
-            overlay.style.background = `url("media/bgimages/${theme.image}") no-repeat right bottom / cover`;
+            overlay.style.background = `url("media/bgimages/${imageName}") no-repeat right bottom / cover`;
             overlay.style.backgroundAttachment = 'fixed';
         }
-        overlay.style.filter = theme.filter;
+        overlay.style.filter = filter;
         document.body.style.backgroundImage = 'none';
     } else {
         if (overlay) overlay.remove();
-        document.body.style.backgroundImage = `url("media/bgimages/${theme.image}")`;
+        document.body.style.backgroundImage = `url("media/bgimages/${imageName}")`;
     }
 }
 
