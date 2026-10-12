@@ -43,8 +43,9 @@ Toys is a wireless Web Bluetooth controller specifically engineered to manage si
 - **Mode 2 (Angle & Acceleration / Vehicle Mode)**: Designed for phone mounts inside moving vehicles. Combines planar turning/cornering and acceleration/braking G-forces with pitch and roll tilt deviation relative to a calibrated resting orientation.
 - **Zero Baseline**: Captures resting orientation ($pitch_0, roll_0$) and gravity vector to establish 0-intensity resting equilibrium in vehicle holders.
 - **Sensitivity Multiplier (0 to 20)**: Scaled slider where 0 suppresses minor motion to 0 intensity and 20 produces high intensity on subtle movement.
+- **Road & Engine Noise Filter (0 to 10)**: Dynamic vibration filter specifically designed for vehicle mode. Combines a G-force noise floor gate, tilt jitter deadband, and adaptive low-pass smoothing to filter out rough road texture, chassis rumble, and engine idling vibrations while transmitting true vehicular turns and acceleration.
 - **Collapsible Card**: Starts collapsed by default on page load to conserve vertical space. Header tap toggles expansion state independently of tracking status.
-- **Configuration Persistence**: Mode, multiplier, and baseline calibration are persisted under `lush_motion_settings` in `localStorage`. Tracking toggle is initialized to `off` upon reload.
+- **Configuration Persistence**: Mode, multiplier, noise filter level, and baseline calibration are persisted under `lush_motion_settings` in `localStorage`. Tracking toggle is initialized to `off` upon reload.
 
 ---
 

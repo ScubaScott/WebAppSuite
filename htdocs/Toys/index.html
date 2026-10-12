@@ -250,6 +250,20 @@
           </div>
         </div>
 
+        <!-- Road & Engine Vibration Noise Filter (Used in Angle & Accel Mode) -->
+        <div class="motion-param-row" id="motionNoiseFilterRow">
+          <div class="motion-param-header">
+            <span>Noise Filter (Road & Engine)</span>
+            <span class="motion-param-val" id="motionNoiseFilterVal">3</span>
+          </div>
+          <input type="range" id="motionNoiseFilterSlider" min="0" max="10" step="1" value="3"
+            oninput="onMotionNoiseFilterInput(this.value)">
+          <div class="motion-param-hint">
+            <span>0 = Off (Smooth EV)</span>
+            <span>10 = High (Rough road / Diesel)</span>
+          </div>
+        </div>
+
         <!-- Zero Baseline / Calibrate Controls -->
         <div class="motion-zero-box">
           <button type="button" class="zero-btn" id="zeroBaselineBtn" onclick="zeroMotionBaseline()">
@@ -265,7 +279,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v1.7</small>
+      <small>v1.8</small>
     </footer>
   </div>
 
@@ -289,7 +303,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "1.7";
+    const APP_VERSION = "1.8";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, and motion engine.
@@ -347,6 +361,7 @@
     let motionSettings = {
       mode: 'gforce', // 'gforce' | 'vehicle'
       multiplier: 10,  // 0 to 20
+      noiseFilter: 3,  // 0 to 10 road & engine vibration filter for vehicle mode
       baseline: {
         calibrated: false,
         pitch: 0.0,
@@ -406,6 +421,8 @@
     const modeBtnVehicle = document.getElementById('modeBtnVehicle');
     const motionMultiplierSlider = document.getElementById('motionMultiplierSlider');
     const motionMultiplierVal = document.getElementById('motionMultiplierVal');
+    const motionNoiseFilterSlider = document.getElementById('motionNoiseFilterSlider');
+    const motionNoiseFilterVal = document.getElementById('motionNoiseFilterVal');
     const zeroStatusLabel = document.getElementById('zeroStatusLabel');
 
     /**
@@ -1256,6 +1273,9 @@
             if (typeof parsed.multiplier === 'number' && parsed.multiplier >= 0 && parsed.multiplier <= 20) {
               motionSettings.multiplier = Math.round(parsed.multiplier);
             }
+            if (typeof parsed.noiseFilter === 'number' && parsed.noiseFilter >= 0 && parsed.noiseFilter <= 10) {
+              motionSettings.noiseFilter = Math.round(parsed.noiseFilter);
+            }
             if (parsed.baseline && typeof parsed.baseline === 'object') {
               motionSettings.baseline = {
                 calibrated: !!parsed.baseline.calibrated,
@@ -1278,6 +1298,12 @@
       }
       if (motionMultiplierVal) {
         motionMultiplierVal.innerText = motionSettings.multiplier;
+      }
+      if (motionNoiseFilterSlider) {
+        motionNoiseFilterSlider.value = motionSettings.noiseFilter;
+      }
+      if (motionNoiseFilterVal) {
+        motionNoiseFilterVal.innerText = motionSettings.noiseFilter;
       }
       updateZeroStatusUI();
     }
@@ -1318,6 +1344,17 @@
       if (isNaN(num)) return;
       motionSettings.multiplier = Math.max(0, Math.min(20, num));
       if (motionMultiplierVal) motionMultiplierVal.innerText = motionSettings.multiplier;
+      saveMotionSettings();
+    }
+
+    /**
+     * Handles user adjustment of the road and engine vibration noise filter (0 to 10).
+     */
+    function onMotionNoiseFilterInput(val) {
+      const num = parseInt(val, 10);
+      if (isNaN(num)) return;
+      motionSettings.noiseFilter = Math.max(0, Math.min(10, num));
+      if (motionNoiseFilterVal) motionNoiseFilterVal.innerText = motionSettings.noiseFilter;
       saveMotionSettings();
     }
 
@@ -1521,29 +1558,43 @@
         }
 
       } else if (motionSettings.mode === 'vehicle') {
-        // Mode 2: Vehicle Mode (Tilt Angle and Acceleration)
+        // Mode 2: Vehicle Mode (Tilt Angle and Acceleration with Road/Engine Noise Filtering)
         const angles = getCurrentAngles();
         const deltaPitch = Math.abs(angles.pitch - motionSettings.baseline.pitch);
         const deltaRoll = Math.abs(angles.roll - motionSettings.baseline.roll);
         const totalTilt = Math.sqrt(deltaPitch * deltaPitch + deltaRoll * deltaRoll);
 
-        // Planar lateral and longitudinal acceleration
-        const planarAcc = Math.sqrt(
+        // Planar lateral and longitudinal acceleration from vehicle turns, braking, and acceleration
+        const rawPlanarAcc = Math.sqrt(
           liveAcceleration.x * liveAcceleration.x +
           liveAcceleration.y * liveAcceleration.y
         );
-        const planarG = planarAcc / 9.80665;
+        const rawPlanarG = rawPlanarAcc / 9.80665;
 
-        if (planarG > smoothedGForce) {
-          smoothedGForce = planarG;
+        // Road and engine vibration noise filtering
+        // 1. G-Force noise floor: cuts out background chassis rumble, rough asphalt, and idling buzz
+        const gNoiseGate = motionSettings.noiseFilter * 0.022;
+        const filteredG = Math.max(0, rawPlanarG - gNoiseGate);
+
+        // 2. Tilt jitter gate: ignores minor mount wobble caused by pavement bumps
+        const tiltNoiseGate = motionSettings.noiseFilter * 0.5;
+        const filteredTilt = Math.max(0, totalTilt - tiltNoiseGate);
+
+        // 3. Adaptive low-pass smoothing: higher noise filter dampens rapid chatter while preserving sustained vehicle maneuvers
+        const filterRatio = motionSettings.noiseFilter / 10.0;
+        const gAlpha = Math.max(0.08, 0.35 - (filterRatio * 0.22));
+        const tiltAlpha = Math.max(0.08, 0.30 - (filterRatio * 0.18));
+
+        if (filteredG > smoothedGForce) {
+          smoothedGForce = smoothedGForce * (1 - gAlpha) + filteredG * gAlpha;
         } else {
-          smoothedGForce = smoothedGForce * 0.85 + planarG * 0.15;
+          smoothedGForce = smoothedGForce * 0.85 + filteredG * 0.15;
         }
 
-        if (totalTilt > smoothedTiltDelta) {
-          smoothedTiltDelta = totalTilt;
+        if (filteredTilt > smoothedTiltDelta) {
+          smoothedTiltDelta = smoothedTiltDelta * (1 - tiltAlpha) + filteredTilt * tiltAlpha;
         } else {
-          smoothedTiltDelta = smoothedTiltDelta * 0.85 + totalTilt * 0.15;
+          smoothedTiltDelta = smoothedTiltDelta * 0.85 + filteredTilt * 0.15;
         }
 
         displayG = smoothedGForce;
@@ -1553,7 +1604,8 @@
         const tiltContribution = smoothedTiltDelta / 25.0;
         const combinedMotion = smoothedGForce + tiltContribution;
 
-        const deadband = Math.max(0.02, (20 - motionSettings.multiplier) * 0.02);
+        // Multiplier deadband and scaling (0 = minor motion ignored, 20 = highest sensitivity)
+        const deadband = Math.max(0.015, (20 - motionSettings.multiplier) * 0.018);
         if (combinedMotion > deadband) {
           const effectiveMotion = combinedMotion - deadband;
           const factor = motionSettings.multiplier * 2.2;
