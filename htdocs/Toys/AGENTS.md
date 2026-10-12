@@ -34,7 +34,17 @@ Toys is a wireless Web Bluetooth controller specifically engineered to manage si
 - **Engine Mechanics**: Generates continuous autonomous intensity shifts by calculating smooth ramps from the current level to a randomly selected `nextTarget` within configurable `[min, max]` bounds at a defined `rampRate` (units/second).
 - **Hold Interval & Minimum Jump**: Once `nextTarget` is attained, pauses for a randomized duration between `0` and `holdMax` seconds before selecting a new target that differs by at least `minJump` units.
 - **Manual Priority & Override**: Touching the manual slider temporarily pauses the pattern in `'manual'` state. Releasing contact resumes the pattern smoothly from the released intensity, overriding momentary release to 0. Presets and Emergency Stop immediately disengage pattern mode.
+- **Collapsible UI**: The pattern configuration panel automatically collapses into a compact header when the pattern is toggled off, and expands upon activation.
 - **Configuration Persistence**: Pattern parameters (`rampRate`, `min`, `max`, `minJump`, `holdMax`) are persisted under `lush_pattern_settings` in `localStorage`. The active run toggle is always initialized to `off` upon reload for safety.
+
+### Motion Control Engine (Accelerometer & Vehicle Tilt)
+- **Engine Mechanics**: Interfaces with `DeviceMotionEvent` and `DeviceOrientationEvent` to translate live phone movement and vehicular dynamics into continuous 0–20 Lovense vibration commands.
+- **Mode 1 (Any G-Force)**: Omnidirectional linear acceleration magnitude $\sqrt{a_x^2 + a_y^2 + a_z^2}$ with peak-rise and exponential decay filter. Bumps, tremors, and shakes translate directly into vibration bursts.
+- **Mode 2 (Angle & Acceleration / Vehicle Mode)**: Designed for phone mounts inside moving vehicles. Combines planar turning/cornering and acceleration/braking G-forces with pitch and roll tilt deviation relative to a calibrated resting orientation.
+- **Zero Baseline**: Captures resting orientation ($pitch_0, roll_0$) and gravity vector to establish 0-intensity resting equilibrium in vehicle holders.
+- **Sensitivity Multiplier (0 to 20)**: Scaled slider where 0 suppresses minor motion to 0 intensity and 20 produces high intensity on subtle movement.
+- **Collapsible Card**: Starts collapsed by default on page load to conserve vertical space. Header tap toggles expansion state independently of tracking status.
+- **Configuration Persistence**: Mode, multiplier, and baseline calibration are persisted under `lush_motion_settings` in `localStorage`. Tracking toggle is initialized to `off` upon reload.
 
 ---
 

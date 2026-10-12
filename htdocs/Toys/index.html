@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Lush Multi-Toy Remote 🎀</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
   <!-- Shared Suite Header Stylesheet -->
   <link rel="stylesheet" href="../media/suite-header.css">
   <!-- Application Stylesheet -->
@@ -14,12 +17,14 @@
   <!-- Suite Profile stylesheet for footer sync indicator -->
   <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
+
 <body>
 
   <!-- Suite Header: back link, page title, spacer -->
   <header class="suite-header">
     <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
@@ -47,7 +52,8 @@
       <!-- Primary Action: Pair New Toy -->
       <button class="primary-btn" id="scanBtn" onclick="scanAndAddNewToy()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M14.83 7.76L12.59 10 17 14.41l-4.41 4.41 2.24 2.24L21.47 14.41 14.83 7.76zM12 12V2L6.59 7.41 10.17 11 2 11v2h8.17l-3.58 3.59L12 22V12z"/>
+          <path
+            d="M14.83 7.76L12.59 10 17 14.41l-4.41 4.41 2.24 2.24L21.47 14.41 14.83 7.76zM12 12V2L6.59 7.41 10.17 11 2 11v2h8.17l-3.58 3.59L12 22V12z" />
         </svg>
         Scan & Add New Toy
       </button>
@@ -78,14 +84,7 @@
           <span>Level</span>
           <span class="intensity-val" id="valDisplay">0</span>
         </div>
-        <input 
-          type="range" 
-          id="intensitySlider" 
-          min="0" 
-          max="20" 
-          value="0" 
-          oninput="onIntensityInput(this.value)"
-        >
+        <input type="range" id="intensitySlider" min="0" max="20" value="0" oninput="onIntensityInput(this.value)">
       </div>
 
       <!-- Momentary Mode Toggle -->
@@ -108,108 +107,155 @@
 
     <!-- Random Pattern Generator Card -->
     <div class="card pattern-card" id="patternCard">
-      <h2>
-        <span>🎲 Random Pattern</span>
-        <label class="switch">
+      <div class="collapsible-header" id="patternHeader" onclick="togglePatternCollapse()">
+        <h2>
+          <span>🎲 Random Pattern</span>
+          <span class="collapse-icon collapsed" id="patternCollapseIcon">▼</span>
+        </h2>
+        <label class="switch" onclick="event.stopPropagation()">
           <input type="checkbox" id="patternToggle" onchange="togglePattern(this.checked)">
           <span class="slider-toggle"></span>
         </label>
-      </h2>
-
-      <!-- Pattern Status Box -->
-      <div class="pattern-status-box">
-        <span class="pattern-status-text">
-          <span class="pattern-status-indicator" id="patternStatusDot"></span>
-          <span id="patternStatusLabel">Off</span>
-        </span>
-        <span id="patternTargetDisplay">Target: --</span>
       </div>
 
-      <!-- Pattern Settings Controls -->
-      <div class="pattern-settings-grid">
-        <!-- Ramp Rate Slider -->
-        <div class="pattern-param-row">
-          <div class="pattern-param-header">
-            <span>Ramp Rate (Speed)</span>
-            <span class="pattern-param-val" id="rampRateVal">3.0 /s</span>
-          </div>
-          <input 
-            type="range" 
-            id="rampRateSlider" 
-            min="0.5" 
-            max="20" 
-            step="0.5" 
-            value="3" 
-            oninput="onPatternSettingInput('rampRate', this.value)"
-          >
+      <!-- Collapsible Pattern Body (Collapsed when Random is off) -->
+      <div class="collapsible-body collapsed" id="patternBody">
+        <!-- Pattern Status Box -->
+        <div class="pattern-status-box">
+          <span class="pattern-status-text">
+            <span class="pattern-status-indicator" id="patternStatusDot"></span>
+            <span id="patternStatusLabel">Off</span>
+          </span>
+          <span id="patternTargetDisplay">Target: --</span>
         </div>
 
-        <!-- Intensity Min & Max Bounds -->
-        <div class="pattern-dual-row">
+        <!-- Pattern Settings Controls -->
+        <div class="pattern-settings-grid">
+          <!-- Ramp Rate Slider -->
           <div class="pattern-param-row">
             <div class="pattern-param-header">
-              <span>Min Level</span>
-              <span class="pattern-param-val" id="patternMinVal">0</span>
+              <span>Ramp Rate (Speed)</span>
+              <span class="pattern-param-val" id="rampRateVal">3.0 /s</span>
             </div>
-            <input 
-              type="range" 
-              id="patternMinSlider" 
-              min="0" 
-              max="20" 
-              step="1" 
-              value="0" 
-              oninput="onPatternSettingInput('min', this.value)"
-            >
+            <input type="range" id="rampRateSlider" min="0.5" max="20" step="0.5" value="3"
+              oninput="onPatternSettingInput('rampRate', this.value)">
           </div>
-          <div class="pattern-param-row">
-            <div class="pattern-param-header">
-              <span>Max Level</span>
-              <span class="pattern-param-val" id="patternMaxVal">20</span>
+
+          <!-- Intensity Min & Max Bounds -->
+          <div class="pattern-dual-row">
+            <div class="pattern-param-row">
+              <div class="pattern-param-header">
+                <span>Min Level</span>
+                <span class="pattern-param-val" id="patternMinVal">0</span>
+              </div>
+              <input type="range" id="patternMinSlider" min="0" max="20" step="1" value="0"
+                oninput="onPatternSettingInput('min', this.value)">
             </div>
-            <input 
-              type="range" 
-              id="patternMaxSlider" 
-              min="0" 
-              max="20" 
-              step="1" 
-              value="20" 
-              oninput="onPatternSettingInput('max', this.value)"
-            >
+            <div class="pattern-param-row">
+              <div class="pattern-param-header">
+                <span>Max Level</span>
+                <span class="pattern-param-val" id="patternMaxVal">20</span>
+              </div>
+              <input type="range" id="patternMaxSlider" min="0" max="20" step="1" value="20"
+                oninput="onPatternSettingInput('max', this.value)">
+            </div>
+          </div>
+
+          <!-- Min Jump & Max Hold Time -->
+          <div class="pattern-dual-row">
+            <div class="pattern-param-row">
+              <div class="pattern-param-header">
+                <span>Min Jump</span>
+                <span class="pattern-param-val" id="minJumpVal">3</span>
+              </div>
+              <input type="range" id="minJumpSlider" min="0" max="10" step="1" value="3"
+                oninput="onPatternSettingInput('minJump', this.value)">
+            </div>
+            <div class="pattern-param-row">
+              <div class="pattern-param-header">
+                <span>Max Hold</span>
+                <span class="pattern-param-val" id="holdMaxVal">1.5 s</span>
+              </div>
+              <input type="range" id="holdMaxSlider" min="0" max="10" step="0.5" value="1.5"
+                oninput="onPatternSettingInput('holdMax', this.value)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Motion Control Card (Accelerometer & Vehicle Tilt) -->
+    <div class="card motion-card" id="motionCard">
+      <div class="collapsible-header" id="motionHeader" onclick="toggleMotionCollapse()">
+        <h2>
+          <span>📱 Motion</span>
+          <span class="collapse-icon collapsed" id="motionCollapseIcon">▼</span>
+        </h2>
+        <label class="switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="motionToggle" onchange="toggleMotion(this.checked)">
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+
+      <!-- Collapsible Motion Body (Collapsed by default) -->
+      <div class="collapsible-body collapsed" id="motionBody">
+        <!-- Live Motion Status Box -->
+        <div class="motion-status-box">
+          <div class="motion-status-left">
+            <span class="motion-status-indicator" id="motionStatusDot"></span>
+            <span id="motionStatusLabel">Off</span>
+          </div>
+          <span id="motionOutputDisplay">Intensity: 0</span>
+        </div>
+
+        <!-- Real-Time Sensor Telemetry -->
+        <div class="motion-telemetry">
+          <div class="telemetry-chip">
+            <span class="telemetry-label">G-Force</span>
+            <span class="telemetry-val" id="telemetryGVal">0.00 G</span>
+          </div>
+          <div class="telemetry-chip">
+            <span class="telemetry-label">Tilt Angle</span>
+            <span class="telemetry-val" id="telemetryTiltVal">0°</span>
+          </div>
+          <div class="telemetry-chip">
+            <span class="telemetry-label">Intensity</span>
+            <span class="telemetry-val" id="telemetryLevelVal">0 / 20</span>
           </div>
         </div>
 
-        <!-- Min Jump & Max Hold Time -->
-        <div class="pattern-dual-row">
-          <div class="pattern-param-row">
-            <div class="pattern-param-header">
-              <span>Min Jump</span>
-              <span class="pattern-param-val" id="minJumpVal">3</span>
-            </div>
-            <input 
-              type="range" 
-              id="minJumpSlider" 
-              min="0" 
-              max="10" 
-              step="1" 
-              value="3" 
-              oninput="onPatternSettingInput('minJump', this.value)"
-            >
+        <!-- Mode Selector: Any G-Force vs Vehicle Mode -->
+        <div class="motion-mode-selector">
+          <div class="mode-label">Mode Selection</div>
+          <div class="mode-pills">
+            <button type="button" class="mode-pill-btn active" id="modeBtnGforce" onclick="setMotionMode('gforce')">
+              🌀 Any G-Force
+            </button>
+            <button type="button" class="mode-pill-btn" id="modeBtnVehicle" onclick="setMotionMode('vehicle')">
+              🚗 Angle & Accel
+            </button>
           </div>
-          <div class="pattern-param-row">
-            <div class="pattern-param-header">
-              <span>Max Hold</span>
-              <span class="pattern-param-val" id="holdMaxVal">1.5 s</span>
-            </div>
-            <input 
-              type="range" 
-              id="holdMaxSlider" 
-              min="0" 
-              max="10" 
-              step="0.5" 
-              value="1.5" 
-              oninput="onPatternSettingInput('holdMax', this.value)"
-            >
+        </div>
+
+        <!-- Multiplier Sensitivity Slider (0 = minor motion ignored, 20 = highest sensitivity) -->
+        <div class="motion-param-row">
+          <div class="motion-param-header">
+            <span>Multiplier (Sensitivity)</span>
+            <span class="motion-param-val" id="motionMultiplierVal">10</span>
           </div>
+          <input type="range" id="motionMultiplierSlider" min="0" max="20" step="1" value="10"
+            oninput="onMotionMultiplierInput(this.value)">
+          <div class="motion-param-hint">
+            <span>0 = Minor motion ignored</span>
+            <span>20 = Slight movement = High intensity</span>
+          </div>
+        </div>
+
+        <!-- Zero Baseline / Calibrate Controls -->
+        <div class="motion-zero-box">
+          <button type="button" class="zero-btn" id="zeroBaselineBtn" onclick="zeroMotionBaseline()">
+            🎯 Zero Baseline (Set Tilt/Resting Level)
+          </button>
+          <div class="zero-status" id="zeroStatusLabel">Baseline: Resting at (0.0°, 0.0°)</div>
         </div>
       </div>
     </div>
@@ -219,7 +265,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v1.6</small>
+      <small>v1.7</small>
     </footer>
   </div>
 
@@ -227,7 +273,8 @@
   <div class="modal-overlay" id="renameModal" style="display: none;">
     <div class="modal-card">
       <h3>🎀 Rename Toy</h3>
-      <input type="text" id="renameInput" class="modal-input" maxlength="28" placeholder="Give your toy a sweet name...">
+      <input type="text" id="renameInput" class="modal-input" maxlength="28"
+        placeholder="Give your toy a sweet name...">
       <div class="modal-btn-row">
         <button class="modal-btn cancel" onclick="closeRenameModal()">Cancel</button>
         <button class="modal-btn save" onclick="saveToyRename()">Save Name</button>
@@ -235,695 +282,742 @@
     </div>
   </div>
 
-<!-- Shared Suite Profile and Cloud Sync Manager -->
-<script src="../media/suite-profile.js"></script>
+  <!-- Shared Suite Profile and Cloud Sync Manager -->
+  <script src="../media/suite-profile.js"></script>
 
-<script>
-  /**
-   * Version constant tracking application updates.
-   */
-  const APP_VERSION = "1.6";
+  <script>
+    /**
+     * Version constant tracking application updates.
+     */
+    const APP_VERSION = "1.7";
 
-  /**
-   * Local storage keys for toy nicknames, preferences, and pattern generator.
-   */
-  const STORAGE_KEY_TOY_REGISTRY = "lush_toy_registry";
-  const STORAGE_KEY_AUTOSCAN = "lush_toy_autoscan_enabled";
-  const STORAGE_KEY_PATTERN_SETTINGS = "lush_pattern_settings";
+    /**
+     * Local storage keys for toy nicknames, preferences, pattern generator, and motion engine.
+     */
+    const STORAGE_KEY_TOY_REGISTRY = "lush_toy_registry";
+    const STORAGE_KEY_AUTOSCAN = "lush_toy_autoscan_enabled";
+    const STORAGE_KEY_PATTERN_SETTINGS = "lush_pattern_settings";
+    const STORAGE_KEY_MOTION_SETTINGS = "lush_motion_settings";
 
-  /**
-   * Runtime state managing remembered toys and active Bluetooth sessions.
-   * Items schema:
-   * {
-   *   id: string,                 // Origin-persistent BluetoothDevice.id
-   *   device: BluetoothDevice,     // Browser BluetoothDevice object
-   *   gatt: BluetoothRemoteGATTServer,
-   *   tx: BluetoothRemoteGATTCharacteristic,
-   *   customName: string,         // User-assigned friendly nickname
-   *   originalName: string,       // Raw broadcasted device name (e.g. LVS-Lush3-B9)
-   *   status: 'connected' | 'connecting' | 'disconnected',
-   *   isConnecting: boolean,      // Concurrency lock for GATT connection attempts
-   *   selected: boolean           // Included in multi-toy broadcast commands
-   * }
-   */
-  let managedToys = [];
-  let isTransmitting = false;
-  let pendingIntensity = null;
-  let autoScanTimer = null;
-  let isAutoScanActive = true;
-  let renamingDeviceId = null;
+    /**
+     * Runtime state managing remembered toys and active Bluetooth sessions.
+     * Items schema:
+     * {
+     *   id: string,                 // Origin-persistent BluetoothDevice.id
+     *   device: BluetoothDevice,     // Browser BluetoothDevice object
+     *   gatt: BluetoothRemoteGATTServer,
+     *   tx: BluetoothRemoteGATTCharacteristic,
+     *   customName: string,         // User-assigned friendly nickname
+     *   originalName: string,       // Raw broadcasted device name (e.g. LVS-Lush3-B9)
+     *   status: 'connected' | 'connecting' | 'disconnected',
+     *   isConnecting: boolean,      // Concurrency lock for GATT connection attempts
+     *   selected: boolean           // Included in multi-toy broadcast commands
+     * }
+     */
+    let managedToys = [];
+    let isTransmitting = false;
+    let pendingIntensity = null;
+    let autoScanTimer = null;
+    let isAutoScanActive = true;
+    let renamingDeviceId = null;
 
-  /**
-   * Runtime state and user parameters for the autonomous random pattern engine.
-   */
-  let patternSettings = {
-    rampRate: 3.0,
-    min: 0,
-    max: 20,
-    minJump: 3,
-    holdMax: 1.5
-  };
-  let patternEnabled = false;
-  let patternPhase = 'off';
-  let currentPatternLevel = 0.0;
-  let nextTarget = 0;
-  let holdUntil = 0;
-  let lastTickTime = 0;
-  let lastSentPatternLevel = null;
-  let patternTimer = null;
-  let isManualHolding = false;
+    /**
+     * Runtime state and user parameters for the autonomous random pattern engine.
+     */
+    let patternSettings = {
+      rampRate: 3.0,
+      min: 0,
+      max: 20,
+      minJump: 3,
+      holdMax: 1.5
+    };
+    let patternEnabled = false;
+    let patternPhase = 'off';
+    let currentPatternLevel = 0.0;
+    let nextTarget = 0;
+    let holdUntil = 0;
+    let lastTickTime = 0;
+    let lastSentPatternLevel = null;
+    let patternTimer = null;
+    let isManualHolding = false;
 
-  const slider = document.getElementById('intensitySlider');
-  const valDisplay = document.getElementById('valDisplay');
-  const momentaryToggle = document.getElementById('momentaryToggle');
-  const logBox = document.getElementById('log');
-  const autoScanLabel = document.getElementById('autoScanLabel');
-  const toggleAutoScanBtn = document.getElementById('toggleAutoScanBtn');
-  const autoScanHeart = document.getElementById('autoScanHeart');
+    /**
+     * Runtime state and user parameters for the accelerometer motion engine.
+     */
+    let motionSettings = {
+      mode: 'gforce', // 'gforce' | 'vehicle'
+      multiplier: 10,  // 0 to 20
+      baseline: {
+        calibrated: false,
+        pitch: 0.0,
+        roll: 0.0,
+        gravX: 0.0,
+        gravY: 0.0,
+        gravZ: 9.80665
+      }
+    };
+    let motionEnabled = false;
+    let motionCurrentLevel = 0;
+    let motionLastSentLevel = null;
+    let motionTimer = null;
+    let liveAcceleration = { x: 0, y: 0, z: 0 };
+    let liveGravity = { x: 0, y: 0, z: 9.80665 };
+    let liveOrientation = { alpha: 0, beta: 0, gamma: 0 };
+    let smoothedGForce = 0.0;
+    let smoothedTiltDelta = 0.0;
 
-  const patternCard = document.getElementById('patternCard');
-  const patternToggle = document.getElementById('patternToggle');
-  const patternStatusLabel = document.getElementById('patternStatusLabel');
-  const patternStatusDot = document.getElementById('patternStatusDot');
-  const patternTargetDisplay = document.getElementById('patternTargetDisplay');
-  const rampRateSlider = document.getElementById('rampRateSlider');
-  const rampRateVal = document.getElementById('rampRateVal');
-  const patternMinSlider = document.getElementById('patternMinSlider');
-  const patternMinVal = document.getElementById('patternMinVal');
-  const patternMaxSlider = document.getElementById('patternMaxSlider');
-  const patternMaxVal = document.getElementById('patternMaxVal');
-  const minJumpSlider = document.getElementById('minJumpSlider');
-  const minJumpVal = document.getElementById('minJumpVal');
-  const holdMaxSlider = document.getElementById('holdMaxSlider');
-  const holdMaxVal = document.getElementById('holdMaxVal');
+    const slider = document.getElementById('intensitySlider');
+    const valDisplay = document.getElementById('valDisplay');
+    const momentaryToggle = document.getElementById('momentaryToggle');
+    const logBox = document.getElementById('log');
+    const autoScanLabel = document.getElementById('autoScanLabel');
+    const toggleAutoScanBtn = document.getElementById('toggleAutoScanBtn');
+    const autoScanHeart = document.getElementById('autoScanHeart');
 
-  /**
-   * Generates comprehensive list of Lovense GATT service UUIDs covering
-   * Gen 1, Gen 2, and all Gen 3 variations for dynamic discovery.
-   */
-  function getLovenseServices() {
-    const services = [
-      '0000fff0-0000-1000-8000-00805f9b34fb', // Gen 1
-      '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  // Gen 2 (Nordic UART)
-    ];
-    // Gen 3 dynamic service prefixes covering Lush, Hush, Domi, Edge, etc.
-    const prefixes = ['4', '5'];
-    const hex = '0123456789abcdef';
-    const subVersions = ['0023', '0024', '0025'];
+    const patternCard = document.getElementById('patternCard');
+    const patternBody = document.getElementById('patternBody');
+    const patternCollapseIcon = document.getElementById('patternCollapseIcon');
+    const patternToggle = document.getElementById('patternToggle');
+    const patternStatusLabel = document.getElementById('patternStatusLabel');
+    const patternStatusDot = document.getElementById('patternStatusDot');
+    const patternTargetDisplay = document.getElementById('patternTargetDisplay');
+    const rampRateSlider = document.getElementById('rampRateSlider');
+    const rampRateVal = document.getElementById('rampRateVal');
+    const patternMinSlider = document.getElementById('patternMinSlider');
+    const patternMinVal = document.getElementById('patternMinVal');
+    const patternMaxSlider = document.getElementById('patternMaxSlider');
+    const patternMaxVal = document.getElementById('patternMaxVal');
+    const minJumpSlider = document.getElementById('minJumpSlider');
+    const minJumpVal = document.getElementById('minJumpVal');
+    const holdMaxSlider = document.getElementById('holdMaxSlider');
+    const holdMaxVal = document.getElementById('holdMaxVal');
 
-    for (let p of prefixes) {
-      for (let h of hex) {
-        for (let sub of subVersions) {
-          services.push(`${p}${h}300001-${sub}-4bd4-bbd5-a6920e4c5653`);
+    const motionCard = document.getElementById('motionCard');
+    const motionBody = document.getElementById('motionBody');
+    const motionCollapseIcon = document.getElementById('motionCollapseIcon');
+    const motionToggle = document.getElementById('motionToggle');
+    const motionStatusLabel = document.getElementById('motionStatusLabel');
+    const motionStatusDot = document.getElementById('motionStatusDot');
+    const motionOutputDisplay = document.getElementById('motionOutputDisplay');
+    const telemetryGVal = document.getElementById('telemetryGVal');
+    const telemetryTiltVal = document.getElementById('telemetryTiltVal');
+    const telemetryLevelVal = document.getElementById('telemetryLevelVal');
+    const modeBtnGforce = document.getElementById('modeBtnGforce');
+    const modeBtnVehicle = document.getElementById('modeBtnVehicle');
+    const motionMultiplierSlider = document.getElementById('motionMultiplierSlider');
+    const motionMultiplierVal = document.getElementById('motionMultiplierVal');
+    const zeroStatusLabel = document.getElementById('zeroStatusLabel');
+
+    /**
+     * Generates comprehensive list of Lovense GATT service UUIDs covering
+     * Gen 1, Gen 2, and all Gen 3 variations for dynamic discovery.
+     */
+    function getLovenseServices() {
+      const services = [
+        '0000fff0-0000-1000-8000-00805f9b34fb', // Gen 1
+        '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  // Gen 2 (Nordic UART)
+      ];
+      // Gen 3 dynamic service prefixes covering Lush, Hush, Domi, Edge, etc.
+      const prefixes = ['4', '5'];
+      const hex = '0123456789abcdef';
+      const subVersions = ['0023', '0024', '0025'];
+
+      for (let p of prefixes) {
+        for (let h of hex) {
+          for (let sub of subVersions) {
+            services.push(`${p}${h}300001-${sub}-4bd4-bbd5-a6920e4c5653`);
+          }
         }
       }
+      return services;
     }
-    return services;
-  }
 
-  /**
-   * Retrieves persistent device nicknames registry from localStorage.
-   * Returns a map keyed by device ID containing custom and original names.
-   */
-  function getStoredRegistry() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_TOY_REGISTRY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return typeof parsed === 'object' && parsed !== null ? parsed : {};
-    } catch (e) {
-      console.warn("Could not read toy registry from localStorage:", e);
-      return {};
+    /**
+     * Retrieves persistent device nicknames registry from localStorage.
+     * Returns a map keyed by device ID containing custom and original names.
+     */
+    function getStoredRegistry() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_TOY_REGISTRY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+      } catch (e) {
+        console.warn("Could not read toy registry from localStorage:", e);
+        return {};
+      }
     }
-  }
 
-  /**
-   * Saves device registry to localStorage.
-   */
-  function saveStoredRegistry(registry) {
-    try {
-      localStorage.setItem(STORAGE_KEY_TOY_REGISTRY, JSON.stringify(registry));
-    } catch (e) {
-      console.warn("Could not write toy registry to localStorage:", e);
+    /**
+     * Saves device registry to localStorage.
+     */
+    function saveStoredRegistry(registry) {
+      try {
+        localStorage.setItem(STORAGE_KEY_TOY_REGISTRY, JSON.stringify(registry));
+      } catch (e) {
+        console.warn("Could not write toy registry to localStorage:", e);
+      }
     }
-  }
 
-  /**
-   * Stores or updates a specific toy's metadata in localStorage.
-   * Cleans up stale device ID references if an ID remapping occurs.
-   */
-  function persistToyMetadata(deviceId, customName, originalName, oldDeviceId = null) {
-    const registry = getStoredRegistry();
-    if (oldDeviceId && oldDeviceId !== deviceId && registry[oldDeviceId]) {
-      delete registry[oldDeviceId];
-    }
-    registry[deviceId] = {
-      id: deviceId,
-      customName: customName || (registry[deviceId]?.customName) || originalName || "Lovense Lush",
-      originalName: originalName || (registry[deviceId]?.originalName) || "LVS-Device",
-      lastSeen: Date.now()
-    };
-    saveStoredRegistry(registry);
-  }
-
-  /**
-   * Removes a toy from persistent localStorage.
-   */
-  function removeToyMetadata(deviceId) {
-    const registry = getStoredRegistry();
-    if (registry[deviceId]) {
-      delete registry[deviceId];
+    /**
+     * Stores or updates a specific toy's metadata in localStorage.
+     * Cleans up stale device ID references if an ID remapping occurs.
+     */
+    function persistToyMetadata(deviceId, customName, originalName, oldDeviceId = null) {
+      const registry = getStoredRegistry();
+      if (oldDeviceId && oldDeviceId !== deviceId && registry[oldDeviceId]) {
+        delete registry[oldDeviceId];
+      }
+      registry[deviceId] = {
+        id: deviceId,
+        customName: customName || (registry[deviceId]?.customName) || originalName || "Lovense Lush",
+        originalName: originalName || (registry[deviceId]?.originalName) || "LVS-Device",
+        lastSeen: Date.now()
+      };
       saveStoredRegistry(registry);
     }
-  }
 
-  /**
-   * Updates user-facing log message box.
-   */
-  function updateLog(message) {
-    if (logBox) {
-      logBox.innerText = message;
-    }
-  }
-
-  /**
-   * Initializes application on page load:
-   * 1. Restores user auto-scan preference.
-   * 2. Populates managed toys list immediately from localStorage.
-   * 3. Renders saved toys so cards stay visible across browser restarts/tab closures.
-   * 4. Queries navigator.bluetooth.getDevices() for active browser-granted sessions.
-   * 5. Starts background auto-reconnect timer loop.
-   */
-  async function initApp() {
-    // Restore saved pattern generator parameters
-    loadPatternSettings();
-
-    // Restore auto-scan preference from localStorage
-    const storedAutoScan = localStorage.getItem(STORAGE_KEY_AUTOSCAN);
-    if (storedAutoScan !== null) {
-      isAutoScanActive = storedAutoScan === "true";
-      updateAutoScanUi();
-    }
-
-    // 1. Load all saved toys directly from localStorage into runtime collection
-    const registry = getStoredRegistry();
-    Object.entries(registry).forEach(([storedId, meta]) => {
-      addOrUpdateManagedToy(
-        null,
-        storedId,
-        meta.customName || "Lovense Lush",
-        meta.originalName || "LVS-Device",
-        false
-      );
-    });
-
-    // Render list immediately to display remembered devices without waiting
-    renderDeviceList();
-
-    if (!navigator.bluetooth) {
-      updateLog("Web Bluetooth is not supported in this browser.");
-      return;
-    }
-
-    // 2. Query browser permissions backend for active BluetoothDevice instances
-    if (navigator.bluetooth.getDevices) {
-      try {
-        const authorizedDevices = await navigator.bluetooth.getDevices();
-        authorizedDevices.forEach(device => {
-          const meta = registry[device.id] || {};
-          const customName = meta.customName || device.name || "Lovense Lush";
-          const originalName = meta.originalName || device.name || "LVS-Device";
-
-          // Ensure device exists in local registry
-          persistToyMetadata(device.id, customName, originalName);
-
-          // Attach active BluetoothDevice object to managed toy record
-          addOrUpdateManagedToy(device, device.id, customName, originalName, false);
-        });
-
-        renderDeviceList();
-      } catch (err) {
-        console.warn("Error accessing navigator.bluetooth.getDevices():", err);
+    /**
+     * Removes a toy from persistent localStorage.
+     */
+    function removeToyMetadata(deviceId) {
+      const registry = getStoredRegistry();
+      if (registry[deviceId]) {
+        delete registry[deviceId];
+        saveStoredRegistry(registry);
       }
     }
 
-    // Update log box status
-    if (managedToys.length > 0) {
-      updateLog(`Found ${managedToys.length} saved toy(s). Ready to connect.`);
-    } else {
-      updateLog("Ready. Click 'Scan & Add New Toy' to connect your first Lush.");
+    /**
+     * Updates user-facing log message box.
+     */
+    function updateLog(message) {
+      if (logBox) {
+        logBox.innerText = message;
+      }
     }
 
-    // 3. Start auto-scan loop
-    startAutoScanLoop();
+    /**
+     * Initializes application on page load:
+     * 1. Restores user auto-scan preference.
+     * 2. Populates managed toys list immediately from localStorage.
+     * 3. Renders saved toys so cards stay visible across browser restarts/tab closures.
+     * 4. Queries navigator.bluetooth.getDevices() for active browser-granted sessions.
+     * 5. Starts background auto-reconnect timer loop.
+     */
+    async function initApp() {
+      // Restore saved pattern generator parameters
+      loadPatternSettings();
 
-    // 4. Trigger auto-reconnect if any toy has an active device object
-    if (managedToys.some(t => t.device)) {
-      attemptAutoReconnect();
-    }
-  }
+      // Restore saved motion controller parameters
+      loadMotionSettings();
 
-  /**
-   * Attaches GATT disconnection listeners to BluetoothDevice instance.
-   */
-  function bindDeviceListeners(toy) {
-    if (!toy || !toy.device) return;
-    toy.device.ongattserverdisconnected = () => handleDisconnect(toy.id);
-  }
-
-  /**
-   * Adds or updates a device record in runtime state.
-   * Matches by ID or original broadcast name to retain custom user nicknames.
-   */
-  function addOrUpdateManagedToy(device, deviceId, customName, originalName, isConnected) {
-    const targetId = deviceId || (device ? device.id : null);
-    if (!targetId && !device) return null;
-
-    // Look for existing record by ID or by broadcasted device name
-    let existing = managedToys.find(t =>
-      t.id === targetId ||
-      (device && t.originalName && t.originalName === device.name) ||
-      (originalName && t.originalName && t.originalName === originalName)
-    );
-
-    if (!existing) {
-      existing = {
-        id: targetId,
-        device: device || null,
-        gatt: (isConnected && device) ? device.gatt : null,
-        tx: null,
-        customName: customName || (device ? device.name : "Lovense Lush"),
-        originalName: originalName || (device ? device.name : "LVS-Device"),
-        status: isConnected ? 'connected' : 'disconnected',
-        isConnecting: false,
-        selected: true
-      };
-
-      if (device) {
-        bindDeviceListeners(existing);
+      // Restore auto-scan preference from localStorage
+      const storedAutoScan = localStorage.getItem(STORAGE_KEY_AUTOSCAN);
+      if (storedAutoScan !== null) {
+        isAutoScanActive = storedAutoScan === "true";
+        updateAutoScanUi();
       }
 
-      managedToys.push(existing);
-    } else {
-      if (device) {
-        const oldId = existing.id;
-        existing.device = device;
-        existing.id = device.id;
-        bindDeviceListeners(existing);
-        if (oldId !== device.id) {
-          persistToyMetadata(device.id, existing.customName, existing.originalName, oldId);
-        }
-      }
-      if (customName) existing.customName = customName;
-      if (originalName) existing.originalName = originalName;
-      if (isConnected) existing.status = 'connected';
-    }
-
-    return existing;
-  }
-
-  /**
-   * Performs user-prompted Bluetooth scan for Lovense toys.
-   */
-  async function scanAndAddNewToy() {
-    if (!navigator.bluetooth) {
-      alert("Web Bluetooth is not available in this browser. Please use Chrome, Edge, or Bluefy.");
-      return;
-    }
-
-    try {
-      updateLog("Searching for Lovense toys... 🌸");
-
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: 'LVS-' }],
-        optionalServices: getLovenseServices()
+      // 1. Load all saved toys directly from localStorage into runtime collection
+      const registry = getStoredRegistry();
+      Object.entries(registry).forEach(([storedId, meta]) => {
+        addOrUpdateManagedToy(
+          null,
+          storedId,
+          meta.customName || "Lovense Lush",
+          meta.originalName || "LVS-Device",
+          false
+        );
       });
 
-      updateLog(`Connecting to ${device.name}... ⏳`);
-      const toyRecord = addOrUpdateManagedToy(device, device.id, null, device.name, false);
+      // Render list immediately to display remembered devices without waiting
       renderDeviceList();
 
-      await connectToToyGatt(toyRecord);
-      persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName);
-      renderDeviceList();
-
-    } catch (err) {
-      if (err.name === 'NotFoundError') {
-        updateLog("Scan cancelled or no device selected.");
-      } else {
-        console.error("Connection Error:", err);
-        updateLog(`Connection failed: ${err.message}`);
+      if (!navigator.bluetooth) {
+        updateLog("Web Bluetooth is not supported in this browser.");
+        return;
       }
-    }
-  }
 
-  /**
-   * Establishes GATT connection and locates writable TX characteristic.
-   */
-  async function connectToToyGatt(toyRecord) {
-    if (!toyRecord || !toyRecord.device) {
-      throw new Error("No active Bluetooth session. Please pair device.");
-    }
-
-    // Already connected with active TX characteristic
-    if (toyRecord.gatt && toyRecord.gatt.connected && toyRecord.tx) {
-      toyRecord.status = 'connected';
-      toyRecord.isConnecting = false;
-      return true;
-    }
-
-    // Prevent re-entry if this device is already in-flight
-    if (toyRecord.isConnecting) {
-      return false;
-    }
-
-    toyRecord.isConnecting = true;
-    toyRecord.status = 'connecting';
-    renderDeviceList();
-
-    try {
-      // Connect to GATT server with a 10s timeout to prevent hanging GATT promises
-      const connectPromise = toyRecord.device.gatt.connect();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Bluetooth connection timed out")), 10000)
-      );
-      const server = await Promise.race([connectPromise, timeoutPromise]);
-
-      const services = await server.getPrimaryServices();
-      let txChar = null;
-
-      for (const service of services) {
+      // 2. Query browser permissions backend for active BluetoothDevice instances
+      if (navigator.bluetooth.getDevices) {
         try {
-          const chars = await service.getCharacteristics();
-          for (const char of chars) {
-            if (char.properties.write || char.properties.writeWithoutResponse) {
-              txChar = char;
-              break;
-            }
-          }
-        } catch (e) {
-          // Ignore restricted services
-        }
-        if (txChar) break;
-      }
+          const authorizedDevices = await navigator.bluetooth.getDevices();
+          authorizedDevices.forEach(device => {
+            const meta = registry[device.id] || {};
+            const customName = meta.customName || device.name || "Lovense Lush";
+            const originalName = meta.originalName || device.name || "LVS-Device";
 
-      if (!txChar) {
-        throw new Error("No writable UART characteristic found.");
-      }
+            // Ensure device exists in local registry
+            persistToyMetadata(device.id, customName, originalName);
 
-      toyRecord.gatt = server;
-      toyRecord.tx = txChar;
-      toyRecord.status = 'connected';
-      toyRecord.isConnecting = false;
-      bindDeviceListeners(toyRecord);
-      updateLog(`🎀 Connected to ${toyRecord.customName}!`);
-      renderDeviceList();
-      return true;
+            // Attach active BluetoothDevice object to managed toy record
+            addOrUpdateManagedToy(device, device.id, customName, originalName, false);
+          });
 
-    } catch (err) {
-      toyRecord.isConnecting = false;
-      toyRecord.status = 'disconnected';
-      toyRecord.tx = null;
-      renderDeviceList();
-      throw err;
-    } finally {
-      toyRecord.isConnecting = false;
-    }
-  }
-
-  /**
-   * Auto-reconnect routine executed periodically for remembered toys.
-   */
-  async function attemptAutoReconnect() {
-    if (!isAutoScanActive) return;
-
-    // Refresh authorized devices from browser permissions
-    if (navigator.bluetooth && navigator.bluetooth.getDevices) {
-      try {
-        const authorizedDevices = await navigator.bluetooth.getDevices();
-        const registry = getStoredRegistry();
-
-        authorizedDevices.forEach(device => {
-          const meta = registry[device.id] || {};
-          addOrUpdateManagedToy(device, device.id, meta.customName, meta.originalName || device.name, false);
-        });
-      } catch (e) {
-        // Silent catch for background polling
-      }
-    }
-
-    // Try silent reconnect on disconnected toys that have an active BluetoothDevice instance
-    for (const toy of managedToys) {
-      if (!toy.device) continue;
-      const isConnected = toy.device && toy.device.gatt && toy.device.gatt.connected;
-      if (!isConnected && !toy.isConnecting) {
-        try {
-          await connectToToyGatt(toy);
+          renderDeviceList();
         } catch (err) {
-          // Silent catch: Toy is off or out of range
-          toy.status = 'disconnected';
-        }
-      }
-    }
-    renderDeviceList();
-  }
-
-  /**
-   * Starts periodic timer running auto-reconnect every 5 seconds.
-   */
-  function startAutoScanLoop() {
-    if (autoScanTimer) clearInterval(autoScanTimer);
-    autoScanTimer = setInterval(() => {
-      attemptAutoReconnect();
-    }, 5000);
-  }
-
-  /**
-   * Toggles periodic background auto-reconnect on and off.
-   */
-  function toggleAutoScan() {
-    isAutoScanActive = !isAutoScanActive;
-    localStorage.setItem(STORAGE_KEY_AUTOSCAN, isAutoScanActive ? "true" : "false");
-    updateAutoScanUi();
-    if (isAutoScanActive) {
-      attemptAutoReconnect();
-    }
-  }
-
-  /**
-   * Updates Auto-Scan banner UI elements.
-   */
-  function updateAutoScanUi() {
-    if (isAutoScanActive) {
-      autoScanLabel.innerText = "Auto-reconnect: Active (5s)";
-      toggleAutoScanBtn.innerText = "Pause";
-      autoScanHeart.style.display = "inline-block";
-    } else {
-      autoScanLabel.innerText = "Auto-reconnect: Paused";
-      toggleAutoScanBtn.innerText = "Resume";
-      autoScanHeart.style.display = "none";
-    }
-  }
-
-  /**
-   * Handles device disconnect events.
-   */
-  function handleDisconnect(deviceId) {
-    const toy = managedToys.find(t => t.id === deviceId);
-    if (toy) {
-      toy.status = 'disconnected';
-      toy.isConnecting = false;
-      toy.tx = null;
-      if (toy.gatt) {
-        try { toy.gatt.disconnect(); } catch (_) {}
-      }
-      toy.gatt = null;
-      updateLog(`💤 ${toy.customName} disconnected.`);
-      renderDeviceList();
-    }
-  }
-
-  /**
-   * Toggles whether a toy receives vibration commands.
-   */
-  function toggleSelectToy(index) {
-    managedToys[index].selected = !managedToys[index].selected;
-    renderDeviceList();
-  }
-
-  /**
-   * Opens custom name editing modal.
-   */
-  function openRenameModal(deviceId, currentName) {
-    renamingDeviceId = deviceId;
-    const input = document.getElementById('renameInput');
-    input.value = currentName;
-    document.getElementById('renameModal').style.display = 'flex';
-    input.focus();
-  }
-
-  /**
-   * Closes rename modal.
-   */
-  function closeRenameModal() {
-    renamingDeviceId = null;
-    document.getElementById('renameModal').style.display = 'none';
-  }
-
-  /**
-   * Saves updated custom toy nickname to memory and localStorage.
-   */
-  function saveToyRename() {
-    if (!renamingDeviceId) return;
-    const input = document.getElementById('renameInput');
-    const newName = input.value.trim();
-
-    if (newName) {
-      const toy = managedToys.find(t => t.id === renamingDeviceId);
-      if (toy) {
-        toy.customName = newName;
-        persistToyMetadata(toy.id, toy.customName, toy.originalName);
-        updateLog(`Renamed to "${newName}" 🎀`);
-        renderDeviceList();
-      }
-    }
-    closeRenameModal();
-  }
-
-  /**
-   * Forgets a toy: disconnects GATT session, clears localStorage entry,
-   * and revokes permissions via device.forget() where supported.
-   */
-  async function forgetToy(deviceId) {
-    const idx = managedToys.findIndex(t => t.id === deviceId);
-    if (idx === -1) return;
-
-    const toy = managedToys[idx];
-    if (confirm(`Forget "${toy.customName}"? The toy will be removed from your saved list.`)) {
-      if (toy.device && toy.device.gatt && toy.device.gatt.connected) {
-        toy.device.gatt.disconnect();
-      }
-
-      // Revoke browser permission if device.forget() is implemented
-      if (toy.device && toy.device.forget) {
-        try {
-          await toy.device.forget();
-        } catch (e) {
-          console.warn("device.forget error:", e);
+          console.warn("Error accessing navigator.bluetooth.getDevices():", err);
         }
       }
 
-      removeToyMetadata(deviceId);
-      managedToys.splice(idx, 1);
-      updateLog(`Removed ${toy.customName}`);
-      renderDeviceList();
+      // Update log box status
+      if (managedToys.length > 0) {
+        updateLog(`Found ${managedToys.length} saved toy(s). Ready to connect.`);
+      } else {
+        updateLog("Ready. Click 'Scan & Add New Toy' to connect your first Lush.");
+      }
+
+      // 3. Start auto-scan loop
+      startAutoScanLoop();
+
+      // 4. Trigger auto-reconnect if any toy has an active device object
+      if (managedToys.some(t => t.device)) {
+        attemptAutoReconnect();
+      }
     }
-  }
 
-  /**
-   * Manually initiates connection for a specific toy card.
-   * Prompts user pairing gesture if active device handle is missing or disconnected.
-   */
-  async function manualConnectToy(deviceId) {
-    const toy = managedToys.find(t => t.id === deviceId);
-    if (!toy) return;
-    if (toy.isConnecting) return;
+    /**
+     * Attaches GATT disconnection listeners to BluetoothDevice instance.
+     */
+    function bindDeviceListeners(toy) {
+      if (!toy || !toy.device) return;
+      toy.device.ongattserverdisconnected = () => handleDisconnect(toy.id);
+    }
 
-    try {
-      updateLog(`Connecting to ${toy.customName}... ⏳`);
+    /**
+     * Adds or updates a device record in runtime state.
+     * Matches by ID or original broadcast name to retain custom user nicknames.
+     */
+    function addOrUpdateManagedToy(device, deviceId, customName, originalName, isConnected) {
+      const targetId = deviceId || (device ? device.id : null);
+      if (!targetId && !device) return null;
 
-      // 1. If active BluetoothDevice instance is not present, request user gesture selection
-      if (!toy.device) {
+      // Look for existing record by ID or by broadcasted device name
+      let existing = managedToys.find(t =>
+        t.id === targetId ||
+        (device && t.originalName && t.originalName === device.name) ||
+        (originalName && t.originalName && t.originalName === originalName)
+      );
+
+      if (!existing) {
+        existing = {
+          id: targetId,
+          device: device || null,
+          gatt: (isConnected && device) ? device.gatt : null,
+          tx: null,
+          customName: customName || (device ? device.name : "Lovense Lush"),
+          originalName: originalName || (device ? device.name : "LVS-Device"),
+          status: isConnected ? 'connected' : 'disconnected',
+          isConnecting: false,
+          selected: true
+        };
+
+        if (device) {
+          bindDeviceListeners(existing);
+        }
+
+        managedToys.push(existing);
+      } else {
+        if (device) {
+          const oldId = existing.id;
+          existing.device = device;
+          existing.id = device.id;
+          bindDeviceListeners(existing);
+          if (oldId !== device.id) {
+            persistToyMetadata(device.id, existing.customName, existing.originalName, oldId);
+          }
+        }
+        if (customName) existing.customName = customName;
+        if (originalName) existing.originalName = originalName;
+        if (isConnected) existing.status = 'connected';
+      }
+
+      return existing;
+    }
+
+    /**
+     * Performs user-prompted Bluetooth scan for Lovense toys.
+     */
+    async function scanAndAddNewToy() {
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth is not available in this browser. Please use Chrome, Edge, or Bluefy.");
+        return;
+      }
+
+      try {
+        updateLog("Searching for Lovense toys... 🌸");
+
         const device = await navigator.bluetooth.requestDevice({
           filters: [{ namePrefix: 'LVS-' }],
           optionalServices: getLovenseServices()
         });
 
-        // Rebind acquired device to saved toy record
-        const oldId = toy.id;
-        toy.device = device;
-        toy.id = device.id;
-        toy.originalName = device.name || toy.originalName;
-        bindDeviceListeners(toy);
-        persistToyMetadata(toy.id, toy.customName, toy.originalName, oldId);
-      }
+        updateLog(`Connecting to ${device.name}... ⏳`);
+        const toyRecord = addOrUpdateManagedToy(device, device.id, null, device.name, false);
+        renderDeviceList();
 
-      // 2. Connect to GATT server. If cached device instance is stale, fallback to re-pairing
-      try {
-        await connectToToyGatt(toy);
-      } catch (gattErr) {
-        console.warn("Direct GATT connect failed on cached device, requesting fresh pairing gesture:", gattErr);
-        updateLog(`Re-selecting ${toy.customName}... ⏳`);
+        await connectToToyGatt(toyRecord);
+        persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName);
+        renderDeviceList();
 
-        const freshDevice = await navigator.bluetooth.requestDevice({
-          filters: [{ namePrefix: 'LVS-' }],
-          optionalServices: getLovenseServices()
-        });
-
-        const oldId = toy.id;
-        toy.device = freshDevice;
-        toy.id = freshDevice.id;
-        toy.originalName = freshDevice.name || toy.originalName;
-        bindDeviceListeners(toy);
-        persistToyMetadata(toy.id, toy.customName, toy.originalName, oldId);
-
-        await connectToToyGatt(toy);
-      }
-
-    } catch (err) {
-      toy.isConnecting = false;
-      toy.status = 'disconnected';
-      renderDeviceList();
-      if (err.name === 'NotFoundError') {
-        updateLog(`Connection cancelled for ${toy.customName}.`);
-      } else {
-        updateLog(`Could not connect: ${err.message}`);
+      } catch (err) {
+        if (err.name === 'NotFoundError') {
+          updateLog("Scan cancelled or no device selected.");
+        } else {
+          console.error("Connection Error:", err);
+          updateLog(`Connection failed: ${err.message}`);
+        }
       }
     }
-  }
 
-  /**
-   * Renders paired device list with custom nicknames and status badges.
-   */
-  function renderDeviceList() {
-    const listEl = document.getElementById('deviceList');
-    const badgeEl = document.getElementById('toyCountBadge');
-    badgeEl.innerText = `${managedToys.length} saved`;
+    /**
+     * Establishes GATT connection and locates writable TX characteristic.
+     */
+    async function connectToToyGatt(toyRecord) {
+      if (!toyRecord || !toyRecord.device) {
+        throw new Error("No active Bluetooth session. Please pair device.");
+      }
 
-    listEl.innerHTML = '';
+      // Already connected with active TX characteristic
+      if (toyRecord.gatt && toyRecord.gatt.connected && toyRecord.tx) {
+        toyRecord.status = 'connected';
+        toyRecord.isConnecting = false;
+        return true;
+      }
 
-    if (managedToys.length === 0) {
-      listEl.innerHTML = `
+      // Prevent re-entry if this device is already in-flight
+      if (toyRecord.isConnecting) {
+        return false;
+      }
+
+      toyRecord.isConnecting = true;
+      toyRecord.status = 'connecting';
+      renderDeviceList();
+
+      try {
+        // Connect to GATT server with a 10s timeout to prevent hanging GATT promises
+        const connectPromise = toyRecord.device.gatt.connect();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Bluetooth connection timed out")), 10000)
+        );
+        const server = await Promise.race([connectPromise, timeoutPromise]);
+
+        const services = await server.getPrimaryServices();
+        let txChar = null;
+
+        for (const service of services) {
+          try {
+            const chars = await service.getCharacteristics();
+            for (const char of chars) {
+              if (char.properties.write || char.properties.writeWithoutResponse) {
+                txChar = char;
+                break;
+              }
+            }
+          } catch (e) {
+            // Ignore restricted services
+          }
+          if (txChar) break;
+        }
+
+        if (!txChar) {
+          throw new Error("No writable UART characteristic found.");
+        }
+
+        toyRecord.gatt = server;
+        toyRecord.tx = txChar;
+        toyRecord.status = 'connected';
+        toyRecord.isConnecting = false;
+        bindDeviceListeners(toyRecord);
+        updateLog(`🎀 Connected to ${toyRecord.customName}!`);
+        renderDeviceList();
+        return true;
+
+      } catch (err) {
+        toyRecord.isConnecting = false;
+        toyRecord.status = 'disconnected';
+        toyRecord.tx = null;
+        renderDeviceList();
+        throw err;
+      } finally {
+        toyRecord.isConnecting = false;
+      }
+    }
+
+    /**
+     * Auto-reconnect routine executed periodically for remembered toys.
+     */
+    async function attemptAutoReconnect() {
+      if (!isAutoScanActive) return;
+
+      // Refresh authorized devices from browser permissions
+      if (navigator.bluetooth && navigator.bluetooth.getDevices) {
+        try {
+          const authorizedDevices = await navigator.bluetooth.getDevices();
+          const registry = getStoredRegistry();
+
+          authorizedDevices.forEach(device => {
+            const meta = registry[device.id] || {};
+            addOrUpdateManagedToy(device, device.id, meta.customName, meta.originalName || device.name, false);
+          });
+        } catch (e) {
+          // Silent catch for background polling
+        }
+      }
+
+      // Try silent reconnect on disconnected toys that have an active BluetoothDevice instance
+      for (const toy of managedToys) {
+        if (!toy.device) continue;
+        const isConnected = toy.device && toy.device.gatt && toy.device.gatt.connected;
+        if (!isConnected && !toy.isConnecting) {
+          try {
+            await connectToToyGatt(toy);
+          } catch (err) {
+            // Silent catch: Toy is off or out of range
+            toy.status = 'disconnected';
+          }
+        }
+      }
+      renderDeviceList();
+    }
+
+    /**
+     * Starts periodic timer running auto-reconnect every 5 seconds.
+     */
+    function startAutoScanLoop() {
+      if (autoScanTimer) clearInterval(autoScanTimer);
+      autoScanTimer = setInterval(() => {
+        attemptAutoReconnect();
+      }, 5000);
+    }
+
+    /**
+     * Toggles periodic background auto-reconnect on and off.
+     */
+    function toggleAutoScan() {
+      isAutoScanActive = !isAutoScanActive;
+      localStorage.setItem(STORAGE_KEY_AUTOSCAN, isAutoScanActive ? "true" : "false");
+      updateAutoScanUi();
+      if (isAutoScanActive) {
+        attemptAutoReconnect();
+      }
+    }
+
+    /**
+     * Updates Auto-Scan banner UI elements.
+     */
+    function updateAutoScanUi() {
+      if (isAutoScanActive) {
+        autoScanLabel.innerText = "Auto-reconnect: Active (5s)";
+        toggleAutoScanBtn.innerText = "Pause";
+        autoScanHeart.style.display = "inline-block";
+      } else {
+        autoScanLabel.innerText = "Auto-reconnect: Paused";
+        toggleAutoScanBtn.innerText = "Resume";
+        autoScanHeart.style.display = "none";
+      }
+    }
+
+    /**
+     * Handles device disconnect events.
+     */
+    function handleDisconnect(deviceId) {
+      const toy = managedToys.find(t => t.id === deviceId);
+      if (toy) {
+        toy.status = 'disconnected';
+        toy.isConnecting = false;
+        toy.tx = null;
+        if (toy.gatt) {
+          try { toy.gatt.disconnect(); } catch (_) { }
+        }
+        toy.gatt = null;
+        updateLog(`💤 ${toy.customName} disconnected.`);
+        renderDeviceList();
+      }
+    }
+
+    /**
+     * Toggles whether a toy receives vibration commands.
+     */
+    function toggleSelectToy(index) {
+      managedToys[index].selected = !managedToys[index].selected;
+      renderDeviceList();
+    }
+
+    /**
+     * Opens custom name editing modal.
+     */
+    function openRenameModal(deviceId, currentName) {
+      renamingDeviceId = deviceId;
+      const input = document.getElementById('renameInput');
+      input.value = currentName;
+      document.getElementById('renameModal').style.display = 'flex';
+      input.focus();
+    }
+
+    /**
+     * Closes rename modal.
+     */
+    function closeRenameModal() {
+      renamingDeviceId = null;
+      document.getElementById('renameModal').style.display = 'none';
+    }
+
+    /**
+     * Saves updated custom toy nickname to memory and localStorage.
+     */
+    function saveToyRename() {
+      if (!renamingDeviceId) return;
+      const input = document.getElementById('renameInput');
+      const newName = input.value.trim();
+
+      if (newName) {
+        const toy = managedToys.find(t => t.id === renamingDeviceId);
+        if (toy) {
+          toy.customName = newName;
+          persistToyMetadata(toy.id, toy.customName, toy.originalName);
+          updateLog(`Renamed to "${newName}" 🎀`);
+          renderDeviceList();
+        }
+      }
+      closeRenameModal();
+    }
+
+    /**
+     * Forgets a toy: disconnects GATT session, clears localStorage entry,
+     * and revokes permissions via device.forget() where supported.
+     */
+    async function forgetToy(deviceId) {
+      const idx = managedToys.findIndex(t => t.id === deviceId);
+      if (idx === -1) return;
+
+      const toy = managedToys[idx];
+      if (confirm(`Forget "${toy.customName}"? The toy will be removed from your saved list.`)) {
+        if (toy.device && toy.device.gatt && toy.device.gatt.connected) {
+          toy.device.gatt.disconnect();
+        }
+
+        // Revoke browser permission if device.forget() is implemented
+        if (toy.device && toy.device.forget) {
+          try {
+            await toy.device.forget();
+          } catch (e) {
+            console.warn("device.forget error:", e);
+          }
+        }
+
+        removeToyMetadata(deviceId);
+        managedToys.splice(idx, 1);
+        updateLog(`Removed ${toy.customName}`);
+        renderDeviceList();
+      }
+    }
+
+    /**
+     * Manually initiates connection for a specific toy card.
+     * Prompts user pairing gesture if active device handle is missing or disconnected.
+     */
+    async function manualConnectToy(deviceId) {
+      const toy = managedToys.find(t => t.id === deviceId);
+      if (!toy) return;
+      if (toy.isConnecting) return;
+
+      try {
+        updateLog(`Connecting to ${toy.customName}... ⏳`);
+
+        // 1. If active BluetoothDevice instance is not present, request user gesture selection
+        if (!toy.device) {
+          const device = await navigator.bluetooth.requestDevice({
+            filters: [{ namePrefix: 'LVS-' }],
+            optionalServices: getLovenseServices()
+          });
+
+          // Rebind acquired device to saved toy record
+          const oldId = toy.id;
+          toy.device = device;
+          toy.id = device.id;
+          toy.originalName = device.name || toy.originalName;
+          bindDeviceListeners(toy);
+          persistToyMetadata(toy.id, toy.customName, toy.originalName, oldId);
+        }
+
+        // 2. Connect to GATT server. If cached device instance is stale, fallback to re-pairing
+        try {
+          await connectToToyGatt(toy);
+        } catch (gattErr) {
+          console.warn("Direct GATT connect failed on cached device, requesting fresh pairing gesture:", gattErr);
+          updateLog(`Re-selecting ${toy.customName}... ⏳`);
+
+          const freshDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ namePrefix: 'LVS-' }],
+            optionalServices: getLovenseServices()
+          });
+
+          const oldId = toy.id;
+          toy.device = freshDevice;
+          toy.id = freshDevice.id;
+          toy.originalName = freshDevice.name || toy.originalName;
+          bindDeviceListeners(toy);
+          persistToyMetadata(toy.id, toy.customName, toy.originalName, oldId);
+
+          await connectToToyGatt(toy);
+        }
+
+      } catch (err) {
+        toy.isConnecting = false;
+        toy.status = 'disconnected';
+        renderDeviceList();
+        if (err.name === 'NotFoundError') {
+          updateLog(`Connection cancelled for ${toy.customName}.`);
+        } else {
+          updateLog(`Could not connect: ${err.message}`);
+        }
+      }
+    }
+
+    /**
+     * Renders paired device list with custom nicknames and status badges.
+     */
+    function renderDeviceList() {
+      const listEl = document.getElementById('deviceList');
+      const badgeEl = document.getElementById('toyCountBadge');
+      badgeEl.innerText = `${managedToys.length} saved`;
+
+      listEl.innerHTML = '';
+
+      if (managedToys.length === 0) {
+        listEl.innerHTML = `
         <div class="empty-state">
           No toys paired yet. Click <strong>Scan & Add New Toy</strong> above to connect your first Lush!
         </div>
       `;
-      return;
-    }
-
-    managedToys.forEach((toy, idx) => {
-      const item = document.createElement('div');
-      item.className = `device-item ${toy.selected ? 'selected' : ''}`;
-
-      // Build status badge
-      let statusHtml = '';
-      if (toy.status === 'connected') {
-        statusHtml = `<span class="status-badge online">● Connected</span>`;
-      } else if (toy.status === 'connecting') {
-        statusHtml = `<span class="status-badge connecting">⏳ Connecting...</span>`;
-      } else {
-        statusHtml = `<span class="status-badge offline">💤 Standby</span>`;
+        return;
       }
 
-      // Build manual connect button if disconnected
-      const connectActionHtml = toy.status !== 'connected' && !toy.isConnecting
-        ? `<button class="action-pill-btn" onclick="manualConnectToy('${toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">Connect</button>`
-        : '';
+      managedToys.forEach((toy, idx) => {
+        const item = document.createElement('div');
+        item.className = `device-item ${toy.selected ? 'selected' : ''}`;
 
-      const safeId = toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      const safeCustomName = toy.customName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        // Build status badge
+        let statusHtml = '';
+        if (toy.status === 'connected') {
+          statusHtml = `<span class="status-badge online">● Connected</span>`;
+        } else if (toy.status === 'connecting') {
+          statusHtml = `<span class="status-badge connecting">⏳ Connecting...</span>`;
+        } else {
+          statusHtml = `<span class="status-badge offline">💤 Standby</span>`;
+        }
 
-      item.innerHTML = `
+        // Build manual connect button if disconnected
+        const connectActionHtml = toy.status !== 'connected' && !toy.isConnecting
+          ? `<button class="action-pill-btn" onclick="manualConnectToy('${toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">Connect</button>`
+          : '';
+
+        const safeId = toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeCustomName = toy.customName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+        item.innerHTML = `
         <div class="device-main-row">
           <div class="device-info" onclick="toggleSelectToy(${idx})">
             <div class="custom-checkbox">${toy.selected ? '✓' : ''}</div>
@@ -941,397 +1035,791 @@
         </div>
       `;
 
-      listEl.appendChild(item);
-    });
-  }
+        listEl.appendChild(item);
+      });
+    }
 
-  /**
-   * Loads saved pattern settings from localStorage and synchronizes UI controls.
-   */
-  function loadPatternSettings() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_PATTERN_SETTINGS);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (typeof parsed === 'object' && parsed !== null) {
-          if (typeof parsed.rampRate === 'number' && parsed.rampRate >= 0.5 && parsed.rampRate <= 20) {
-            patternSettings.rampRate = parsed.rampRate;
-          }
-          if (typeof parsed.min === 'number' && parsed.min >= 0 && parsed.min <= 20) {
-            patternSettings.min = parsed.min;
-          }
-          if (typeof parsed.max === 'number' && parsed.max >= 0 && parsed.max <= 20) {
-            patternSettings.max = parsed.max;
-          }
-          if (typeof parsed.minJump === 'number' && parsed.minJump >= 0 && parsed.minJump <= 10) {
-            patternSettings.minJump = parsed.minJump;
-          }
-          if (typeof parsed.holdMax === 'number' && parsed.holdMax >= 0 && parsed.holdMax <= 10) {
-            patternSettings.holdMax = parsed.holdMax;
+    /**
+     * Loads saved pattern settings from localStorage and synchronizes UI controls.
+     */
+    function loadPatternSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_PATTERN_SETTINGS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed === 'object' && parsed !== null) {
+            if (typeof parsed.rampRate === 'number' && parsed.rampRate >= 0.5 && parsed.rampRate <= 20) {
+              patternSettings.rampRate = parsed.rampRate;
+            }
+            if (typeof parsed.min === 'number' && parsed.min >= 0 && parsed.min <= 20) {
+              patternSettings.min = parsed.min;
+            }
+            if (typeof parsed.max === 'number' && parsed.max >= 0 && parsed.max <= 20) {
+              patternSettings.max = parsed.max;
+            }
+            if (typeof parsed.minJump === 'number' && parsed.minJump >= 0 && parsed.minJump <= 10) {
+              patternSettings.minJump = parsed.minJump;
+            }
+            if (typeof parsed.holdMax === 'number' && parsed.holdMax >= 0 && parsed.holdMax <= 10) {
+              patternSettings.holdMax = parsed.holdMax;
+            }
           }
         }
+      } catch (e) {
+        console.warn("Could not read pattern settings from localStorage:", e);
       }
-    } catch (e) {
-      console.warn("Could not read pattern settings from localStorage:", e);
-    }
 
-    if (patternSettings.min > patternSettings.max) {
-      patternSettings.min = patternSettings.max;
-    }
-
-    if (rampRateSlider) {
-      rampRateSlider.value = patternSettings.rampRate;
-      rampRateVal.innerText = `${patternSettings.rampRate.toFixed(1)} /s`;
-    }
-    if (patternMinSlider) {
-      patternMinSlider.value = patternSettings.min;
-      patternMinVal.innerText = patternSettings.min;
-    }
-    if (patternMaxSlider) {
-      patternMaxSlider.value = patternSettings.max;
-      patternMaxVal.innerText = patternSettings.max;
-    }
-    if (minJumpSlider) {
-      minJumpSlider.value = patternSettings.minJump;
-      minJumpVal.innerText = patternSettings.minJump;
-    }
-    if (holdMaxSlider) {
-      holdMaxSlider.value = patternSettings.holdMax;
-      holdMaxVal.innerText = `${patternSettings.holdMax.toFixed(1)} s`;
-    }
-  }
-
-  /**
-   * Persists current pattern configuration parameters to localStorage.
-   */
-  function savePatternSettings() {
-    try {
-      localStorage.setItem(STORAGE_KEY_PATTERN_SETTINGS, JSON.stringify(patternSettings));
-    } catch (e) {
-      console.warn("Could not save pattern settings to localStorage:", e);
-    }
-  }
-
-  /**
-   * Handles user adjustments to pattern generator sliders.
-   */
-  function onPatternSettingInput(key, val) {
-    const num = parseFloat(val);
-    if (isNaN(num)) return;
-
-    if (key === 'rampRate') {
-      patternSettings.rampRate = Math.max(0.5, Math.min(20, num));
-      rampRateVal.innerText = `${patternSettings.rampRate.toFixed(1)} /s`;
-    } else if (key === 'min') {
-      patternSettings.min = Math.round(Math.max(0, Math.min(20, num)));
       if (patternSettings.min > patternSettings.max) {
-        patternSettings.max = patternSettings.min;
-        patternMaxSlider.value = patternSettings.max;
-        patternMaxVal.innerText = patternSettings.max;
-      }
-      patternMinVal.innerText = patternSettings.min;
-    } else if (key === 'max') {
-      patternSettings.max = Math.round(Math.max(0, Math.min(20, num)));
-      if (patternSettings.max < patternSettings.min) {
         patternSettings.min = patternSettings.max;
+      }
+
+      if (rampRateSlider) {
+        rampRateSlider.value = patternSettings.rampRate;
+        rampRateVal.innerText = `${patternSettings.rampRate.toFixed(1)} /s`;
+      }
+      if (patternMinSlider) {
         patternMinSlider.value = patternSettings.min;
         patternMinVal.innerText = patternSettings.min;
       }
-      patternMaxVal.innerText = patternSettings.max;
-    } else if (key === 'minJump') {
-      patternSettings.minJump = Math.round(Math.max(0, Math.min(10, num)));
-      minJumpVal.innerText = patternSettings.minJump;
-    } else if (key === 'holdMax') {
-      patternSettings.holdMax = Math.max(0, Math.min(10, num));
-      holdMaxVal.innerText = `${patternSettings.holdMax.toFixed(1)} s`;
-    }
-
-    savePatternSettings();
-
-    if (patternEnabled && (nextTarget < patternSettings.min || nextTarget > patternSettings.max)) {
-      pickNextTarget();
-    }
-  }
-
-  /**
-   * Computes the next randomized target intensity adhering to min, max, and minJump bounds.
-   */
-  function pickNextTarget() {
-    const min = patternSettings.min;
-    const max = patternSettings.max;
-    const minJump = patternSettings.minJump;
-    const currentInt = Math.round(currentPatternLevel);
-
-    const candidates = [];
-    for (let i = min; i <= max; i++) {
-      if (Math.abs(i - currentInt) >= minJump) {
-        candidates.push(i);
+      if (patternMaxSlider) {
+        patternMaxSlider.value = patternSettings.max;
+        patternMaxVal.innerText = patternSettings.max;
+      }
+      if (minJumpSlider) {
+        minJumpSlider.value = patternSettings.minJump;
+        minJumpVal.innerText = patternSettings.minJump;
+      }
+      if (holdMaxSlider) {
+        holdMaxSlider.value = patternSettings.holdMax;
+        holdMaxVal.innerText = `${patternSettings.holdMax.toFixed(1)} s`;
       }
     }
 
-    if (candidates.length > 0) {
-      const idx = Math.floor(Math.random() * candidates.length);
-      nextTarget = candidates[idx];
-    } else {
-      const distToMin = Math.abs(currentInt - min);
-      const distToMax = Math.abs(currentInt - max);
-      nextTarget = distToMax >= distToMin ? max : min;
+    /**
+     * Persists current pattern configuration parameters to localStorage.
+     */
+    function savePatternSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEY_PATTERN_SETTINGS, JSON.stringify(patternSettings));
+      } catch (e) {
+        console.warn("Could not save pattern settings to localStorage:", e);
+      }
     }
 
-    patternPhase = 'ramping';
-    updatePatternStatus();
-  }
+    /**
+     * Handles user adjustments to pattern generator sliders.
+     */
+    function onPatternSettingInput(key, val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return;
 
-  /**
-   * Activates or halts autonomous random pattern generation.
-   */
-  function togglePattern(enabled) {
-    patternEnabled = enabled;
-
-    if (patternEnabled) {
-      patternCard.classList.add('active');
-      currentPatternLevel = parseFloat(slider.value) || 0;
-      lastSentPatternLevel = Math.round(currentPatternLevel);
-      lastTickTime = performance.now();
-      pickNextTarget();
-
-      if (!patternTimer) {
-        patternTimer = setInterval(patternTick, 50);
+      if (key === 'rampRate') {
+        patternSettings.rampRate = Math.max(0.5, Math.min(20, num));
+        rampRateVal.innerText = `${patternSettings.rampRate.toFixed(1)} /s`;
+      } else if (key === 'min') {
+        patternSettings.min = Math.round(Math.max(0, Math.min(20, num)));
+        if (patternSettings.min > patternSettings.max) {
+          patternSettings.max = patternSettings.min;
+          patternMaxSlider.value = patternSettings.max;
+          patternMaxVal.innerText = patternSettings.max;
+        }
+        patternMinVal.innerText = patternSettings.min;
+      } else if (key === 'max') {
+        patternSettings.max = Math.round(Math.max(0, Math.min(20, num)));
+        if (patternSettings.max < patternSettings.min) {
+          patternSettings.min = patternSettings.max;
+          patternMinSlider.value = patternSettings.min;
+          patternMinVal.innerText = patternSettings.min;
+        }
+        patternMaxVal.innerText = patternSettings.max;
+      } else if (key === 'minJump') {
+        patternSettings.minJump = Math.round(Math.max(0, Math.min(10, num)));
+        minJumpVal.innerText = patternSettings.minJump;
+      } else if (key === 'holdMax') {
+        patternSettings.holdMax = Math.max(0, Math.min(10, num));
+        holdMaxVal.innerText = `${patternSettings.holdMax.toFixed(1)} s`;
       }
-      updatePatternStatus();
-    } else {
-      patternPhase = 'off';
-      patternCard.classList.remove('active');
-      if (patternTimer) {
-        clearInterval(patternTimer);
-        patternTimer = null;
+
+      savePatternSettings();
+
+      if (patternEnabled && (nextTarget < patternSettings.min || nextTarget > patternSettings.max)) {
+        pickNextTarget();
       }
-      updatePatternStatus();
     }
-  }
 
-  /**
-   * 50ms interval animation tick applying smooth intensity ramping and hold timing.
-   */
-  function patternTick() {
-    if (!patternEnabled) return;
-    if (patternPhase === 'manual') {
-      updatePatternStatus();
-      return;
-    }
+    /**
+     * Computes the next randomized target intensity adhering to min, max, and minJump bounds.
+     */
+    function pickNextTarget() {
+      const min = patternSettings.min;
+      const max = patternSettings.max;
+      const minJump = patternSettings.minJump;
+      const currentInt = Math.round(currentPatternLevel);
 
-    const now = performance.now();
-    const dt = Math.min((now - lastTickTime) / 1000, 0.5);
-    lastTickTime = now;
-
-    if (patternPhase === 'ramping') {
-      const step = patternSettings.rampRate * dt;
-
-      if (currentPatternLevel < nextTarget) {
-        currentPatternLevel = Math.min(nextTarget, currentPatternLevel + step);
-      } else if (currentPatternLevel > nextTarget) {
-        currentPatternLevel = Math.max(nextTarget, currentPatternLevel - step);
-      }
-
-      applyPatternLevel(currentPatternLevel);
-
-      if (Math.abs(currentPatternLevel - nextTarget) < 0.001) {
-        currentPatternLevel = nextTarget;
-        applyPatternLevel(currentPatternLevel);
-
-        if (patternSettings.holdMax > 0) {
-          const holdDuration = Math.random() * patternSettings.holdMax;
-          holdUntil = now + (holdDuration * 1000);
-          patternPhase = 'holding';
-        } else {
-          pickNextTarget();
+      const candidates = [];
+      for (let i = min; i <= max; i++) {
+        if (Math.abs(i - currentInt) >= minJump) {
+          candidates.push(i);
         }
       }
-      updatePatternStatus();
 
-    } else if (patternPhase === 'holding') {
-      if (now >= holdUntil) {
-        pickNextTarget();
+      if (candidates.length > 0) {
+        const idx = Math.floor(Math.random() * candidates.length);
+        nextTarget = candidates[idx];
       } else {
+        const distToMin = Math.abs(currentInt - min);
+        const distToMax = Math.abs(currentInt - max);
+        nextTarget = distToMax >= distToMin ? max : min;
+      }
+
+      patternPhase = 'ramping';
+      updatePatternStatus();
+    }
+
+    /**
+     * Toggles collapse/expanded state of the Random Pattern section.
+     */
+    function togglePatternCollapse(forceExpand = null) {
+      if (!patternBody || !patternCollapseIcon) return;
+      const shouldExpand = forceExpand !== null ? forceExpand : patternBody.classList.contains('collapsed');
+      if (shouldExpand) {
+        patternBody.classList.remove('collapsed');
+        patternCollapseIcon.classList.remove('collapsed');
+      } else {
+        patternBody.classList.add('collapsed');
+        patternCollapseIcon.classList.add('collapsed');
+      }
+    }
+
+    /**
+     * Toggles collapse/expanded state of the Motion Control section.
+     */
+    function toggleMotionCollapse(forceExpand = null) {
+      if (!motionBody || !motionCollapseIcon) return;
+      const shouldExpand = forceExpand !== null ? forceExpand : motionBody.classList.contains('collapsed');
+      if (shouldExpand) {
+        motionBody.classList.remove('collapsed');
+        motionCollapseIcon.classList.remove('collapsed');
+      } else {
+        motionBody.classList.add('collapsed');
+        motionCollapseIcon.classList.add('collapsed');
+      }
+    }
+
+    /**
+     * Activates or halts autonomous random pattern generation.
+     * Automatically expands when enabled and collapses when turned off.
+     */
+    function togglePattern(enabled) {
+      patternEnabled = enabled;
+
+      if (patternEnabled) {
+        if (motionEnabled) {
+          motionToggle.checked = false;
+          toggleMotion(false);
+        }
+        togglePatternCollapse(true);
+        patternCard.classList.add('active');
+        currentPatternLevel = parseFloat(slider.value) || 0;
+        lastSentPatternLevel = Math.round(currentPatternLevel);
+        lastTickTime = performance.now();
+        pickNextTarget();
+
+        if (!patternTimer) {
+          patternTimer = setInterval(patternTick, 50);
+        }
+        updatePatternStatus();
+      } else {
+        patternPhase = 'off';
+        patternCard.classList.remove('active');
+        togglePatternCollapse(false);
+        if (patternTimer) {
+          clearInterval(patternTimer);
+          patternTimer = null;
+        }
         updatePatternStatus();
       }
     }
-  }
 
-  /**
-   * Applies calculated pattern intensity to the slider, label, and Bluetooth queue.
-   */
-  function applyPatternLevel(level) {
-    const clamped = Math.max(0, Math.min(20, level));
-    const rounded = Math.round(clamped);
-
-    slider.value = rounded;
-    valDisplay.innerText = rounded;
-
-    if (rounded !== lastSentPatternLevel) {
-      lastSentPatternLevel = rounded;
-      queueTransmission(rounded);
-    }
-  }
-
-  /**
-   * Updates pattern status badge, phase description, and target readouts.
-   */
-  function updatePatternStatus() {
-    if (!patternEnabled) {
-      patternStatusLabel.innerText = "Off";
-      patternTargetDisplay.innerText = "Target: --";
-      return;
-    }
-
-    patternTargetDisplay.innerText = `Target: ${nextTarget}`;
-
-    if (patternPhase === 'manual') {
-      patternStatusLabel.innerText = "Manual Override (Paused)";
-    } else if (patternPhase === 'holding') {
-      const remainingSec = Math.max(0, (holdUntil - performance.now()) / 1000).toFixed(1);
-      patternStatusLabel.innerText = `Holding at ${Math.round(currentPatternLevel)} (${remainingSec}s)`;
-    } else if (patternPhase === 'ramping') {
-      patternStatusLabel.innerText = `Ramping ${Math.round(currentPatternLevel)} → ${nextTarget}`;
-    }
-  }
-
-  /**
-   * Handles user beginning manual interaction with the intensity slider.
-   */
-  function onManualStart() {
-    isManualHolding = true;
-    if (patternEnabled) {
-      patternPhase = 'manual';
-      updatePatternStatus();
-    }
-  }
-
-  /**
-   * Handles user input from the vibration intensity slider.
-   */
-  function onIntensityInput(val) {
-    const intVal = parseInt(val, 10);
-    valDisplay.innerText = intVal;
-    currentPatternLevel = intVal;
-    lastSentPatternLevel = intVal;
-    queueTransmission(intVal);
-
-    if (patternEnabled) {
-      patternPhase = 'manual';
-      updatePatternStatus();
-    }
-  }
-
-  /**
-   * Sets slider and sends direct intensity preset value.
-   * Disengages random pattern if currently active.
-   */
-  function setDirectIntensity(val) {
-    if (patternEnabled) {
-      patternToggle.checked = false;
-      togglePattern(false);
-    }
-    slider.value = val;
-    valDisplay.innerText = val;
-    currentPatternLevel = val;
-    lastSentPatternLevel = val;
-    queueTransmission(val);
-  }
-
-  /**
-   * Queues vibration command and prevents UART packet flooding.
-   */
-  async function queueTransmission(intensity) {
-    pendingIntensity = intensity;
-    if (isTransmitting) return;
-
-    isTransmitting = true;
-    while (pendingIntensity !== null) {
-      const target = pendingIntensity;
-      pendingIntensity = null;
-      await broadcastCommand(`Vibrate:${target};`);
-    }
-    isTransmitting = false;
-  }
-
-  /**
-   * Broadcasts ASCII command string to all connected and selected toys.
-   */
-  async function broadcastCommand(cmd) {
-    const targets = managedToys.filter(t => t.selected && t.status === 'connected' && t.tx);
-    if (targets.length === 0) return;
-
-    const payload = new TextEncoder().encode(cmd);
-
-    await Promise.all(targets.map(async (toy) => {
+    /**
+     * Loads saved motion settings and baseline calibration from localStorage.
+     */
+    function loadMotionSettings() {
       try {
-        if (toy.tx.properties.writeWithoutResponse) {
-          await toy.tx.writeValueWithoutResponse(payload);
-        } else {
-          await toy.tx.writeValue(payload);
+        const raw = localStorage.getItem(STORAGE_KEY_MOTION_SETTINGS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed === 'object' && parsed !== null) {
+            if (parsed.mode === 'gforce' || parsed.mode === 'vehicle') {
+              motionSettings.mode = parsed.mode;
+            }
+            if (typeof parsed.multiplier === 'number' && parsed.multiplier >= 0 && parsed.multiplier <= 20) {
+              motionSettings.multiplier = Math.round(parsed.multiplier);
+            }
+            if (parsed.baseline && typeof parsed.baseline === 'object') {
+              motionSettings.baseline = {
+                calibrated: !!parsed.baseline.calibrated,
+                pitch: typeof parsed.baseline.pitch === 'number' ? parsed.baseline.pitch : 0,
+                roll: typeof parsed.baseline.roll === 'number' ? parsed.baseline.roll : 0,
+                gravX: typeof parsed.baseline.gravX === 'number' ? parsed.baseline.gravX : 0,
+                gravY: typeof parsed.baseline.gravY === 'number' ? parsed.baseline.gravY : 0,
+                gravZ: typeof parsed.baseline.gravZ === 'number' ? parsed.baseline.gravZ : 9.80665
+              };
+            }
+          }
         }
       } catch (e) {
-        console.warn(`Write fail on ${toy.customName}:`, e);
+        console.warn("Could not read motion settings from localStorage:", e);
       }
-    }));
-  }
 
-  /**
-   * Handles user releasing manual slider contact.
-   * If pattern is active, resumes ramping toward target from the released intensity.
-   * If pattern is inactive, executes momentary release to zero when enabled.
-   */
-  function handleRelease() {
-    if (!isManualHolding) return;
-    isManualHolding = false;
+      setMotionMode(motionSettings.mode, false);
+      if (motionMultiplierSlider) {
+        motionMultiplierSlider.value = motionSettings.multiplier;
+      }
+      if (motionMultiplierVal) {
+        motionMultiplierVal.innerText = motionSettings.multiplier;
+      }
+      updateZeroStatusUI();
+    }
 
-    if (patternEnabled) {
-      currentPatternLevel = parseFloat(slider.value) || 0;
-      lastSentPatternLevel = Math.round(currentPatternLevel);
-      lastTickTime = performance.now();
+    /**
+     * Persists motion configuration and baseline to localStorage.
+     */
+    function saveMotionSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEY_MOTION_SETTINGS, JSON.stringify(motionSettings));
+      } catch (e) {
+        console.warn("Could not save motion settings to localStorage:", e);
+      }
+    }
 
-      if (Math.abs(nextTarget - currentPatternLevel) < Math.max(1, patternSettings.minJump)) {
-        pickNextTarget();
+    /**
+     * Selects active motion mode: 'gforce' or 'vehicle'.
+     */
+    function setMotionMode(mode, save = true) {
+      motionSettings.mode = mode;
+      if (modeBtnGforce && modeBtnVehicle) {
+        if (mode === 'gforce') {
+          modeBtnGforce.classList.add('active');
+          modeBtnVehicle.classList.remove('active');
+        } else {
+          modeBtnVehicle.classList.add('active');
+          modeBtnGforce.classList.remove('active');
+        }
+      }
+      if (save) saveMotionSettings();
+    }
+
+    /**
+     * Handles user adjustment of the motion sensitivity multiplier slider (0 to 20).
+     */
+    function onMotionMultiplierInput(val) {
+      const num = parseInt(val, 10);
+      if (isNaN(num)) return;
+      motionSettings.multiplier = Math.max(0, Math.min(20, num));
+      if (motionMultiplierVal) motionMultiplierVal.innerText = motionSettings.multiplier;
+      saveMotionSettings();
+    }
+
+    /**
+     * Calculates current pitch and roll angles using deviceorientation or gravity vector.
+     */
+    function getCurrentAngles() {
+      if (liveOrientation.beta !== 0 || liveOrientation.gamma !== 0) {
+        return { pitch: liveOrientation.beta, roll: liveOrientation.gamma };
+      }
+      const gx = liveGravity.x;
+      const gy = liveGravity.y;
+      const gz = liveGravity.z;
+      const pitch = Math.atan2(gy, Math.sqrt(gx * gx + gz * gz)) * (180 / Math.PI);
+      const roll = Math.atan2(-gx, gz) * (180 / Math.PI);
+      return { pitch, roll };
+    }
+
+    /**
+     * Calibrates resting tilt and gravity baseline for mounted vehicle mode.
+     */
+    function zeroMotionBaseline() {
+      const angles = getCurrentAngles();
+      motionSettings.baseline.calibrated = true;
+      motionSettings.baseline.pitch = angles.pitch;
+      motionSettings.baseline.roll = angles.roll;
+      motionSettings.baseline.gravX = liveGravity.x;
+      motionSettings.baseline.gravY = liveGravity.y;
+      motionSettings.baseline.gravZ = liveGravity.z;
+      saveMotionSettings();
+      updateZeroStatusUI();
+      updateLog(`Baseline zeroed: pitch ${angles.pitch.toFixed(1)}°, roll ${angles.roll.toFixed(1)}° 🎯`);
+    }
+
+    /**
+     * Updates the Zero Baseline status indicator text.
+     */
+    function updateZeroStatusUI() {
+      if (!zeroStatusLabel) return;
+      if (motionSettings.baseline.calibrated) {
+        zeroStatusLabel.innerText = `Baseline: Zeroed at (${motionSettings.baseline.pitch.toFixed(1)}°, ${motionSettings.baseline.roll.toFixed(1)}°)`;
       } else {
-        patternPhase = 'ramping';
-      }
-      updatePatternStatus();
-    } else {
-      if (momentaryToggle.checked && slider.value !== "0") {
-        slider.value = 0;
-        valDisplay.innerText = "0";
-        queueTransmission(0);
+        zeroStatusLabel.innerText = "Baseline: Not calibrated (Tap above to zero)";
       }
     }
-  }
 
-  // Attach touch and pointer gestures for manual override and safety release
-  slider.addEventListener('pointerdown', onManualStart);
-  slider.addEventListener('touchstart', onManualStart);
-  slider.addEventListener('mousedown', onManualStart);
+    /**
+     * Captures raw accelerometer and gravity telemetry events.
+     */
+    function handleDeviceMotion(event) {
+      if (!motionEnabled) return;
 
-  slider.addEventListener('mouseup', handleRelease);
-  slider.addEventListener('touchend', handleRelease);
-  slider.addEventListener('pointerup', handleRelease);
-  slider.addEventListener('pointercancel', handleRelease);
-  slider.addEventListener('lostpointercapture', handleRelease);
+      if (event.acceleration) {
+        if (typeof event.acceleration.x === 'number') liveAcceleration.x = event.acceleration.x;
+        if (typeof event.acceleration.y === 'number') liveAcceleration.y = event.acceleration.y;
+        if (typeof event.acceleration.z === 'number') liveAcceleration.z = event.acceleration.z;
+      }
 
-  // Safety shutdown on page unload
-  window.addEventListener('pagehide', () => {
-    if (patternEnabled) {
-      togglePattern(false);
+      if (event.accelerationIncludingGravity) {
+        if (typeof event.accelerationIncludingGravity.x === 'number') liveGravity.x = event.accelerationIncludingGravity.x;
+        if (typeof event.accelerationIncludingGravity.y === 'number') liveGravity.y = event.accelerationIncludingGravity.y;
+        if (typeof event.accelerationIncludingGravity.z === 'number') liveGravity.z = event.accelerationIncludingGravity.z;
+      }
+    }
+
+    /**
+     * Captures gyroscope device orientation angles.
+     */
+    function handleDeviceOrientation(event) {
+      if (!motionEnabled) return;
+      if (typeof event.beta === 'number') liveOrientation.beta = event.beta;
+      if (typeof event.gamma === 'number') liveOrientation.gamma = event.gamma;
+      if (typeof event.alpha === 'number') liveOrientation.alpha = event.alpha;
+    }
+
+    /**
+     * Toggles real-time motion sensor tracking and vibration intensity modulation.
+     */
+    async function toggleMotion(enabled) {
+      if (enabled) {
+        // Disengage random pattern if active to avoid conflicting controls
+        if (patternEnabled) {
+          patternToggle.checked = false;
+          togglePattern(false);
+        }
+
+        // Check and request iOS 13+ sensor permissions
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+          try {
+            const permissionState = await DeviceMotionEvent.requestPermission();
+            if (permissionState !== 'granted') {
+              updateLog("Motion sensor permission denied.");
+              motionToggle.checked = false;
+              return;
+            }
+          } catch (e) {
+            updateLog("Sensor permission error: " + e.message);
+            motionToggle.checked = false;
+            return;
+          }
+        }
+
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+          try {
+            await DeviceOrientationEvent.requestPermission();
+          } catch (_) { }
+        }
+
+        motionEnabled = true;
+        motionCard.classList.add('active');
+        motionStatusDot.style.background = 'var(--badge-online)';
+        motionStatusLabel.innerText = "Tracking";
+        toggleMotionCollapse(true);
+
+        // Bind motion and orientation listeners
+        window.addEventListener('devicemotion', handleDeviceMotion, { passive: true });
+        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+
+        // Auto-zero baseline on initial start if not yet calibrated
+        if (!motionSettings.baseline.calibrated) {
+          setTimeout(zeroMotionBaseline, 100);
+        }
+
+        if (!motionTimer) {
+          motionTimer = setInterval(motionTick, 50);
+        }
+        updateLog("Motion tracking active. Move or tilt phone! 📱");
+
+      } else {
+        motionEnabled = false;
+        motionCard.classList.remove('active');
+        motionStatusDot.style.background = 'var(--badge-offline)';
+        motionStatusLabel.innerText = "Off";
+
+        window.removeEventListener('devicemotion', handleDeviceMotion);
+        window.removeEventListener('deviceorientation', handleDeviceOrientation);
+
+        if (motionTimer) {
+          clearInterval(motionTimer);
+          motionTimer = null;
+        }
+
+        smoothedGForce = 0.0;
+        smoothedTiltDelta = 0.0;
+        applyMotionLevel(0, 0, 0);
+        updateLog("Motion tracking stopped.");
+      }
+    }
+
+    /**
+     * 50ms interval tick computing motion intensity from G-force or vehicle angle/acceleration.
+     */
+    function motionTick() {
+      if (!motionEnabled) return;
+      if (isManualHolding) return;
+
+      let calculatedIntensity = 0;
+      let displayG = 0;
+      let displayTilt = 0;
+
+      // Multiplier 0: Minor motion produces zero intensity
+      if (motionSettings.multiplier === 0) {
+        applyMotionLevel(0, 0, 0);
+        return;
+      }
+
+      if (motionSettings.mode === 'gforce') {
+        // Mode 1: Any G-Force (Omnidirectional)
+        let rawLinMag = Math.sqrt(
+          liveAcceleration.x * liveAcceleration.x +
+          liveAcceleration.y * liveAcceleration.y +
+          liveAcceleration.z * liveAcceleration.z
+        );
+
+        // Fallback if linear acceleration is unavailable: evaluate gravity variance from 9.8 m/s^2
+        if (rawLinMag < 0.05) {
+          const totalGravMag = Math.sqrt(
+            liveGravity.x * liveGravity.x +
+            liveGravity.y * liveGravity.y +
+            liveGravity.z * liveGravity.z
+          );
+          rawLinMag = Math.abs(totalGravMag - 9.80665);
+        }
+
+        const gVal = rawLinMag / 9.80665;
+        if (gVal > smoothedGForce) {
+          smoothedGForce = gVal;
+        } else {
+          smoothedGForce = smoothedGForce * 0.85 + gVal * 0.15;
+        }
+        displayG = smoothedGForce;
+
+        // Sensitivity deadband: scales inversely with multiplier
+        const deadband = Math.max(0.01, (20 - motionSettings.multiplier) * 0.015);
+        if (smoothedGForce > deadband) {
+          const effectiveG = smoothedGForce - deadband;
+          const factor = motionSettings.multiplier * 2.2;
+          calculatedIntensity = Math.min(20, Math.round(effectiveG * factor));
+        } else {
+          calculatedIntensity = 0;
+        }
+
+      } else if (motionSettings.mode === 'vehicle') {
+        // Mode 2: Vehicle Mode (Tilt Angle and Acceleration)
+        const angles = getCurrentAngles();
+        const deltaPitch = Math.abs(angles.pitch - motionSettings.baseline.pitch);
+        const deltaRoll = Math.abs(angles.roll - motionSettings.baseline.roll);
+        const totalTilt = Math.sqrt(deltaPitch * deltaPitch + deltaRoll * deltaRoll);
+
+        // Planar lateral and longitudinal acceleration
+        const planarAcc = Math.sqrt(
+          liveAcceleration.x * liveAcceleration.x +
+          liveAcceleration.y * liveAcceleration.y
+        );
+        const planarG = planarAcc / 9.80665;
+
+        if (planarG > smoothedGForce) {
+          smoothedGForce = planarG;
+        } else {
+          smoothedGForce = smoothedGForce * 0.85 + planarG * 0.15;
+        }
+
+        if (totalTilt > smoothedTiltDelta) {
+          smoothedTiltDelta = totalTilt;
+        } else {
+          smoothedTiltDelta = smoothedTiltDelta * 0.85 + totalTilt * 0.15;
+        }
+
+        displayG = smoothedGForce;
+        displayTilt = smoothedTiltDelta;
+
+        // Tilt contribution scaled so ~25 degrees produces substantial motion
+        const tiltContribution = smoothedTiltDelta / 25.0;
+        const combinedMotion = smoothedGForce + tiltContribution;
+
+        const deadband = Math.max(0.02, (20 - motionSettings.multiplier) * 0.02);
+        if (combinedMotion > deadband) {
+          const effectiveMotion = combinedMotion - deadband;
+          const factor = motionSettings.multiplier * 2.2;
+          calculatedIntensity = Math.min(20, Math.round(effectiveMotion * factor));
+        } else {
+          calculatedIntensity = 0;
+        }
+      }
+
+      applyMotionLevel(calculatedIntensity, displayG, displayTilt);
+    }
+
+    /**
+     * Dispatches calculated motion intensity to UI slider, telemetry readouts, and Bluetooth queue.
+     */
+    function applyMotionLevel(level, gVal, tiltVal) {
+      const clamped = Math.max(0, Math.min(20, level));
+      motionCurrentLevel = clamped;
+
+      if (telemetryGVal) telemetryGVal.innerText = `${gVal.toFixed(2)} G`;
+      if (telemetryTiltVal) telemetryTiltVal.innerText = `${Math.round(tiltVal)}°`;
+      if (telemetryLevelVal) telemetryLevelVal.innerText = `${clamped} / 20`;
+      if (motionOutputDisplay) motionOutputDisplay.innerText = `Intensity: ${clamped}`;
+
+      slider.value = clamped;
+      valDisplay.innerText = clamped;
+
+      if (clamped !== motionLastSentLevel) {
+        motionLastSentLevel = clamped;
+        queueTransmission(clamped);
+      }
+    }
+
+    /**
+     * 50ms interval animation tick applying smooth intensity ramping and hold timing.
+     */
+    function patternTick() {
+      if (!patternEnabled) return;
+      if (patternPhase === 'manual') {
+        updatePatternStatus();
+        return;
+      }
+
+      const now = performance.now();
+      const dt = Math.min((now - lastTickTime) / 1000, 0.5);
+      lastTickTime = now;
+
+      if (patternPhase === 'ramping') {
+        const step = patternSettings.rampRate * dt;
+
+        if (currentPatternLevel < nextTarget) {
+          currentPatternLevel = Math.min(nextTarget, currentPatternLevel + step);
+        } else if (currentPatternLevel > nextTarget) {
+          currentPatternLevel = Math.max(nextTarget, currentPatternLevel - step);
+        }
+
+        applyPatternLevel(currentPatternLevel);
+
+        if (Math.abs(currentPatternLevel - nextTarget) < 0.001) {
+          currentPatternLevel = nextTarget;
+          applyPatternLevel(currentPatternLevel);
+
+          if (patternSettings.holdMax > 0) {
+            const holdDuration = Math.random() * patternSettings.holdMax;
+            holdUntil = now + (holdDuration * 1000);
+            patternPhase = 'holding';
+          } else {
+            pickNextTarget();
+          }
+        }
+        updatePatternStatus();
+
+      } else if (patternPhase === 'holding') {
+        if (now >= holdUntil) {
+          pickNextTarget();
+        } else {
+          updatePatternStatus();
+        }
+      }
+    }
+
+    /**
+     * Applies calculated pattern intensity to the slider, label, and Bluetooth queue.
+     */
+    function applyPatternLevel(level) {
+      const clamped = Math.max(0, Math.min(20, level));
+      const rounded = Math.round(clamped);
+
+      slider.value = rounded;
+      valDisplay.innerText = rounded;
+
+      if (rounded !== lastSentPatternLevel) {
+        lastSentPatternLevel = rounded;
+        queueTransmission(rounded);
+      }
+    }
+
+    /**
+     * Updates pattern status badge, phase description, and target readouts.
+     */
+    function updatePatternStatus() {
+      if (!patternEnabled) {
+        patternStatusLabel.innerText = "Off";
+        patternTargetDisplay.innerText = "Target: --";
+        return;
+      }
+
+      patternTargetDisplay.innerText = `Target: ${nextTarget}`;
+
+      if (patternPhase === 'manual') {
+        patternStatusLabel.innerText = "Manual Override (Paused)";
+      } else if (patternPhase === 'holding') {
+        const remainingSec = Math.max(0, (holdUntil - performance.now()) / 1000).toFixed(1);
+        patternStatusLabel.innerText = `Holding at ${Math.round(currentPatternLevel)} (${remainingSec}s)`;
+      } else if (patternPhase === 'ramping') {
+        patternStatusLabel.innerText = `Ramping ${Math.round(currentPatternLevel)} → ${nextTarget}`;
+      }
+    }
+
+    /**
+     * Handles user beginning manual interaction with the intensity slider.
+     */
+    function onManualStart() {
+      isManualHolding = true;
+      if (patternEnabled) {
+        patternPhase = 'manual';
+        updatePatternStatus();
+      }
+    }
+
+    /**
+     * Handles user input from the vibration intensity slider.
+     */
+    function onIntensityInput(val) {
+      const intVal = parseInt(val, 10);
+      valDisplay.innerText = intVal;
+      currentPatternLevel = intVal;
+      lastSentPatternLevel = intVal;
+      queueTransmission(intVal);
+
+      if (patternEnabled) {
+        patternPhase = 'manual';
+        updatePatternStatus();
+      }
+    }
+
+    /**
+     * Sets slider and sends direct intensity preset value.
+     * Disengages random pattern and motion mode if currently active.
+     */
+    function setDirectIntensity(val) {
+      if (patternEnabled) {
+        patternToggle.checked = false;
+        togglePattern(false);
+      }
+      if (motionEnabled) {
+        motionToggle.checked = false;
+        toggleMotion(false);
+      }
+      slider.value = val;
+      valDisplay.innerText = val;
+      currentPatternLevel = val;
+      lastSentPatternLevel = val;
+      queueTransmission(val);
+    }
+
+    /**
+     * Queues vibration command and prevents UART packet flooding.
+     */
+    async function queueTransmission(intensity) {
+      pendingIntensity = intensity;
+      if (isTransmitting) return;
+
+      isTransmitting = true;
+      while (pendingIntensity !== null) {
+        const target = pendingIntensity;
+        pendingIntensity = null;
+        await broadcastCommand(`Vibrate:${target};`);
+      }
+      isTransmitting = false;
+    }
+
+    /**
+     * Broadcasts ASCII command string to all connected and selected toys.
+     */
+    async function broadcastCommand(cmd) {
+      const targets = managedToys.filter(t => t.selected && t.status === 'connected' && t.tx);
+      if (targets.length === 0) return;
+
+      const payload = new TextEncoder().encode(cmd);
+
+      await Promise.all(targets.map(async (toy) => {
+        try {
+          if (toy.tx.properties.writeWithoutResponse) {
+            await toy.tx.writeValueWithoutResponse(payload);
+          } else {
+            await toy.tx.writeValue(payload);
+          }
+        } catch (e) {
+          console.warn(`Write fail on ${toy.customName}:`, e);
+        }
+      }));
+    }
+
+    /**
+     * Handles user releasing manual slider contact.
+     * If pattern is active, resumes ramping toward target from the released intensity.
+     * If motion is active, resumes real-time accelerometer calculations.
+     * If neither is active, executes momentary release to zero when enabled.
+     */
+    function handleRelease() {
+      if (!isManualHolding) return;
+      isManualHolding = false;
+
+      if (patternEnabled) {
+        currentPatternLevel = parseFloat(slider.value) || 0;
+        lastSentPatternLevel = Math.round(currentPatternLevel);
+        lastTickTime = performance.now();
+
+        if (Math.abs(nextTarget - currentPatternLevel) < Math.max(1, patternSettings.minJump)) {
+          pickNextTarget();
+        } else {
+          patternPhase = 'ramping';
+        }
+        updatePatternStatus();
+      } else if (motionEnabled) {
+        // Motion mode continues calculation on next tick
+      } else {
+        if (momentaryToggle.checked && slider.value !== "0") {
+          slider.value = 0;
+          valDisplay.innerText = "0";
+          queueTransmission(0);
+        }
+      }
+    }
+
+    // Attach touch and pointer gestures for manual override and safety release
+    slider.addEventListener('pointerdown', onManualStart);
+    slider.addEventListener('touchstart', onManualStart);
+    slider.addEventListener('mousedown', onManualStart);
+
+    slider.addEventListener('mouseup', handleRelease);
+    slider.addEventListener('touchend', handleRelease);
+    slider.addEventListener('pointerup', handleRelease);
+    slider.addEventListener('pointercancel', handleRelease);
+    slider.addEventListener('lostpointercapture', handleRelease);
+
+    // Safety shutdown on page unload
+    window.addEventListener('pagehide', () => {
+      if (patternEnabled) {
+        togglePattern(false);
+      }
+      if (motionEnabled) {
+        toggleMotion(false);
+      }
       broadcastCommand('Vibrate:0;');
-    }
-  });
+    });
 
-  // Initialize application on DOM load and mount SuiteProfile footer indicator
-  window.addEventListener('DOMContentLoaded', () => {
-    initApp();
-    if (window.SuiteProfile) {
-      SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer'));
-    }
-  });
-</script>
+    // Initialize application on DOM load and mount SuiteProfile footer indicator
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+      if (window.SuiteProfile) {
+        SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer'));
+      }
+    });
+  </script>
 </body>
+
 </html>
