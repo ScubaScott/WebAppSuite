@@ -593,6 +593,75 @@ input:checked + .slider-toggle:before {
 .modal-input:focus {
   border-color: var(--accent-primary);
 }
+.modal-field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+.modal-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--card-border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  background: #ffffff;
+  color: var(--text-dark);
+  box-sizing: border-box;
+  outline: none;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.modal-select:focus {
+  border-color: var(--accent-primary);
+}
+.modal-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* Brand Badges on Device Cards */
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-top: 3px;
+  width: fit-content;
+}
+.brand-badge.lovense {
+  background: #ffe3ef;
+  color: #ff3385;
+  border: 1px solid #ffbcd7;
+}
+.brand-badge.wevibe {
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+}
+.brand-badge.satisfyer {
+  background: #fdf2f8;
+  color: #db2777;
+  border: 1px solid #fbcfe8;
+}
+.brand-badge.unknown {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
 .modal-btn-row {
   display: flex;
   justify-content: flex-end;
@@ -1692,6 +1761,77 @@ input:checked + .slider-toggle:before {
 
 [data-theme="music"] .settings-dialog {
   border-color: #4f5566 #15171e #15171e #4f5566;
+}
+
+/* Modal Form Fields in WinAmp Style */
+[data-theme="music"] .modal-card {
+  background: #171920;
+  border: 2px solid;
+  border-color: #515767 #121318 #121318 #515767;
+  border-radius: 4px;
+  box-shadow: inset 1px 1px 0 #6e768a, inset -1px -1px 0 #0d0e12, 0 10px 30px rgba(0, 0, 0, 0.85);
+}
+[data-theme="music"] .modal-card h3 {
+  font-family: 'Consolas', monospace;
+  color: #00ff41;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+  letter-spacing: 0.5px;
+}
+[data-theme="music"] .modal-input {
+  background: #090b0e;
+  border: 1px solid #2a2e3a;
+  color: #00ff41;
+  font-family: 'Consolas', monospace;
+  border-radius: 3px;
+}
+[data-theme="music"] .modal-input:focus {
+  border-color: #00ff41;
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
+}
+[data-theme="music"] .modal-field-label {
+  color: #8c95a8;
+  font-family: 'Consolas', monospace;
+}
+[data-theme="music"] .modal-select {
+  background: #090b0e;
+  border: 1px solid #2a2e3a;
+  color: #00ff41;
+  font-family: 'Consolas', monospace;
+  border-radius: 3px;
+}
+[data-theme="music"] .modal-select:focus {
+  border-color: #00ff41;
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
+}
+[data-theme="music"] .modal-hint {
+  color: #656d7e;
+  font-family: 'Consolas', monospace;
+}
+
+/* Brand Badges in WinAmp Style */
+[data-theme="music"] .brand-badge {
+  font-family: 'Consolas', monospace;
+  border-radius: 2px;
+}
+[data-theme="music"] .brand-badge.lovense {
+  background: #171c26;
+  color: #00ff41;
+  border: 1px solid #284432;
+}
+[data-theme="music"] .brand-badge.wevibe {
+  background: #131929;
+  color: #60a5fa;
+  border: 1px solid #254070;
+}
+[data-theme="music"] .brand-badge.satisfyer {
+  background: #241421;
+  color: #f472b6;
+  border: 1px solid #6b2657;
+}
+[data-theme="music"] .brand-badge.unknown {
+  background: #14161d;
+  color: #8c95a8;
+  border: 1px solid #2e3342;
 }
 
 

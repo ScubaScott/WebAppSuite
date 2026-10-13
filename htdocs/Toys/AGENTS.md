@@ -25,17 +25,30 @@ Toys is a wireless Web Bluetooth controller specifically engineered to manage si
 
 ## 2. Hardware API & Bluetooth Communication
 
-### Web Bluetooth Protocol (Lovense GATT)
-- **Scanning Filters**: Filter by `namePrefix: 'LVS-'` with primary and dynamic GATT service UUIDs covering Generation 1 (`0000fff0...`), Generation 2 Nordic UART (`6e400001...`), and dynamic Generation 3 UUIDs.
-- **Command Transmission**:
-  - Format: `Vibrate:<intensity>;` where `<intensity>` is an integer between `0` and `20`.
-  - Mode: Prefer `writeWithoutResponse` where supported by the TX characteristic to prevent GATT queue blocking and packet flooding; fall back to standard `writeValue`.
-  - Queueing: Coalesce rapid slider adjustments so only the latest intensity is transmitted once an in-flight packet finishes.
-- **Momentary Safety Mode**:
-  - When enabled, releasing touch/pointer immediately restores slider value to `0` and broadcasts `Vibrate:0;`.
+### Multi-Brand Protocol Architecture (`TOY_DRIVERS`)
+The application implements an extensible driver registry (`TOY_DRIVERS`) enabling concurrent communication with multiple hardware manufacturers without cloud accounts or third-party web sockets:
+- **Lovense**:
+  - Scanning: Filter `namePrefix: 'LVS-'` with Gen 1 (`0000fff0...`), Gen 2 Nordic UART (`6e400001...`), and Gen 3 dynamic prefixes.
+  - Command: Plaintext ASCII `Vibrate:<intensity>;` where intensity is 0 to 20.
+- **We-Vibe**:
+  - Scanning: Filter prefixes (`We-Vibe`, `WeVibe`, `Sync`, `Chorus`, `Nova`, `Verge`, `Rave`, `Bloom`, `Moxie`, `Melt`, `Pivot`, `Tango`, `Vector`) and service `f000bb03-0451-4000-b000-000000000000`.
+  - Command: Fixed 8-byte array `[0x0f, 0x03, 0x00, (level << 4) | level, 0x00, 0x00, 0x00, 0x00]` scaled to 0–15 (`0x0` to `0xF`).
+- **Satisfyer**:
+  - Scanning: Filter prefixes (`Satisfyer`, `SF-`) and service `51361500-c5e7-47c7-8a6e-47ebc99d80e8`.
+  - Command: Motor on/off byte on characteristic `51361501...` and motor speed byte (`0` to `100`) on characteristic `51361502...`.
+
+### Brand Auto-Detection & Manual Protocol Override
+- **Auto-Detection**: During GATT connection, the driver matches broadcasted device name and discovered service UUIDs against registered driver signatures (`matches()`).
+- **Manual Brand Override**: Users can override or reassign the driver protocol at any time via the Configure dialog (`Auto-Detect`, `Lovense`, `We-Vibe`, `Satisfyer`), which persists in the device registry and immediately rebinds GATT handles if connected.
+- **Brand Badges**: Device cards render visual brand pill badges styled for both Pink and WinAmp themes.
+
+### Command Transmission & Safety Mode
+- **Mode**: Prefer `writeWithoutResponse` where supported by target TX characteristics to prevent GATT queue blocking and packet flooding; fall back to standard `writeValue`.
+- **Queueing**: Coalesce rapid slider adjustments so only the latest intensity is transmitted once an in-flight packet finishes.
+- **Momentary Safety Mode**: When enabled, releasing touch/pointer immediately restores slider value to `0` and broadcasts a stop command to all connected toys.
 
 ### Device Persistence & Auto-Reconnect
-- **Device Registry**: Saved in `localStorage` under `lush_toy_registry` mapping persistent `deviceId` to friendly nicknames, original broadcast names, and timestamp.
+- **Device Registry**: Saved in `localStorage` under `lush_toy_registry` mapping persistent `deviceId` to friendly nicknames, original broadcast names, brand driver selection, and timestamp.
 - **Auto-Reconnect**: Periodic 5-second polling routine that inspects `navigator.bluetooth.getDevices()` to seamlessly reconnect paired toys without requiring manual browser prompts on every reload.
 
 ### Random Pattern Engine
