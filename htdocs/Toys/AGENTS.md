@@ -42,6 +42,11 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
 - **Manual Brand Override**: Users can override or reassign the driver protocol at any time via the Configure dialog (`Auto-Detect`, `Lovense`, `We-Vibe`, `Satisfyer`), which persists in the device registry and immediately rebinds GATT handles if connected.
 - **Brand Badges**: Device cards render visual brand pill badges styled for both Pink and WinAmp themes.
 
+### Slider Architecture & Touch Guard
+- **Master Intensity Slider (`.master-slider`)**: Operates with instant jump-on-touch response across the track and optional momentary safety release to 0. Its track and thumb styles in the Pink theme are isolated into dedicated CSS rules to allow independent visual reshaping.
+- **Parameter Sliders (`.param-slider`)**: Settings sliders in the Random Pattern and Motion cards implement a thumb-only drag guard (`attachThumbOnlyDragGuard`). Touching or swiping the track outside the handle suppresses native value jumps and enables smooth vertical page scrolling (`touch-action: pan-y`). Parameter values only update when the handle is intentionally grabbed and dragged.
+- **WinAmp Theme Preserved**: Under `[data-theme="music"]`, the classic WinAmp graphite and LCD slider aesthetic applies uniformly across all range controls.
+
 ### Command Transmission & Safety Mode
 - **Mode**: Prefer `writeWithoutResponse` where supported by target TX characteristics to prevent GATT queue blocking and packet flooding; fall back to standard `writeValue`.
 - **Queueing**: Coalesce rapid slider adjustments so only the latest intensity is transmitted once an in-flight packet finishes.

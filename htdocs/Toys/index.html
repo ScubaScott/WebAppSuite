@@ -120,7 +120,7 @@
           <span id="sliderLabelText">Level</span>
           <span class="intensity-val" id="valDisplay">0</span>
         </div>
-        <input type="range" id="intensitySlider" min="0" max="20" value="0" oninput="onIntensityInput(this.value)">
+        <input type="range" id="intensitySlider" class="master-slider" min="0" max="20" value="0" oninput="onIntensityInput(this.value)">
       </div>
 
       <!-- Momentary Mode Toggle -->
@@ -173,7 +173,7 @@
               <span id="rampRateLabel">Ramp Rate (Speed)</span>
               <span class="pattern-param-val" id="rampRateVal">3.0 /s</span>
             </div>
-            <input type="range" id="rampRateSlider" min="0.5" max="20" step="0.5" value="3"
+            <input type="range" id="rampRateSlider" class="param-slider" min="0.5" max="20" step="0.5" value="3"
               oninput="onPatternSettingInput('rampRate', this.value)">
           </div>
 
@@ -184,7 +184,7 @@
                 <span id="patternMinLabel">Min Level</span>
                 <span class="pattern-param-val" id="patternMinVal">0</span>
               </div>
-              <input type="range" id="patternMinSlider" min="0" max="20" step="1" value="0"
+              <input type="range" id="patternMinSlider" class="param-slider" min="0" max="20" step="1" value="0"
                 oninput="onPatternSettingInput('min', this.value)">
             </div>
             <div class="pattern-param-row">
@@ -192,7 +192,7 @@
                 <span id="patternMaxLabel">Max Level</span>
                 <span class="pattern-param-val" id="patternMaxVal">20</span>
               </div>
-              <input type="range" id="patternMaxSlider" min="0" max="20" step="1" value="20"
+              <input type="range" id="patternMaxSlider" class="param-slider" min="0" max="20" step="1" value="20"
                 oninput="onPatternSettingInput('max', this.value)">
             </div>
           </div>
@@ -204,7 +204,7 @@
                 <span id="minJumpLabel">Min Jump</span>
                 <span class="pattern-param-val" id="minJumpVal">3</span>
               </div>
-              <input type="range" id="minJumpSlider" min="0" max="10" step="1" value="3"
+              <input type="range" id="minJumpSlider" class="param-slider" min="0" max="10" step="1" value="3"
                 oninput="onPatternSettingInput('minJump', this.value)">
             </div>
             <div class="pattern-param-row">
@@ -212,7 +212,7 @@
                 <span id="holdMaxLabel">Max Hold</span>
                 <span class="pattern-param-val" id="holdMaxVal">1.5 s</span>
               </div>
-              <input type="range" id="holdMaxSlider" min="0" max="10" step="0.5" value="1.5"
+              <input type="range" id="holdMaxSlider" class="param-slider" min="0" max="10" step="0.5" value="1.5"
                 oninput="onPatternSettingInput('holdMax', this.value)">
             </div>
           </div>
@@ -278,7 +278,7 @@
             <span id="motionMultiplierLabel">Multiplier (Sensitivity)</span>
             <span class="motion-param-val" id="motionMultiplierVal">10</span>
           </div>
-          <input type="range" id="motionMultiplierSlider" min="0" max="20" step="1" value="10"
+          <input type="range" id="motionMultiplierSlider" class="param-slider" min="0" max="20" step="1" value="10"
             oninput="onMotionMultiplierInput(this.value)">
           <div class="motion-param-hint" id="motionMultiplierHint">
             <span>0 = Minor motion ignored</span>
@@ -292,7 +292,7 @@
             <span id="motionNoiseLabel">Noise Filter (Road & Engine)</span>
             <span class="motion-param-val" id="motionNoiseFilterVal">3</span>
           </div>
-          <input type="range" id="motionNoiseFilterSlider" min="0" max="10" step="1" value="3"
+          <input type="range" id="motionNoiseFilterSlider" class="param-slider" min="0" max="10" step="1" value="3"
             oninput="onMotionNoiseFilterInput(this.value)">
           <div class="motion-param-hint" id="motionNoiseHint">
             <span>0 = Off (Smooth EV)</span>
@@ -315,7 +315,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v2.1</small>
+      <small>v2.2</small>
     </footer>
   </div>
 
@@ -399,7 +399,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "2.1";
+    const APP_VERSION = "2.2";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -1064,12 +1064,94 @@
     }
 
     /**
+     * Attaches handle-only touch & drag guard to a parameter slider.
+     * Prevents accidental value jumps when touching/swiping the track during page scroll,
+     * requiring an intentional grab and drag of the slider handle (thumb).
+     */
+    function attachThumbOnlyDragGuard(input) {
+      if (!input || input._thumbGuardAttached) return;
+      input._thumbGuardAttached = true;
+
+      let isDragging = false;
+
+      input.addEventListener('pointerdown', (e) => {
+        const rect = input.getBoundingClientRect();
+        const min = parseFloat(input.min) || 0;
+        const max = parseFloat(input.max) || 100;
+        const val = parseFloat(input.value);
+        const ratio = (val - min) / (max - min);
+
+        // Dynamically compute thumb center based on theme dimensions
+        const isMusic = currentTheme === 'music';
+        const thumbWidth = isMusic ? 20 : 28;
+        const availableWidth = rect.width - thumbWidth;
+        const thumbCenterX = rect.left + (thumbWidth / 2) + (ratio * Math.max(0, availableWidth));
+
+        // Touch boundary around handle center (comfortable ~30px radius)
+        const hitRadius = Math.max(thumbWidth * 0.8, 30);
+        const distFromThumb = Math.abs(e.clientX - thumbCenterX);
+
+        if (distFromThumb > hitRadius) {
+          // Touch was on the track/bar outside the handle - suppress native jump to allow page scroll
+          e.preventDefault();
+          return;
+        }
+
+        // Touch is on the handle: capture pointer for smooth sliding
+        isDragging = true;
+        try {
+          input.setPointerCapture(e.pointerId);
+        } catch (_) {}
+      });
+
+      input.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const rect = input.getBoundingClientRect();
+        const isMusic = currentTheme === 'music';
+        const thumbWidth = isMusic ? 20 : 28;
+        const availableWidth = rect.width - thumbWidth;
+        if (availableWidth <= 0) return;
+
+        const offsetX = Math.max(0, Math.min(availableWidth, e.clientX - rect.left - (thumbWidth / 2)));
+        const ratio = offsetX / availableWidth;
+        const min = parseFloat(input.min) || 0;
+        const max = parseFloat(input.max) || 100;
+        const step = parseFloat(input.step) || 1;
+
+        const rawVal = min + ratio * (max - min);
+        let steppedVal = Math.round((rawVal - min) / step) * step + min;
+        const stepDecimals = (step.toString().split('.')[1] || '').length;
+        steppedVal = parseFloat(steppedVal.toFixed(stepDecimals));
+        steppedVal = Math.max(min, Math.min(max, steppedVal));
+
+        if (parseFloat(input.value) !== steppedVal) {
+          input.value = steppedVal;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+
+      const endDrag = (e) => {
+        if (isDragging) {
+          isDragging = false;
+          try {
+            input.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      };
+
+      input.addEventListener('pointerup', endDrag);
+      input.addEventListener('pointercancel', endDrag);
+    }
+
+    /**
      * Initializes application on page load:
      * 1. Restores user auto-scan preference.
      * 2. Populates managed toys list immediately from localStorage.
      * 3. Renders saved toys so cards stay visible across browser restarts/tab closures.
      * 4. Queries navigator.bluetooth.getDevices() for active browser-granted sessions.
      * 5. Starts background auto-reconnect timer loop.
+     * 6. Attaches thumb-drag-only guard to parameter sliders.
      */
     async function initApp() {
       // Restore and apply active theme
@@ -1150,6 +1232,9 @@
       if (managedToys.some(t => t.device)) {
         attemptAutoReconnect();
       }
+
+      // 5. Attach thumb-drag-only guard to parameter sliders so page scrolling never causes jumps
+      document.querySelectorAll('.param-slider').forEach(attachThumbOnlyDragGuard);
     }
 
     /**

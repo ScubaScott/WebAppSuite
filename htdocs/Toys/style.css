@@ -420,20 +420,25 @@ button.primary-btn:active {
   text-shadow: 0 2px 6px rgba(255, 51, 133, 0.2);
 }
 
-/* Cute Stylized Slider */
+/* Base Slider Reset */
 input[type=range] {
   -webkit-appearance: none;
   width: 100%;
-  height: 38px;
-  background: #ffe3ef;
-  border: 2px solid var(--card-border);
-  border-radius: 16px;
   outline: none;
   margin: 8px 0;
   cursor: pointer;
 }
 
-input[type=range]::-webkit-slider-thumb {
+/* Master Intensity Slider - Pink Theme (Isolated for custom shaping) */
+.master-slider {
+  height: 38px;
+  background: #ffe3ef;
+  border: 2px solid var(--card-border);
+  border-radius: 16px;
+  touch-action: manipulation;
+}
+
+.master-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 40px;
   height: 40px;
@@ -444,8 +449,52 @@ input[type=range]::-webkit-slider-thumb {
   box-shadow: 0 4px 12px rgba(255, 64, 136, 0.45);
   transition: transform 0.1s ease;
 }
-input[type=range]::-webkit-slider-thumb:active {
+.master-slider::-webkit-slider-thumb:active {
   transform: scale(1.15);
+}
+
+.master-slider::-moz-range-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  cursor: pointer;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 64, 136, 0.45);
+}
+
+/* Parameter Sliders (Random Pattern & Motion Engine) - Pink Theme */
+.param-slider {
+  height: 28px;
+  background: #fff0f6;
+  border: 2px solid var(--card-border);
+  border-radius: 14px;
+  touch-action: pan-y;
+}
+
+.param-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 64, 136, 0.35);
+  transition: transform 0.1s ease;
+}
+.param-slider::-webkit-slider-thumb:active {
+  transform: scale(1.12);
+}
+
+.param-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 64, 136, 0.35);
 }
 
 /* Toggle Switches with Frilly Styling */
