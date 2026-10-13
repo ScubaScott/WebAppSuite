@@ -44,7 +44,7 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
 
 ### Slider Architecture & Touch Guard
 - **Master Intensity Slider (`.master-slider`)**: Operates with instant jump-on-touch response across the track and optional momentary safety release to 0. Its track and thumb styles in the Pink theme are isolated into dedicated CSS rules to allow independent visual reshaping.
-- **Parameter Sliders (`.param-slider`)**: Settings sliders in the Random Pattern and Motion cards implement a thumb-only drag guard (`attachThumbOnlyDragGuard`). Touching or swiping the track outside the handle suppresses native value jumps and enables smooth vertical page scrolling (`touch-action: pan-y`). Parameter values only update when the handle is intentionally grabbed and dragged.
+- **Parameter Sliders (`.param-slider` / `.param-custom-slider`)**: Settings sliders in the Random Pattern and Motion cards render a touch-safe custom component (`initCustomParamSliders()`). The track (`.param-custom-track`) is non-interactive with `touch-action: pan-y`, allowing smooth vertical page scrolling on mobile and completely eliminating track tap jumps. Only deliberate grabbing and dragging of the handle (`.param-custom-handle` with `setPointerCapture`) adjusts the parameter value.
 - **WinAmp Theme Preserved**: Under `[data-theme="music"]`, the classic WinAmp graphite and LCD slider aesthetic applies uniformly across all range controls.
 
 ### Command Transmission & Safety Mode

@@ -463,38 +463,80 @@ input[type=range] {
   box-shadow: 0 4px 12px rgba(255, 64, 136, 0.45);
 }
 
-/* Parameter Sliders (Random Pattern & Motion Engine) - Pink Theme */
+/* Parameter Sliders - Hidden Native Input */
 .param-slider {
+  display: none !important;
+}
+
+/* Custom Parameter Slider Component (Handle-Only Touch & Drag) */
+.param-custom-slider {
+  position: relative;
+  width: 100%;
+  margin: 8px 0;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.param-custom-track {
+  position: relative;
+  width: 100%;
   height: 28px;
   background: #fff0f6;
   border: 2px solid var(--card-border);
   border-radius: 14px;
+  box-sizing: border-box;
   touch-action: pan-y;
+  cursor: default;
 }
 
-.param-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--accent-gradient);
-  cursor: pointer;
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(255, 64, 136, 0.35);
-  transition: transform 0.1s ease;
-}
-.param-slider::-webkit-slider-thumb:active {
-  transform: scale(1.12);
+.param-custom-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(255, 64, 136, 0.22);
+  border-radius: 12px;
+  pointer-events: none;
 }
 
-.param-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
+.param-custom-handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--accent-gradient);
-  cursor: pointer;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(255, 64, 136, 0.35);
+  box-shadow: 0 2px 8px rgba(255, 64, 136, 0.4);
+  cursor: grab;
+  touch-action: none;
+  z-index: 3;
+  box-sizing: border-box;
+  outline: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.param-custom-handle::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  bottom: -12px;
+  left: -12px;
+  right: -12px;
+  border-radius: 50%;
+}
+
+.param-custom-handle:active,
+.param-custom-handle.is-dragging {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 4px 14px rgba(255, 64, 136, 0.6);
+}
+
+.param-custom-handle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 64, 136, 0.4), 0 2px 8px rgba(255, 64, 136, 0.4);
 }
 
 /* Toggle Switches with Frilly Styling */
@@ -1649,6 +1691,52 @@ input:checked + .slider-toggle:before {
   height: 26px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   cursor: pointer;
+}
+
+[data-theme="music"] .param-custom-track {
+  height: 8px;
+  background: #0a0c10;
+  border: 1px solid #2d323f;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 3px #000;
+  margin: 10px 0;
+}
+
+[data-theme="music"] .param-custom-fill {
+  background: rgba(0, 255, 65, 0.3);
+  border-radius: 1px;
+}
+
+[data-theme="music"] .param-custom-handle {
+  width: 20px;
+  height: 26px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d3d7e2 0%, #808899 50%, #444853 100%);
+  border: 1px solid #16181f;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  cursor: grab;
+}
+
+[data-theme="music"] .param-custom-handle::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: -8px;
+  right: -8px;
+  border-radius: 2px;
+}
+
+[data-theme="music"] .param-custom-handle:active,
+[data-theme="music"] .param-custom-handle.is-dragging {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.05);
+  background: linear-gradient(180deg, #00ff41 0%, #00b32c 100%);
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
+}
+
+[data-theme="music"] .param-custom-handle:focus-visible {
+  box-shadow: 0 0 0 2px #00ff41;
 }
 
 /* Buttons in WinAmp Style */

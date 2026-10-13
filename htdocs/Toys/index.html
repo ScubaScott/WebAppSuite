@@ -315,7 +315,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v2.2</small>
+      <small>v2.3</small>
     </footer>
   </div>
 
@@ -399,7 +399,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "2.2";
+    const APP_VERSION = "2.3";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -460,6 +460,7 @@
       updateThemeLabels(theme);
       renderDeviceList();
       updateEqVisualizer(parseInt(slider.value, 10) || 0);
+      updateAllCustomSliders();
     }
 
     /**
@@ -1064,84 +1065,181 @@
     }
 
     /**
-     * Attaches handle-only touch & drag guard to a parameter slider.
-     * Prevents accidental value jumps when touching/swiping the track during page scroll,
-     * requiring an intentional grab and drag of the slider handle (thumb).
+     * Initializes custom touch-safe parameter sliders for all .param-slider inputs.
+     * Prevents accidental value jumps when touching or scrolling over tracks on mobile.
+     * Only intentional touching and dragging of the handle adjusts the parameter value.
      */
-    function attachThumbOnlyDragGuard(input) {
-      if (!input || input._thumbGuardAttached) return;
-      input._thumbGuardAttached = true;
+    function initCustomParamSliders() {
+      const inputs = document.querySelectorAll('.param-slider');
+      inputs.forEach((input) => {
+        if (input._customSlider) return;
 
-      let isDragging = false;
+        // Hide native range input from view and touch processing
+        input.style.display = 'none';
 
-      input.addEventListener('pointerdown', (e) => {
-        const rect = input.getBoundingClientRect();
-        const min = parseFloat(input.min) || 0;
-        const max = parseFloat(input.max) || 100;
-        const val = parseFloat(input.value);
-        const ratio = (val - min) / (max - min);
+        // Create container, track, fill, and handle elements
+        const container = document.createElement('div');
+        container.className = 'param-custom-slider';
+        container.setAttribute('data-target-id', input.id);
 
-        // Dynamically compute thumb center based on theme dimensions
-        const isMusic = currentTheme === 'music';
-        const thumbWidth = isMusic ? 20 : 28;
-        const availableWidth = rect.width - thumbWidth;
-        const thumbCenterX = rect.left + (thumbWidth / 2) + (ratio * Math.max(0, availableWidth));
+        const track = document.createElement('div');
+        track.className = 'param-custom-track';
 
-        // Touch boundary around handle center (comfortable ~30px radius)
-        const hitRadius = Math.max(thumbWidth * 0.8, 30);
-        const distFromThumb = Math.abs(e.clientX - thumbCenterX);
+        const fill = document.createElement('div');
+        fill.className = 'param-custom-fill';
 
-        if (distFromThumb > hitRadius) {
-          // Touch was on the track/bar outside the handle - suppress native jump to allow page scroll
+        const handle = document.createElement('div');
+        handle.className = 'param-custom-handle';
+        handle.setAttribute('role', 'slider');
+        handle.setAttribute('tabindex', '0');
+        handle.setAttribute('aria-label', input.getAttribute('aria-label') || input.id);
+        handle.setAttribute('aria-valuemin', input.min || '0');
+        handle.setAttribute('aria-valuemax', input.max || '100');
+        handle.setAttribute('aria-valuenow', input.value);
+
+        track.appendChild(fill);
+        track.appendChild(handle);
+        container.appendChild(track);
+        input.parentNode.insertBefore(container, input.nextSibling);
+
+        // Store reference on the input element
+        input._customSlider = { container, track, fill, handle };
+
+        // Dragging state
+        let isDragging = false;
+
+        // Pointerdown on handle initiates dragging with full pointer capture
+        handle.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
           e.preventDefault();
-          return;
-        }
-
-        // Touch is on the handle: capture pointer for smooth sliding
-        isDragging = true;
-        try {
-          input.setPointerCapture(e.pointerId);
-        } catch (_) {}
-      });
-
-      input.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        const rect = input.getBoundingClientRect();
-        const isMusic = currentTheme === 'music';
-        const thumbWidth = isMusic ? 20 : 28;
-        const availableWidth = rect.width - thumbWidth;
-        if (availableWidth <= 0) return;
-
-        const offsetX = Math.max(0, Math.min(availableWidth, e.clientX - rect.left - (thumbWidth / 2)));
-        const ratio = offsetX / availableWidth;
-        const min = parseFloat(input.min) || 0;
-        const max = parseFloat(input.max) || 100;
-        const step = parseFloat(input.step) || 1;
-
-        const rawVal = min + ratio * (max - min);
-        let steppedVal = Math.round((rawVal - min) / step) * step + min;
-        const stepDecimals = (step.toString().split('.')[1] || '').length;
-        steppedVal = parseFloat(steppedVal.toFixed(stepDecimals));
-        steppedVal = Math.max(min, Math.min(max, steppedVal));
-
-        if (parseFloat(input.value) !== steppedVal) {
-          input.value = steppedVal;
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      });
-
-      const endDrag = (e) => {
-        if (isDragging) {
-          isDragging = false;
+          isDragging = true;
+          handle.classList.add('is-dragging');
           try {
-            input.releasePointerCapture(e.pointerId);
+            handle.setPointerCapture(e.pointerId);
+          } catch (_) {}
+        });
+
+        // Pointermove updates value along track bounds
+        handle.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          const rect = track.getBoundingClientRect();
+          const handleWidth = currentTheme === 'music' ? 20 : 30;
+          const availableWidth = rect.width - handleWidth;
+          if (availableWidth <= 0) return;
+
+          const offsetX = e.clientX - rect.left - (handleWidth / 2);
+          const clampedX = Math.max(0, Math.min(availableWidth, offsetX));
+          const ratio = clampedX / availableWidth;
+
+          const min = parseFloat(input.min) || 0;
+          const max = parseFloat(input.max) || 100;
+          const step = parseFloat(input.step) || 1;
+
+          const rawVal = min + ratio * (max - min);
+          let steppedVal = Math.round((rawVal - min) / step) * step + min;
+          const stepDecimals = (step.toString().split('.')[1] || '').length;
+          steppedVal = parseFloat(steppedVal.toFixed(stepDecimals));
+          steppedVal = Math.max(min, Math.min(max, steppedVal));
+
+          if (parseFloat(input.value) !== steppedVal) {
+            input.value = steppedVal;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          updateCustomSliderVisual(input);
+        });
+
+        // Pointerup / pointercancel terminates drag
+        const onEnd = (e) => {
+          if (!isDragging) return;
+          isDragging = false;
+          handle.classList.remove('is-dragging');
+          try {
+            handle.releasePointerCapture(e.pointerId);
           } catch (_) {}
           input.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      };
+        };
 
-      input.addEventListener('pointerup', endDrag);
-      input.addEventListener('pointercancel', endDrag);
+        handle.addEventListener('pointerup', onEnd);
+        handle.addEventListener('pointercancel', onEnd);
+
+        // Keyboard navigation for accessibility
+        handle.addEventListener('keydown', (e) => {
+          const min = parseFloat(input.min) || 0;
+          const max = parseFloat(input.max) || 100;
+          const step = parseFloat(input.step) || 1;
+          let currentVal = parseFloat(input.value) || min;
+          let nextVal = currentVal;
+
+          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+            nextVal = Math.min(max, currentVal + step);
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+            nextVal = Math.max(min, currentVal - step);
+          } else if (e.key === 'Home') {
+            nextVal = min;
+          } else if (e.key === 'End') {
+            nextVal = max;
+          } else {
+            return;
+          }
+
+          e.preventDefault();
+          const stepDecimals = (step.toString().split('.')[1] || '').length;
+          nextVal = parseFloat(nextVal.toFixed(stepDecimals));
+          if (nextVal !== currentVal) {
+            input.value = nextVal;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            updateCustomSliderVisual(input);
+          }
+        });
+
+        // Intercept programmatic value property updates
+        try {
+          const protoDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+          if (protoDescriptor) {
+            Object.defineProperty(input, 'value', {
+              get() {
+                return protoDescriptor.get.call(this);
+              },
+              set(newVal) {
+                protoDescriptor.set.call(this, newVal);
+                updateCustomSliderVisual(this);
+              },
+              configurable: true
+            });
+          }
+        } catch (_) {}
+
+        updateCustomSliderVisual(input);
+      });
+    }
+
+    /**
+     * Updates visual fill width and handle position for a custom parameter slider.
+     */
+    function updateCustomSliderVisual(input) {
+      if (!input || !input._customSlider) return;
+      const { handle, fill } = input._customSlider;
+      const min = parseFloat(input.min) || 0;
+      const max = parseFloat(input.max) || 100;
+      const val = parseFloat(input.value) || 0;
+      const ratio = (max > min) ? Math.max(0, Math.min(1, (val - min) / (max - min))) : 0;
+
+      const handleWidth = currentTheme === 'music' ? 20 : 30;
+      const posCss = `calc(${ratio} * (100% - ${handleWidth}px) + ${handleWidth / 2}px)`;
+
+      handle.style.left = posCss;
+      fill.style.width = posCss;
+      handle.setAttribute('aria-valuenow', val);
+      handle.setAttribute('aria-valuemin', min);
+      handle.setAttribute('aria-valuemax', max);
+    }
+
+    /**
+     * Refreshes all custom parameter sliders across active DOM inputs.
+     */
+    function updateAllCustomSliders() {
+      document.querySelectorAll('.param-slider').forEach(updateCustomSliderVisual);
     }
 
     /**
@@ -1154,6 +1252,9 @@
      * 6. Attaches thumb-drag-only guard to parameter sliders.
      */
     async function initApp() {
+      // Initialize touch-safe custom parameter sliders
+      initCustomParamSliders();
+
       // Restore and apply active theme
       applyTheme(currentTheme);
 
@@ -1233,8 +1334,8 @@
         attemptAutoReconnect();
       }
 
-      // 5. Attach thumb-drag-only guard to parameter sliders so page scrolling never causes jumps
-      document.querySelectorAll('.param-slider').forEach(attachThumbOnlyDragGuard);
+      // 5. Refresh custom parameter sliders to reflect restored values
+      updateAllCustomSliders();
     }
 
     /**
@@ -1816,6 +1917,7 @@
         holdMaxSlider.value = patternSettings.holdMax;
         holdMaxVal.innerText = `${patternSettings.holdMax.toFixed(1)} s`;
       }
+      updateAllCustomSliders();
     }
 
     /**
@@ -1864,6 +1966,7 @@
       }
 
       savePatternSettings();
+      updateAllCustomSliders();
 
       if (patternEnabled && (nextTarget < patternSettings.min || nextTarget > patternSettings.max)) {
         pickNextTarget();
@@ -2012,6 +2115,7 @@
         motionNoiseFilterVal.innerText = motionSettings.noiseFilter;
       }
       updateZeroStatusUI();
+      updateAllCustomSliders();
     }
 
     /**
