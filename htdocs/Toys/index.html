@@ -334,7 +334,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v2.6</small>
+      <small>v2.7</small>
     </footer>
   </div>
 
@@ -426,7 +426,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "2.6";
+    const APP_VERSION = "2.7";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -2481,7 +2481,7 @@
 
     /**
      * Activates or halts autonomous random pattern generation.
-     * Automatically expands when enabled and collapses when turned off.
+     * Automatically expands when enabled, collapses when turned off, and stops output.
      */
     function togglePattern(enabled) {
       patternEnabled = enabled;
@@ -2511,6 +2511,13 @@
           patternTimer = null;
         }
         updatePatternStatus();
+        slider.value = 0;
+        valDisplay.innerText = "0";
+        currentPatternLevel = 0;
+        lastSentPatternLevel = 0;
+        updateEqVisualizer(0);
+        queueTransmission(0);
+        broadcastStop();
       }
     }
 
@@ -2745,6 +2752,7 @@
         motionCard.classList.remove('active');
         motionStatusDot.style.background = 'var(--badge-offline)';
         motionStatusLabel.innerText = "Off";
+        toggleMotionCollapse(false);
 
         window.removeEventListener('devicemotion', handleDeviceMotion);
         window.removeEventListener('deviceorientation', handleDeviceOrientation);
@@ -2756,8 +2764,16 @@
 
         smoothedGForce = 0.0;
         smoothedTiltDelta = 0.0;
+        motionLastSentLevel = null;
         applyMotionLevel(0, 0, 0);
-        updateLog("Motion tracking stopped.");
+        slider.value = 0;
+        valDisplay.innerText = "0";
+        currentPatternLevel = 0;
+        lastSentPatternLevel = 0;
+        updateEqVisualizer(0);
+        queueTransmission(0);
+        broadcastStop();
+        updateLog("Motion tracking stopped. Output zeroed.");
       }
     }
 
