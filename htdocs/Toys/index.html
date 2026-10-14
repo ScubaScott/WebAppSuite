@@ -141,6 +141,25 @@
       </div>
     </div>
 
+    <!-- Individual Device & Motor Channel Mixer -->
+    <div class="card channel-mixer-card" id="channelMixerCard">
+      <div class="collapsible-header" id="mixerHeader" onclick="toggleMixerCollapse()">
+        <h2>
+          <span id="mixerCardTitle">🎀 Multi-Toy Channel Mixer</span>
+          <span class="collapse-icon" id="mixerCollapseIcon">▲</span>
+        </h2>
+        <span class="mixer-count-badge" id="mixerCountBadge">0 active</span>
+      </div>
+
+      <div class="collapsible-body" id="mixerBody">
+        <div id="channelMixerList" class="channel-mixer-list">
+          <div class="mixer-empty-state" id="mixerEmptyState">
+            No connected toys active. Connect toys above to split and control individual motors.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Random Pattern Generator Card -->
     <div class="card pattern-card" id="patternCard">
       <div class="collapsible-header" id="patternHeader" onclick="togglePatternCollapse()">
@@ -315,7 +334,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v2.3</small>
+      <small>v2.6</small>
     </footer>
   </div>
 
@@ -385,6 +404,14 @@
       </select>
       <div class="modal-hint" id="renameBrandHint">Select your hardware family or leave as Auto-Detect.</div>
 
+      <label class="modal-field-label" id="renameMotorsLabel">Motors / Channels</label>
+      <select id="renameMotorsSelect" class="modal-select">
+        <option value="auto">Auto-Detect</option>
+        <option value="1">1 Motor (Single Channel)</option>
+        <option value="2">2 Motors (Dual-Motor / Split Channels)</option>
+      </select>
+      <div class="modal-hint" id="renameMotorsHint">Configure 1 or 2 independent motor sliders in the mixer.</div>
+
       <div class="modal-btn-row">
         <button class="modal-btn cancel" onclick="closeRenameModal()">Cancel</button>
         <button class="modal-btn save" onclick="saveToyRename()">Save Changes</button>
@@ -399,7 +426,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "2.3";
+    const APP_VERSION = "2.6";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -594,9 +621,24 @@
           ? "Select output protocol driver or leave as Auto-Detect."
           : "Select your hardware family or leave as Auto-Detect.";
       }
+      const renameMotorsLabel = document.getElementById('renameMotorsLabel');
+      if (renameMotorsLabel) {
+        renameMotorsLabel.innerText = isMusic ? "Channels / Motors" : "Motors / Channels";
+      }
+      const renameMotorsHint = document.getElementById('renameMotorsHint');
+      if (renameMotorsHint) {
+        renameMotorsHint.innerText = isMusic
+          ? "Configure 1 or 2 independent channel faders in the mixer."
+          : "Configure 1 or 2 independent motor sliders in the mixer.";
+      }
       const renameInput = document.getElementById('renameInput');
       if (renameInput) {
         renameInput.placeholder = isMusic ? "Enter custom channel or speaker label..." : "Give your toy a sweet name...";
+      }
+
+      const mixerTitle = document.getElementById('mixerCardTitle');
+      if (mixerTitle) {
+        mixerTitle.innerText = isMusic ? "🎛 Multi-Track Channel Mixer" : "🎀 Multi-Toy Channel Mixer";
       }
 
       updateAutoScanUi();
@@ -806,21 +848,27 @@
           if (!txChar) throw new Error("No writable Lovense UART characteristic found.");
           return { tx: txChar };
         },
-        sendIntensity: async (handles, intensity20) => {
-          const payload = new TextEncoder().encode(`Vibrate:${intensity20};`);
+        sendMotors: async (handles, m1_20, m2_20, motorCount) => {
+          const c1 = Math.max(0, Math.min(20, Math.round(m1_20)));
+          const c2 = Math.max(0, Math.min(20, Math.round(m2_20)));
+          let cmd;
+          if (motorCount > 1 && c1 !== c2) {
+            cmd = `Vibrate1:${c1};Vibrate2:${c2};`;
+          } else {
+            cmd = `Vibrate:${c1};`;
+          }
+          const payload = new TextEncoder().encode(cmd);
           if (handles.tx.properties.writeWithoutResponse) {
             await handles.tx.writeValueWithoutResponse(payload);
           } else {
             await handles.tx.writeValue(payload);
           }
         },
+        sendIntensity: async (handles, intensity20) => {
+          await TOY_DRIVERS.lovense.sendMotors(handles, intensity20, intensity20, 1);
+        },
         stop: async (handles) => {
-          const payload = new TextEncoder().encode('Vibrate:0;');
-          if (handles.tx.properties.writeWithoutResponse) {
-            await handles.tx.writeValueWithoutResponse(payload);
-          } else {
-            await handles.tx.writeValue(payload);
-          }
+          await TOY_DRIVERS.lovense.sendMotors(handles, 0, 0, 1);
         }
       },
 
@@ -839,45 +887,93 @@
           }
           return discoveredUuids.some(uuid => uuid.startsWith('f000bb03'));
         },
-        setup: async (server) => {
+        setup: async (server, device) => {
           let txChar = null;
+          let infoChar = null;
+          const is8Bit = Boolean(device && device.name && /vector|moxie/i.test(device.name));
+
           try {
             const service = await server.getPrimaryService('f000bb03-0451-4000-b000-000000000000');
-            txChar = await service.getCharacteristic('f000c000-0451-4000-b000-000000000000');
+            try { txChar = await service.getCharacteristic('f000c000-0451-4000-b000-000000000000'); } catch (_) {}
+            try { infoChar = await service.getCharacteristic('f000b000-0451-4000-b000-000000000000'); } catch (_) {}
           } catch (e) {
             const services = await server.getPrimaryServices();
             for (const s of services) {
               try {
                 const chars = await s.getCharacteristics();
                 for (const c of chars) {
-                  if (c.uuid.toLowerCase().startsWith('f000c000')) {
-                    txChar = c;
-                    break;
-                  }
+                  const u = c.uuid.toLowerCase();
+                  if (u.startsWith('f000c000')) txChar = c;
+                  if (u.startsWith('f000b000')) infoChar = c;
                 }
               } catch (_) {}
               if (txChar) break;
             }
           }
           if (!txChar) throw new Error("No writable We-Vibe control characteristic found.");
-          return { tx: txChar };
+          return { tx: txChar, infoChar, is8Bit };
         },
-        sendIntensity: async (handles, intensity20) => {
-          const level15 = Math.min(15, Math.max(0, Math.round((intensity20 / 20) * 15)));
-          const byte4 = (level15 << 4) | level15;
-          const payload = new Uint8Array([0x0f, 0x03, 0x00, byte4, 0x00, 0x00, 0x00, 0x00]);
-          if (handles.tx.properties.writeWithoutResponse) {
-            await handles.tx.writeValueWithoutResponse(payload);
+        sendMotors: async (handles, m1_20, m2_20, motorCount) => {
+          if (m1_20 <= 0 && m2_20 <= 0) {
+            await TOY_DRIVERS.wevibe.stop(handles);
+            return;
+          }
+
+          // Scale 1-20 intensity across the active motor range (3-15)
+          const lvl1 = m1_20 > 0 ? Math.min(15, Math.max(3, Math.round(3 + ((m1_20 - 1) / 19) * 12))) : 0;
+          const lvl2 = (motorCount > 1 && m2_20 > 0)
+            ? Math.min(15, Math.max(3, Math.round(3 + ((m2_20 - 1) / 19) * 12)))
+            : (motorCount > 1 ? 0 : lvl1);
+
+          // Bitmask byte 5: Bit 0 = external (motor 2), Bit 1 = internal (motor 1)
+          let mask = 0x00;
+          if (lvl1 > 0) mask |= 0x02;
+          if (lvl2 > 0) mask |= 0x01;
+          if (mask === 0x00) {
+            await TOY_DRIVERS.wevibe.stop(handles);
+            return;
+          }
+
+          let payload;
+          if (handles.is8Bit) {
+            payload = new Uint8Array([0x0f, 0x03, 0x00, lvl2, lvl1, mask, 0x00, 0x00]);
           } else {
-            await handles.tx.writeValue(payload);
+            const byte3 = (lvl1 << 4) | (lvl2 & 0x0F);
+            payload = new Uint8Array([0x0f, 0x03, 0x00, byte3, 0x00, mask, 0x00, 0x00]);
+          }
+
+          try {
+            if (handles.tx.properties.writeWithoutResponse) {
+              await handles.tx.writeValueWithoutResponse(payload);
+            } else {
+              await handles.tx.writeValue(payload);
+            }
+          } catch (err) {
+            if (handles.tx.properties.write) {
+              await handles.tx.writeValue(payload);
+            } else {
+              throw err;
+            }
           }
         },
+        sendIntensity: async (handles, intensity20) => {
+          await TOY_DRIVERS.wevibe.sendMotors(handles, intensity20, intensity20, 2);
+        },
         stop: async (handles) => {
+          // Byte 1 is 0x00 (Pattern Off) and Byte 5 is 0x00 (Motors Off) to disengage hardware presets
           const payload = new Uint8Array([0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-          if (handles.tx.properties.writeWithoutResponse) {
-            await handles.tx.writeValueWithoutResponse(payload);
-          } else {
-            await handles.tx.writeValue(payload);
+          try {
+            if (handles.tx.properties.writeWithoutResponse) {
+              await handles.tx.writeValueWithoutResponse(payload);
+            } else {
+              await handles.tx.writeValue(payload);
+            }
+          } catch (err) {
+            if (handles.tx.properties.write) {
+              await handles.tx.writeValue(payload);
+            } else {
+              throw err;
+            }
           }
         }
       },
@@ -921,8 +1017,8 @@
           }
           return { powerChar, speedChar, tx: speedChar || powerChar };
         },
-        sendIntensity: async (handles, intensity20) => {
-          const level100 = Math.min(100, Math.max(0, Math.round((intensity20 / 20) * 100)));
+        sendMotors: async (handles, m1_20, m2_20, motorCount) => {
+          const level100 = Math.min(100, Math.max(0, Math.round((m1_20 / 20) * 100)));
           if (handles.powerChar) {
             const powerPayload = new Uint8Array([level100 > 0 ? 0x01 : 0x00]);
             try {
@@ -942,27 +1038,11 @@
             }
           }
         },
+        sendIntensity: async (handles, intensity20) => {
+          await TOY_DRIVERS.satisfyer.sendMotors(handles, intensity20, intensity20, 1);
+        },
         stop: async (handles) => {
-          if (handles.speedChar) {
-            try {
-              const stopPayload = new Uint8Array([0x00]);
-              if (handles.speedChar.properties.writeWithoutResponse) {
-                await handles.speedChar.writeValueWithoutResponse(stopPayload);
-              } else {
-                await handles.speedChar.writeValue(stopPayload);
-              }
-            } catch (_) {}
-          }
-          if (handles.powerChar) {
-            try {
-              const offPayload = new Uint8Array([0x00]);
-              if (handles.powerChar.properties.writeWithoutResponse) {
-                await handles.powerChar.writeValueWithoutResponse(offPayload);
-              } else {
-                await handles.powerChar.writeValue(offPayload);
-              }
-            } catch (_) {}
-          }
+          await TOY_DRIVERS.satisfyer.sendMotors(handles, 0, 0, 1);
         }
       }
     };
@@ -1029,7 +1109,7 @@
      * Stores or updates a specific toy's metadata in localStorage.
      * Cleans up stale device ID references if an ID remapping occurs.
      */
-    function persistToyMetadata(deviceId, customName, originalName, brand = 'auto', oldDeviceId = null) {
+    function persistToyMetadata(deviceId, customName, originalName, brand = 'auto', motorsConfig = 'auto', oldDeviceId = null) {
       const registry = getStoredRegistry();
       if (oldDeviceId && oldDeviceId !== deviceId && registry[oldDeviceId]) {
         delete registry[oldDeviceId];
@@ -1039,6 +1119,7 @@
         customName: customName || (registry[deviceId]?.customName) || originalName || "Toy",
         originalName: originalName || (registry[deviceId]?.originalName) || "BLE-Device",
         brand: brand || registry[deviceId]?.brand || 'auto',
+        motorsConfig: motorsConfig || registry[deviceId]?.motorsConfig || 'auto',
         lastSeen: Date.now()
       };
       saveStoredRegistry(registry);
@@ -1280,6 +1361,7 @@
           meta.customName || (currentTheme === 'music' ? "Audio Output" : "Toy"),
           meta.originalName || "BLE-Device",
           meta.brand || 'auto',
+          meta.motorsConfig || 'auto',
           false
         );
       });
@@ -1301,12 +1383,13 @@
             const customName = meta.customName || device.name || (currentTheme === 'music' ? "Audio Output" : "Toy");
             const originalName = meta.originalName || device.name || "BLE-Device";
             const brand = meta.brand || 'auto';
+            const motorsConfig = meta.motorsConfig || 'auto';
 
             // Ensure device exists in local registry
-            persistToyMetadata(device.id, customName, originalName, brand);
+            persistToyMetadata(device.id, customName, originalName, brand, motorsConfig);
 
             // Attach active BluetoothDevice object to managed toy record
-            addOrUpdateManagedToy(device, device.id, customName, originalName, brand, false);
+            addOrUpdateManagedToy(device, device.id, customName, originalName, brand, motorsConfig, false);
           });
 
           renderDeviceList();
@@ -1350,7 +1433,7 @@
      * Adds or updates a device record in runtime state.
      * Matches by ID or original broadcast name to retain custom user nicknames.
      */
-    function addOrUpdateManagedToy(device, deviceId, customName, originalName, brand, isConnected) {
+    function addOrUpdateManagedToy(device, deviceId, customName, originalName, brand, motorsConfig, isConnected) {
       const targetId = deviceId || (device ? device.id : null);
       if (!targetId && !device) return null;
 
@@ -1374,7 +1457,12 @@
           originalName: originalName || (device ? device.name : "BLE-Device"),
           status: isConnected ? 'connected' : 'disconnected',
           isConnecting: false,
-          selected: true
+          selected: true,
+          motorsConfig: motorsConfig || 'auto',
+          motor1Level: 0,
+          motor2Level: 0,
+          motor1Sync: true,
+          motor2Sync: true
         };
 
         if (device) {
@@ -1389,12 +1477,13 @@
           existing.id = device.id;
           bindDeviceListeners(existing);
           if (oldId !== device.id) {
-            persistToyMetadata(device.id, existing.customName, existing.originalName, existing.brand, oldId);
+            persistToyMetadata(device.id, existing.customName, existing.originalName, existing.brand, existing.motorsConfig, oldId);
           }
         }
         if (customName) existing.customName = customName;
         if (originalName) existing.originalName = originalName;
         if (brand) existing.brand = brand;
+        if (motorsConfig) existing.motorsConfig = motorsConfig;
         if (isConnected) existing.status = 'connected';
       }
 
@@ -1419,11 +1508,11 @@
         });
 
         updateLog(`Connecting to ${device.name || 'Bluetooth Device'}... ⏳`);
-        const toyRecord = addOrUpdateManagedToy(device, device.id, null, device.name || "Bluetooth Toy", 'auto', false);
+        const toyRecord = addOrUpdateManagedToy(device, device.id, null, device.name || "Bluetooth Toy", 'auto', 'auto', false);
         renderDeviceList();
 
         await connectToToyGatt(toyRecord);
-        persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName, toyRecord.brand || 'auto');
+        persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName, toyRecord.brand || 'auto', toyRecord.motorsConfig || 'auto');
         renderDeviceList();
 
       } catch (err) {
@@ -1490,7 +1579,7 @@
         }
 
         toyRecord.detectedBrand = targetDriver.id;
-        const handles = await targetDriver.setup(server);
+        const handles = await targetDriver.setup(server, toyRecord.device);
 
         toyRecord.gatt = server;
         toyRecord.driverHandles = handles;
@@ -1499,7 +1588,7 @@
         toyRecord.isConnecting = false;
         bindDeviceListeners(toyRecord);
 
-        persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName, toyRecord.brand || 'auto');
+        persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName, toyRecord.brand || 'auto', toyRecord.motorsConfig || 'auto');
 
         const brandDisplay = currentTheme === 'music' ? targetDriver.musicName : targetDriver.name;
         updateLog(`Connected to ${toyRecord.customName} (${brandDisplay})!`);
@@ -1532,7 +1621,7 @@
 
           authorizedDevices.forEach(device => {
             const meta = registry[device.id] || {};
-            addOrUpdateManagedToy(device, device.id, meta.customName, meta.originalName || device.name, false);
+            addOrUpdateManagedToy(device, device.id, meta.customName, meta.originalName || device.name, meta.brand || 'auto', meta.motorsConfig || 'auto', false);
           });
         } catch (e) {
           // Silent catch for background polling
@@ -1625,13 +1714,17 @@
     /**
      * Opens custom name & brand configuration modal.
      */
-    function openRenameModal(deviceId, currentName, currentBrand) {
+    function openRenameModal(deviceId, currentName, currentBrand, currentMotors) {
       renamingDeviceId = deviceId;
       const input = document.getElementById('renameInput');
       const select = document.getElementById('renameBrandSelect');
+      const motorSelect = document.getElementById('renameMotorsSelect');
       input.value = currentName;
       if (select) {
         select.value = currentBrand || 'auto';
+      }
+      if (motorSelect) {
+        motorSelect.value = currentMotors || 'auto';
       }
       document.getElementById('renameModal').style.display = 'flex';
       input.focus();
@@ -1646,14 +1739,16 @@
     }
 
     /**
-     * Saves updated custom toy nickname and brand protocol selection.
+     * Saves updated custom toy nickname, brand protocol selection, and motor channel configuration.
      */
     async function saveToyRename() {
       if (!renamingDeviceId) return;
       const input = document.getElementById('renameInput');
       const select = document.getElementById('renameBrandSelect');
+      const motorSelect = document.getElementById('renameMotorsSelect');
       const newName = input.value.trim();
       const selectedBrand = select ? select.value : 'auto';
+      const selectedMotors = motorSelect ? motorSelect.value : 'auto';
 
       if (newName) {
         const toy = managedToys.find(t => t.id === renamingDeviceId);
@@ -1661,13 +1756,14 @@
           toy.customName = newName;
           const oldBrand = toy.brand;
           toy.brand = selectedBrand;
+          toy.motorsConfig = selectedMotors;
 
           // Rebind driver handles if brand changed and toy is currently connected
           if (selectedBrand !== 'auto' && selectedBrand !== oldBrand && toy.gatt && toy.gatt.connected) {
             try {
               const driver = TOY_DRIVERS[selectedBrand];
               if (driver) {
-                toy.driverHandles = await driver.setup(toy.gatt);
+                toy.driverHandles = await driver.setup(toy.gatt, toy.device);
                 toy.tx = toy.driverHandles.tx || toy.driverHandles.speedChar;
                 toy.detectedBrand = driver.id;
               }
@@ -1676,9 +1772,10 @@
             }
           }
 
-          persistToyMetadata(toy.id, toy.customName, toy.originalName, toy.brand);
+          persistToyMetadata(toy.id, toy.customName, toy.originalName, toy.brand, toy.motorsConfig);
           updateLog(`Updated "${newName}" 🎀`);
           renderDeviceList();
+          renderChannelMixer();
         }
       }
       closeRenameModal();
@@ -1739,7 +1836,7 @@
           toy.id = device.id;
           toy.originalName = device.name || toy.originalName;
           bindDeviceListeners(toy);
-          persistToyMetadata(toy.id, toy.customName, toy.originalName, toy.brand, oldId);
+          persistToyMetadata(toy.id, toy.customName, toy.originalName, toy.brand, toy.motorsConfig || 'auto', oldId);
         }
 
         // 2. Connect to GATT server. If cached device instance is stale, fallback to re-pairing
@@ -1759,7 +1856,7 @@
           toy.id = freshDevice.id;
           toy.originalName = freshDevice.name || toy.originalName;
           bindDeviceListeners(toy);
-          persistToyMetadata(toy.id, toy.customName, toy.originalName, toy.brand, oldId);
+          persistToyMetadata(toy.id, toy.customName, toy.originalName, toy.brand, toy.motorsConfig || 'auto', oldId);
 
           await connectToToyGatt(toy);
         }
@@ -1796,6 +1893,7 @@
           ${emptyMsg}
         </div>
       `;
+        renderChannelMixer();
         return;
       }
 
@@ -1831,6 +1929,7 @@
         const safeId = toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safeCustomName = toy.customName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safeBrand = (toy.brand || 'auto').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeMotors = (toy.motorsConfig || 'auto').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
         // Resolve active brand display label & badge class
         const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || null);
@@ -1854,13 +1953,361 @@
         </div>
         <div class="device-actions">
           ${connectActionHtml}
-          <button class="action-pill-btn" onclick="openRenameModal('${safeId}', '${safeCustomName}', '${safeBrand}')">${renameLabel}</button>
+          <button class="action-pill-btn" onclick="openRenameModal('${safeId}', '${safeCustomName}', '${safeBrand}', '${safeMotors}')">${renameLabel}</button>
           <button class="action-pill-btn danger" onclick="forgetToy('${safeId}')">${forgetLabel}</button>
         </div>
       `;
 
         listEl.appendChild(item);
       });
+
+      renderChannelMixer();
+    }
+
+    /**
+     * Collapsible state of the Channel Mixer card.
+     */
+    let isMixerCollapsed = false;
+
+    /**
+     * Toggles collapsed visibility of the Channel Mixer body.
+     */
+    function toggleMixerCollapse() {
+      isMixerCollapsed = !isMixerCollapsed;
+      const body = document.getElementById('mixerBody');
+      const icon = document.getElementById('mixerCollapseIcon');
+      if (body) {
+        body.classList.toggle('collapsed', isMixerCollapsed);
+      }
+      if (icon) {
+        icon.classList.toggle('collapsed', isMixerCollapsed);
+      }
+    }
+
+    /**
+     * Resolves effective motor count (1 or 2) for a given toy record.
+     * Evaluates explicit manual user override or defaults to brand/model heuristic.
+     */
+    function getEffectiveMotors(toy) {
+      if (toy.motorsConfig === '1') return 1;
+      if (toy.motorsConfig === '2') return 2;
+
+      const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
+      const name = (toy.originalName || toy.customName || '').toLowerCase();
+
+      if (brandKey === 'wevibe') {
+        // Single motor We-Vibe models
+        if (name.includes('tango') || name.includes('wand') || name.includes('touch')) {
+          return 1;
+        }
+        // Dual motor We-Vibe models (Sync, Chorus, Nova, Verge, Vector, etc.)
+        return 2;
+      }
+
+      if (brandKey === 'lovense') {
+        // Multi-motor Lovense devices: Edge (tip/base), Domi (head/handle), Nora, Ose, Gemini, Flexer
+        if (name.includes('edge') || name.includes('domi') || name.includes('nora') || 
+            name.includes('ose') || name.includes('gemini') || name.includes('flexer')) {
+          return 2;
+        }
+        return 1;
+      }
+
+      if (brandKey === 'satisfyer') {
+        return 1;
+      }
+
+      return 1;
+    }
+
+    /**
+     * Returns human-friendly motor channel labels based on brand, model, and active theme.
+     */
+    function getMotorLabels(toy) {
+      const isMusic = currentTheme === 'music';
+      if (isMusic) {
+        return ['Channel A (L)', 'Channel B (R)'];
+      }
+
+      const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
+      const name = (toy.originalName || toy.customName || '').toLowerCase();
+
+      if (brandKey === 'wevibe') {
+        return ['Internal Motor', 'External Motor'];
+      }
+
+      if (brandKey === 'lovense') {
+        if (name.includes('edge')) return ['Tip Motor', 'Base Motor'];
+        if (name.includes('nora')) return ['Vibrate', 'Rotate'];
+        if (name.includes('domi')) return ['Head Motor', 'Handle Motor'];
+        return ['Motor 1', 'Motor 2'];
+      }
+
+      return ['Motor 1', 'Motor 2'];
+    }
+
+    /**
+     * Renders multi-toy channel mixer containing individual motor sliders
+     * and synchronization toggles for each connected and selected toy.
+     */
+    function renderChannelMixer() {
+      const isMusic = currentTheme === 'music';
+      const listEl = document.getElementById('channelMixerList');
+      const countBadge = document.getElementById('mixerCountBadge');
+      if (!listEl) return;
+
+      const activeToys = managedToys.filter(t => t.status === 'connected' && t.selected);
+      const connectedCount = managedToys.filter(t => t.status === 'connected').length;
+
+      // Update active channel count badge
+      if (countBadge) {
+        countBadge.innerText = `${activeToys.length} ${isMusic ? 'online' : 'active'}`;
+      }
+
+      // Display empty state when no connected toys are selected
+      if (activeToys.length === 0) {
+        let msg = isMusic
+          ? 'No active channels linked. Connect and check an output channel above to trim individual faders.'
+          : 'No connected toys active. Connect toys above to split and control individual motors.';
+        if (connectedCount > 0) {
+          msg = isMusic
+            ? 'Connected channels are deselected. Check a channel in the list above to control its faders.'
+            : 'Connected toys are currently deselected. Check a toy above to control its motors.';
+        }
+        listEl.innerHTML = `<div class="mixer-empty-state" id="mixerEmptyState">${msg}</div>`;
+        return;
+      }
+
+      listEl.innerHTML = '';
+
+      activeToys.forEach((toy) => {
+        // Initialize default runtime motor properties
+        const masterVal = parseInt(slider.value, 10) || 0;
+        if (typeof toy.motor1Level !== 'number') toy.motor1Level = masterVal;
+        if (typeof toy.motor2Level !== 'number') toy.motor2Level = masterVal;
+        if (typeof toy.motor1Sync !== 'boolean') toy.motor1Sync = true;
+        if (typeof toy.motor2Sync !== 'boolean') toy.motor2Sync = true;
+
+        const motorCount = getEffectiveMotors(toy);
+        const motorLabels = getMotorLabels(toy);
+        const isMuted = toy.motor1Level === 0 && (motorCount === 1 || toy.motor2Level === 0);
+
+        const safeId = toy.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || null);
+        const brandDriver = brandKey && TOY_DRIVERS[brandKey] ? TOY_DRIVERS[brandKey] : null;
+        const brandLabel = brandDriver
+          ? (isMusic ? brandDriver.musicName : brandDriver.name)
+          : (isMusic ? "Auto Detect" : "Auto-Detect");
+        const badgeClass = brandDriver ? brandDriver.id : 'unknown';
+
+        const muteText = isMuted
+          ? (isMusic ? '🔊 Unmute' : '🔊 Unmute')
+          : (isMusic ? '🔇 Mute' : '🔇 Mute');
+
+        const card = document.createElement('div');
+        card.className = 'mixer-channel-card';
+        card.id = `mixerCard_${safeId}`;
+
+        let motorRowsHtml = `
+          <!-- Motor 1 -->
+          <div class="mixer-motor-row">
+            <div class="mixer-motor-header">
+              <span class="mixer-motor-title">
+                <span>${motorLabels[0]}</span>
+              </span>
+              <label class="sync-toggle-label ${toy.motor1Sync ? 'is-synced' : ''}" id="syncLabel_${safeId}_1">
+                <input type="checkbox" id="syncCheck_${safeId}_1" ${toy.motor1Sync ? 'checked' : ''} onchange="toggleMotorSync('${safeId}', 1, this.checked)">
+                <span>${isMusic ? 'Link' : 'Sync'}</span>
+              </label>
+            </div>
+            <div class="mixer-slider-wrap">
+              <input type="range" class="mixer-slider" id="mixerSlider_${safeId}_1" min="0" max="20" value="${toy.motor1Level}" oninput="onMotorSliderInput('${safeId}', 1, this.value)">
+              <span class="mixer-slider-val" id="mixerVal_${safeId}_1">${toy.motor1Level}</span>
+            </div>
+          </div>
+        `;
+
+        if (motorCount > 1) {
+          motorRowsHtml += `
+            <!-- Motor 2 -->
+            <div class="mixer-motor-row">
+              <div class="mixer-motor-header">
+                <span class="mixer-motor-title">
+                  <span>${motorLabels[1]}</span>
+                </span>
+                <label class="sync-toggle-label ${toy.motor2Sync ? 'is-synced' : ''}" id="syncLabel_${safeId}_2">
+                  <input type="checkbox" id="syncCheck_${safeId}_2" ${toy.motor2Sync ? 'checked' : ''} onchange="toggleMotorSync('${safeId}', 2, this.checked)">
+                  <span>${isMusic ? 'Link' : 'Sync'}</span>
+                </label>
+              </div>
+              <div class="mixer-slider-wrap">
+                <input type="range" class="mixer-slider" id="mixerSlider_${safeId}_2" min="0" max="20" value="${toy.motor2Level}" oninput="onMotorSliderInput('${safeId}', 2, this.value)">
+                <span class="mixer-slider-val" id="mixerVal_${safeId}_2">${toy.motor2Level}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="mixer-channel-header">
+            <div class="mixer-channel-title">
+              <span class="brand-badge ${badgeClass}">${brandLabel}</span>
+              <span>${toy.customName}</span>
+            </div>
+            <div class="mixer-channel-actions">
+              <button class="mixer-mute-btn ${isMuted ? 'active' : ''}" onclick="muteToy('${safeId}')" title="${isMuted ? 'Restore channel volume' : 'Mute channel volume'}">
+                ${muteText}
+              </button>
+            </div>
+          </div>
+          ${motorRowsHtml}
+        `;
+
+        listEl.appendChild(card);
+      });
+    }
+
+    /**
+     * Handles slider adjustment on an individual toy motor channel.
+     * Automatically disengages synchronization for that specific motor
+     * so independent trim is preserved against master slider changes.
+     */
+    async function onMotorSliderInput(deviceId, motorNum, val) {
+      const toy = managedToys.find(t => t.id === deviceId);
+      if (!toy) return;
+      const numVal = parseInt(val, 10) || 0;
+
+      if (motorNum === 1) {
+        toy.motor1Level = numVal;
+        if (toy.motor1Sync) {
+          toy.motor1Sync = false;
+          const syncLabel = document.getElementById(`syncLabel_${deviceId}_1`);
+          const syncCheck = document.getElementById(`syncCheck_${deviceId}_1`);
+          if (syncLabel) syncLabel.classList.remove('is-synced');
+          if (syncCheck) syncCheck.checked = false;
+        }
+      } else {
+        toy.motor2Level = numVal;
+        if (toy.motor2Sync) {
+          toy.motor2Sync = false;
+          const syncLabel = document.getElementById(`syncLabel_${deviceId}_2`);
+          const syncCheck = document.getElementById(`syncCheck_${deviceId}_2`);
+          if (syncLabel) syncLabel.classList.remove('is-synced');
+          if (syncCheck) syncCheck.checked = false;
+        }
+      }
+
+      const valEl = document.getElementById(`mixerVal_${deviceId}_${motorNum}`);
+      if (valEl) valEl.innerText = numVal;
+
+      // Update mute button appearance if state changed
+      const motorCount = getEffectiveMotors(toy);
+      const isMuted = toy.motor1Level === 0 && (motorCount === 1 || toy.motor2Level === 0);
+      const card = document.getElementById(`mixerCard_${deviceId}`);
+      if (card) {
+        const muteBtn = card.querySelector('.mixer-mute-btn');
+        if (muteBtn) {
+          muteBtn.classList.toggle('active', isMuted);
+          muteBtn.innerText = isMuted ? '🔊 Unmute' : '🔇 Mute';
+        }
+      }
+
+      await sendIndividualToyMotors(toy);
+    }
+
+    /**
+     * Toggles sync lock for an individual toy motor.
+     * When locked, immediately matches the Master Intensity Level and transmits.
+     */
+    async function toggleMotorSync(deviceId, motorNum, isChecked) {
+      const toy = managedToys.find(t => t.id === deviceId);
+      if (!toy) return;
+      const masterVal = parseInt(slider.value, 10) || 0;
+
+      if (motorNum === 1) {
+        toy.motor1Sync = isChecked;
+        const syncLabel = document.getElementById(`syncLabel_${deviceId}_1`);
+        if (syncLabel) syncLabel.classList.toggle('is-synced', isChecked);
+        if (isChecked) {
+          toy.motor1Level = masterVal;
+          const s1 = document.getElementById(`mixerSlider_${deviceId}_1`);
+          const v1 = document.getElementById(`mixerVal_${deviceId}_1`);
+          if (s1) s1.value = masterVal;
+          if (v1) v1.innerText = masterVal;
+        }
+      } else {
+        toy.motor2Sync = isChecked;
+        const syncLabel = document.getElementById(`syncLabel_${deviceId}_2`);
+        if (syncLabel) syncLabel.classList.toggle('is-synced', isChecked);
+        if (isChecked) {
+          toy.motor2Level = masterVal;
+          const s2 = document.getElementById(`mixerSlider_${deviceId}_2`);
+          const v2 = document.getElementById(`mixerVal_${deviceId}_2`);
+          if (s2) s2.value = masterVal;
+          if (v2) v2.innerText = masterVal;
+        }
+      }
+
+      if (isChecked) {
+        await sendIndividualToyMotors(toy);
+      }
+    }
+
+    /**
+     * Mutes or restores all motor channels for a specific toy card.
+     */
+    async function muteToy(deviceId) {
+      const toy = managedToys.find(t => t.id === deviceId);
+      if (!toy) return;
+      const motorCount = getEffectiveMotors(toy);
+      const isCurrentlyMuted = toy.motor1Level === 0 && (motorCount === 1 || toy.motor2Level === 0);
+
+      if (isCurrentlyMuted) {
+        // Restore to master slider level and re-enable sync
+        const masterVal = parseInt(slider.value, 10) || 0;
+        toy.motor1Level = masterVal;
+        toy.motor1Sync = true;
+        if (motorCount > 1) {
+          toy.motor2Level = masterVal;
+          toy.motor2Sync = true;
+        }
+      } else {
+        // Mute to zero and detach sync
+        toy.motor1Level = 0;
+        toy.motor1Sync = false;
+        if (motorCount > 1) {
+          toy.motor2Level = 0;
+          toy.motor2Sync = false;
+        }
+      }
+
+      renderChannelMixer();
+      await sendIndividualToyMotors(toy);
+    }
+
+    /**
+     * Transmits current motor 1 and motor 2 levels directly to a specific toy.
+     */
+    async function sendIndividualToyMotors(toy) {
+      if (toy.status !== 'connected' || (!toy.driverHandles && !toy.tx)) return;
+      try {
+        const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
+        const driver = TOY_DRIVERS[brandKey] || TOY_DRIVERS.lovense;
+        const handles = toy.driverHandles || { tx: toy.tx };
+        const motorCount = getEffectiveMotors(toy);
+        const m1 = typeof toy.motor1Level === 'number' ? toy.motor1Level : 0;
+        const m2 = typeof toy.motor2Level === 'number' ? toy.motor2Level : 0;
+
+        if (m1 === 0 && m2 === 0 && driver.stop) {
+          await driver.stop(handles);
+        } else if (driver.sendMotors) {
+          await driver.sendMotors(handles, m1, m2, motorCount);
+        } else if (driver.sendIntensity) {
+          await driver.sendIntensity(handles, m1);
+        }
+      } catch (e) {
+        console.warn(`Individual motor send fail on ${toy.customName}:`, e);
+      }
     }
 
     /**
@@ -2612,6 +3059,7 @@
     /**
      * Broadcasts normalized intensity (0-20) to all connected and selected toys
      * using each device's active protocol driver.
+     * Updates synced individual motor levels and channel mixer sliders.
      */
     async function broadcastIntensity(target) {
       const targets = managedToys.filter(t => t.selected && t.status === 'connected' && (t.driverHandles || t.tx));
@@ -2621,10 +3069,34 @@
         try {
           const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
           const driver = TOY_DRIVERS[brandKey] || TOY_DRIVERS.lovense;
-          if (toy.driverHandles) {
-            await driver.sendIntensity(toy.driverHandles, target);
-          } else if (toy.tx) {
-            await driver.sendIntensity({ tx: toy.tx }, target);
+          const handles = toy.driverHandles || { tx: toy.tx };
+          const motorCount = getEffectiveMotors(toy);
+
+          // Update synced motor levels
+          if (toy.motor1Sync !== false) {
+            toy.motor1Level = target;
+            const s1 = document.getElementById(`mixerSlider_${toy.id}_1`);
+            const v1 = document.getElementById(`mixerVal_${toy.id}_1`);
+            if (s1) s1.value = target;
+            if (v1) v1.innerText = target;
+          }
+          if (toy.motor2Sync !== false) {
+            toy.motor2Level = target;
+            const s2 = document.getElementById(`mixerSlider_${toy.id}_2`);
+            const v2 = document.getElementById(`mixerVal_${toy.id}_2`);
+            if (s2) s2.value = target;
+            if (v2) v2.innerText = target;
+          }
+
+          const m1 = typeof toy.motor1Level === 'number' ? toy.motor1Level : target;
+          const m2 = typeof toy.motor2Level === 'number' ? toy.motor2Level : target;
+
+          if (m1 === 0 && m2 === 0 && driver.stop) {
+            await driver.stop(handles);
+          } else if (driver.sendMotors) {
+            await driver.sendMotors(handles, m1, m2, motorCount);
+          } else if (driver.sendIntensity) {
+            await driver.sendIntensity(handles, m1);
           }
         } catch (e) {
           console.warn(`Write fail on ${toy.customName}:`, e);
@@ -2634,17 +3106,35 @@
 
     /**
      * Broadcasts stop/zero command to all connected toys using their active protocol driver.
+     * Updates synced individual motor levels and channel mixer sliders to zero.
      */
     async function broadcastStop() {
       const targets = managedToys.filter(t => t.status === 'connected' && (t.driverHandles || t.tx));
+
+      targets.forEach(toy => {
+        if (toy.motor1Sync !== false) {
+          toy.motor1Level = 0;
+          const s1 = document.getElementById(`mixerSlider_${toy.id}_1`);
+          const v1 = document.getElementById(`mixerVal_${toy.id}_1`);
+          if (s1) s1.value = 0;
+          if (v1) v1.innerText = "0";
+        }
+        if (toy.motor2Sync !== false) {
+          toy.motor2Level = 0;
+          const s2 = document.getElementById(`mixerSlider_${toy.id}_2`);
+          const v2 = document.getElementById(`mixerVal_${toy.id}_2`);
+          if (s2) s2.value = 0;
+          if (v2) v2.innerText = "0";
+        }
+      });
+
       await Promise.all(targets.map(async (toy) => {
         try {
           const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
           const driver = TOY_DRIVERS[brandKey] || TOY_DRIVERS.lovense;
-          if (toy.driverHandles) {
-            await driver.stop(toy.driverHandles);
-          } else if (toy.tx) {
-            await driver.stop({ tx: toy.tx });
+          const handles = toy.driverHandles || { tx: toy.tx };
+          if (driver.stop) {
+            await driver.stop(handles);
           }
         } catch (e) {
           console.warn(`Stop fail on ${toy.customName}:`, e);

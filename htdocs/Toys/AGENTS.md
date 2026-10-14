@@ -32,7 +32,7 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
   - Command: Plaintext ASCII `Vibrate:<intensity>;` where intensity is 0 to 20.
 - **We-Vibe**:
   - Scanning: Filter prefixes (`We-Vibe`, `WeVibe`, `Sync`, `Chorus`, `Nova`, `Verge`, `Rave`, `Bloom`, `Moxie`, `Melt`, `Pivot`, `Tango`, `Vector`) and service `f000bb03-0451-4000-b000-000000000000`.
-  - Command: Fixed 8-byte array `[0x0f, 0x03, 0x00, (level << 4) | level, 0x00, 0x00, 0x00, 0x00]` scaled to 0–15 (`0x0` to `0xF`).
+  - Command: Fixed 8-byte array `[0x0f, 0x03, 0x00, (level << 4) | level, 0x00, 0x03, 0x00, 0x00]` scaled across 3–15 (`0x3` to `0xF`) with motor enable bitmask in byte 5 (`0x03` for active manual vibration mode to override hardware button presets). 8-bit variants (Vector, Moxie) map individual motor bytes `[0x0f, 0x03, 0x00, level, level, 0x03, 0x00, 0x00]`. Stop command: `[0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]`.
 - **Satisfyer**:
   - Scanning: Filter prefixes (`Satisfyer`, `SF-`) and service `51361500-c5e7-47c7-8a6e-47ebc99d80e8`.
   - Command: Motor on/off byte on characteristic `51361501...` and motor speed byte (`0` to `100`) on characteristic `51361502...`.
@@ -42,9 +42,16 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
 - **Manual Brand Override**: Users can override or reassign the driver protocol at any time via the Configure dialog (`Auto-Detect`, `Lovense`, `We-Vibe`, `Satisfyer`), which persists in the device registry and immediately rebinds GATT handles if connected.
 - **Brand Badges**: Device cards render visual brand pill badges styled for both Pink and WinAmp themes.
 
+### Multi-Toy Channel Mixer & Multi-Motor Splitting
+- **Multi-Track Mixer (`#channelMixerCard`)**: Direct channel strip representation for each connected and selected toy directly beneath the Master Intensity card.
+- **Dynamic & Manual Motor Splitting**: Supports 1 or 2 independent motor channels per device. Detects multi-motor hardware (We-Vibe internal/external motors, Lovense Edge/Domi/Nora/Ose/Gemini/Flexer) automatically, with user override available in the device Config dialog (`1 Motor` or `2 Motors`).
+- **Sync Toggling**: Each motor channel features an independent "Sync" toggle. When checked, the motor mirrors the Master intensity slider 1:1. When unchecked or when an individual slider is trimmed, sync is disengaged for that channel, preserving independent trimming against Master movements. Re-checking sync instantly re-locks the channel to the current Master level.
+- **Quick Mute/Unmute**: Each channel card provides a dedicated mute button to immediately zero all motors for that device and detach sync, or restore prior intensity and re-engage sync.
+
 ### Slider Architecture & Touch Guard
 - **Master Intensity Slider (`.master-slider`)**: Operates with instant jump-on-touch response across the track and optional momentary safety release to 0. Its track and thumb styles in the Pink theme are isolated into dedicated CSS rules to allow independent visual reshaping.
 - **Parameter Sliders (`.param-slider` / `.param-custom-slider`)**: Settings sliders in the Random Pattern and Motion cards render a touch-safe custom component (`initCustomParamSliders()`). The track (`.param-custom-track`) is non-interactive with `touch-action: pan-y`, allowing smooth vertical page scrolling on mobile and completely eliminating track tap jumps. Only deliberate grabbing and dragging of the handle (`.param-custom-handle` with `setPointerCapture`) adjusts the parameter value.
+- **Channel Mixer Sliders (`.mixer-slider`)**: Individual motor trimming faders styled for rapid touch control with real-time numeric readouts and theme-aware track highlights.
 - **WinAmp Theme Preserved**: Under `[data-theme="music"]`, the classic WinAmp graphite and LCD slider aesthetic applies uniformly across all range controls.
 
 ### Command Transmission & Safety Mode

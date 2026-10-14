@@ -1971,4 +1971,287 @@ input:checked + .slider-toggle:before {
   border: 1px solid #2e3342;
 }
 
+/* ==========================================================================
+   Multi-Toy & Individual Motor Channel Mixer
+   ========================================================================== */
+.channel-mixer-card {
+  transition: all 0.25s ease;
+}
+
+.mixer-count-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--accent-light);
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--accent-border);
+}
+
+.channel-mixer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.mixer-empty-state {
+  text-align: center;
+  padding: 16px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px dashed var(--card-border);
+}
+
+.mixer-channel-card {
+  background: var(--accent-subtle);
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(255, 87, 151, 0.08);
+}
+
+.mixer-channel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px dashed var(--accent-border);
+  padding-bottom: 8px;
+}
+
+.mixer-channel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.mixer-channel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mixer-mute-btn {
+  background: #ffffff;
+  border: 1.5px solid var(--accent-border);
+  color: var(--accent-primary);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.mixer-mute-btn:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.mixer-motor-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 188, 215, 0.5);
+}
+
+.mixer-motor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.mixer-motor-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dark);
+}
+
+.sync-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-primary);
+  user-select: none;
+  min-height: 28px;
+  transition: all 0.2s ease;
+}
+
+.sync-toggle-label input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.sync-toggle-label.is-synced {
+  background: #ffebf3;
+  border-color: var(--accent-primary);
+}
+
+.mixer-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mixer-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: #ffbcd7;
+  outline: none;
+  cursor: pointer;
+  margin: 8px 0;
+}
+
+.mixer-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 2px 6px rgba(255, 51, 133, 0.4);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  transition: transform 0.1s ease;
+}
+
+.mixer-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.mixer-slider-val {
+  min-width: 30px;
+  text-align: right;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--accent-primary);
+}
+
+/* WinAmp / Music Theme Styling for Channel Mixer */
+[data-theme="music"] .channel-mixer-card {
+  background: #1e2229;
+  border: 2px solid #2e3340;
+}
+
+[data-theme="music"] .mixer-count-badge {
+  background: #14181f;
+  color: #00ff41;
+  border: 1px solid #284432;
+  font-family: 'Consolas', monospace;
+}
+
+[data-theme="music"] .mixer-empty-state {
+  background: #14161d;
+  border-color: #2e3342;
+  color: #8c95a8;
+  font-family: 'Consolas', monospace;
+}
+
+[data-theme="music"] .mixer-channel-card {
+  background: #181c24;
+  border: 2px solid #282d38;
+  box-shadow: inset 1px 1px 0 #3c4250, inset -1px -1px 0 #0e1015;
+}
+
+[data-theme="music"] .mixer-channel-header {
+  border-bottom: 1px solid #282d38;
+}
+
+[data-theme="music"] .mixer-channel-title {
+  color: #00ff41;
+  font-family: 'Consolas', monospace;
+}
+
+[data-theme="music"] .mixer-mute-btn {
+  background: #252a36;
+  border: 1px solid #3c4250;
+  color: #e5e7eb;
+  font-family: 'Consolas', monospace;
+}
+
+[data-theme="music"] .mixer-mute-btn:hover {
+  background: #b91c1c;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+[data-theme="music"] .mixer-motor-row {
+  background: #12151b;
+  border: 1px solid #242933;
+}
+
+[data-theme="music"] .mixer-motor-title {
+  color: #8c95a8;
+  font-family: 'Consolas', monospace;
+}
+
+[data-theme="music"] .sync-toggle-label {
+  background: #171c26;
+  border: 1px solid #284432;
+  color: #00ff41;
+  font-family: 'Consolas', monospace;
+}
+
+[data-theme="music"] .sync-toggle-label.is-synced {
+  background: #1f3325;
+  border-color: #00ff41;
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
+}
+
+[data-theme="music"] .sync-toggle-label input[type="checkbox"] {
+  accent-color: #00ff41;
+}
+
+[data-theme="music"] .mixer-slider {
+  background: #090b0e;
+  border: 1px solid #242933;
+}
+
+[data-theme="music"] .mixer-slider::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #5a6270 0%, #2f343d 100%);
+  border: 1px solid #7c8596;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="music"] .mixer-slider-val {
+  color: #00ff41;
+  font-family: 'Consolas', monospace;
+  text-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
+}
+
+
 
