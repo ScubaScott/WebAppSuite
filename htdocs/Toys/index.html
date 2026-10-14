@@ -137,7 +137,7 @@
         <button id="presetBtn1" onclick="setDirectIntensity(5)">🌸 Gentle 5</button>
         <button id="presetBtn2" onclick="setDirectIntensity(10)">💖 Medium 10</button>
         <button id="presetBtn3" onclick="setDirectIntensity(20)">🔥 Max 20</button>
-        <button id="presetBtnStop" class="stop" onclick="setDirectIntensity(0)">🛑 Emergency Stop (0)</button>
+        <button id="presetBtnStop" class="stop" onclick="emergencyStop()">🛑 Emergency Stop (0)</button>
       </div>
     </div>
 
@@ -334,7 +334,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v2.7</small>
+      <small>v2.8</small>
     </footer>
   </div>
 
@@ -426,7 +426,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "2.7";
+    const APP_VERSION = "2.8";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -3037,9 +3037,14 @@
 
     /**
      * Sets slider and sends direct intensity preset value.
+     * Routes zero presets to emergencyStop() to halt all connected devices.
      * Disengages random pattern and motion mode if currently active.
      */
     function setDirectIntensity(val) {
+      if (val === 0) {
+        emergencyStop();
+        return;
+      }
       if (patternEnabled) {
         patternToggle.checked = false;
         togglePattern(false);
@@ -3054,6 +3059,31 @@
       lastSentPatternLevel = val;
       updateEqVisualizer(val);
       queueTransmission(val);
+    }
+
+    /**
+     * Emergency Stop: Immediately halts all motors across ALL connected devices,
+     * regardless of whether individual motors are in sync mode or independent trim.
+     * Resets master and individual channel mixer sliders to zero.
+     */
+    async function emergencyStop() {
+      if (patternEnabled) {
+        patternToggle.checked = false;
+        togglePattern(false);
+      }
+      if (motionEnabled) {
+        motionToggle.checked = false;
+        toggleMotion(false);
+      }
+      slider.value = 0;
+      valDisplay.innerText = "0";
+      currentPatternLevel = 0;
+      lastSentPatternLevel = 0;
+      updateEqVisualizer(0);
+
+      // Transmit stop to all connected devices immediately
+      await broadcastStop();
+      updateLog(currentTheme === 'music' ? "⏹ EMERGENCY MUTE - All channels stopped." : "🛑 EMERGENCY STOP - All devices stopped.");
     }
 
     /**
@@ -3122,26 +3152,22 @@
 
     /**
      * Broadcasts stop/zero command to all connected toys using their active protocol driver.
-     * Updates synced individual motor levels and channel mixer sliders to zero.
+     * Halts all motors across all connected devices regardless of sync state.
      */
     async function broadcastStop() {
       const targets = managedToys.filter(t => t.status === 'connected' && (t.driverHandles || t.tx));
 
       targets.forEach(toy => {
-        if (toy.motor1Sync !== false) {
-          toy.motor1Level = 0;
-          const s1 = document.getElementById(`mixerSlider_${toy.id}_1`);
-          const v1 = document.getElementById(`mixerVal_${toy.id}_1`);
-          if (s1) s1.value = 0;
-          if (v1) v1.innerText = "0";
-        }
-        if (toy.motor2Sync !== false) {
-          toy.motor2Level = 0;
-          const s2 = document.getElementById(`mixerSlider_${toy.id}_2`);
-          const v2 = document.getElementById(`mixerVal_${toy.id}_2`);
-          if (s2) s2.value = 0;
-          if (v2) v2.innerText = "0";
-        }
+        toy.motor1Level = 0;
+        toy.motor2Level = 0;
+        const s1 = document.getElementById(`mixerSlider_${toy.id}_1`);
+        const v1 = document.getElementById(`mixerVal_${toy.id}_1`);
+        if (s1) s1.value = 0;
+        if (v1) v1.innerText = "0";
+        const s2 = document.getElementById(`mixerSlider_${toy.id}_2`);
+        const v2 = document.getElementById(`mixerVal_${toy.id}_2`);
+        if (s2) s2.value = 0;
+        if (v2) v2.innerText = "0";
       });
 
       await Promise.all(targets.map(async (toy) => {
@@ -3149,8 +3175,13 @@
           const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
           const driver = TOY_DRIVERS[brandKey] || TOY_DRIVERS.lovense;
           const handles = toy.driverHandles || { tx: toy.tx };
+          const motorCount = getEffectiveMotors(toy);
           if (driver.stop) {
             await driver.stop(handles);
+          } else if (driver.sendMotors) {
+            await driver.sendMotors(handles, 0, 0, motorCount);
+          } else if (driver.sendIntensity) {
+            await driver.sendIntensity(handles, 0);
           }
         } catch (e) {
           console.warn(`Stop fail on ${toy.customName}:`, e);

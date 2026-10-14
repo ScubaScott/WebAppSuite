@@ -57,6 +57,7 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
 ### Command Transmission & Safety Mode
 - **Mode**: Prefer `writeWithoutResponse` where supported by target TX characteristics to prevent GATT queue blocking and packet flooding; fall back to standard `writeValue`.
 - **Queueing**: Coalesce rapid slider adjustments so only the latest intensity is transmitted once an in-flight packet finishes.
+- **Emergency Stop (`emergencyStop()`)**: Halts all motors across ALL connected devices and zeroes both master and channel mixer sliders regardless of individual motor sync states. The master intensity slider continues to operate selectively, modulating only motors currently in sync mode.
 - **Momentary Safety Mode**: When enabled, releasing touch/pointer immediately restores slider value to `0` and broadcasts a stop command to all connected toys.
 
 ### Device Persistence & Auto-Reconnect
