@@ -3,7 +3,7 @@
 // Lets Admin-group users list profiles, manage Special group membership, and reset or remove user passwords.
 
 // API endpoint version identifier
-$ADMIN_API_VERSION = '1.3';
+$ADMIN_API_VERSION = '1.4';
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
@@ -298,10 +298,12 @@ if ($action === 'stats') {
     }
     $stats['users'] = $userStats;
 
-    // Query active non-expired session tokens representing unique logged-in devices
+    // Query non-expired session tokens representing devices active in the last 12 hours
     $activeSessions = 0;
     try {
-        $stmtSessions = $pdo->query('SELECT COUNT(*) FROM suite_sessions WHERE expires_at > UTC_TIMESTAMP()');
+        $stmtSessions = $pdo->query('SELECT COUNT(*) FROM suite_sessions 
+            WHERE expires_at > UTC_TIMESTAMP() 
+            AND COALESCE(last_used_at, created_at) >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 HOUR)');
         $activeSessions = (int)($stmtSessions->fetchColumn() ?: 0);
     } catch (PDOException $e) {
         // Fallback session count

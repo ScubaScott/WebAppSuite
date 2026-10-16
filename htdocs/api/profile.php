@@ -3,7 +3,7 @@
 // Handles profile authentication, password management, and app settings synchronization.
 
 // API endpoint version identifier
-$API_VERSION = '1.3';
+$API_VERSION = '1.4';
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
@@ -87,7 +87,7 @@ if ($action === 'auth') {
         // Issue new per-device session token and record hash in suite_sessions
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
-        $insertSession = $pdo->prepare('INSERT INTO suite_sessions (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 DAY))');
+        $insertSession = $pdo->prepare('INSERT INTO suite_sessions (user_id, token_hash, last_used_at, expires_at) VALUES (?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 DAY))');
         $insertSession->execute([$existing['id'], $tokenHash]);
 
         // Touch last_login on user profile
@@ -112,7 +112,7 @@ if ($action === 'auth') {
         // Issue new per-device session token in suite_sessions
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
-        $insertSession = $pdo->prepare('INSERT INTO suite_sessions (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 DAY))');
+        $insertSession = $pdo->prepare('INSERT INTO suite_sessions (user_id, token_hash, last_used_at, expires_at) VALUES (?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 DAY))');
         $insertSession->execute([$newUserId, $tokenHash]);
 
         // New profiles are General only; access is resolved from the freshly created record

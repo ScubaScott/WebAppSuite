@@ -1,5 +1,5 @@
 // Admin page application version identifier
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 
 // Admin page logic: loads all profiles from admin.php, toggles Special group membership, manages user passwords, and renders system stats.
 (function () {
@@ -35,6 +35,7 @@ const APP_VERSION = "1.3";
     const statTotalUsers = document.getElementById('statTotalUsers');
     const statUsersSub = document.getElementById('statUsersSub');
     const statActiveSessions = document.getElementById('statActiveSessions');
+    const statSessionsSub = document.getElementById('statSessionsSub');
     const statScoreboardGames = document.getElementById('statScoreboardGames');
     const statScoreboardSub = document.getElementById('statScoreboardSub');
     const statBingoCards = document.getElementById('statBingoCards');
@@ -444,8 +445,11 @@ const APP_VERSION = "1.3";
             statTotalUsers.textContent = Number(s.users.total).toLocaleString();
             statUsersSub.textContent = Number(s.users.active30d).toLocaleString() + ' active (30d) • ' + Number(s.users.passwordProtected).toLocaleString() + ' protected';
 
-            // Active sessions (logged-in devices / unique visitors)
+            // Active sessions (devices active in the last 12 hours)
             statActiveSessions.textContent = Number(s.sessions.active).toLocaleString();
+            if (statSessionsSub) {
+                statSessionsSub.textContent = 'Active in last 12 hours';
+            }
 
             // Scoreboard Games count
             statScoreboardGames.textContent = Number(s.scoreboard.total).toLocaleString();
