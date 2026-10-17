@@ -44,7 +44,13 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
 
 ### Multi-Toy Channel Mixer & Multi-Motor Splitting
 - **Multi-Track Mixer (`#channelMixerCard`)**: Direct channel strip representation for each connected and selected toy directly beneath the Master Intensity card.
-- **Dynamic & Manual Motor Splitting**: Supports 1 or 2 independent motor channels per device. Detects multi-motor hardware (We-Vibe internal/external motors, Lovense Edge/Domi/Nora/Ose/Gemini/Flexer) automatically, with user override available in the device Config dialog (`1 Motor` or `2 Motors`).
+- **Dynamic & Manual Motor Splitting**: Supports 1 or 2 independent actuator channels per device. Detects multi-motor and multi-function hardware automatically:
+  - **Lovense Max / Max 2**: Channel 1 controls Vibration (`Vibrate:<0-20>;`), Channel 2 controls Air Pump Tightness (`Air:Level:<0-5>;` scaled from 0-20 slider). Automatically deflates to level 0 upon stop/mute and filters redundant air pump commands during active vibration to prevent solenoid flutter.
+  - **Lovense Nora / Ridge**: Channel 1 controls Vibration (`Vibrate:<0-20>;`), Channel 2 controls Rotation (`Rotate:<0-20>;`).
+  - **Lovense Gravity**: Channel 1 controls Vibration (`Vibrate:<0-20>;`), Channel 2 controls Thrusting (`Thrusting:<0-20>;`).
+  - **Lovense Dual Vibration (Edge, Domi, Gemini, Flexer, Ose)**: Dual vibration channels (`Vibrate1:<0-20>;Vibrate2:<0-20>;`).
+  - **We-Vibe (Sync, Nova, Chorus, etc.)**: Independent internal and external vibration motors.
+- **Actuator Selection & Override**: Configurable in the device Config dialog (`Auto-Detect`, `1 Motor (Vibration Only)`, `2 Channels: Vibration + Air Pump / Tightness (Max)`, `2 Channels: Vibration + Rotation (Nora / Ridge)`, `2 Channels: Vibration + Thrusting (Gravity)`, `2 Motors: Dual Vibration (Edge / Domi / Gemini)`).
 - **Sync Toggling**: Each motor channel features an independent "Sync" toggle. When checked, the motor mirrors the Master intensity slider 1:1. When unchecked or when an individual slider is trimmed, sync is disengaged for that channel, preserving independent trimming against Master movements. Re-checking sync instantly re-locks the channel to the current Master level.
 - **Quick Mute/Unmute**: Each channel card provides a dedicated mute button to immediately zero all motors for that device and detach sync, or restore prior intensity and re-engage sync.
 

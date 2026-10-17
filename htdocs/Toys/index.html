@@ -334,7 +334,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v2.8</small>
+      <small>v2.9</small>
     </footer>
   </div>
 
@@ -407,10 +407,13 @@
       <label class="modal-field-label" id="renameMotorsLabel">Motors / Channels</label>
       <select id="renameMotorsSelect" class="modal-select">
         <option value="auto">Auto-Detect</option>
-        <option value="1">1 Motor (Single Channel)</option>
-        <option value="2">2 Motors (Dual-Motor / Split Channels)</option>
+        <option value="1">1 Motor (Vibration Only)</option>
+        <option value="2_air">2 Channels: Vibration + Air Pump / Tightness (Max)</option>
+        <option value="2_rotate">2 Channels: Vibration + Rotation (Nora / Ridge)</option>
+        <option value="2_thrust">2 Channels: Vibration + Thrusting (Gravity)</option>
+        <option value="2_vibrate">2 Motors: Dual Vibration (Edge / Domi / Gemini)</option>
       </select>
-      <div class="modal-hint" id="renameMotorsHint">Configure 1 or 2 independent motor sliders in the mixer.</div>
+      <div class="modal-hint" id="renameMotorsHint">Configure 1 or 2 independent motor or feature channels in the mixer.</div>
 
       <div class="modal-btn-row">
         <button class="modal-btn cancel" onclick="closeRenameModal()">Cancel</button>
@@ -426,7 +429,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "2.8";
+    const APP_VERSION = "2.9";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -833,30 +836,73 @@
         setup: async (server) => {
           const services = await server.getPrimaryServices();
           let txChar = null;
+          let rxChar = null;
           for (const s of services) {
             try {
               const chars = await s.getCharacteristics();
               for (const c of chars) {
-                if (c.properties.write || c.properties.writeWithoutResponse) {
+                if (!txChar && (c.properties.write || c.properties.writeWithoutResponse)) {
                   txChar = c;
-                  break;
+                }
+                if (!rxChar && (c.properties.notify || c.properties.indicate)) {
+                  rxChar = c;
                 }
               }
             } catch (_) {}
-            if (txChar) break;
+            if (txChar && rxChar) break;
           }
           if (!txChar) throw new Error("No writable Lovense UART characteristic found.");
-          return { tx: txChar };
+          return { tx: txChar, rx: rxChar };
         },
-        sendMotors: async (handles, m1_20, m2_20, motorCount) => {
+        sendMotors: async (handles, m1_20, m2_20, motorCount, motorProfile) => {
           const c1 = Math.max(0, Math.min(20, Math.round(m1_20)));
           const c2 = Math.max(0, Math.min(20, Math.round(m2_20)));
-          let cmd;
-          if (motorCount > 1 && c1 !== c2) {
-            cmd = `Vibrate1:${c1};Vibrate2:${c2};`;
+          const type = (motorProfile && motorProfile.type) ? motorProfile.type : (motorCount > 1 ? 'vibrate' : 'single');
+
+          let cmd = '';
+          if (motorCount > 1) {
+            if (type === 'air') {
+              // Scale 0-20 slider range to 0-5 Lovense Air tightness levels (0=deflate/off, 1-5=air pressure)
+              const airLvl = c2 > 0 ? Math.min(5, Math.max(1, Math.round((c2 / 20) * 5))) : 0;
+              if (c1 === 0 && c2 === 0) {
+                cmd = 'Vibrate:0;Air:Level:0;';
+                handles._lastAirLvl = 0;
+              } else {
+                if (handles._lastAirLvl !== airLvl) {
+                  cmd = `Vibrate:${c1};Air:Level:${airLvl};`;
+                  handles._lastAirLvl = airLvl;
+                } else {
+                  cmd = `Vibrate:${c1};`;
+                }
+              }
+            } else if (type === 'rotate') {
+              // Rotation actuator (e.g. Nora, Ridge)
+              if (c1 === 0 && c2 === 0) {
+                cmd = 'Vibrate:0;Rotate:0;';
+              } else {
+                cmd = `Vibrate:${c1};Rotate:${c2};`;
+              }
+            } else if (type === 'thrust') {
+              // Linear thrusting actuator (e.g. Gravity)
+              if (c1 === 0 && c2 === 0) {
+                cmd = 'Vibrate:0;Thrusting:0;';
+              } else {
+                cmd = `Vibrate:${c1};Thrusting:${c2};`;
+              }
+            } else {
+              // Dual vibration motors (e.g. Edge, Domi, Gemini, Flexer)
+              if (c1 !== c2) {
+                cmd = `Vibrate1:${c1};Vibrate2:${c2};`;
+              } else {
+                cmd = `Vibrate:${c1};`;
+              }
+            }
           } else {
+            // Single motor vibration
             cmd = `Vibrate:${c1};`;
           }
+
+          if (!cmd) return;
           const payload = new TextEncoder().encode(cmd);
           if (handles.tx.properties.writeWithoutResponse) {
             await handles.tx.writeValueWithoutResponse(payload);
@@ -864,11 +910,27 @@
             await handles.tx.writeValue(payload);
           }
         },
-        sendIntensity: async (handles, intensity20) => {
-          await TOY_DRIVERS.lovense.sendMotors(handles, intensity20, intensity20, 1);
+        sendIntensity: async (handles, intensity20, motorProfile) => {
+          await TOY_DRIVERS.lovense.sendMotors(handles, intensity20, intensity20, 1, motorProfile);
         },
-        stop: async (handles) => {
-          await TOY_DRIVERS.lovense.sendMotors(handles, 0, 0, 1);
+        stop: async (handles, motorProfile) => {
+          handles._lastAirLvl = 0;
+          let cmd = 'Vibrate:0;';
+          if (motorProfile && motorProfile.type === 'air') {
+            cmd = 'Vibrate:0;Air:Level:0;';
+          } else if (motorProfile && motorProfile.type === 'rotate') {
+            cmd = 'Vibrate:0;Rotate:0;';
+          } else if (motorProfile && motorProfile.type === 'thrust') {
+            cmd = 'Vibrate:0;Thrusting:0;';
+          } else {
+            cmd = 'Vibrate:0;Air:Level:0;Rotate:0;';
+          }
+          const payload = new TextEncoder().encode(cmd);
+          if (handles.tx.properties.writeWithoutResponse) {
+            await handles.tx.writeValueWithoutResponse(payload);
+          } else {
+            await handles.tx.writeValue(payload);
+          }
         }
       },
 
@@ -1588,6 +1650,31 @@
         toyRecord.isConnecting = false;
         bindDeviceListeners(toyRecord);
 
+        // Query model code on Lovense UART if notifications are supported
+        if (targetDriver.id === 'lovense' && handles.rx) {
+          try {
+            await handles.rx.startNotifications();
+            handles.rx.addEventListener('characteristicvaluechanged', (evt) => {
+              try {
+                const str = new TextDecoder().decode(evt.target.value);
+                const match = str.match(/^([A-Za-z0-9]+):/);
+                if (match && match[1]) {
+                  toyRecord.modelCode = match[1].toUpperCase();
+                  renderChannelMixer();
+                }
+              } catch (_) {}
+            });
+            const dtPayload = new TextEncoder().encode('DeviceType;');
+            if (handles.tx.properties.writeWithoutResponse) {
+              await handles.tx.writeValueWithoutResponse(dtPayload);
+            } else {
+              await handles.tx.writeValue(dtPayload);
+            }
+          } catch (e) {
+            console.warn("Lovense DeviceType notification init skipped:", e);
+          }
+        }
+
         persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName, toyRecord.brand || 'auto', toyRecord.motorsConfig || 'auto');
 
         const brandDisplay = currentTheme === 'music' ? targetDriver.musicName : targetDriver.name;
@@ -1716,6 +1803,7 @@
      */
     function openRenameModal(deviceId, currentName, currentBrand, currentMotors) {
       renamingDeviceId = deviceId;
+      const toy = managedToys.find(t => t.id === deviceId);
       const input = document.getElementById('renameInput');
       const select = document.getElementById('renameBrandSelect');
       const motorSelect = document.getElementById('renameMotorsSelect');
@@ -1724,7 +1812,15 @@
         select.value = currentBrand || 'auto';
       }
       if (motorSelect) {
-        motorSelect.value = currentMotors || 'auto';
+        if (currentMotors === '2' && toy) {
+          const profile = getToyMotorProfile(toy);
+          if (profile.type === 'air') motorSelect.value = '2_air';
+          else if (profile.type === 'rotate') motorSelect.value = '2_rotate';
+          else if (profile.type === 'thrust') motorSelect.value = '2_thrust';
+          else motorSelect.value = '2_vibrate';
+        } else {
+          motorSelect.value = currentMotors || 'auto';
+        }
       }
       document.getElementById('renameModal').style.display = 'flex';
       input.focus();
@@ -1985,60 +2081,121 @@
     }
 
     /**
-     * Resolves effective motor count (1 or 2) for a given toy record.
-     * Evaluates explicit manual user override or defaults to brand/model heuristic.
+     * Resolves the motor profile and actuator capabilities for a toy.
+     * Evaluates explicit user configuration, model letter codes, or device broadcast names.
+     * Returns: { count: 1 | 2, type: 'vibrate' | 'air' | 'rotate' | 'thrust' | 'none' }
      */
-    function getEffectiveMotors(toy) {
-      if (toy.motorsConfig === '1') return 1;
-      if (toy.motorsConfig === '2') return 2;
+    function getToyMotorProfile(toy) {
+      if (!toy) return { count: 1, type: 'vibrate' };
 
-      const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
-      const name = (toy.originalName || toy.customName || '').toLowerCase();
+      const config = toy.motorsConfig || 'auto';
 
-      if (brandKey === 'wevibe') {
-        // Single motor We-Vibe models
-        if (name.includes('tango') || name.includes('wand') || name.includes('touch')) {
-          return 1;
-        }
-        // Dual motor We-Vibe models (Sync, Chorus, Nova, Verge, Vector, etc.)
-        return 2;
+      // Explicit user configuration overrides
+      if (config === '1') {
+        return { count: 1, type: 'vibrate' };
+      }
+      if (config === '2_air') {
+        return { count: 2, type: 'air' };
+      }
+      if (config === '2_rotate') {
+        return { count: 2, type: 'rotate' };
+      }
+      if (config === '2_thrust') {
+        return { count: 2, type: 'thrust' };
+      }
+      if (config === '2_vibrate') {
+        return { count: 2, type: 'vibrate' };
       }
 
+      // Brand and name heuristic
+      const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
+      const name = (toy.originalName || toy.customName || '').toLowerCase();
+      const modelCode = (toy.modelCode || '').toUpperCase();
+
       if (brandKey === 'lovense') {
-        // Multi-motor Lovense devices: Edge (tip/base), Domi (head/handle), Nora, Ose, Gemini, Flexer
-        if (name.includes('edge') || name.includes('domi') || name.includes('nora') || 
-            name.includes('ose') || name.includes('gemini') || name.includes('flexer')) {
-          return 2;
+        // Air pump toys: Max, Max 2, Caldera, Gush, or Model letter B
+        if (modelCode === 'B' || name.includes('max') || name.includes('caldera') || name.includes('gush')) {
+          return { count: 2, type: 'air' };
         }
-        return 1;
+        // Rotating toys: Nora, Ridge, or Model letter A/C
+        if (modelCode === 'A' || modelCode === 'C' || name.includes('nora') || name.includes('ridge')) {
+          return { count: 2, type: 'rotate' };
+        }
+        // Thrusting toys: Gravity
+        if (name.includes('gravity')) {
+          return { count: 2, type: 'thrust' };
+        }
+        // Dual vibration toys: Edge (tip/base), Domi (head/handle), Ose, Gemini, Flexer, Ambi (L)
+        if (modelCode === 'P' || modelCode === 'W' || modelCode === 'L' || modelCode === 'O' ||
+            name.includes('edge') || name.includes('domi') || name.includes('ose') ||
+            name.includes('gemini') || name.includes('flexer') || name.includes('ambi')) {
+          return { count: 2, type: 'vibrate' };
+        }
+        // Legacy '2' motors override without specific subtype
+        if (config === '2') {
+          return { count: 2, type: 'vibrate' };
+        }
+        return { count: 1, type: 'vibrate' };
+      }
+
+      if (brandKey === 'wevibe') {
+        if (name.includes('tango') || name.includes('wand') || name.includes('touch')) {
+          return { count: 1, type: 'vibrate' };
+        }
+        return { count: 2, type: 'vibrate' };
       }
 
       if (brandKey === 'satisfyer') {
-        return 1;
+        return { count: 1, type: 'vibrate' };
       }
 
-      return 1;
+      if (config === '2') {
+        return { count: 2, type: 'vibrate' };
+      }
+
+      return { count: 1, type: 'vibrate' };
     }
 
     /**
-     * Returns human-friendly motor channel labels based on brand, model, and active theme.
+     * Resolves effective motor count (1 or 2) for a given toy record.
+     */
+    function getEffectiveMotors(toy) {
+      return getToyMotorProfile(toy).count;
+    }
+
+    /**
+     * Returns human-friendly motor channel labels based on brand, model profile, and active theme.
      */
     function getMotorLabels(toy) {
       const isMusic = currentTheme === 'music';
+      const profile = getToyMotorProfile(toy);
+      const name = (toy.originalName || toy.customName || '').toLowerCase();
+      const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
+
       if (isMusic) {
+        if (profile.type === 'air') return ['Channel A (Oscillation)', 'Channel B (Pneumatic / Air)'];
+        if (profile.type === 'rotate') return ['Channel A (Oscillation)', 'Channel B (Rotary Drive)'];
+        if (profile.type === 'thrust') return ['Channel A (Oscillation)', 'Channel B (Linear Actuator)'];
+        if (profile.count === 1) return ['Master Channel'];
         return ['Channel A (L)', 'Channel B (R)'];
       }
-
-      const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
-      const name = (toy.originalName || toy.customName || '').toLowerCase();
 
       if (brandKey === 'wevibe') {
         return ['Internal Motor', 'External Motor'];
       }
 
+      if (profile.type === 'air') {
+        return ['💖 Vibration', '🎈 Pump (Tightness)'];
+      }
+      if (profile.type === 'rotate') {
+        return ['💖 Vibration', '🔄 Rotation'];
+      }
+      if (profile.type === 'thrust') {
+        return ['💖 Vibration', '⚡ Thrusting'];
+      }
+
       if (brandKey === 'lovense') {
         if (name.includes('edge')) return ['Tip Motor', 'Base Motor'];
-        if (name.includes('nora')) return ['Vibrate', 'Rotate'];
         if (name.includes('domi')) return ['Head Motor', 'Handle Motor'];
         return ['Motor 1', 'Motor 2'];
       }
@@ -2294,16 +2451,17 @@
         const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
         const driver = TOY_DRIVERS[brandKey] || TOY_DRIVERS.lovense;
         const handles = toy.driverHandles || { tx: toy.tx };
-        const motorCount = getEffectiveMotors(toy);
+        const motorProfile = getToyMotorProfile(toy);
+        const motorCount = motorProfile.count;
         const m1 = typeof toy.motor1Level === 'number' ? toy.motor1Level : 0;
         const m2 = typeof toy.motor2Level === 'number' ? toy.motor2Level : 0;
 
         if (m1 === 0 && m2 === 0 && driver.stop) {
-          await driver.stop(handles);
+          await driver.stop(handles, motorProfile);
         } else if (driver.sendMotors) {
-          await driver.sendMotors(handles, m1, m2, motorCount);
+          await driver.sendMotors(handles, m1, m2, motorCount, motorProfile);
         } else if (driver.sendIntensity) {
-          await driver.sendIntensity(handles, m1);
+          await driver.sendIntensity(handles, m1, motorProfile);
         }
       } catch (e) {
         console.warn(`Individual motor send fail on ${toy.customName}:`, e);
@@ -3116,7 +3274,8 @@
           const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
           const driver = TOY_DRIVERS[brandKey] || TOY_DRIVERS.lovense;
           const handles = toy.driverHandles || { tx: toy.tx };
-          const motorCount = getEffectiveMotors(toy);
+          const motorProfile = getToyMotorProfile(toy);
+          const motorCount = motorProfile.count;
 
           // Update synced motor levels
           if (toy.motor1Sync !== false) {
@@ -3138,11 +3297,11 @@
           const m2 = typeof toy.motor2Level === 'number' ? toy.motor2Level : target;
 
           if (m1 === 0 && m2 === 0 && driver.stop) {
-            await driver.stop(handles);
+            await driver.stop(handles, motorProfile);
           } else if (driver.sendMotors) {
-            await driver.sendMotors(handles, m1, m2, motorCount);
+            await driver.sendMotors(handles, m1, m2, motorCount, motorProfile);
           } else if (driver.sendIntensity) {
-            await driver.sendIntensity(handles, m1);
+            await driver.sendIntensity(handles, m1, motorProfile);
           }
         } catch (e) {
           console.warn(`Write fail on ${toy.customName}:`, e);
@@ -3175,13 +3334,14 @@
           const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
           const driver = TOY_DRIVERS[brandKey] || TOY_DRIVERS.lovense;
           const handles = toy.driverHandles || { tx: toy.tx };
-          const motorCount = getEffectiveMotors(toy);
+          const motorProfile = getToyMotorProfile(toy);
+          const motorCount = motorProfile.count;
           if (driver.stop) {
-            await driver.stop(handles);
+            await driver.stop(handles, motorProfile);
           } else if (driver.sendMotors) {
-            await driver.sendMotors(handles, 0, 0, motorCount);
+            await driver.sendMotors(handles, 0, 0, motorCount, motorProfile);
           } else if (driver.sendIntensity) {
-            await driver.sendIntensity(handles, 0);
+            await driver.sendIntensity(handles, 0, motorProfile);
           }
         } catch (e) {
           console.warn(`Stop fail on ${toy.customName}:`, e);
