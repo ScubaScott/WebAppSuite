@@ -50,7 +50,7 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
   - **Lovense Gravity**: Channel 1 controls Vibration (`Vibrate:<0-20>;`), Channel 2 controls Thrusting (`Thrusting:<0-20>;`).
   - **Lovense Dual Vibration (Edge, Domi, Gemini, Flexer, Ose)**: Dual vibration channels (`Vibrate1:<0-20>;Vibrate2:<0-20>;`).
   - **We-Vibe (Sync, Nova, Chorus, etc.)**: Independent internal and external vibration motors.
-- **Actuator Selection & Override**: Configurable in the device Config dialog (`Auto-Detect`, `1 Motor (Vibration Only)`, `2 Channels: Vibration + Air Pump / Tightness (Max)`, `2 Channels: Vibration + Rotation (Nora / Ridge)`, `2 Channels: Vibration + Thrusting (Gravity)`, `2 Motors: Dual Vibration (Edge / Domi / Gemini)`).
+- **Actuator Selection & Override**: Configurable in the device Config dialog (`Auto-Detect`, `Vibe (Lush, Hush, Ferri)`, `Vibe / Vibe (Edge, Domi, Gemini)`, `Vibe / Tightness (Max, Caldera)`, `Vibe / Rotation (Nora, Ridge)`, `Vibe / Thrust (Gravity)`).
 - **Sync Toggling**: Each motor channel features an independent "Sync" toggle. When checked, the motor mirrors the Master intensity slider 1:1. When unchecked or when an individual slider is trimmed, sync is disengaged for that channel, preserving independent trimming against Master movements. Re-checking sync instantly re-locks the channel to the current Master level.
 - **Quick Mute/Unmute**: Each channel card provides a dedicated mute button to immediately zero all motors for that device and detach sync, or restore prior intensity and re-engage sync.
 
