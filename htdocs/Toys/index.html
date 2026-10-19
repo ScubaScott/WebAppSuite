@@ -334,7 +334,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v3.0</small>
+      <small>v3.1</small>
     </footer>
   </div>
 
@@ -409,7 +409,8 @@
         <option value="auto">Auto-Detect</option>
         <option value="1">Vibe (Lush, Hush, Ferri)</option>
         <option value="2_vibrate">Vibe / Vibe (Edge, Domi, Gemini)</option>
-        <option value="2_air">Vibe / Tightness (Max, Caldera)</option>
+        <option value="2_air">Vibe / Tightness (Max 1 - 5 levels)</option>
+        <option value="2_air3">Vibe / Tightness (Max 2 - 3 levels)</option>
         <option value="2_rotate">Vibe / Rotation (Nora, Ridge)</option>
         <option value="2_thrust">Vibe / Thrust (Gravity)</option>
       </select>
@@ -429,7 +430,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "3.0";
+    const APP_VERSION = "3.1";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -859,77 +860,156 @@
           const c2 = Math.max(0, Math.min(20, Math.round(m2_20)));
           const type = (motorProfile && motorProfile.type) ? motorProfile.type : (motorCount > 1 ? 'vibrate' : 'single');
 
-          let cmd = '';
+          // Helper to write an individual ASCII command string as an isolated BLE packet
+          const sendCmd = async (cmdStr) => {
+            if (!handles || !handles.tx || !cmdStr) return;
+            const payload = new TextEncoder().encode(cmdStr);
+            if (handles.tx.properties.writeWithoutResponse) {
+              await handles.tx.writeValueWithoutResponse(payload);
+            } else {
+              await handles.tx.writeValue(payload);
+            }
+          };
+
+          // Timing gap to allow the toy microcontroller's UART parser to process the prior command
+          const bleDelay = (ms = 25) => new Promise(r => setTimeout(r, ms));
+
           if (motorCount > 1) {
             if (type === 'air') {
-              // Scale 0-20 slider range to 0-5 Lovense Air tightness levels (0=deflate/off, 1-5=air pressure)
-              const airLvl = c2 > 0 ? Math.min(5, Math.max(1, Math.round((c2 / 20) * 5))) : 0;
-              if (c1 === 0 && c2 === 0) {
-                cmd = 'Vibrate:0;Air:Level:0;';
-                handles._lastAirLvl = 0;
-              } else {
-                if (handles._lastAirLvl !== airLvl) {
-                  cmd = `Vibrate:${c1};Air:Level:${airLvl};`;
-                  handles._lastAirLvl = airLvl;
-                } else {
-                  cmd = `Vibrate:${c1};`;
-                }
+              // Determine scaling: Max 2 models support 0-3 tightness levels; Max 1 models support 0-5
+              const maxAir = (motorProfile && motorProfile.maxAir) ? motorProfile.maxAir : (motorProfile && motorProfile.isMax2 ? 3 : 5);
+              const airLvl = c2 > 0 ? Math.min(maxAir, Math.max(1, Math.round((c2 / 20) * maxAir))) : 0;
+
+              const vibChanged = (handles._lastVib !== c1);
+              const airChanged = (handles._lastAirLvl !== airLvl);
+              let sentVib = false;
+
+              // Transmit primary vibration command if level modified
+              if (vibChanged) {
+                await sendCmd(`Vibrate:${c1};`);
+                handles._lastVib = c1;
+                sentVib = true;
               }
+
+              // Transmit air pump command as an independent packet
+              if (airChanged) {
+                if (sentVib) await bleDelay(25);
+                await sendCmd(`Air:Level:${airLvl};`);
+                // When deflating to zero, also transmit relative deflation release to force valve exhaust
+                if (airLvl === 0) {
+                  await bleDelay(25);
+                  await sendCmd('Air:Out:5;');
+                }
+                handles._lastAirLvl = airLvl;
+              }
+              return;
             } else if (type === 'rotate') {
               // Rotation actuator (e.g. Nora, Ridge)
-              if (c1 === 0 && c2 === 0) {
-                cmd = 'Vibrate:0;Rotate:0;';
-              } else {
-                cmd = `Vibrate:${c1};Rotate:${c2};`;
+              const vibChanged = (handles._lastVib !== c1);
+              const rotChanged = (handles._lastRot !== c2);
+              let sentVib = false;
+
+              if (vibChanged) {
+                await sendCmd(`Vibrate:${c1};`);
+                handles._lastVib = c1;
+                sentVib = true;
               }
+              if (rotChanged) {
+                if (sentVib) await bleDelay(25);
+                await sendCmd(`Rotate:${c2};`);
+                handles._lastRot = c2;
+              }
+              return;
             } else if (type === 'thrust') {
               // Linear thrusting actuator (e.g. Gravity)
-              if (c1 === 0 && c2 === 0) {
-                cmd = 'Vibrate:0;Thrusting:0;';
-              } else {
-                cmd = `Vibrate:${c1};Thrusting:${c2};`;
+              const vibChanged = (handles._lastVib !== c1);
+              const thrustChanged = (handles._lastThrust !== c2);
+              let sentVib = false;
+
+              if (vibChanged) {
+                await sendCmd(`Vibrate:${c1};`);
+                handles._lastVib = c1;
+                sentVib = true;
               }
+              if (thrustChanged) {
+                if (sentVib) await bleDelay(25);
+                await sendCmd(`Thrusting:${c2};`);
+                handles._lastThrust = c2;
+              }
+              return;
             } else {
               // Dual vibration motors (e.g. Edge, Domi, Gemini, Flexer)
-              if (c1 !== c2) {
-                cmd = `Vibrate1:${c1};Vibrate2:${c2};`;
+              if (c1 === c2) {
+                if (handles._lastVib !== c1 || handles._lastVib2 !== c2) {
+                  await sendCmd(`Vibrate:${c1};`);
+                  handles._lastVib = c1;
+                  handles._lastVib2 = c2;
+                }
               } else {
-                cmd = `Vibrate:${c1};`;
+                const v1Changed = (handles._lastVib !== c1);
+                const v2Changed = (handles._lastVib2 !== c2);
+                let sentV1 = false;
+
+                if (v1Changed) {
+                  await sendCmd(`Vibrate1:${c1};`);
+                  handles._lastVib = c1;
+                  sentV1 = true;
+                }
+                if (v2Changed) {
+                  if (sentV1) await bleDelay(25);
+                  await sendCmd(`Vibrate2:${c2};`);
+                  handles._lastVib2 = c2;
+                }
               }
+              return;
             }
           } else {
             // Single motor vibration
-            cmd = `Vibrate:${c1};`;
-          }
-
-          if (!cmd) return;
-          const payload = new TextEncoder().encode(cmd);
-          if (handles.tx.properties.writeWithoutResponse) {
-            await handles.tx.writeValueWithoutResponse(payload);
-          } else {
-            await handles.tx.writeValue(payload);
+            if (handles._lastVib !== c1) {
+              await sendCmd(`Vibrate:${c1};`);
+              handles._lastVib = c1;
+            }
           }
         },
         sendIntensity: async (handles, intensity20, motorProfile) => {
           await TOY_DRIVERS.lovense.sendMotors(handles, intensity20, intensity20, 1, motorProfile);
         },
         stop: async (handles, motorProfile) => {
+          handles._lastVib = 0;
+          handles._lastVib2 = 0;
           handles._lastAirLvl = 0;
-          let cmd = 'Vibrate:0;';
+          handles._lastRot = 0;
+          handles._lastThrust = 0;
+
+          const sendCmd = async (cmdStr) => {
+            if (!handles || !handles.tx || !cmdStr) return;
+            const payload = new TextEncoder().encode(cmdStr);
+            if (handles.tx.properties.writeWithoutResponse) {
+              await handles.tx.writeValueWithoutResponse(payload);
+            } else {
+              await handles.tx.writeValue(payload);
+            }
+          };
+
+          const bleDelay = (ms = 25) => new Promise(r => setTimeout(r, ms));
+
+          // Always halt primary vibration motor first
+          await sendCmd('Vibrate:0;');
+
           if (motorProfile && motorProfile.type === 'air') {
-            cmd = 'Vibrate:0;Air:Level:0;';
+            await bleDelay(25);
+            await sendCmd('Air:Level:0;');
+            await bleDelay(25);
+            await sendCmd('Air:Out:5;');
           } else if (motorProfile && motorProfile.type === 'rotate') {
-            cmd = 'Vibrate:0;Rotate:0;';
+            await bleDelay(25);
+            await sendCmd('Rotate:0;');
           } else if (motorProfile && motorProfile.type === 'thrust') {
-            cmd = 'Vibrate:0;Thrusting:0;';
-          } else {
-            cmd = 'Vibrate:0;Air:Level:0;Rotate:0;';
-          }
-          const payload = new TextEncoder().encode(cmd);
-          if (handles.tx.properties.writeWithoutResponse) {
-            await handles.tx.writeValueWithoutResponse(payload);
-          } else {
-            await handles.tx.writeValue(payload);
+            await bleDelay(25);
+            await sendCmd('Thrusting:0;');
+          } else if (motorProfile && motorProfile.count > 1) {
+            await bleDelay(25);
+            await sendCmd('Vibrate2:0;');
           }
         }
       },
@@ -1657,9 +1737,16 @@
             handles.rx.addEventListener('characteristicvaluechanged', (evt) => {
               try {
                 const str = new TextDecoder().decode(evt.target.value);
-                const match = str.match(/^([A-Za-z0-9]+):/);
+                const match = str.match(/^([A-Za-z0-9]+)(?::(\d+))?:/);
                 if (match && match[1]) {
                   toyRecord.modelCode = match[1].toUpperCase();
+                  if (match[2]) {
+                    toyRecord.firmwareVersion = parseInt(match[2], 10);
+                    // Model code B with firmware >= 20 corresponds to Max 2 hardware
+                    if (toyRecord.modelCode === 'B' && toyRecord.firmwareVersion >= 20) {
+                      toyRecord.isMax2 = true;
+                    }
+                  }
                   renderChannelMixer();
                 }
               } catch (_) {}
@@ -1814,7 +1901,7 @@
       if (motorSelect) {
         if (currentMotors === '2' && toy) {
           const profile = getToyMotorProfile(toy);
-          if (profile.type === 'air') motorSelect.value = '2_air';
+          if (profile.type === 'air') motorSelect.value = profile.maxAir === 3 ? '2_air3' : '2_air';
           else if (profile.type === 'rotate') motorSelect.value = '2_rotate';
           else if (profile.type === 'thrust') motorSelect.value = '2_thrust';
           else motorSelect.value = '2_vibrate';
@@ -2095,7 +2182,10 @@
         return { count: 1, type: 'vibrate' };
       }
       if (config === '2_air') {
-        return { count: 2, type: 'air' };
+        return { count: 2, type: 'air', maxAir: 5, isMax2: false };
+      }
+      if (config === '2_air3') {
+        return { count: 2, type: 'air', maxAir: 3, isMax2: true };
       }
       if (config === '2_rotate') {
         return { count: 2, type: 'rotate' };
@@ -2111,11 +2201,12 @@
       const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || 'lovense');
       const name = (toy.originalName || toy.customName || '').toLowerCase();
       const modelCode = (toy.modelCode || '').toUpperCase();
+      const isMax2 = name.includes('max 2') || name.includes('max2') || !!toy.isMax2;
 
       if (brandKey === 'lovense') {
         // Air pump toys: Max, Max 2, Caldera, Gush, or Model letter B
         if (modelCode === 'B' || name.includes('max') || name.includes('caldera') || name.includes('gush')) {
-          return { count: 2, type: 'air' };
+          return { count: 2, type: 'air', maxAir: isMax2 ? 3 : 5, isMax2: isMax2 };
         }
         // Rotating toys: Nora, Ridge, or Model letter A/C
         if (modelCode === 'A' || modelCode === 'C' || name.includes('nora') || name.includes('ridge')) {
