@@ -12,6 +12,7 @@ A single-operator bar-game tracker: each player pays $1 to guess the crowd head 
 - `index.html` / `app.js`: Main screen (No Game / Open / Locked states), pinned entry bar, name pool, Enter actual → Preview → Confirm & lock modals.
 - `history.html` / `history.js`: Read-only list of locked games, expandable to the full result list.
 - `qc-shared.js`: Global `QC` — IndexedDB access, result/payout calculation, shared result-list renderer.
+- `theme.js`: Loads the saved theme (`queen` default, `dark`) into `<html data-theme>` before paint; choice kept in localStorage and changed from the settings gear on the main screen.
 - `style.css`: All styling via CSS custom properties.
 - `Docs/headcount-build-spec.md`: Build specification.
 

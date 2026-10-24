@@ -1,6 +1,6 @@
 // QueenCount history screen: read-only list of locked games, newest first.
 // Each entry is an immutable text snapshot written at lock time; tapping a summary expands the full result list.
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 
 const listEl = document.getElementById('historyList');
 const emptyEl = document.getElementById('historyEmpty');

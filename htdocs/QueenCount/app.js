@@ -1,6 +1,6 @@
 // QueenCount main screen: game lifecycle, fast guess entry, name pool and result locking.
 // Depends on qc-shared.js (global `QC`) for storage, result math and result rendering.
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.3";
 
 // Soft typo-guard range for guesses and the actual count
 const TYPO_MIN = 50;
@@ -563,6 +563,38 @@ function checkUnfinished() {
   ]);
 }
 
+// ── Settings ─────────────────────────────────────────────────────────────
+
+// Settings modal: theme chooser (applies and saves immediately)
+function openSettings() {
+  const label = document.createElement('span');
+  label.className = 'setting-label';
+  label.textContent = 'Theme';
+  const desc = document.createElement('p');
+  desc.className = 'setting-desc';
+  desc.textContent = 'Select the visual appearance.';
+  const group = document.createElement('div');
+  group.className = 'segmented';
+  const buttons = QCTheme.THEMES.map(t => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = t.label;
+    b.addEventListener('click', () => {
+      QCTheme.set(t.id);
+      sync();
+    });
+    group.appendChild(b);
+    return { b, id: t.id };
+  });
+  // Marks the active theme button
+  function sync() {
+    const cur = QCTheme.get();
+    buttons.forEach(x => x.b.classList.toggle('active', x.id === cur));
+  }
+  sync();
+  openModal('Settings', [label, desc, group], [{ label: 'Close', cls: 'btn-primary', onClick: closeModal }]);
+}
+
 // ── Wiring ───────────────────────────────────────────────────────────────
 
 el.name.addEventListener('input', () => {
@@ -585,6 +617,7 @@ el.poolAddBtn.addEventListener('click', addPoolName);
 el.poolAddInput.addEventListener('keydown', e => { if (e.key === 'Enter') addPoolName(); });
 el.backBtn.addEventListener('click', backFromPreview);
 el.confirmLockBtn.addEventListener('click', confirmLock);
+$('settingsGearBtn').addEventListener('click', openSettings);
 el.newGameBtn.addEventListener('click', newGame);
 el.newGameBtn2.addEventListener('click', newGame);
 el.enterActualBtn.addEventListener('click', () => { if (game.guesses.length >= 2) openActualModal(null); });
