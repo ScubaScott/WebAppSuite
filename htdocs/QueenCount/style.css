@@ -169,7 +169,11 @@ button.row { width: 100%; background: transparent; border: 0; border-bottom: 1px
 .row.winner .name { font-weight: 700; color: var(--success); }
 .badge { background: var(--success); color: #062414; font-weight: 800; font-size: 0.78rem; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
 .badge-dead { background: #fff; }
-.divider { list-style: none; text-align: center; color: var(--success); font-weight: 800; padding: 8px 0; border-top: 2px dashed var(--success); border-bottom: 2px dashed var(--success); margin: 6px 0; }
+.result-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem 4ch 5ch; border: 1px solid transparent; }
+.result-row .pay { text-align: right; }
+.result-row .name .badge { margin-left: 4px; vertical-align: middle; }
+.divider { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) 5ch; gap: 8px; padding: 8px 11px; color: var(--success); font-weight: 800; border-top: 2px dashed var(--success); border-bottom: 2px dashed var(--success); margin: 6px 0; }
+.divider .val { text-align: right; font-variant-numeric: tabular-nums; }
 
 .need-note { text-align: center; color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
 
@@ -202,3 +206,8 @@ button.row { width: 100%; background: transparent; border: 0; border-bottom: 1px
 .hist-summary .h-win { font-weight: 700; }
 .hist-summary .h-pay { color: var(--accent); font-weight: 800; white-space: nowrap; }
 .hist-detail { padding: 0 8px 10px; }
+
+/* Edit history: summary and delete button share one box */
+.hist-head { display: flex; }
+.hist-head .hist-summary { flex: 1; min-width: 0; }
+.hist-del { min-width: 52px; padding: 0; background: transparent; border: 0; border-left: 1px solid var(--line); border-radius: 0; color: var(--danger); font-size: 1.4rem; }

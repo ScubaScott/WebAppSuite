@@ -99,14 +99,16 @@
   // Renders the sorted results list into a <ul>: signed misses, highlighted winners, and the Actual divider
   function renderResultList(ul, rows, winners, actual) {
     ul.innerHTML = '';
-    const winKeys = new Set(winners.map(w => nameKey(w.name)));
     const split = winners.length > 1;
     // An exact match is flagged "Dead on" on the winner row instead of showing the Actual divider
     let dividerDone = rows.some(r => r.miss === 0);
+    // Result rows are a 4-column grid so every column stays aligned: name | payout | miss | guess
     const addDivider = () => {
       const d = document.createElement('li');
       d.className = 'divider';
-      d.textContent = '▶ Actual: ' + actual;
+      const label = document.createElement('span'); label.textContent = '▶ Actual';
+      const val = document.createElement('span'); val.className = 'val'; val.textContent = actual;
+      d.append(label, val);
       ul.appendChild(d);
       dividerDone = true;
     };
@@ -114,25 +116,25 @@
       // Divider sits above the first guess at or beyond the actual (directly above an exact match)
       if (!dividerDone && r.value >= actual) addDivider();
       const li = document.createElement('li');
-      const isWin = winKeys.has(nameKey(r.name));
-      li.className = 'row' + (isWin ? ' winner' : '');
+      const w = winners.find(x => nameKey(x.name) === nameKey(r.name));
+      li.className = 'row result-row' + (w ? ' winner' : '');
       const name = document.createElement('span'); name.className = 'name'; name.textContent = r.name;
-      const val = document.createElement('span'); val.className = 'val'; val.textContent = r.value;
-      const miss = document.createElement('span'); miss.className = 'miss'; miss.textContent = fmtMiss(r.miss);
-      li.append(name, val, miss);
-      if (isWin) {
-        if (r.miss === 0) {
-          const d = document.createElement('span');
-          d.className = 'badge badge-dead';
-          d.textContent = 'Dead on';
-          li.appendChild(d);
-        }
-        const w = winners.find(x => nameKey(x.name) === nameKey(r.name));
+      if (w && r.miss === 0) {
+        const d = document.createElement('span');
+        d.className = 'badge badge-dead';
+        d.textContent = 'Dead on';
+        name.append(' ', d);
+      }
+      const pay = document.createElement('span'); pay.className = 'pay';
+      if (w) {
         const b = document.createElement('span');
         b.className = 'badge';
         b.textContent = money(w.payout) + (split ? ' each' : '');
-        li.appendChild(b);
+        pay.appendChild(b);
       }
+      const miss = document.createElement('span'); miss.className = 'miss'; miss.textContent = fmtMiss(r.miss);
+      const val = document.createElement('span'); val.className = 'val'; val.textContent = r.value;
+      li.append(name, pay, miss, val);
       ul.appendChild(li);
     });
     if (!dividerDone) addDivider();

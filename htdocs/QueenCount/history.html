@@ -26,11 +26,18 @@
 
   <main class="page">
     <p id="fatalMsg" class="entry-msg error" role="alert" hidden></p>
+    <div class="card-head">
+      <span></span>
+      <button id="editHistoryBtn" type="button" class="btn-ghost" hidden>Edit history</button>
+    </div>
     <div id="historyList"></div>
     <p id="historyEmpty" class="empty" hidden>No games yet.</p>
   </main>
 
-  <footer class="app-footer"><small>v<span id="appVersion">1.1</span></small></footer>
+  <!-- Modal host for delete confirmation -->
+  <div id="overlay" class="overlay" hidden></div>
+
+  <footer class="app-footer"><small>v<span id="appVersion">1.3</span></small></footer>
 
   <script src="../media/suite-profile.js"></script>
   <script src="qc-shared.js"></script>

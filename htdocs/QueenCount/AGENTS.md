@@ -23,7 +23,7 @@ A single-operator bar-game tracker: each player pays $1 to guess the crowd head 
 - Pot = entries × $1, no house cut; a tie splits evenly to the cent.
 - Lock is permanent and atomic: the HistoryEntry and the Locked game are written in one IndexedDB transaction.
 - Preview is UI-only and never persisted; reload during Preview returns to Open.
-- One Game record at a time (store `game`); history (`history`) is an immutable text snapshot; the name pool (`pool`) has no links to games or history.
+- One Game record at a time (store `game`); history (`history`) is an immutable text snapshot (never edited; entries can only be deleted whole via Edit history); the name pool (`pool`) has no links to games or history.
 - Names are case/space-insensitive unique within a game and within the pool; guess values are unique within a game.
 - Soft typo guard (second tap) for guesses and the actual outside 50–300; Enter actual needs ≥ 2 guesses.
 - An Open game from an earlier calendar day prompts Discard / Keep at app launch only.
