@@ -1,6 +1,6 @@
 // QueenCount main screen: game lifecycle, fast guess entry, name pool and result locking.
 // Depends on qc-shared.js (global `QC`) for storage, result math and result rendering.
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 
 // Soft typo-guard range for guesses and the actual count
 const TYPO_MIN = 50;
