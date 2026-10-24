@@ -1,6 +1,6 @@
 // QueenCount main screen: game lifecycle, fast guess entry, name pool and result locking.
 // Depends on qc-shared.js (global `QC`) for storage, result math and result rendering.
-const APP_VERSION = "1.0";
+const APP_VERSION = "1.1";
 
 // Soft typo-guard range for guesses and the actual count
 const TYPO_MIN = 50;
@@ -13,6 +13,7 @@ let game = null;          // the single current Game record, or null
 let editPool = false;     // Edit pool mode toggle
 let editingId = null;     // id of the guess being edited, or null for add mode
 let nameFromPool = false; // true when the name field was filled by tapping a pool chip (disables pool filtering)
+let previewActual = null; // actual count being previewed before lock (never persisted), or null
 let ackValue = null;      // guess value for which the out-of-range warning was already acknowledged
 
 const $ = id => document.getElementById(id);
@@ -24,7 +25,8 @@ const el = {
   poolAddBtn: $('poolAddBtn'), poolMsg: $('poolMsg'), poolGrid: $('poolGrid'), poolEmpty: $('poolEmpty'),
   noGame: $('noGame'), newGameBtn: $('newGameBtn'), openView: $('openView'), listCount: $('listCount'),
   guessList: $('guessList'), listEmpty: $('listEmpty'), enterActualBtn: $('enterActualBtn'), needNote: $('needNote'),
-  lockedView: $('lockedView'), resultList: $('resultList'), newGameBtn2: $('newGameBtn2'), overlay: $('overlay')
+  previewView: $('previewView'), previewList: $('previewList'), previewMsg: $('previewMsg'),
+  backBtn: $('backBtn'), confirmLockBtn: $('confirmLockBtn'), lockedView: $('lockedView'), resultList: $('resultList'), newGameBtn2: $('newGameBtn2'), overlay: $('overlay')
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -138,7 +140,7 @@ function poolNameError(text, excludeId) {
 }
 
 function renderPool() {
-  const showPool = !isLocked();
+  const showPool = !isLocked() && previewActual === null;
   el.poolCard.hidden = !showPool;
   if (!showPool) return;
 
@@ -371,21 +373,23 @@ function highlightRow(id) {
 // ── Rendering ────────────────────────────────────────────────────────────
 
 function render() {
-  const open = isOpen();
+  const preview = isOpen() && previewActual !== null;
+  const open = isOpen() && !preview;
   const locked = isLocked();
 
   // Game header
   el.header.hidden = !game;
   if (game) {
     const pot = QC.money(game.guesses.length * QC.ENTRY_FEE);
-    const right = locked
-      ? '<span>Actual <strong>' + game.actual + '</strong> · Pot <span class="pot">' + pot + '</span></span>'
+    const right = locked || preview
+      ? '<span>Actual <strong>' + (locked ? game.actual : previewActual) + '</strong> · Pot <span class="pot">' + pot + '</span></span>'
       : '<span><strong>' + game.guesses.length + '</strong> entries · Pot <span class="pot">' + pot + '</span></span>';
     el.header.innerHTML = '<strong>' + QC.fmtDate(game.startedAt) + '</strong>' + right;
   }
 
   el.noGame.hidden = !!game;
   el.openView.hidden = !open;
+  el.previewView.hidden = !preview;
   el.lockedView.hidden = !locked;
   el.entryBar.hidden = !open;
   el.entryBar.classList.toggle('disabled', editPool);
@@ -398,6 +402,10 @@ function render() {
     el.name.readOnly = editing;
     renderList();
     updateEntryUI();
+  }
+  if (preview) {
+    const res = QC.computeResult(game.guesses, previewActual);
+    QC.renderResultList(el.previewList, res.rows, res.winners, previewActual);
   }
   if (locked) {
     const res = QC.computeResult(game.guesses, game.actual);
@@ -477,7 +485,7 @@ function openActualModal(prefill) {
     const v = read();
     if (v === null) return;
     if (outOfRange(v) && acked !== v) { acked = v; refresh(); return; }
-    openPreview(v);
+    enterPreview(v);
   };
 
   input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, ''); refresh(); });
@@ -491,41 +499,30 @@ function openActualModal(prefill) {
   input.focus();
 }
 
-// Step 2 of lock: show the calculated result; nothing is saved until Confirm
-function openPreview(actual) {
-  const res = QC.computeResult(game.guesses, actual);
-  const split = res.winners.length > 1;
-
-  const top = document.createElement('div');
-  top.innerHTML = '<div class="preview-actual"></div><div class="preview-sub"></div>';
-  top.querySelector('.preview-actual').textContent = actual;
-  top.querySelector('.preview-sub').textContent = res.rows.length + ' entries · Pot ' + QC.money(res.pot);
-
-  const winNodes = res.winners.map(w => {
-    const d = document.createElement('div');
-    d.className = 'preview-winner';
-    d.innerHTML = '<div class="w-name"></div><div class="w-detail"></div><div class="w-pay"></div>';
-    d.querySelector('.w-name').textContent = w.name;
-    d.querySelector('.w-detail').textContent = 'Guess ' + w.guess + ' (' + QC.fmtMiss(w.miss) + ')';
-    d.querySelector('.w-pay').textContent = QC.money(w.payout) + (split ? ' each' : '');
-    return d;
-  });
-
-  const warn = document.createElement('p');
-  warn.className = 'warning-text';
-  warn.textContent = "This can't be undone.";
-  const err = document.createElement('p');
-  err.className = 'entry-msg error';
-
-  openModal('Confirm result', [top, ...winNodes, warn, err], [
-    { label: 'Back', onClick: () => openActualModal(actual) },
-    { label: 'Confirm & lock', cls: 'btn-primary', onClick: btn => confirmLock(actual, res, err, btn) }
-  ]);
+// Step 2 of lock: the main screen shows the sorted list with the result (UI only, nothing saved until Confirm)
+function enterPreview(actual) {
+  closeModal();
+  previewActual = actual;
+  editPool = false;
+  setMsg(el.previewMsg, '');
+  el.confirmLockBtn.disabled = false;
+  render();
+  window.scrollTo({ top: 0 });
 }
 
-// Atomically writes the HistoryEntry and flips the game to Locked; on failure stays in Preview
-async function confirmLock(actual, res, errNode, btn) {
-  btn.disabled = true;
+// Back from preview: return to the open game with the actual pre-filled in the entry modal
+function backFromPreview() {
+  const actual = previewActual;
+  previewActual = null;
+  render();
+  openActualModal(actual);
+}
+
+// Atomically writes the HistoryEntry and flips the game to Locked; on failure stays in preview
+async function confirmLock() {
+  const actual = previewActual;
+  const res = QC.computeResult(game.guesses, actual);
+  el.confirmLockBtn.disabled = true;
   const now = new Date().toISOString();
   const entry = {
     id: QC.uid(), gameId: game.id, date: game.startedAt, actual,
@@ -536,13 +533,13 @@ async function confirmLock(actual, res, errNode, btn) {
   try {
     await QC.withTx(['game', 'history'], 'readwrite', (g, h) => { g.put(locked); h.put(entry); });
   } catch (e) {
-    errNode.textContent = 'Could not save the result. Nothing was locked — try again.';
-    btn.disabled = false;
+    setMsg(el.previewMsg, 'Could not save the result. Nothing was locked — try again.', 'error');
+    el.confirmLockBtn.disabled = false;
     return;
   }
   game = locked;
+  previewActual = null;
   editPool = false;
-  closeModal();
   render();
   window.scrollTo({ top: 0 });
 }
@@ -586,6 +583,8 @@ el.cancelEditBtn.addEventListener('click', cancelEdit);
 el.editPoolBtn.addEventListener('click', () => setEditPool(!editPool));
 el.poolAddBtn.addEventListener('click', addPoolName);
 el.poolAddInput.addEventListener('keydown', e => { if (e.key === 'Enter') addPoolName(); });
+el.backBtn.addEventListener('click', backFromPreview);
+el.confirmLockBtn.addEventListener('click', confirmLock);
 el.newGameBtn.addEventListener('click', newGame);
 el.newGameBtn2.addEventListener('click', newGame);
 el.enterActualBtn.addEventListener('click', () => { if (game.guesses.length >= 2) openActualModal(null); });

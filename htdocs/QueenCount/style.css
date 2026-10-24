@@ -139,9 +139,10 @@ input:disabled, input[readonly] { opacity: 0.6; }
   text-align: center;
 }
 .pool-chip.selected { background: var(--accent); color: var(--accent-ink); }
-.pool-item { display: flex; gap: 4px; }
-.pool-item .pool-chip { flex: 1; min-width: 0; }
-.pool-item .pool-del { min-width: 44px; padding: 0; color: var(--danger); font-size: 1.2rem; }
+/* Edit pool: name and remove button share one box */
+.pool-item { display: flex; background: var(--card-hi); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.pool-item .pool-chip { flex: 1; min-width: 0; background: transparent; border: 0; border-radius: 0; }
+.pool-item .pool-del { min-width: 40px; padding: 0; background: transparent; border: 0; border-left: 1px solid var(--line); border-radius: 0; color: var(--danger); font-size: 1.2rem; }
 .pool-add { display: flex; gap: 8px; margin-bottom: 10px; }
 .pool-add button { flex-shrink: 0; }
 
@@ -164,9 +165,10 @@ button.row { width: 100%; background: transparent; border: 0; border-bottom: 1px
 .row.flash { animation: flash 1.6s ease-out; }
 @keyframes flash { 0%, 40% { background: rgba(245, 197, 66, 0.4); } 100% { background: transparent; } }
 
-.row.winner { background: rgba(245, 197, 66, 0.16); border: 1px solid var(--accent); }
-.row.winner .name { font-weight: 700; color: var(--accent); }
-.badge { background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 0.78rem; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.row.winner { background: rgba(76, 195, 138, 0.18); border: 1px solid var(--success); }
+.row.winner .name { font-weight: 700; color: var(--success); }
+.badge { background: var(--success); color: #062414; font-weight: 800; font-size: 0.78rem; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.badge-dead { background: #fff; }
 .divider { list-style: none; text-align: center; color: var(--success); font-weight: 800; padding: 8px 0; border-top: 2px dashed var(--success); border-bottom: 2px dashed var(--success); margin: 6px 0; }
 
 .need-note { text-align: center; color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
@@ -190,12 +192,6 @@ button.row { width: 100%; background: transparent; border: 0; border-bottom: 1px
 .modal-actions button { flex: 1; }
 .modal .entry-msg { margin-bottom: 4px; }
 
-.preview-actual { text-align: center; font-size: 3.5rem; font-weight: 800; color: var(--accent); line-height: 1.1; }
-.preview-sub { text-align: center; color: var(--muted); margin-bottom: 12px; }
-.preview-winner { text-align: center; padding: 12px; margin-bottom: 8px; border: 2px solid var(--accent); border-radius: var(--radius); background: rgba(245, 197, 66, 0.12); }
-.preview-winner .w-name { font-size: 2rem; font-weight: 800; word-break: break-word; }
-.preview-winner .w-detail { color: var(--muted); margin-top: 4px; }
-.preview-winner .w-pay { color: var(--success); font-weight: 800; font-size: 1.3rem; margin-top: 4px; }
 .warning-text { text-align: center; color: var(--danger); font-weight: 700; }
 
 /* ── History ──────────────────────────────────────────────────────────── */

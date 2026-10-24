@@ -82,6 +82,17 @@
       <p id="needNote" class="need-note">Need at least 2 guesses</p>
     </section>
 
+    <!-- Preview (not saved): sorted list showing the result; Back or Confirm & lock -->
+    <section id="previewView" hidden>
+      <div class="card"><ul id="previewList" class="row-list"></ul></div>
+      <p class="warning-text">This can't be undone.</p>
+      <p id="previewMsg" class="entry-msg" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button id="backBtn" type="button">Back</button>
+        <button id="confirmLockBtn" type="button" class="btn-primary">Confirm &amp; lock</button>
+      </div>
+    </section>
+
     <!-- Locked game: results -->
     <section id="lockedView" hidden>
       <div class="card"><ul id="resultList" class="row-list"></ul></div>
@@ -94,7 +105,7 @@
   <!-- Modal host: actual entry, preview, confirmations and prompts -->
   <div id="overlay" class="overlay" hidden></div>
 
-  <footer class="app-footer"><small>v<span id="appVersion">1.0</span></small></footer>
+  <footer class="app-footer"><small>v<span id="appVersion">1.1</span></small></footer>
 
   <script src="../media/suite-profile.js"></script>
   <script src="qc-shared.js"></script>

@@ -101,7 +101,8 @@
     ul.innerHTML = '';
     const winKeys = new Set(winners.map(w => nameKey(w.name)));
     const split = winners.length > 1;
-    let dividerDone = false;
+    // An exact match is flagged "Dead on" on the winner row instead of showing the Actual divider
+    let dividerDone = rows.some(r => r.miss === 0);
     const addDivider = () => {
       const d = document.createElement('li');
       d.className = 'divider';
@@ -120,6 +121,12 @@
       const miss = document.createElement('span'); miss.className = 'miss'; miss.textContent = fmtMiss(r.miss);
       li.append(name, val, miss);
       if (isWin) {
+        if (r.miss === 0) {
+          const d = document.createElement('span');
+          d.className = 'badge badge-dead';
+          d.textContent = 'Dead on';
+          li.appendChild(d);
+        }
         const w = winners.find(x => nameKey(x.name) === nameKey(r.name));
         const b = document.createElement('span');
         b.className = 'badge';
