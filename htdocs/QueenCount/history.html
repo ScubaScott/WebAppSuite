@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0e0a18" />
+  <title>QueenCount History</title>
+  <link rel="stylesheet" href="../media/suite-header.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../media/suite-profile.css" />
+</head>
+<body>
+
+  <!-- Suite Header: back link returns to the game screen only -->
+  <header class="suite-header">
+    <a href="index.html" class="suite-header__back" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span>Back</span>
+    </a>
+    <h1 class="suite-header__title">History</h1>
+    <span class="suite-header__spacer" aria-hidden="true"></span>
+  </header>
+
+  <main class="page">
+    <p id="fatalMsg" class="entry-msg error" role="alert" hidden></p>
+    <div id="historyList"></div>
+    <p id="historyEmpty" class="empty" hidden>No games yet.</p>
+  </main>
+
+  <footer class="app-footer"><small>v<span id="appVersion">1.0</span></small></footer>
+
+  <script src="../media/suite-profile.js"></script>
+  <script src="qc-shared.js"></script>
+  <script src="history.js"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0e0a18" />
+  <title>QueenCount</title>
+  <!-- Shared Suite Header Stylesheet -->
+  <link rel="stylesheet" href="../media/suite-header.css" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Suite profile styles for footer sync indicator -->
+  <link rel="stylesheet" href="../media/suite-profile.css" />
+</head>
+<body>
+
+  <!-- Suite Header: back link, title, spacer (no settings) -->
+  <header class="suite-header">
+    <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span class="suite-header__back-label-long">Back to Apps</span>
+      <span class="suite-header__back-label-short">Apps</span>
+    </a>
+    <h1 class="suite-header__title">QueenCount</h1>
+    <span class="suite-header__spacer" aria-hidden="true"></span>
+  </header>
+
+  <main class="page">
+    <!-- Storage / load error banner -->
+    <p id="fatalMsg" class="entry-msg error" role="alert" hidden></p>
+
+    <!-- Game header: date, entries, pot (or actual and pot when locked) -->
+    <div id="gameHeader" class="game-header" hidden></div>
+
+    <!-- Open game: pinned entry bar (add mode and edit mode share the same fields) -->
+    <section id="entryBar" class="entry-bar" hidden>
+      <div class="entry-fields">
+        <input id="nameInput" type="text" maxlength="30" placeholder="Name" autocomplete="off" autocapitalize="words" aria-label="Name" />
+        <input id="guessInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" placeholder="Guess" autocomplete="off" aria-label="Guess" />
+        <button id="addBtn" type="button" class="btn-primary">Add</button>
+      </div>
+      <div id="editActions" class="entry-actions" hidden>
+        <button id="removeBtn" type="button" class="btn-danger">Remove</button>
+        <button id="cancelEditBtn" type="button">Cancel</button>
+      </div>
+      <p id="entryMsg" class="entry-msg" aria-live="polite"></p>
+    </section>
+
+    <!-- Pool: shown when no game exists or a game is open -->
+    <section id="poolCard" class="card" hidden>
+      <div class="card-head">
+        <h2>Pool</h2>
+        <button id="editPoolBtn" type="button" class="btn-ghost">Edit pool</button>
+      </div>
+      <div id="poolAdd" class="pool-add" hidden>
+        <input id="poolAddInput" type="text" maxlength="30" placeholder="Add name" autocomplete="off" autocapitalize="words" aria-label="Add name to pool" />
+        <button id="poolAddBtn" type="button" class="btn-primary">Add</button>
+      </div>
+      <p id="poolMsg" class="entry-msg" aria-live="polite"></p>
+      <div id="poolGrid" class="pool-grid"></div>
+      <p id="poolEmpty" class="empty" hidden>Pool is empty — type a name above.</p>
+    </section>
+
+    <!-- No game: start a game -->
+    <section id="noGame" hidden>
+      <button id="newGameBtn" type="button" class="btn-primary btn-big">New game</button>
+    </section>
+
+    <!-- Open game: tonight's list and Enter actual -->
+    <section id="openView" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>Tonight's list</h2>
+          <span id="listCount" class="game-header"></span>
+        </div>
+        <ul id="guessList" class="row-list"></ul>
+        <p id="listEmpty" class="empty">No guesses yet.</p>
+      </div>
+      <button id="enterActualBtn" type="button" class="btn-primary btn-big">Enter actual</button>
+      <p id="needNote" class="need-note">Need at least 2 guesses</p>
+    </section>
+
+    <!-- Locked game: results -->
+    <section id="lockedView" hidden>
+      <div class="card"><ul id="resultList" class="row-list"></ul></div>
+      <button id="newGameBtn2" type="button" class="btn-primary btn-big">New game</button>
+    </section>
+
+    <p class="link-row"><a href="history.html">History</a></p>
+  </main>
+
+  <!-- Modal host: actual entry, preview, confirmations and prompts -->
+  <div id="overlay" class="overlay" hidden></div>
+
+  <footer class="app-footer"><small>v<span id="appVersion">1.0</span></small></footer>
+
+  <script src="../media/suite-profile.js"></script>
+  <script src="qc-shared.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

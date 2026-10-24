@@ -1,0 +1,208 @@
+/* QueenCount styles: dark theme driven by CSS custom properties */
+:root {
+  --bg: #14101f;
+  --bg-elev: #1f1930;
+  --card: #261f3a;
+  --card-hi: #2f2748;
+  --ink: #f4f1fb;
+  --muted: #a79fc0;
+  --line: rgba(255, 255, 255, 0.1);
+  --accent: #f5c542;
+  --accent-ink: #231a05;
+  --success: #4cc38a;
+  --danger: #ff6b6b;
+  --warn: #ffb347;
+  --radius: 14px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Suite header theme tokens */
+  --hdr-bg: #0e0a18;
+  --hdr-fg: #f4f1fb;
+  --hdr-muted: #a79fc0;
+  --hdr-accent: #f5c542;
+  --hdr-border: rgba(255, 255, 255, 0.08);
+  --hdr-font: var(--font);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+
+[hidden] { display: none !important; }
+
+.page { flex: 1; width: 100%; max-width: 640px; margin: 0 auto; padding: 12px 12px 24px; }
+
+.app-footer { text-align: center; padding: 16px 8px; font-size: 0.75rem; color: var(--muted); }
+
+/* ── Buttons & inputs ─────────────────────────────────────────────────── */
+button, .btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-hi);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease;
+}
+button:active, .btn:active { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-ghost { background: transparent; }
+.btn-big { min-height: 56px; font-size: 1.1rem; width: 100%; }
+
+input[type="text"], input[type="number"], input[type="tel"] {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+input:disabled, input[readonly] { opacity: 0.6; }
+
+.link-row { text-align: center; margin-top: 16px; }
+.link-row a { color: var(--accent); font-weight: 600; padding: 12px; display: inline-block; }
+
+/* ── Game header ──────────────────────────────────────────────────────── */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 4px 12px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.game-header strong { color: var(--ink); }
+.game-header .pot { color: var(--accent); font-weight: 700; }
+
+/* ── Entry bar (pinned) ───────────────────────────────────────────────── */
+.entry-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.entry-bar.disabled { opacity: 0.5; pointer-events: none; }
+.entry-fields { display: grid; grid-template-columns: 1fr 88px auto; gap: 8px; }
+.entry-actions { display: flex; gap: 8px; margin-top: 8px; }
+.entry-actions button { flex: 1; }
+.entry-msg { min-height: 1.2em; margin: 6px 2px 0; font-size: 0.85rem; color: var(--muted); }
+.entry-msg.error { color: var(--danger); }
+.entry-msg.warn { color: var(--warn); }
+
+/* ── Cards / sections ─────────────────────────────────────────────────── */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.card-head h2 { margin: 0; font-size: 1rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.empty { color: var(--muted); text-align: center; padding: 12px 0; margin: 0; }
+
+/* ── Pool grid ────────────────────────────────────────────────────────── */
+.pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.pool-chip {
+  min-height: 44px;
+  padding: 0 8px;
+  background: var(--card-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  line-height: 44px;
+  text-align: center;
+}
+.pool-chip.selected { background: var(--accent); color: var(--accent-ink); }
+.pool-item { display: flex; gap: 4px; }
+.pool-item .pool-chip { flex: 1; min-width: 0; }
+.pool-item .pool-del { min-width: 44px; padding: 0; color: var(--danger); font-size: 1.2rem; }
+.pool-add { display: flex; gap: 8px; margin-bottom: 10px; }
+.pool-add button { flex-shrink: 0; }
+
+/* ── Tonight's list and results ───────────────────────────────────────── */
+.row-list { list-style: none; margin: 0; padding: 0; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.row:last-child { border-bottom: 0; }
+.row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .val { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }
+.row .miss { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 4ch; text-align: right; }
+button.row { width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 10px; font-weight: 400; justify-content: flex-start; }
+.row.flash { animation: flash 1.6s ease-out; }
+@keyframes flash { 0%, 40% { background: rgba(245, 197, 66, 0.4); } 100% { background: transparent; } }
+
+.row.winner { background: rgba(245, 197, 66, 0.16); border: 1px solid var(--accent); }
+.row.winner .name { font-weight: 700; color: var(--accent); }
+.badge { background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 0.78rem; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.divider { list-style: none; text-align: center; color: var(--success); font-weight: 800; padding: 8px 0; border-top: 2px dashed var(--success); border-bottom: 2px dashed var(--success); margin: 6px 0; }
+
+.need-note { text-align: center; color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
+
+/* ── Modal ────────────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(5, 3, 12, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+.modal { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+.modal h2 { margin: 0 0 12px; font-size: 1.15rem; }
+.modal p { margin: 0 0 12px; color: var(--muted); }
+.modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.modal-actions button { flex: 1; }
+.modal .entry-msg { margin-bottom: 4px; }
+
+.preview-actual { text-align: center; font-size: 3.5rem; font-weight: 800; color: var(--accent); line-height: 1.1; }
+.preview-sub { text-align: center; color: var(--muted); margin-bottom: 12px; }
+.preview-winner { text-align: center; padding: 12px; margin-bottom: 8px; border: 2px solid var(--accent); border-radius: var(--radius); background: rgba(245, 197, 66, 0.12); }
+.preview-winner .w-name { font-size: 2rem; font-weight: 800; word-break: break-word; }
+.preview-winner .w-detail { color: var(--muted); margin-top: 4px; }
+.preview-winner .w-pay { color: var(--success); font-weight: 800; font-size: 1.3rem; margin-top: 4px; }
+.warning-text { text-align: center; color: var(--danger); font-weight: 700; }
+
+/* ── History ──────────────────────────────────────────────────────────── */
+.hist-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+.hist-summary { width: 100%; min-height: 56px; border: 0; border-radius: 0; background: transparent; text-align: left; justify-content: space-between; gap: 10px; padding: 8px 14px; font-weight: 400; }
+.hist-summary .h-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hist-summary .h-date { color: var(--muted); font-size: 0.8rem; }
+.hist-summary .h-win { font-weight: 700; }
+.hist-summary .h-pay { color: var(--accent); font-weight: 800; white-space: nowrap; }
+.hist-detail { padding: 0 8px 10px; }

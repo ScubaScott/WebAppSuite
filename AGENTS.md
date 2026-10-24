@@ -57,6 +57,7 @@ Each sub-application folder under `htdocs/` contains its own dedicated `AGENTS.m
 | `htdocs/DriverScore/` | DriveScore Pro | `htdocs/DriverScore/AGENTS.md` | Telematics tracking, accelerometer/turn penalties, vehicle garage |
 | `htdocs/FarkleScore/` | Farkle 10,000 | `htdocs/FarkleScore/AGENTS.md` | 10k dice scoring, combo calculations, multi-player standings |
 | `htdocs/HarleyVinDecoder/` | Harley VIN Decoder | `htdocs/HarleyVinDecoder/AGENTS.md` | 17-digit VIN parsing, checksum validation, OCR image preprocessing |
+| `htdocs/QueenCount/` | QueenCount | `htdocs/QueenCount/AGENTS.md` | Head count guessing game, $1 pot, closest guess wins, IndexedDB history |
 | `htdocs/ScoreBoard/` | ScoreBoard Multi-Sport | `htdocs/ScoreBoard/AGENTS.md` | Multi-sport scoreboard, game timer, active games viewer & sync |
 | `htdocs/Toys/` | Toys Lovense Controller | `htdocs/Toys/AGENTS.md` | Bluetooth remote, multi-toy vibration manager, special group restricted |
 
