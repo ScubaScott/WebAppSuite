@@ -30,7 +30,7 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 | 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Done (fixtures in `docs/`) |
 | 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` still present; remove it in Phase 3 |
 | 2 | One `toSnapshot()`, one send scheduler, game and preferences stored separately, shared helpers and one theme catalog, single beacon | Done and tested on `full_refactor` (console 5.3, shared 1.4) |
-| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 (`js/clock.js` + tests) done |
+| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 to 3.4 done with tests (`js/clock.js`, `state.js`, `format.js`, `migrate.js`, `snapshot.js`, `sync.js`, `storage.js`); next is 3.5, the console rewrite |
 | 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
 | 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
 | Later | Viewer sends its last `rev` and gets 304 when unchanged | Optional |
@@ -50,9 +50,9 @@ Target layout. Files marked *(planned)* do not exist yet.
 | `ScoreBoardActiveGames.html`, `ScoreBoardMyGames.html` | Redirect stubs for old bookmarks. Never add logic to them. |
 | `scoreboard.css` | Every style for every ScoreBoard page, themed through custom properties on `:root`. |
 | `js/console.js` *(planned)* | Console entry point: wires DOM events to `dispatch`, runs the display loop. |
-| `js/state.js` *(planned)* | `game` object, reducer, status machine, derived selectors. Pure: no DOM, no storage, no network. |
+| `js/state.js`, `js/format.js`, `js/migrate.js`, `tests/state.test.mjs`, `tests/migrate.test.mjs` | `game` object, reducer, status machine, derived selectors. Pure: no DOM, no storage, no network. |
 | `js/clock.js`, `tests/clock.test.mjs` | `getPosition(events, period, t)`, effective start, adjustment validation and expiry detection, per `docs/TIMING-SPEC.md`. Pure. |
-| `js/sync.js` *(planned)* | `toSnapshot()`, local save, server sync, revision numbers, beacon. The only code that talks to `SuiteProfile.games`. |
+| `js/snapshot.js`, `js/sync.js`, `js/storage.js`, with `tests/snapshot.test.mjs`, `tests/sync.test.mjs`, `tests/storage.test.mjs` | `snapshot.js`: `toSnapshot(game, now, prefs)` and the sync payload (pure). `sync.js`: when to send, revision numbers, conflict handling, beacon; the only code that talks to the games API (through `SuiteProfile.games`). `storage.js`: the saved game and preferences in localStorage, conversion of earlier records. |
 | `js/setup.js` *(planned)* | New Game / Edit Match / Add Overtime dialog. |
 | `js/render.js` *(planned)* | Console DOM updates from state. |
 | `js/prefs.js` *(planned)* | Operator preferences: load, save, apply theme. |
@@ -171,7 +171,7 @@ The full design is in `docs/TIMING-SPEC.md`. Read it before touching any timing 
 
 ## 6. Snapshot Contract
 
-`toSnapshot(game)` in `sync.js` is the **only** builder of the object sent to the server, the beacon, and anything else outside the console. The server and viewer read these field names, so they must stay as they are unless `games.php`, `shared.js` and the viewer change in the same commit:
+`toSnapshot(game, now, prefs)` in `snapshot.js` is the **only** builder of the object sent to the server, the beacon, and anything else outside the console. The server and viewer read these field names, so they must stay as they are unless `games.php`, `shared.js` and the viewer change in the same commit:
 
 | Snapshot field | Read by | Source |
 | --- | --- | --- |

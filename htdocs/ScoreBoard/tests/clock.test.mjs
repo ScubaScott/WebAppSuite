@@ -179,3 +179,9 @@ test('an open pause is measured up to now when computing positions in the past',
     // Position at real time 20 is still 10 minutes: the pause covers the gap
     assert.equal(getPosition(events, 1, BASE + 20 * MIN), 10 * MIN);
 });
+
+test('a period end recorded by an earlier version keeps its stored position', () => {
+    // Real time between start and end is 9 minutes, but the earlier version recorded 6 minutes (pauses were not logged)
+    const events = [clockEvent('period_start', 0), clockEvent('period_end', 9, { periodElapsedMs: 6 * MIN })];
+    assert.equal(getElapsed(events, 1, BASE + 60 * MIN), 6 * MIN);
+});

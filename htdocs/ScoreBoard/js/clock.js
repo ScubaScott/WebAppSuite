@@ -37,7 +37,8 @@ function eventsOfPeriod(events, period) {
  *   adjustMs: number,
  *   effectiveStart: number|null,
  *   pauses: Array<{from: number, to: number|null}>,
- *   end: number|null
+ *   end: number|null,
+ *   endPositionMs: number|null
  * }}
  */
 function getPeriodClock(events, period) {
@@ -63,14 +64,19 @@ function getPeriodClock(events, period) {
     });
 
     const endEvents = list.filter((event) => isClockEvent(event, 'period_end'));
-    const end = endEvents.length > 0 ? eventTime(endEvents[endEvents.length - 1]) : null;
+    const lastEnd = endEvents.length > 0 ? endEvents[endEvents.length - 1] : null;
+    const end = lastEnd ? eventTime(lastEnd) : null;
+    // A period end recorded by an earlier version carries its position; it is used as it is
+    const storedEnd = lastEnd ? Number(lastEnd.periodElapsedMs) : NaN;
+    const endPositionMs = Number.isFinite(storedEnd) ? storedEnd : null;
 
     return {
         recordedStart,
         adjustMs,
         effectiveStart: recordedStart === null ? null : recordedStart - adjustMs,
         pauses,
-        end
+        end,
+        endPositionMs
     };
 }
 
@@ -108,6 +114,7 @@ function getElapsed(events, period, now) {
     if (clock.effectiveStart === null) return 0;
     let reference = now;
     if (clock.end !== null) {
+        if (clock.endPositionMs !== null) return Math.max(0, clock.endPositionMs);
         reference = clock.end;
     } else {
         const open = clock.pauses.find((pause) => pause.to === null);
