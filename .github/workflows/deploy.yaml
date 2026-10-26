@@ -3,9 +3,13 @@ name: Deploy Website to InfinityFree
 on:
   push:
     branches:
-      - main
-      - Private-Games
+      - '**'   # every branch; main goes to the site root, all others to /dev/
   workflow_dispatch:
+
+# One deploy at a time per target, so two uploads never write the same server folder together
+concurrency:
+  group: ftp-deploy-${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+  cancel-in-progress: false
 
 jobs:
   web-deploy:
