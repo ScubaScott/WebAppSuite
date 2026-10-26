@@ -822,6 +822,16 @@
                 bgColor: '#1a1a2e',
                 label: 'Eden Prarie'
             },
+            'NewPrague.png': {
+                image: 'NewPrague.png',
+                bgColor: '#3a0a12',
+                label: 'New Prague'
+            },
+            'MinnesotaStars.png': {
+                image: 'MinnesotaStars.png',
+                bgColor: '#1f2a30',
+                label: 'Minnesota Stars'
+            },
             'saber-dark': {
                 image: 'saber.png',
                 bgColor: '#4a1010',
@@ -847,7 +857,7 @@
         };
 
         // Default catalog of background images present in media/bgimages
-        const DEFAULT_BG_IMAGES = ['EdenPrarie.png', 'chill.png', 'saber.png'];
+        const DEFAULT_BG_IMAGES = ['EdenPrarie.png', 'MinnesotaStars.png', 'NewPrague.png', 'chill.png', 'saber.png'];
         let availableBgImages = [...DEFAULT_BG_IMAGES];
 
         // Format an image filename into a clean, human-readable display label
@@ -3315,7 +3325,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '4.8';
+        const VERSION = '4.9';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game

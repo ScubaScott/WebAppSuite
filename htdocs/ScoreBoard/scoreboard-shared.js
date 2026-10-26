@@ -6,7 +6,7 @@
  */
 
 // Shared module version constant
-const SCOREBOARD_SHARED_VERSION = '1.1';
+const SCOREBOARD_SHARED_VERSION = '1.2';
 
 // Inactivity threshold (30 minutes in ms) after which an active game is considered stalled
 const STALL_THRESHOLD_MS = 30 * 60 * 1000;
@@ -17,6 +17,16 @@ const SCOREBOARD_THEMES = {
         image: 'EdenPrarie.png',
         bgColor: '#1a1a2e',
         label: 'Eden Prarie'
+    },
+    'NewPrague.png': {
+        image: 'NewPrague.png',
+        bgColor: '#3a0a12',
+        label: 'New Prague'
+    },
+    'MinnesotaStars.png': {
+        image: 'MinnesotaStars.png',
+        bgColor: '#1f2a30',
+        label: 'Minnesota Stars'
     },
     'saber-dark': {
         image: 'saber.png',
