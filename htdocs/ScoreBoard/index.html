@@ -1076,7 +1076,6 @@
         }
 
         const STORAGE_KEY = 'timerStateV7';
-        const ACTIVE_GAMES_KEY = 'scoreBoardActiveGamesV1';
         const ACTIVE_GAME_ID_KEY = 'scoreBoardCurrentGameIdV1';
         const ACTIVE_GAME_WRITE_TOKEN_KEY = 'scoreBoardCurrentGameWriteTokenV1';
 
@@ -1104,69 +1103,6 @@
             }
         }
 
-        function getActiveGames() {
-            const raw = safeLocalStorageGet(ACTIVE_GAMES_KEY);
-            if (!raw) return {};
-            try {
-                return JSON.parse(raw) || {};
-            } catch (error) {
-                return {};
-            }
-        }
-
-        function setActiveGames(games) {
-            try {
-                safeLocalStorageSet(ACTIVE_GAMES_KEY, JSON.stringify(games));
-            } catch (error) {
-                // Fail silently.
-            }
-        }
-
-        function pruneStaleActiveGames(games) {
-            const now = Date.now();
-            Object.keys(games).forEach(key => {
-                if (games[key] && games[key].expiresAt && games[key].expiresAt < now) {
-                    delete games[key];
-                }
-            });
-            return games;
-        }
-
-        function updateActiveGameEntry(statusOverride = null) {
-            if (!activeGameId || !gameCommitted) return;
-            const now = Date.now();
-            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
-            const games = pruneStaleActiveGames(getActiveGames());
-            const effectiveStatus = statusOverride || (activeGameEnded ? 'game_over' : (timerRunning ? 'running' : (isPaused ? 'paused' : 'stopped')));
-            games[activeGameId] = {
-                id: activeGameId,
-                homeTeamName,
-                awayTeamName,
-                homeScore,
-                awayScore,
-                currentPeriod,
-                timerRunning,
-                isPaused,
-                isCountingUp,
-                timeLimit,
-                elapsedMs: elapsed,
-                lastUpdate: now,
-                expiresAt: now + 24 * 60 * 60 * 1000,
-                status: effectiveStatus,
-                gameTitle: `${homeTeamName} vs ${awayTeamName}`
-            };
-            setActiveGames(games);
-        }
-
-        function removeActiveGameEntry() {
-            if (!activeGameId) return;
-            const games = getActiveGames();
-            if (games[activeGameId]) {
-                delete games[activeGameId];
-                setActiveGames(games);
-            }
-        }
-
         function loadOrCreateActiveGameId() {
             let id = safeLocalStorageGet(ACTIVE_GAME_ID_KEY) || safeLocalStorageGet('scoreKeeperCurrentGameIdV1');
             if (!id || id.indexOf('scoreboard-') === 0) {
@@ -1185,12 +1121,42 @@
             return token;
         }
 
-        // Synchronize active game snapshot with database through SuiteProfile.games.sync
-        async function syncActiveGameWithServer(statusOverride = null, endedByOverride = null) {
+        // Write the current revision number into the stored game state so a reload resumes from the last revision sent.
+        function persistActiveGameRev() {
+            const raw = safeLocalStorageGet(STORAGE_KEY);
+            if (!raw) return;
+            try {
+                const stored = JSON.parse(raw);
+                stored.activeGameRev = activeGameRev;
+                safeLocalStorageSet(STORAGE_KEY, JSON.stringify(stored));
+            } catch (error) {
+                // Leave the stored state unchanged if it cannot be parsed.
+            }
+        }
+
+        // Move the console to the final state when the server reports the game as ended or deleted.
+        function applyServerFinal(message) {
+            if (gameLifecycle === 'final') return;
+            if (timerRunning) stopClock('final');
+            gameLifecycle = 'final';
+            activeGameEnded = true;
+            closeEndOtModal();
+            if (overageDriftModal) overageDriftModal.classList.add('hidden');
+            if (staleResumeModal) staleResumeModal.classList.add('hidden');
+            updateMatchState('final');
+            updateTimer();
+            saveState();
+            showToast(message);
+        }
+
+        // Synchronize active game snapshot with database through SuiteProfile.games.sync.
+        // A revision conflict is retried once after adopting the server's revision number.
+        async function syncActiveGameWithServer(statusOverride = null, endedByOverride = null, isRetry = false) {
             if (!activeGameId || !gameCommitted) return;
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             activeGameRev = (activeGameRev || 0) + 1;
+            persistActiveGameRev();
 
             const effectiveStatus = statusOverride || (activeGameEnded ? 'final' : (timerRunning ? 'live' : 'live'));
             const effectiveEndedBy = endedByOverride || (activeGameEnded ? 'user' : null);
@@ -1234,15 +1200,19 @@
                         return;
                     }
                     if (res && res.error_code === 'game_deleted') {
-                        activeGameEnded = true;
-                        gameLifecycle = 'final';
+                        applyServerFinal('This game was deleted');
                         return;
                     }
                     if (res && res.conflict) {
-                        if (res.rev) activeGameRev = Math.max(activeGameRev, res.rev);
+                        if (res.rev) {
+                            activeGameRev = Math.max(activeGameRev, res.rev);
+                            persistActiveGameRev();
+                        }
                         if (res.stopped) {
-                            activeGameEnded = true;
-                            gameLifecycle = 'final';
+                            applyServerFinal('Match was finalized on the server');
+                        } else if (!isRetry) {
+                            // Resend the current state once using the server's revision number
+                            return syncActiveGameWithServer(statusOverride, endedByOverride, true);
                         }
                     }
                     if (res && res.visibility) {
@@ -1260,6 +1230,7 @@
             const now = Date.now();
             const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
             activeGameRev = (activeGameRev || 0) + 1;
+            persistActiveGameRev();
 
             const user = (window.SuiteProfile && !SuiteProfile.isGuest()) ? SuiteProfile.getUser() : null;
             const payload = {
@@ -1302,11 +1273,6 @@
 
         function publishActiveGameState(statusOverride = null, endedByOverride = null) {
             if (!gameCommitted) return;
-            try {
-                updateActiveGameEntry(statusOverride);
-            } catch (error) {
-                // Fail silently if local active game publishing is unavailable.
-            }
             syncActiveGameWithServer(statusOverride, endedByOverride);
         }
 
@@ -1906,6 +1872,15 @@
         function removeSelectedHistoryEntry() {
             if (activeHistoryIndex < 0 || !scoreHistory[activeHistoryIndex]) return;
             const idx = activeHistoryIndex;
+            const entry = scoreHistory[idx];
+            let confirmMessage = 'Remove this entry from the history?';
+            if (entry.type === 'score') {
+                confirmMessage = 'Remove this goal? The score will go down by 1.';
+            } else if (entry.eventType === 'period_end') {
+                confirmMessage = 'Remove this period end? The game returns to that period.';
+            }
+            // Keep the options dialog open when the operator cancels
+            if (!window.confirm(confirmMessage)) return;
             closeHistoryOptions();
             deleteScore(idx);
             showToast('Entry removed');
@@ -2486,9 +2461,12 @@
         }
 
         // Finalize the current active game without resetting scores.
-        async function endCurrentGame() {
+        // endedBy is the reason sent to the server: 'user' (operator choice) or 'abandoned' (stale game).
+        async function endCurrentGame(endedBy = 'user') {
             if (gameLifecycle !== 'live') return;
             closeEndOtModal();
+            if (overageDriftModal) overageDriftModal.classList.add('hidden');
+            if (staleResumeModal) staleResumeModal.classList.add('hidden');
             stopClock('final');
 
             const currentPeriodHasStarted = (periodStartTimeUtc !== null);
@@ -2530,7 +2508,7 @@
             gameLifecycle = 'final';
             activeGameEnded = true;
             updateMatchState('final');
-            publishActiveGameState('final', 'user');
+            publishActiveGameState('final', endedBy);
             saveState();
             renderHistory();
             showToast('Match Finalized');
@@ -2628,6 +2606,18 @@
 
         // Save changes from Match Setup modal
         function saveMatchSetup() {
+            // A period needs at least one second; otherwise the clock would expire the moment it starts
+            if (tempTimeLimit <= 0) {
+                showToast('Period length must be more than 0:00');
+                return;
+            }
+
+            // New Game: send the previous live game as final using its own names, scores and periods,
+            // before the setup form values replace them.
+            if (matchSetupMode === 'create' && gameCommitted && gameLifecycle === 'live' && !activeGameEnded) {
+                publishActiveGameState('final', 'new_game');
+            }
+
             const newHomeName = setupHomeName ? setupHomeName.value.trim() : '';
             const newHomeColor = setupHomeColor ? setupHomeColor.value : homeTeamColor;
             const newAwayName = setupAwayName ? setupAwayName.value.trim() : '';
@@ -2653,11 +2643,6 @@
             scoreAwayEl.style.color = awayTeamColor;
 
             if (matchSetupMode === 'create') {
-                // If previous game was committed and live, finalize it on server
-                if (gameCommitted && gameLifecycle === 'live' && !activeGameEnded) {
-                    publishActiveGameState('final', 'new_game');
-                }
-
                 // Initialize draft match session (local only; server row created upon first whistle start)
                 if (timerRunning) {
                     clearInterval(timerInterval);
@@ -2862,7 +2847,7 @@
         // End / OT modal button listeners
         if (closeEndOtX) closeEndOtX.addEventListener('click', closeEndOtModal);
         if (btnModalCancelEnd) btnModalCancelEnd.addEventListener('click', closeEndOtModal);
-        if (btnModalFinalize) btnModalFinalize.addEventListener('click', endCurrentGame);
+        if (btnModalFinalize) btnModalFinalize.addEventListener('click', () => endCurrentGame('user'));
         if (btnModalAddOt) {
             btnModalAddOt.addEventListener('click', () => {
                 closeEndOtModal();
@@ -3002,9 +2987,27 @@
         }
 
         if (settingSharePublic) {
-            settingSharePublic.addEventListener('change', () => {
-                activeGameVisibility = settingSharePublic.checked ? 'public' : 'private';
-                saveState();
+            settingSharePublic.addEventListener('change', async () => {
+                const nextVisibility = settingSharePublic.checked ? 'public' : 'private';
+                if (!gameCommitted) {
+                    // Not on the server yet: the choice is sent when the first Start creates the game
+                    activeGameVisibility = nextVisibility;
+                    saveState();
+                    return;
+                }
+                // The server ignores visibility on ordinary syncs, so change it with set_visibility
+                settingSharePublic.disabled = true;
+                try {
+                    const res = await SuiteProfile.games.setVisibility(activeGameId, nextVisibility);
+                    if (!res || !res.success) throw new Error('rejected');
+                    activeGameVisibility = nextVisibility;
+                    saveState();
+                } catch (error) {
+                    settingSharePublic.checked = (activeGameVisibility !== 'private');
+                    showToast('Could not change sharing. Try again.');
+                } finally {
+                    settingSharePublic.disabled = false;
+                }
             });
         }
 
@@ -3018,13 +3021,8 @@
 
         // Stale Game Resume / Finalize actions
         if (btnStaleFinish) {
-            btnStaleFinish.addEventListener('click', () => {
-                if (staleResumeModal) staleResumeModal.classList.add('hidden');
-                activeGameEnded = true;
-                gameLifecycle = 'final';
-                publishActiveGameState('final', 'abandoned');
-                saveState();
-            });
+            // Finish Game runs the normal end-of-game path so the clock stops and the controls update
+            btnStaleFinish.addEventListener('click', () => endCurrentGame('abandoned'));
         }
         if (btnStaleResume) {
             btnStaleResume.addEventListener('click', () => {
@@ -3044,24 +3042,55 @@
             }
 
             // Toggle My Games link and Public Share setting based on auth state
-            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
-                if (linkMyGames) linkMyGames.style.display = 'inline-block';
-                if (settingsSharingSection) settingsSharingSection.style.display = 'block';
-            } else {
-                if (linkMyGames) linkMyGames.style.display = 'none';
-                if (settingsSharingSection) settingsSharingSection.style.display = 'none';
-            }
+            const isSignedIn = !!(window.SuiteProfile && !SuiteProfile.isGuest());
+            if (linkMyGames) linkMyGames.classList.toggle('hidden', !isSignedIn);
+            if (settingsSharingSection) settingsSharingSection.classList.toggle('hidden', !isSignedIn);
 
-            // Always check if there are new DB settings first if logged in
+            // True when a saved game state is committed to the server and not yet final
+            const isCommittedNotFinal = (state) => {
+                if (!state || !state.activeGameId) return false;
+                const committed = (state.gameCommitted !== undefined)
+                    ? !!state.gameCommitted
+                    : (!!state.activeGameStarted && (
+                        !!state.periodStartTimeUtc ||
+                        (state.accumulatedTime && state.accumulatedTime > 0) ||
+                        (Array.isArray(state.scoreHistory) && state.scoreHistory.some(e => e.eventType === 'period_start'))
+                    ));
+                const isFinal = (state.gameLifecycle === 'final') || !!state.activeGameEnded;
+                return committed && !isFinal;
+            };
+
+            // Send a replaced game to the server as final. A revision conflict is retried once with the server's number.
+            const finalizeReplacedGame = (state) => {
+                const send = (rev) => SuiteProfile.games.sync({
+                    game_id: state.activeGameId,
+                    write_token: state.activeGameWriteToken,
+                    rev,
+                    status: 'final',
+                    ended_by: 'new_game',
+                    snapshot: state
+                });
+                try {
+                    send((state.activeGameRev || 0) + 1).then((res) => {
+                        if (res && res.conflict && !res.stopped && res.rev) send(res.rev + 1);
+                    }).catch(() => { });
+                } catch (e) { }
+            };
+
+            // Signed-in users load their cloud copy. A timeout means "unknown", not "no cloud data".
+            const CLOUD_TIMEOUT = Symbol('cloud-timeout');
             let cloudState = null;
+            let cloudTimedOut = false;
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
                 try {
-                    cloudState = await Promise.race([
+                    const result = await Promise.race([
                         SuiteProfile.loadAppData('scoreboard'),
-                        new Promise(resolve => setTimeout(() => resolve(null), 3000))
+                        new Promise(resolve => setTimeout(() => resolve(CLOUD_TIMEOUT), 3000))
                     ]);
-                    if (!cloudState) {
-                        cloudState = await SuiteProfile.loadAppData('scorekeeper');
+                    if (result === CLOUD_TIMEOUT) {
+                        cloudTimedOut = true;
+                    } else {
+                        cloudState = result;
                     }
                 } catch (e) {
                     console.warn('DB settings check failed, falling back to local:', e);
@@ -3072,36 +3101,28 @@
             const localSaved = loadState();
 
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
-                if (cloudState) {
-                    // Finalize any distinct committed local game before adopting cloud state; discard uncommitted drafts
-                    if (localSaved && localSaved.activeGameId !== cloudState.activeGameId) {
-                        const localIsCommitted = (localSaved.gameCommitted !== undefined)
-                            ? !!localSaved.gameCommitted
-                            : (!!localSaved.activeGameStarted && (
-                                !!localSaved.periodStartTimeUtc ||
-                                (localSaved.accumulatedTime && localSaved.accumulatedTime > 0) ||
-                                (Array.isArray(localSaved.scoreHistory) && localSaved.scoreHistory.some(e => e.eventType === 'period_start'))
-                            ));
-                        const localIsFinal = (localSaved.gameLifecycle === 'final') || !!localSaved.activeGameEnded;
-                        if (localIsCommitted && !localIsFinal) {
-                            try {
-                                SuiteProfile.games.sync({
-                                    game_id: localSaved.activeGameId,
-                                    write_token: localSaved.activeGameWriteToken,
-                                    rev: (localSaved.activeGameRev || 0) + 1,
-                                    status: 'final',
-                                    ended_by: 'new_game',
-                                    snapshot: localSaved
-                                });
-                            } catch (e) { }
-                        }
+                if (cloudState && localSaved) {
+                    // Both copies exist: the most recently saved one wins. If they are different games,
+                    // the losing copy is finalized when it was a live game; uncommitted drafts are discarded.
+                    const sameGame = cloudState.activeGameId === localSaved.activeGameId;
+                    const localIsNewer = (localSaved.lastSavedAt || 0) >= (cloudState.lastSavedAt || 0);
+                    if (localIsNewer) {
+                        saved = localSaved;
+                        if (!sameGame && isCommittedNotFinal(cloudState)) finalizeReplacedGame(cloudState);
+                        SuiteProfile.saveAppData('scoreboard', saved);
+                    } else {
+                        saved = cloudState;
+                        if (!sameGame && isCommittedNotFinal(localSaved)) finalizeReplacedGame(localSaved);
+                        safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
                     }
+                } else if (cloudState) {
                     saved = cloudState;
                     safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
                 } else {
-                    // Preserve guest state upon login so it is claimed instead of wiped
+                    // No cloud copy (or the cloud did not answer): keep the local game so a guest game is claimed, not wiped.
+                    // Upload it only when the cloud confirmed it has nothing.
                     saved = localSaved;
-                    if (saved) {
+                    if (saved && !cloudTimedOut) {
                         SuiteProfile.saveAppData('scoreboard', saved);
                     }
                 }
@@ -3197,14 +3218,15 @@
 
                 // Handle timer recovery and stale resume checking
                 if (saved.running && saved.startTime) {
-                    const drift = Date.now() - (saved.lastSavedAt || saved.startTime);
-                    if (drift >= 3 * 3600 * 1000) {
+                    const sinceLastSave = Date.now() - (saved.lastSavedAt || saved.startTime);
+                    if (sinceLastSave >= 3 * 3600 * 1000) {
                         // Unfinished game left running > 3 hours ago: prompt operator
                         if (staleResumeModal) staleResumeModal.classList.remove('hidden');
                         updateMatchState('paused');
                         updateTimer();
                     } else {
-                        accumulatedTime += drift;
+                        // Restore the saved run start so elapsed time = saved elapsed + time since the clock started
+                        startTime = saved.startTime;
                         runClock();
                         checkBackgroundDrift();
                     }
@@ -3292,14 +3314,8 @@
             }
         });
 
-        window.addEventListener('storage', (event) => {
-            if (event.key === ACTIVE_GAMES_KEY) {
-                publishActiveGameState();
-            }
-        });
-
         // ScoreBoard version identifier
-        const VERSION = '4.7';
+        const VERSION = '4.8';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
@@ -3314,7 +3330,7 @@
 
     <!-- Footer displaying application version -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">4.7</span></p>
+        <p>Version <span id="appVersion">4.8</span></p>
     </footer>
 </body>
 

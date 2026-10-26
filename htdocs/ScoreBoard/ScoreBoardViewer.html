@@ -152,13 +152,15 @@
 
     <script>
         // Viewer tool version constant
-        const APP_VERSION = '1.4';
+        const APP_VERSION = '1.5';
 
         // Polling configuration
         const BASE_POLL_INTERVAL_MS = 4000;
         let pollTimer = null;
         let tickerTimer = null;
         let consecutiveErrors = 0;
+        // Set once the game is final or unavailable; polling and the clock ticker never restart after that
+        let feedHalted = false;
 
         // URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -265,9 +267,11 @@
 
                 renderBoard();
 
-                // Section 5.5: Stop polling when game is final
+                // Section 5.5: Stop polling when game is final; the last render already shows the frozen clock
                 if (currentModel.status === 'final') {
+                    feedHalted = true;
                     stopPolling();
+                    stopTicker();
                 }
 
             } catch (err) {
@@ -425,6 +429,7 @@
          * Transitions viewer to terminal Unavailable state.
          */
         function showUnavailableState() {
+            feedHalted = true;
             stopPolling();
             stopTicker();
             loadingView.style.display = 'none';
@@ -446,6 +451,7 @@
          */
         function startPolling() {
             stopPolling();
+            if (feedHalted) return;
             const delay = consecutiveErrors > 0 ? Math.min(10000, BASE_POLL_INTERVAL_MS * (consecutiveErrors + 1)) : BASE_POLL_INTERVAL_MS;
             pollTimer = setTimeout(async () => {
                 if (!document.hidden) {
@@ -464,6 +470,7 @@
 
         function startTicker() {
             stopTicker();
+            if (feedHalted) return;
             tickerTimer = setInterval(() => {
                 if (!document.hidden && currentModel) {
                     updateClockDisplay();
@@ -484,8 +491,8 @@
                 stopPolling();
                 stopTicker();
             } else {
-                if (currentModel && currentModel.status === 'final') {
-                    // Do not resume polling for final match
+                if (feedHalted) {
+                    // Do not resume polling for a final or unavailable match
                     return;
                 }
                 fetchGameSnapshot();
