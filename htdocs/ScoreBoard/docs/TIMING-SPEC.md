@@ -117,9 +117,9 @@ At 5:15pm the clock reads 15:00 (5:00 to 5:15) minus 2:00 paused = 13:00. Deleti
 
 ## 8. Old games
 
-Games recorded before this spec have history entries with a stored `periodElapsedMs` or `gameTime` and no clock events that carry enough information to recompute. They are **not converted**. A game recorded under this spec carries `timingVersion: 2` (set when it is created, copied into the snapshot). For a game without it, the renderer uses each entry's stored `periodElapsedMs` or `gameTime` as today; for a game with it, positions are always derived. Archived games therefore look exactly as they do today.
+Games recorded before this spec have history entries with a stored `periodElapsedMs` or `gameTime` and no clock events that carry enough information to recompute. They are **not converted**. The rule is per entry: an entry that has a stored `periodElapsedMs` or `gameTime` shows that stored position as it always has; an entry without one (anything recorded under this spec) has its position derived from the timestamps. Archived games therefore look exactly as they do today.
 
-The cutover has no live games (AGENTS.md section 13), so no in-progress clock needs converting.
+The cutover has no live games (AGENTS.md section 13), so no in-progress clock needs converting. If a live game is converted anyway (for example during development), the migration adds a `period_start` (and a `paused`, if paused) event for the current period, back-calculated from the saved clock, and earlier entries in that period keep their stored positions, so a later adjustment does not move them.
 
 ## 9. Consequences for the rest of the design
 

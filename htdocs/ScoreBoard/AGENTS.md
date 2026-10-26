@@ -29,8 +29,8 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 | --- | --- | --- |
 | 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Done (fixtures in `docs/`) |
 | 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` still present; remove it in Phase 3 |
-| 2 | One `toSnapshot()`, one debounced save, game data out of profile app data, console uses shared helpers and one theme catalog, single beacon | In progress on `full_refactor`. Done: console uses the shared helpers and the single theme catalog (shared 1.4); one `toSnapshot()` and one payload builder; one beacon per hidden period; one server-send scheduler (`requestSync`: status changes sent at once, other changes once after 2 s, unchanged snapshots skipped) ; game and preferences stored separately (`scoreboardGameV8`, `scoreboardPrefsV1`), profile record holds preferences only, earlier records converted on load and then removed (console 5.3, shared 1.4). Not yet browser-tested. The game record still uses the old field names; Phase 3 replaces them with the single `game` object |
-| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | Not started |
+| 2 | One `toSnapshot()`, one send scheduler, game and preferences stored separately, shared helpers and one theme catalog, single beacon | Done and tested on `full_refactor` (console 5.3, shared 1.4) |
+| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 (`js/clock.js` + tests) done |
 | 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
 | 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
 | Later | Viewer sends its last `rev` and gets 304 when unchanged | Optional |
@@ -51,7 +51,7 @@ Target layout. Files marked *(planned)* do not exist yet.
 | `scoreboard.css` | Every style for every ScoreBoard page, themed through custom properties on `:root`. |
 | `js/console.js` *(planned)* | Console entry point: wires DOM events to `dispatch`, runs the display loop. |
 | `js/state.js` *(planned)* | `game` object, reducer, status machine, derived selectors. Pure: no DOM, no storage, no network. |
-| `js/clock.js` *(planned)* | `getPosition(events, period, t)`, effective start, adjustment validation and expiry detection, per `docs/TIMING-SPEC.md`. Pure. |
+| `js/clock.js`, `tests/clock.test.mjs` | `getPosition(events, period, t)`, effective start, adjustment validation and expiry detection, per `docs/TIMING-SPEC.md`. Pure. |
 | `js/sync.js` *(planned)* | `toSnapshot()`, local save, server sync, revision numbers, beacon. The only code that talks to `SuiteProfile.games`. |
 | `js/setup.js` *(planned)* | New Game / Edit Match / Add Overtime dialog. |
 | `js/render.js` *(planned)* | Console DOM updates from state. |
@@ -63,7 +63,7 @@ Target layout. Files marked *(planned)* do not exist yet.
 | `../api/games.php` | Game API (section 8). Shared database with the rest of the suite. |
 | `../media/suite-profile.js` | Suite-wide login, app data and game sync helpers. **Used by other apps**: changes here must not break them. |
 | `../sw.js` | Service worker. Its precache list names ScoreBoard files: update it when files are added, renamed or removed. |
-| `docs/` | Design and test documents (everything except this file). Active documents live here: `TEST-CHECKLIST.md` (manual test checklist; section 11 says when to run it) and `TIMING-SPEC.md` (clock, period start, pauses and corrections; section 5). |
+| `docs/` | Design and test documents (everything except this file). Active documents live here: `TEST-CHECKLIST.md` (manual test checklist; section 11 says when to run it), `TIMING-SPEC.md` (clock, period start, pauses and corrections; section 5) and `PHASE3-PLAN.md` (the step list for the single game object). |
 | `docs/old/` | Archive of completed tasks and historical specs (the three lifecycle and viewer specs), already implemented and superseded by this file. Do not implement from them. When a task's document is finished, move it here. |
 
 All scripts are native ES modules (`<script type="module">`). No build step, no frameworks.
@@ -93,7 +93,6 @@ Stored fields (names are the target; map from the old names during migration):
 | `currentPeriod` | 1-based. |
 | `periodLengthMs` | Length of the current period. Must be > 0. |
 | `overageAcknowledged` | Per-period flag: the operator chose "Continue in Overage" (section 5). |
-| `timingVersion` | `2` for games using `docs/TIMING-SPEC.md`. Absent on old games, whose stored positions are used as they are. |
 | `events` | The event log (below). |
 | `visibility` | `'public'` or `'private'`. |
 | `startedAt` | ISO time of the first Start. |
@@ -137,7 +136,7 @@ The event log is the record of truth. Each event:
 - Team names, colors and labels are looked up at render time. Do not copy them into new events.
 - Removing a `period_end` is allowed only for the most recent period end, and only when no later events exist. Removal always asks for confirmation.
 - Start, pause, resume and adjust events are always recorded, because the clock is calculated from them. The preferences only decide whether those rows are shown and sent in the snapshot history.
-- New events do not store `periodElapsedMs` or `gameTime`; positions are derived (section 5). Old games keep their stored values.
+- New events do not store `periodElapsedMs` or `gameTime`; positions are derived (section 5). Old entries keep their stored values (an entry that has one shows it; an entry without one is derived).
 
 ### Preferences (separate from the game)
 
@@ -286,7 +285,7 @@ Do not change these without updating this section, the console and the viewer to
 1. Bump `APP_VERSION` on every page you changed.
 2. Update `../sw.js` if you added, renamed or removed a file.
 3. Update this file if you changed the state model, statuses, snapshot fields, sync rules or API behavior. Update the Help page if users will notice the change. Update section 2 when a phase is finished.
-4. Run the parts of `docs/TEST-CHECKLIST.md` that your change touches. At minimum:
+4. Run `node --test tests/*.mjs` from this folder (once the shell expands the pattern; otherwise name each file), then the parts of `docs/TEST-CHECKLIST.md` that your change touches. At minimum:
    - New Game → Start → goals for both teams → Pause/Resume → End Period → next period → final-period expiry → Add Overtime → Finalize
    - Reload the page while the clock is running: elapsed time continues correctly
    - Go offline mid-game, score, come back online: the server catches up with no lost update
