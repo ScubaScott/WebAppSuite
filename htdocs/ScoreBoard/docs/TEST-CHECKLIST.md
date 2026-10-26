@@ -57,8 +57,9 @@ Test games appear on the public Active Games list. Set them to private or delete
 
 ## Stale and overrun prompts
 
-- [ ] Overrun: in DevTools, edit `timerStateV7.startTime` to be older than the period length, reload: "Period Limit Exceeded" appears. Both choices work.
-- [ ] Stale: set `startTime` and `lastSavedAt` to more than 3 hours ago, reload: "Finish Last Game?" appears. **Finish Game** stops the clock, shows Final with only New Game, and the viewer shows Final. **Resume Clock** continues the clock.
+- [ ] Overrun: start a 1-minute period, lock the phone (or leave the tab in the background) for more than 2 minutes, then return. Expect the period to have ended, or the "Period Limit Exceeded" prompt with both choices working. Do not test this by editing `timerStateV7` in DevTools: the page saves its in-memory state when it closes or reloads and overwrites the edit, and a signed-in newer cloud copy wins over local data.
+- [ ] Stale: the 3-hour prompt cannot be reached by hand on the current app. On the refactor branch, test it with a saved-game fixture whose events are more than 3 hours old (see `TIMING-SPEC.md` section 10).
+- [ ] On the refactor branch, also run the clock tests in `TIMING-SPEC.md` section 10.
 
 ## Two tabs
 

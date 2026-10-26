@@ -30,7 +30,7 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 | 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Checklist done; fixtures still to export from a real browser |
 | 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` (pushed; console 4.9, viewer 1.5), not yet tested. `isCountingUp` still present; remove it in Phase 3 |
 | 2 | One `toSnapshot()`, one debounced save, game data out of profile app data, console uses shared helpers and one theme catalog, single beacon | Not started |
-| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, one-time migration of old saved data | Not started |
+| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | Not started |
 | 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
 | 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
 | Later | Viewer sends its last `rev` and gets 304 when unchanged | Optional |
@@ -51,7 +51,7 @@ Target layout. Files marked *(planned)* do not exist yet.
 | `scoreboard.css` | Every style for every ScoreBoard page, themed through custom properties on `:root`. |
 | `js/console.js` *(planned)* | Console entry point: wires DOM events to `dispatch`, runs the display loop. |
 | `js/state.js` *(planned)* | `game` object, reducer, status machine, derived selectors. Pure: no DOM, no storage, no network. |
-| `js/clock.js` *(planned)* | Elapsed-time math and expiry detection. Pure. |
+| `js/clock.js` *(planned)* | `getPosition(events, period, t)`, effective start, adjustment validation and expiry detection, per `docs/TIMING-SPEC.md`. Pure. |
 | `js/sync.js` *(planned)* | `toSnapshot()`, local save, server sync, revision numbers, beacon. The only code that talks to `SuiteProfile.games`. |
 | `js/setup.js` *(planned)* | New Game / Edit Match / Add Overtime dialog. |
 | `js/render.js` *(planned)* | Console DOM updates from state. |
@@ -63,7 +63,7 @@ Target layout. Files marked *(planned)* do not exist yet.
 | `../api/games.php` | Game API (section 8). Shared database with the rest of the suite. |
 | `../media/suite-profile.js` | Suite-wide login, app data and game sync helpers. **Used by other apps**: changes here must not break them. |
 | `../sw.js` | Service worker. Its precache list names ScoreBoard files: update it when files are added, renamed or removed. |
-| `docs/` | Design and test documents (everything except this file). Active documents live here: `TEST-CHECKLIST.md` (manual test checklist; section 11 says when to run it). |
+| `docs/` | Design and test documents (everything except this file). Active documents live here: `TEST-CHECKLIST.md` (manual test checklist; section 11 says when to run it) and `TIMING-SPEC.md` (clock, period start, pauses and corrections; section 5). |
 | `docs/old/` | Archive of completed tasks and historical specs (the three lifecycle and viewer specs), already implemented and superseded by this file. Do not implement from them. When a task's document is finished, move it here. |
 
 All scripts are native ES modules (`<script type="module">`). No build step, no frameworks.
@@ -92,13 +92,14 @@ Stored fields (names are the target; map from the old names during migration):
 | `periodCount`, `regulationPeriods` | Total periods now / periods set at setup. Periods above `regulationPeriods` are overtime. |
 | `currentPeriod` | 1-based. |
 | `periodLengthMs` | Length of the current period. Must be > 0. |
-| `clock` | `{ elapsedBeforeRun, runStartedAt, overageAcknowledged }` (section 5). |
+| `overageAcknowledged` | Per-period flag: the operator chose "Continue in Overage" (section 5). |
+| `timingVersion` | `2` for games using `docs/TIMING-SPEC.md`. Absent on old games, whose stored positions are used as they are. |
 | `events` | The event log (below). |
 | `visibility` | `'public'` or `'private'`. |
 | `startedAt` | ISO time of the first Start. |
 | `sync` | `{ lastAckRev, lastSentRev }` (section 7). |
 
-Never store a value that can be derived. In particular these are **derived, not stored**: scores, `timerRunning`, `isPaused`, "committed", "ended", period labels, display text.
+Never store a value that can be derived. In particular these are **derived, not stored**: the clock and every event's position in the period (calculated from event timestamps; section 5), scores, `timerRunning`, `isPaused`, "committed", "ended", period labels, display text.
 
 ### Status machine
 
@@ -131,11 +132,12 @@ The event log is the record of truth. Each event:
 ```
 
 - `type`: `'score'` (a goal), `'card'`, or `'event'` (clock event). Keep these names: archived games in the database use them.
-- `eventType` for clock events: `'period_start'`, `'paused'`, `'resumed'`, `'period_end'`. `qualifier`: `'score'` or `'final'`. `endReason`: `'time'`, `'manual'`, `'drift'`, `'final'`.
+- `eventType` for clock events: `'period_start'`, `'paused'`, `'resumed'`, `'clock_adjust'` (carries `deltaMs`), `'period_end'`. `qualifier`: `'score'` or `'final'`. `endReason`: `'time'`, `'manual'`, `'drift'`, `'final'`.
 - Scores are counted from `'score'` events. Removing an event and recomputing is the only undo.
 - Team names, colors and labels are looked up at render time. Do not copy them into new events.
 - Removing a `period_end` is allowed only for the most recent period end, and only when no later events exist. Removal always asks for confirmation.
-- Pause/resume and period start/stop events are only logged when the matching preference is on.
+- Start, pause, resume and adjust events are always recorded, because the clock is calculated from them. The preferences only decide whether those rows are shown and sent in the snapshot history.
+- New events do not store `periodElapsedMs` or `gameTime`; positions are derived (section 5). Old games keep their stored values.
 
 ### Preferences (separate from the game)
 
@@ -155,14 +157,15 @@ Legacy keys read by the migration (delete them only after a successful conversio
 
 ## 5. Clock
 
-- Elapsed time in the current period is always `elapsedBeforeRun + (runStartedAt ? now - runStartedAt : 0)`. Use this one formula everywhere: display, events, snapshots, reload, background tabs, the stale check.
-- Start/Resume sets `runStartedAt = now`. Pause/stop folds the running time into `elapsedBeforeRun` and clears `runStartedAt`. Both fields are persisted, so a reload continues the clock exactly.
+The full design is in `docs/TIMING-SPEC.md`. Read it before touching any timing code. Summary:
+
+- Only real time is stored: every event has a `timestamp`. A period's **position** (game-clock time, excluding paused time) is calculated by one pure function, `getPosition(events, period, t)`, used by the display, history rows, expiry and snapshots. Nothing else computes elapsed time.
+- The period start event is written once and never edited. A correction is a `clock_adjust` event; the **effective start** is the recorded start minus the period's adjustments. Deleting the adjustment row undoes it.
+- Adjustments apply to the current period only, while `running` or `paused`. They are blocked, with a message and no change, if an event would fall before the start, the clock would go negative, or an event would land after the period length (unless overage was acknowledged). Deleting an adjustment follows the same rules.
+- Reload, sleep and background tabs need no restoring: recompute from events. On load while running: 3 hours or more shows the stale prompt; past the period length shows the "Period Limit Exceeded" prompt.
+- Expiry records `period_end` at the calculated real time the period reached its length, not at `now`.
 - The main display counts **down** from `periodLengthMs` and goes negative in overage (red, with an "Overage" badge). The secondary display counts up from 0. Format `MM:SS.d`. There is no count-up mode.
-- The display loop only redraws; it never changes state except to dispatch `expire` when remaining time reaches 0 while running and `overageAcknowledged` is false. Expiry plays the whistle (unless muted) and follows the status table.
-- **Coming back to the page** (load or tab visible) while running:
-  - Total elapsed ≥ 3 hours: show the stale prompt (Finish Game / Resume Clock). Finish Game goes through the normal finalize path.
-  - Past the period length and not acknowledged: show the "Period Limit Exceeded" prompt (End Period on Time / Continue in Overage).
-- The ±1 / ±5 minute panel corrects elapsed time while running; elapsed never goes below 0.
+- The display loop only redraws; it dispatches `expire` when remaining time reaches 0 while running and overage is not acknowledged. Expiry plays the whistle (unless muted) and follows the status table.
 - Audio and other device APIs fail quietly with a fallback (no sound, no crash).
 
 ---
