@@ -6,7 +6,7 @@
  */
 
 // Shared module version constant
-const SCOREBOARD_SHARED_VERSION = '1.3';
+const SCOREBOARD_SHARED_VERSION = '1.4';
 
 // Inactivity threshold (30 minutes in ms) after which an active game is considered stalled
 const STALL_THRESHOLD_MS = 30 * 60 * 1000;
@@ -461,11 +461,13 @@ function applyThemeToBody(themeName) {
 function applySavedThemeReadOnly() {
     let themeName = 'saber.png';
     try {
-        const raw = localStorage.getItem('timerStateV7');
+        // Current preferences first, then the record written by earlier versions
+        const raw = localStorage.getItem('scoreboardPrefsV1') || localStorage.getItem('timerStateV7');
         if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed && parsed.selectedTheme) {
-                themeName = parsed.selectedTheme;
+            const theme = parsed && (parsed.theme || parsed.selectedTheme);
+            if (theme) {
+                themeName = theme;
             }
         }
     } catch (_) {

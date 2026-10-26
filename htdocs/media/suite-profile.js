@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '2.0';
+const SUITE_PROFILE_VERSION = '2.1';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -37,6 +37,8 @@ const SUITE_PROFILE_VERSION = '2.0';
         'farkle-game',
         'hdev_theme',
         'timerStateV7',
+        'scoreboardGameV8',
+        'scoreboardPrefsV1',
         'scoreBoardActiveGamesV1',
         'scoreBoardCurrentGameIdV1',
         'scoreKeeperActiveGamesV1',

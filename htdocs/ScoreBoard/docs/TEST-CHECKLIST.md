@@ -21,6 +21,15 @@ Test games appear on the public Active Games list. Set them to private or delete
 - [ ] Penalty cards (Settings > Show Penalty Cards): yellow and red add history rows and play the card animation only while the clock runs.
 - [ ] Pause on Score on: a goal pauses the clock. Score splash on/off works per team.
 
+## Saved data (storage split)
+
+- [ ] With the old fixture loaded into `timerStateV7` (and no `scoreboardGameV8`), open the app: the game appears as before, `scoreboardGameV8` and `scoreboardPrefsV1` now exist, and `timerStateV7` and the other old keys are gone.
+- [ ] Settings (theme, mute, pause on score, log options, splash, cards) survive a reload. Change each one and reload.
+- [ ] **(signed in)** The profile record holds preferences only: after one save, `loadAppData('scoreboard')` has no `scoreHistory` or `activeGameId`.
+- [ ] **(signed in)** Open the app on a second browser profile with the same account: it shows the same settings and no game (a game does not move between devices).
+- [ ] The viewer and games list show the saved theme.
+- [ ] Log out: the game and preferences keys are cleared.
+
 ## History
 
 - [ ] Tap a row: Add Note, Share, Remove appear. A note saves and shows in the row.

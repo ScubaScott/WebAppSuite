@@ -29,7 +29,7 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 | --- | --- | --- |
 | 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Done (fixtures in `docs/`) |
 | 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` still present; remove it in Phase 3 |
-| 2 | One `toSnapshot()`, one debounced save, game data out of profile app data, console uses shared helpers and one theme catalog, single beacon | In progress on `full_refactor`. Done: console uses the shared helpers and the single theme catalog (shared 1.3); one `toSnapshot()` and one payload builder; one beacon per hidden period; one server-send scheduler (`requestSync`: status changes sent at once, other changes once after 2 s, unchanged snapshots skipped) (console 5.2). Not yet browser-tested. Remaining: move game data out of the profile app record, which waits for the Phase 3 storage format |
+| 2 | One `toSnapshot()`, one debounced save, game data out of profile app data, console uses shared helpers and one theme catalog, single beacon | In progress on `full_refactor`. Done: console uses the shared helpers and the single theme catalog (shared 1.4); one `toSnapshot()` and one payload builder; one beacon per hidden period; one server-send scheduler (`requestSync`: status changes sent at once, other changes once after 2 s, unchanged snapshots skipped) ; game and preferences stored separately (`scoreboardGameV8`, `scoreboardPrefsV1`), profile record holds preferences only, earlier records converted on load and then removed (console 5.3, shared 1.4). Not yet browser-tested. The game record still uses the old field names; Phase 3 replaces them with the single `game` object |
 | 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | Not started |
 | 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
 | 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
@@ -277,7 +277,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 5.2, viewer 1.5, games list 1.0, help 2.0, shared 1.3).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 5.3, viewer 1.5, games list 1.0, help 2.0, shared 1.3).
 
 ---
 

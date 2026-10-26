@@ -993,9 +993,19 @@
             updateThemeTriggerUI();
         }
 
-        const STORAGE_KEY = 'timerStateV7';
-        const ACTIVE_GAME_ID_KEY = 'scoreBoardCurrentGameIdV1';
-        const ACTIVE_GAME_WRITE_TOKEN_KEY = 'scoreBoardCurrentGameWriteTokenV1';
+        // Local storage keys. The game and the operator preferences are stored separately.
+        const GAME_KEY = 'scoreboardGameV8';
+        const PREFS_KEY = 'scoreboardPrefsV1';
+        // Keys written by earlier versions; the load step reads them once and then removes them.
+        const LEGACY_STATE_KEY = 'timerStateV7';
+        const LEGACY_KEYS = [
+            'timerStateV7',
+            'scoreBoardCurrentGameIdV1',
+            'scoreBoardCurrentGameWriteTokenV1',
+            'scoreKeeperCurrentGameIdV1',
+            'scoreBoardActiveGamesV1',
+            'scoreKeeperActiveGamesV1'
+        ];
 
         function safeLocalStorageGet(key) {
             try {
@@ -1021,32 +1031,14 @@
             }
         }
 
-        function loadOrCreateActiveGameId() {
-            let id = safeLocalStorageGet(ACTIVE_GAME_ID_KEY) || safeLocalStorageGet('scoreKeeperCurrentGameIdV1');
-            if (!id || id.indexOf('scoreboard-') === 0) {
-                id = generateUuidV4();
-                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, id);
-            }
-            return id;
-        }
-
-        function loadOrCreateWriteToken() {
-            let token = safeLocalStorageGet(ACTIVE_GAME_WRITE_TOKEN_KEY);
-            if (!token || token.length !== 64) {
-                token = generateWriteToken();
-                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, token);
-            }
-            return token;
-        }
-
-        // Write the current revision number into the stored game state so a reload resumes from the last revision sent.
+        // Write the current revision number into the stored game so a reload resumes from the last revision sent.
         function persistActiveGameRev() {
-            const raw = safeLocalStorageGet(STORAGE_KEY);
+            const raw = safeLocalStorageGet(GAME_KEY);
             if (!raw) return;
             try {
                 const stored = JSON.parse(raw);
                 stored.activeGameRev = activeGameRev;
-                safeLocalStorageSet(STORAGE_KEY, JSON.stringify(stored));
+                safeLocalStorageSet(GAME_KEY, JSON.stringify(stored));
             } catch (error) {
                 // Leave the stored state unchanged if it cannot be parsed.
             }
@@ -1096,11 +1088,12 @@
         // Build one sync request: takes the next revision number, stores it, and wraps the snapshot.
         // Used by both the normal sync and the unload beacon.
         function buildSyncPayload(statusOverride = null, endedByOverride = null) {
+            if (!activeGameWriteToken) activeGameWriteToken = generateWriteToken();
             activeGameRev = (activeGameRev || 0) + 1;
             persistActiveGameRev();
             return {
                 game_id: activeGameId,
-                write_token: activeGameWriteToken || loadOrCreateWriteToken(),
+                write_token: activeGameWriteToken,
                 rev: activeGameRev,
                 visibility: activeGameVisibility || 'public',
                 status: statusOverride || (activeGameEnded ? 'final' : 'live'),
@@ -1214,54 +1207,105 @@
 
         let isInitializingScoreboard = true;
 
-        // Build the local state object saved to localStorage and the profile record.
-        function buildLocalState() {
+        // Build the game record saved to localStorage. It holds the game only, never the preferences.
+        function buildGameRecord() {
             return {
                 startTime, accumulatedTime, timeLimit, isCountingUp,
                 running: timerRunning, homeScore, awayScore,
                 currentPeriod, totalPeriods, basePeriods, matchState,
                 periodStartTimeUtc, totalPeriodPausedMs, overageResolvedForCurrentPeriod,
                 scoreHistory, homeTeamName, awayTeamName,
-                homeTeamColor, awayTeamColor, muted,
-                pauseOnScore, isPaused, lastStopReason,
-                logPauseResume, logPeriodStartStop,
-                splashOnHome, splashOnAway,
-                showPenaltyCards,
+                homeTeamColor, awayTeamColor,
+                isPaused, lastStopReason,
                 activeGameId, activeGameWriteToken, activeGameRev,
                 activeGameVisibility, activeGameEnded,
                 activeGameStartedAt,
                 gameLifecycle, gameCommitted,
-                selectedTheme,
                 lastSavedAt: Date.now()
             };
         }
 
-        // Write the local state to localStorage only (no network). Used when the page is being hidden.
-        function saveLocalState() {
-            if (isInitializingScoreboard) return;
-            safeLocalStorageSet(STORAGE_KEY, JSON.stringify(buildLocalState()));
+        // Operator preferences, stored apart from the game and synced to the profile.
+        function buildPrefsContent() {
+            return {
+                theme: selectedTheme,
+                muted,
+                pauseOnScore,
+                logPauseResume,
+                logPeriodStartStop,
+                splashHome: splashOnHome,
+                splashAway: splashOnAway,
+                showCards: showPenaltyCards
+            };
         }
 
-        // Persist the timer state to localStorage for page reloads, then sync to the server and profile.
-        function saveState() {
-            if (isInitializingScoreboard) return;
-            const state = buildLocalState();
-            safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
-            requestSync();
+        // Serialized preferences last written, used to save only when something changed.
+        let lastPrefsContent = '';
+
+        // Save the preferences locally and to the profile when they differ from the last save.
+        function savePrefsIfChanged() {
+            const content = JSON.stringify(buildPrefsContent());
+            if (content === lastPrefsContent) return;
+            lastPrefsContent = content;
+            const record = { ...buildPrefsContent(), savedAt: Date.now() };
+            safeLocalStorageSet(PREFS_KEY, JSON.stringify(record));
             if (window.SuiteProfile) {
-                SuiteProfile.saveAppData('scoreboard', state);
+                SuiteProfile.saveAppData('scoreboard', record);
             }
         }
 
-        // Restore the timer state from localStorage when the page loads.
-        function loadState() {
-            const raw = safeLocalStorageGet(STORAGE_KEY);
+        // Write the game to localStorage only (no network). Used when the page is being hidden.
+        function saveLocalState() {
+            if (isInitializingScoreboard) return;
+            safeLocalStorageSet(GAME_KEY, JSON.stringify(buildGameRecord()));
+        }
+
+        // Persist the game locally, save changed preferences, and schedule the server sync.
+        function saveState() {
+            if (isInitializingScoreboard) return;
+            safeLocalStorageSet(GAME_KEY, JSON.stringify(buildGameRecord()));
+            savePrefsIfChanged();
+            requestSync();
+        }
+
+        // Read a JSON object from localStorage, or null when missing or unreadable.
+        function readStoredJson(key) {
+            const raw = safeLocalStorageGet(key);
             if (!raw) return null;
             try {
                 return JSON.parse(raw);
             } catch (error) {
                 return null;
             }
+        }
+
+        // Read the saved game: the current key first, otherwise the record written by earlier versions.
+        function loadGameRecord() {
+            return readStoredJson(GAME_KEY) || readStoredJson(LEGACY_STATE_KEY);
+        }
+
+        // Normalize a stored preferences object. Accepts the current field names and the names used inside
+        // earlier saved records. Returns null when the object holds no preferences.
+        function normalizePrefs(src) {
+            if (!src || typeof src !== 'object') return null;
+            const names = ['theme', 'selectedTheme', 'muted', 'pauseOnScore', 'logPauseResume', 'logPeriodStartStop',
+                'splashHome', 'splashOnHome', 'splashAway', 'splashOnAway', 'showCards', 'showPenaltyCards'];
+            if (!names.some((name) => src[name] !== undefined)) return null;
+            const pick = (current, old, fallback) => {
+                const value = src[current] !== undefined ? src[current] : src[old];
+                return value !== undefined ? !!value : fallback;
+            };
+            return {
+                theme: src.theme || src.selectedTheme || 'saber-dark',
+                muted: !!src.muted,
+                pauseOnScore: !!src.pauseOnScore,
+                logPauseResume: !!src.logPauseResume,
+                logPeriodStartStop: src.logPeriodStartStop !== undefined ? !!src.logPeriodStartStop : true,
+                splashHome: pick('splashHome', 'splashOnHome', true),
+                splashAway: pick('splashAway', 'splashOnAway', true),
+                showCards: pick('showCards', 'showPenaltyCards', false),
+                savedAt: src.savedAt || src.lastSavedAt || 0
+            };
         }
 
         function getElapsedStamp() {
@@ -2523,8 +2567,6 @@
                 gameCommitted = false;
                 activeGameEnded = false;
                 activeGameStartedAt = null;
-                safeLocalStorageSet(ACTIVE_GAME_ID_KEY, activeGameId);
-                safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, activeGameWriteToken);
 
                 homeScore = 0;
                 awayScore = 0;
@@ -2914,41 +2956,12 @@
             if (linkMyGames) linkMyGames.classList.toggle('hidden', !isSignedIn);
             if (settingsSharingSection) settingsSharingSection.classList.toggle('hidden', !isSignedIn);
 
-            // True when a saved game state is committed to the server and not yet final
-            const isCommittedNotFinal = (state) => {
-                if (!state || !state.activeGameId) return false;
-                const committed = (state.gameCommitted !== undefined)
-                    ? !!state.gameCommitted
-                    : (!!state.activeGameStarted && (
-                        !!state.periodStartTimeUtc ||
-                        (state.accumulatedTime && state.accumulatedTime > 0) ||
-                        (Array.isArray(state.scoreHistory) && state.scoreHistory.some(e => e.eventType === 'period_start'))
-                    ));
-                const isFinal = (state.gameLifecycle === 'final') || !!state.activeGameEnded;
-                return committed && !isFinal;
-            };
-
-            // Send a replaced game to the server as final. A revision conflict is retried once with the server's number.
-            const finalizeReplacedGame = (state) => {
-                const send = (rev) => SuiteProfile.games.sync({
-                    game_id: state.activeGameId,
-                    write_token: state.activeGameWriteToken,
-                    rev,
-                    status: 'final',
-                    ended_by: 'new_game',
-                    snapshot: state
-                });
-                try {
-                    send((state.activeGameRev || 0) + 1).then((res) => {
-                        if (res && res.conflict && !res.stopped && res.rev) send(res.rev + 1);
-                    }).catch(() => { });
-                } catch (e) { }
-            };
-
-            // Signed-in users load their cloud copy. A timeout means "unknown", not "no cloud data".
+            // Preferences: the newest of the local copy, the copy inside an earlier saved game, and the profile copy.
+            // A profile that does not answer within 3 seconds is skipped (the local copy is used).
             const CLOUD_TIMEOUT = Symbol('cloud-timeout');
-            let cloudState = null;
+            let cloudPrefs = null;
             let cloudTimedOut = false;
+            let cloudHasGame = false;
             if (window.SuiteProfile && !SuiteProfile.isGuest()) {
                 try {
                     const result = await Promise.race([
@@ -2958,45 +2971,38 @@
                     if (result === CLOUD_TIMEOUT) {
                         cloudTimedOut = true;
                     } else {
-                        cloudState = result;
+                        cloudPrefs = normalizePrefs(result);
+                        // A record from an earlier version also holds a whole game; it is replaced by preferences only
+                        cloudHasGame = !!(result && (result.activeGameId !== undefined || result.scoreHistory !== undefined));
                     }
                 } catch (e) {
-                    console.warn('DB settings check failed, falling back to local:', e);
+                    console.warn('Profile settings check failed, using local settings:', e);
                 }
             }
 
-            let saved = null;
-            const localSaved = loadState();
-
-            if (window.SuiteProfile && !SuiteProfile.isGuest()) {
-                if (cloudState && localSaved) {
-                    // Both copies exist: the most recently saved one wins. If they are different games,
-                    // the losing copy is finalized when it was a live game; uncommitted drafts are discarded.
-                    const sameGame = cloudState.activeGameId === localSaved.activeGameId;
-                    const localIsNewer = (localSaved.lastSavedAt || 0) >= (cloudState.lastSavedAt || 0);
-                    if (localIsNewer) {
-                        saved = localSaved;
-                        if (!sameGame && isCommittedNotFinal(cloudState)) finalizeReplacedGame(cloudState);
-                        SuiteProfile.saveAppData('scoreboard', saved);
-                    } else {
-                        saved = cloudState;
-                        if (!sameGame && isCommittedNotFinal(localSaved)) finalizeReplacedGame(localSaved);
-                        safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
-                    }
-                } else if (cloudState) {
-                    saved = cloudState;
-                    safeLocalStorageSet(STORAGE_KEY, JSON.stringify(saved));
-                } else {
-                    // No cloud copy (or the cloud did not answer): keep the local game so a guest game is claimed, not wiped.
-                    // Upload it only when the cloud confirmed it has nothing.
-                    saved = localSaved;
-                    if (saved && !cloudTimedOut) {
-                        SuiteProfile.saveAppData('scoreboard', saved);
-                    }
-                }
-            } else {
-                saved = localSaved;
+            // The game lives on this device only. A game left in the profile record by earlier versions is ignored.
+            const saved = loadGameRecord();
+            const localPrefs = normalizePrefs(readStoredJson(PREFS_KEY)) || normalizePrefs(saved);
+            let prefs = localPrefs;
+            if (cloudPrefs && (!localPrefs || cloudPrefs.savedAt > localPrefs.savedAt)) {
+                prefs = cloudPrefs;
             }
+
+            // Apply the preferences before the game so the page looks right whether or not a game exists
+            if (prefs) {
+                selectedTheme = prefs.theme;
+                muted = prefs.muted;
+                pauseOnScore = prefs.pauseOnScore;
+                logPauseResume = prefs.logPauseResume;
+                logPeriodStartStop = prefs.logPeriodStartStop;
+                splashOnHome = prefs.splashHome;
+                splashOnAway = prefs.splashAway;
+                showPenaltyCards = prefs.showCards;
+            }
+            applyTheme(selectedTheme);
+            updateMuteButton();
+            updatePenaltyCardsVisibility();
+            lastPrefsContent = JSON.stringify(buildPrefsContent());
 
             if (saved) {
                 homeScore = saved.homeScore || saved.redScore || 0;
@@ -3012,14 +3018,8 @@
                 overageResolvedForCurrentPeriod = !!saved.overageResolvedForCurrentPeriod;
                 timeLimit = saved.timeLimit !== undefined ? saved.timeLimit : 40 * 60 * 1000;
                 isCountingUp = saved.isCountingUp;
-                muted = !!saved.muted;
-                pauseOnScore = !!saved.pauseOnScore;
                 isPaused = !!saved.isPaused;
                 lastStopReason = saved.lastStopReason || null;
-                logPauseResume = !!saved.logPauseResume;
-                logPeriodStartStop = saved.logPeriodStartStop !== undefined ? !!saved.logPeriodStartStop : true;
-                splashOnHome = saved.splashOnHome !== undefined ? !!saved.splashOnHome : true;
-                splashOnAway = saved.splashOnAway !== undefined ? !!saved.splashOnAway : true;
 
                 // Map lifecycle state and handle legacy format migration
                 if (saved.gameLifecycle !== undefined) {
@@ -3043,8 +3043,6 @@
                         saved.activeGameWriteToken = generateWriteToken();
                         saved.activeGameRev = 0;
                         saved.activeGameStartedAt = null;
-                        safeLocalStorageSet(ACTIVE_GAME_ID_KEY, saved.activeGameId);
-                        safeLocalStorageSet(ACTIVE_GAME_WRITE_TOKEN_KEY, saved.activeGameWriteToken);
                     }
                 } else {
                     gameLifecycle = 'idle';
@@ -3102,14 +3100,8 @@
                     updateMatchState(matchState);
                     updateTimer();
                 }
-                // Restore and apply saved theme (or default to saber-dark)
-                selectedTheme = saved.selectedTheme || 'saber-dark';
-                applyTheme(selectedTheme);
-                updateMuteButton();
-                showPenaltyCards = !!saved.showPenaltyCards;
-                updatePenaltyCardsVisibility();
             } else {
-                // No saved state or brand-new user: apply default theme and clean defaults
+                // No saved game or brand-new user: start from clean defaults
                 homeScore = 0;
                 awayScore = 0;
                 currentPeriod = 1;
@@ -3138,15 +3130,28 @@
                 scoreAwayEl.textContent = 0;
                 periodDisplay.textContent = getPeriodLabel(1, totalPeriods, basePeriods);
                 renderHistory();
-                selectedTheme = 'saber-dark';
-                applyTheme(selectedTheme);
                 updateMatchState('idle');
                 updateTimer();
-                updateMuteButton();
-                updatePenaltyCardsVisibility();
             }
             initRoller();
             isInitializingScoreboard = false;
+
+            // Write the current-format records, upload preferences the profile lacks or has older,
+            // then remove the records written by earlier versions once the new game record is readable.
+            if (!safeLocalStorageGet(PREFS_KEY)) {
+                lastPrefsContent = '';
+                savePrefsIfChanged();
+            }
+            if (prefs && !cloudTimedOut && window.SuiteProfile && !SuiteProfile.isGuest() &&
+                (!cloudPrefs || cloudPrefs.savedAt < prefs.savedAt || cloudHasGame)) {
+                SuiteProfile.saveAppData('scoreboard', { ...buildPrefsContent(), savedAt: Date.now() });
+            }
+            if (saved) {
+                saveLocalState();
+                if (readStoredJson(GAME_KEY)) {
+                    LEGACY_KEYS.forEach(safeLocalStorageRemove);
+                }
+            }
 
             // Initialize theme dropdown options and check for newly added background images
             renderThemeDropdown();
@@ -3183,7 +3188,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '5.2';
+        const VERSION = '5.3';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
