@@ -27,9 +27,9 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Checklist done; fixtures still to export from a real browser |
-| 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` (pushed; console 4.9, viewer 1.5), not yet tested. `isCountingUp` still present; remove it in Phase 3 |
-| 2 | One `toSnapshot()`, one debounced save, game data out of profile app data, console uses shared helpers and one theme catalog, single beacon | Not started |
+| 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Done (fixtures in `docs/`) |
+| 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` still present; remove it in Phase 3 |
+| 2 | One `toSnapshot()`, one debounced save, game data out of profile app data, console uses shared helpers and one theme catalog, single beacon | In progress on `full_refactor`. Done: console uses the shared helpers and the single theme catalog (shared 1.3); one `toSnapshot()` and one payload builder; one beacon per hidden period (console 5.1). Not yet browser-tested. Next: single save path (local save vs sync), profile data split |
 | 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | Not started |
 | 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
 | 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
@@ -277,7 +277,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 4.8, viewer 1.5, games list 1.0, help 2.0, shared 1.1).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 5.1, viewer 1.5, games list 1.0, help 2.0, shared 1.3).
 
 ---
 
@@ -336,7 +336,7 @@ What is still shared: **the database, the API data and the public game lists.** 
 
 1. **Database: additive changes only.** New nullable columns, indexes, tables and API actions are fine. Never rename, drop or change the meaning of an existing column, status value or `ended_by` value; production code reads them. `setup.php` migrations must be safe to run while production is live.
 2. **Games recorded on `/dev/` are visible to production users** (public Active Games list, viewer). Keep the snapshot contract (section 6) and history entry shapes readable by the current production viewer, and add fields only as optional extras. Set test games to private or delete them.
-3. **Deployment workflow:** `.github/workflows` deploys only the branches named under `on.push.branches` (currently `main` and `Private-Games`). Add the refactor branch there, or deploy every branch except `main` to `/dev/`.
+3. **Deployment workflow:** `.github/workflows/deploy.yaml` deploys every branch: `main` to the site root, all others to `/dev/`. A push to any other branch replaces what is in `/dev/`.
 4. **Cutover (merge to `main`):** every production user's existing data is in the old format, in localStorage (`timerStateV7` and related keys) and in their `scoreboard` profile record, so the migration must convert both on first load.
    - Merge only when no games are live (the owner will ensure this).
    - **One-time server migration script** (written in Phase 2/3 once the new format is final) converts every row in `scoreboard_games` (snapshot and history) and every `scoreboard` record in `suite_user_data` to the new format, and backfills new fields (team-grouping column; `theme` for old games = default theme). It must: be idempotent (skip rows already converted), have a dry-run mode, require a secret token or be deleted right after use, and be tested against a copy of real data after a database backup. Run it right after the merge deploys.

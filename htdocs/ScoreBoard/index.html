@@ -815,47 +815,6 @@
             return token;
         }
 
-        // Theme definitions and catalog mapping legacy theme keys to background images and fallback styles.
-        const THEMES = {
-            'EdenPrarie.png': {
-                image: 'EdenPrarie.png',
-                bgColor: '#1a1a2e',
-                label: 'Eden Prarie'
-            },
-            'NewPrague.png': {
-                image: 'NewPrague.png',
-                bgColor: '#3a0a12',
-                label: 'New Prague'
-            },
-            'MinnesotaStars.png': {
-                image: 'MinnesotaStars.png',
-                bgColor: '#1f2a30',
-                label: 'Minnesota Stars'
-            },
-            'saber-dark': {
-                image: 'saber.png',
-                bgColor: '#4a1010',
-                label: 'Saber Dark'
-            },
-            'saber-intense': {
-                image: 'saber.png',
-                bgColor: '#2d0a0a',
-                label: 'Saber Intense',
-                filter: 'saturate(1.6) brightness(0.75)'
-            },
-            'chill-ice': {
-                image: 'chill.png',
-                bgColor: '#b3d9e8',
-                label: 'Chill Ice'
-            },
-            'chill-night': {
-                image: 'chill.png',
-                bgColor: '#071522',
-                label: 'Chill Night',
-                filter: 'hue-rotate(200deg) brightness(0.55) saturate(1.4)'
-            }
-        };
-
         // Default catalog of background images present in media/bgimages
         const DEFAULT_BG_IMAGES = ['EdenPrarie.png', 'MinnesotaStars.png', 'NewPrague.png', 'chill.png', 'saber.png'];
         let availableBgImages = [...DEFAULT_BG_IMAGES];
@@ -909,8 +868,8 @@
             menu.innerHTML = '';
 
             let currentActiveImg = selectedTheme;
-            if (THEMES[selectedTheme]) {
-                currentActiveImg = THEMES[selectedTheme].image;
+            if (SCOREBOARD_THEMES[selectedTheme]) {
+                currentActiveImg = SCOREBOARD_THEMES[selectedTheme].image;
             }
 
             availableBgImages.forEach((imgFile) => {
@@ -972,9 +931,9 @@
             let currentImg = selectedTheme;
             let displayLabel = selectedTheme;
 
-            if (THEMES[selectedTheme]) {
-                currentImg = THEMES[selectedTheme].image;
-                displayLabel = THEMES[selectedTheme].label || formatImageLabel(currentImg);
+            if (SCOREBOARD_THEMES[selectedTheme]) {
+                currentImg = SCOREBOARD_THEMES[selectedTheme].image;
+                displayLabel = SCOREBOARD_THEMES[selectedTheme].label || formatImageLabel(currentImg);
             } else if (/\.(png|jpe?g|webp|svg|gif)$/i.test(selectedTheme)) {
                 currentImg = selectedTheme;
                 displayLabel = formatImageLabel(selectedTheme);
@@ -1021,61 +980,10 @@
             }
         });
 
-        // Apply a theme or image by name: update body background and trigger UI
+        // Apply a theme or image by name: update the page background (shared helper), the selector and saved state
         function applyTheme(themeName) {
-            let image = 'saber.png';
-            let bgColor = '#111827';
-            let filter = null;
-
-            if (THEMES[themeName]) {
-                const theme = THEMES[themeName];
-                image = theme.image;
-                bgColor = theme.bgColor || '#111827';
-                filter = theme.filter || null;
-            } else if (/\.(png|jpe?g|webp|svg|gif)$/i.test(themeName)) {
-                image = themeName;
-                bgColor = '#111827';
-            } else {
-                image = 'saber.png';
-                bgColor = '#111827';
-            }
-
             selectedTheme = themeName;
-
-            // Set body background image and fallback color, anchored to lower-right corner and fixed
-            document.body.style.backgroundImage = `url("media/bgimages/${image}")`;
-            document.body.style.backgroundColor = bgColor;
-            document.body.style.backgroundPosition = 'right bottom';
-            document.body.style.backgroundAttachment = 'fixed';
-            document.body.style.backgroundRepeat = 'no-repeat';
-            document.body.style.backgroundSize = 'cover';
-
-            // Apply CSS filter to body if specified (via fixed background overlay)
-            if (filter) {
-                document.body.dataset.themeFilter = filter;
-                let overlay = document.getElementById('theme-filter-overlay');
-                if (!overlay) {
-                    overlay = document.createElement('div');
-                    overlay.id = 'theme-filter-overlay';
-                    overlay.style.cssText = [
-                        'position:fixed', 'inset:0', 'z-index:-1',
-                        'pointer-events:none',
-                        `background:url("media/bgimages/${image}") no-repeat right bottom / cover`,
-                        'background-attachment:fixed'
-                    ].join(';');
-                    document.body.appendChild(overlay);
-                } else {
-                    overlay.style.background = `url("media/bgimages/${image}") no-repeat right bottom / cover`;
-                    overlay.style.backgroundAttachment = 'fixed';
-                }
-                overlay.style.filter = filter;
-                document.body.style.backgroundImage = 'none';
-            } else {
-                const overlay = document.getElementById('theme-filter-overlay');
-                if (overlay) overlay.remove();
-                document.body.style.backgroundImage = `url("media/bgimages/${image}")`;
-            }
-
+            applyThemeToBody(themeName);
             updateThemeTriggerUI();
             saveState();
         }
@@ -1159,48 +1067,53 @@
             showToast(message);
         }
 
-        // Synchronize active game snapshot with database through SuiteProfile.games.sync.
-        // A revision conflict is retried once after adopting the server's revision number.
-        async function syncActiveGameWithServer(statusOverride = null, endedByOverride = null, isRetry = false) {
-            if (!activeGameId || !gameCommitted) return;
-            const now = Date.now();
-            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
+        // Build the game snapshot sent to the server. This is the only place the snapshot is assembled.
+        function toSnapshot(now) {
+            return {
+                homeTeamName,
+                awayTeamName,
+                homeScore,
+                awayScore,
+                currentPeriod,
+                totalPeriods,
+                basePeriods,
+                matchState,
+                periodStartTimeUtc,
+                totalPeriodPausedMs,
+                overageResolvedForCurrentPeriod,
+                timerRunning,
+                isPaused,
+                isCountingUp,
+                timeLimit,
+                scoreHistory: scoreHistory || [],
+                elapsedMs: accumulatedTime + (startTime ? now - startTime : 0),
+                startedAt: activeGameStartedAt || now,
+                homeTeamColor,
+                awayTeamColor
+            };
+        }
+
+        // Build one sync request: takes the next revision number, stores it, and wraps the snapshot.
+        // Used by both the normal sync and the unload beacon.
+        function buildSyncPayload(statusOverride = null, endedByOverride = null) {
             activeGameRev = (activeGameRev || 0) + 1;
             persistActiveGameRev();
-
-            const effectiveStatus = statusOverride || (activeGameEnded ? 'final' : (timerRunning ? 'live' : 'live'));
-            const effectiveEndedBy = endedByOverride || (activeGameEnded ? 'user' : null);
-
-            const payload = {
+            return {
                 game_id: activeGameId,
                 write_token: activeGameWriteToken || loadOrCreateWriteToken(),
                 rev: activeGameRev,
                 visibility: activeGameVisibility || 'public',
-                status: effectiveStatus,
-                ended_by: effectiveEndedBy,
-                snapshot: {
-                    homeTeamName,
-                    awayTeamName,
-                    homeScore,
-                    awayScore,
-                    currentPeriod,
-                    totalPeriods,
-                    basePeriods,
-                    matchState,
-                    periodStartTimeUtc,
-                    totalPeriodPausedMs,
-                    overageResolvedForCurrentPeriod,
-                    timerRunning,
-                    isPaused,
-                    isCountingUp,
-                    timeLimit,
-                    scoreHistory: scoreHistory || [],
-                    elapsedMs: elapsed,
-                    startedAt: activeGameStartedAt || now,
-                    homeTeamColor,
-                    awayTeamColor
-                }
+                status: statusOverride || (activeGameEnded ? 'final' : 'live'),
+                ended_by: endedByOverride || (activeGameEnded ? 'user' : null),
+                snapshot: toSnapshot(Date.now())
             };
+        }
+
+        // Synchronize active game snapshot with database through SuiteProfile.games.sync.
+        // A revision conflict is retried once after adopting the server's revision number.
+        async function syncActiveGameWithServer(statusOverride = null, endedByOverride = null, isRetry = false) {
+            if (!activeGameId || !gameCommitted) return;
+            const payload = buildSyncPayload(statusOverride, endedByOverride);
 
             if (window.SuiteProfile && SuiteProfile.games) {
                 try {
@@ -1234,46 +1147,18 @@
             }
         }
 
-        // Flush game state immediately using sendBeacon on page unload/visibilitychange
-        function flushBeaconSync(statusOverride = null, endedByOverride = null) {
+        // Send the current game state with sendBeacon when the page is hidden or unloading.
+        // At most one beacon is sent per hidden period; the flag clears when the page becomes visible again.
+        let beaconSentWhileHidden = false;
+        function flushBeaconSync() {
+            if (beaconSentWhileHidden) return;
             if (!activeGameId || !gameCommitted || !navigator.sendBeacon) return;
-            const now = Date.now();
-            const elapsed = accumulatedTime + (startTime ? now - startTime : 0);
-            activeGameRev = (activeGameRev || 0) + 1;
-            persistActiveGameRev();
+            beaconSentWhileHidden = true;
 
+            // The beacon cannot send headers, so the session token travels in the body
             const user = (window.SuiteProfile && !SuiteProfile.isGuest()) ? SuiteProfile.getUser() : null;
-            const payload = {
-                game_id: activeGameId,
-                write_token: activeGameWriteToken || loadOrCreateWriteToken(),
-                token: user ? user.token : null,
-                rev: activeGameRev,
-                visibility: activeGameVisibility || 'public',
-                status: statusOverride || (activeGameEnded ? 'final' : 'live'),
-                ended_by: endedByOverride || (activeGameEnded ? 'user' : null),
-                snapshot: {
-                    homeTeamName,
-                    awayTeamName,
-                    homeScore,
-                    awayScore,
-                    currentPeriod,
-                    totalPeriods,
-                    basePeriods,
-                    matchState,
-                    periodStartTimeUtc,
-                    totalPeriodPausedMs,
-                    overageResolvedForCurrentPeriod,
-                    timerRunning,
-                    isPaused,
-                    isCountingUp,
-                    timeLimit,
-                    scoreHistory: scoreHistory || [],
-                    elapsedMs: elapsed,
-                    startedAt: activeGameStartedAt || now,
-                    homeTeamColor,
-                    awayTeamColor
-                }
-            };
+            const payload = buildSyncPayload();
+            payload.token = user ? user.token : null;
 
             try {
                 const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
@@ -1288,10 +1173,9 @@
 
         let isInitializingScoreboard = true;
 
-        // Persist the timer state to localStorage for page reloads.
-        function saveState() {
-            if (isInitializingScoreboard) return;
-            const state = {
+        // Build the local state object saved to localStorage and the profile record.
+        function buildLocalState() {
+            return {
                 startTime, accumulatedTime, timeLimit, isCountingUp,
                 running: timerRunning, homeScore, awayScore,
                 currentPeriod, totalPeriods, basePeriods, matchState,
@@ -1309,6 +1193,18 @@
                 selectedTheme,
                 lastSavedAt: Date.now()
             };
+        }
+
+        // Write the local state to localStorage only (no network). Used when the page is being hidden.
+        function saveLocalState() {
+            if (isInitializingScoreboard) return;
+            safeLocalStorageSet(STORAGE_KEY, JSON.stringify(buildLocalState()));
+        }
+
+        // Persist the timer state to localStorage for page reloads, then sync to the server and profile.
+        function saveState() {
+            if (isInitializingScoreboard) return;
+            const state = buildLocalState();
             safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
             if (gameCommitted) {
                 publishActiveGameState();
@@ -1329,57 +1225,10 @@
             }
         }
 
-        function formatTime(ms) {
-            const absMs = Math.abs(ms);
-            const totalSeconds = Math.floor(absMs / 1000);
-            const totalMinutes = Math.floor(totalSeconds / 60);
-            const s = totalSeconds % 60;
-            const decis = Math.floor((absMs % 1000) / 100);
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${ms < 0 ? '-' : ''}${pad(totalMinutes)}:${pad(s)}.${decis}`;
-        }
-
         function getElapsedStamp() {
             const now = Date.now();
             let elapsed = accumulatedTime + (startTime ? now - startTime : 0);
-            return `${getPeriodLabel(currentPeriod)}: ${formatTime(elapsed)}`;
-        }
-
-        function formatLocalLabel(date) {
-            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(/\s+/g, '');
-        }
-
-        // Format ISO timestamp into local time string without date (e.g. 4:05pm).
-        function formatEventTime(timestamp) {
-            if (!timestamp) return '';
-            const d = new Date(timestamp);
-            if (!isNaN(d.getTime())) {
-                return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(/\s+/g, '');
-            }
-            return String(timestamp);
-        }
-
-        // Format period elapsed time into MM:SS format without period prefix or subseconds (e.g. 03:02).
-        function formatGameTimeMmSs(entry) {
-            if (!entry) return '';
-            if (entry.periodElapsedMs !== undefined && entry.periodElapsedMs !== null && !isNaN(entry.periodElapsedMs)) {
-                const absMs = Math.abs(entry.periodElapsedMs);
-                const totalSeconds = Math.floor(absMs / 1000);
-                const totalMinutes = Math.floor(totalSeconds / 60);
-                const s = totalSeconds % 60;
-                const pad = (n) => n.toString().padStart(2, '0');
-                return `${pad(totalMinutes)}:${pad(s)}`;
-            }
-            if (entry.gameTime) {
-                let t = entry.gameTime.replace(/^(?:P(?:eriod)?\s*\d+|OT\d*)\s*[:-]\s*/i, '').trim();
-                t = t.replace(/\.\d+$/, '');
-                const parts = t.split(':');
-                if (parts.length === 2) {
-                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-                }
-                return t;
-            }
-            return '';
+            return `${getPeriodLabel(currentPeriod, totalPeriods, basePeriods)}: ${formatTime(elapsed)}`;
         }
 
         // Internal clock primitive: run the timer without logging or side effects
@@ -1711,36 +1560,6 @@
             if (timerRunning) showElapsedAdjustPanel();
         });
 
-        /**
-         * Returns the user-facing period label:
-         * P1, P2 ... or OT / OT1, OT2 if beyond base regular periods.
-         *
-         * @param {number} periodNum
-         * @returns {string}
-         */
-        function getPeriodLabel(periodNum) {
-            const p = Number(periodNum) || 1;
-            if (p <= basePeriods) {
-                return `P${p}`;
-            }
-            const otIndex = p - basePeriods;
-            if (totalPeriods === basePeriods + 1) {
-                return 'OT';
-            }
-            return `OT${otIndex}`;
-        }
-
-        // Safely escape characters for HTML insertion.
-        function escapeHtml(str) {
-            if (str == null) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
         // Render the 3-column score history table: Team (Score), Note, Time.
         // Tapping any row opens the event options modal (Add Note, Share, Remove).
         function renderHistory() {
@@ -2033,7 +1852,7 @@
             if (isPeriodEnd && entry.period) {
                 // Decrement currentPeriod back to the deleted period's index
                 currentPeriod = entry.period;
-                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
 
                 // Reconstruct period elapsed time based on the saved timeline
                 accumulatedTime = (entry.periodElapsedMs !== undefined) ? entry.periodElapsedMs : timeLimit;
@@ -2686,7 +2505,7 @@
 
                 scoreHomeEl.textContent = '0';
                 scoreAwayEl.textContent = '0';
-                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
                 updateTimer();
                 updateMatchState('ready');
                 showToast('Game ready — press Start at the whistle');
@@ -2747,7 +2566,7 @@
                     timeLimit = tempTimeLimit;
                     updateTimer();
                 }
-                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
                 updateMatchState(matchState);
                 showToast('Match details updated');
             }
@@ -2771,7 +2590,7 @@
             // Period Limit Exceeded drift check
             if (elapsed >= timeLimit && !overageResolvedForCurrentPeriod) {
                 if (driftPeriodName) {
-                    driftPeriodName.textContent = getPeriodLabel(currentPeriod);
+                    driftPeriodName.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
                 }
                 if (overageDriftModal) {
                     overageDriftModal.classList.remove('hidden');
@@ -3215,7 +3034,7 @@
                 awayNameEl.textContent = awayTeamName;
                 scoreHomeEl.textContent = homeScore;
                 scoreAwayEl.textContent = awayScore;
-                periodDisplay.textContent = getPeriodLabel(currentPeriod);
+                periodDisplay.textContent = getPeriodLabel(currentPeriod, totalPeriods, basePeriods);
                 renderHistory();
 
                 // Apply stored colors to visible elements
@@ -3278,7 +3097,7 @@
                 awayNameEl.textContent = awayTeamName;
                 scoreHomeEl.textContent = 0;
                 scoreAwayEl.textContent = 0;
-                periodDisplay.textContent = getPeriodLabel(1);
+                periodDisplay.textContent = getPeriodLabel(1, totalPeriods, basePeriods);
                 renderHistory();
                 selectedTheme = 'saber-dark';
                 applyTheme(selectedTheme);
@@ -3307,25 +3126,25 @@
             }
         });
 
-        window.addEventListener('beforeunload', () => {
-            saveState();
+        // Page hidden or closing: save locally, then send one beacon (the flag inside flushBeaconSync prevents repeats)
+        function onPageHidden() {
+            saveLocalState();
             flushBeaconSync();
-        });
+        }
 
-        window.addEventListener('pagehide', () => {
-            flushBeaconSync();
-        });
+        window.addEventListener('pagehide', onPageHidden);
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                flushBeaconSync();
+                onPageHidden();
             } else if (document.visibilityState === 'visible') {
+                beaconSentWhileHidden = false;
                 checkBackgroundDrift();
             }
         });
 
         // ScoreBoard version identifier
-        const VERSION = '4.9';
+        const VERSION = '5.1';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
