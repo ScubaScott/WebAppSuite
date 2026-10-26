@@ -1117,7 +1117,7 @@
 
             if (window.SuiteProfile && SuiteProfile.games) {
                 try {
-                    const res = await SuiteProfile.games.sync(payload, 2000);
+                    const res = await SuiteProfile.games.sync(payload, 0);
                     if (res && res.error_code === 'final_without_live') {
                         // Terminal: server rejected final status on uncommitted game, stop retrying
                         return;
@@ -1166,9 +1166,50 @@
             } catch (e) { }
         }
 
+        // Server sync scheduling. All saves go through requestSync(); direct sends use publishActiveGameState().
+        // - A change of status (start, pause, resume, period change, final) is sent right away.
+        // - Any other change is sent once, 2 seconds after the first unsent change.
+        // - A save that leaves the snapshot unchanged sends nothing.
+        const SYNC_DELAY_MS = 2000;
+        let syncTimer = null;
+        let lastSentFingerprint = '';
+        let lastSentStatusKey = '';
+
+        // Fields that decide whether a change must reach spectators immediately
+        function currentStatusKey() {
+            return [gameLifecycle, matchState, currentPeriod, timerRunning, isPaused, activeGameEnded].join('|');
+        }
+
+        // Snapshot content without the values that change every tick, used to skip identical sends
+        function currentFingerprint() {
+            const snap = toSnapshot(0);
+            delete snap.elapsedMs;
+            delete snap.startedAt;
+            return JSON.stringify(snap) + '|' + (activeGameVisibility || '');
+        }
+
+        // Send the current state to the server now and cancel any scheduled send.
         function publishActiveGameState(statusOverride = null, endedByOverride = null) {
             if (!gameCommitted) return;
+            if (syncTimer) {
+                clearTimeout(syncTimer);
+                syncTimer = null;
+            }
+            lastSentFingerprint = currentFingerprint();
+            lastSentStatusKey = currentStatusKey();
             syncActiveGameWithServer(statusOverride, endedByOverride);
+        }
+
+        // Schedule one server send for the current state (see the rules above).
+        function requestSync() {
+            if (!gameCommitted) return;
+            if (currentFingerprint() === lastSentFingerprint) return;
+            if (currentStatusKey() !== lastSentStatusKey) {
+                if (syncTimer) clearTimeout(syncTimer);
+                syncTimer = setTimeout(publishActiveGameState, 0);
+            } else if (!syncTimer) {
+                syncTimer = setTimeout(publishActiveGameState, SYNC_DELAY_MS);
+            }
         }
 
         let isInitializingScoreboard = true;
@@ -1206,9 +1247,7 @@
             if (isInitializingScoreboard) return;
             const state = buildLocalState();
             safeLocalStorageSet(STORAGE_KEY, JSON.stringify(state));
-            if (gameCommitted) {
-                publishActiveGameState();
-            }
+            requestSync();
             if (window.SuiteProfile) {
                 SuiteProfile.saveAppData('scoreboard', state);
             }
@@ -3144,7 +3183,7 @@
         });
 
         // ScoreBoard version identifier
-        const VERSION = '5.1';
+        const VERSION = '5.2';
         const APP_VERSION = VERSION;
 
         // Heartbeat: ping server every 20 seconds ONLY while timer is running in a live committed game
