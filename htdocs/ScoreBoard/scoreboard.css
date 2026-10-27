@@ -2452,7 +2452,7 @@ footer {
 }
 
 .adjust-panel {
-    display: none;
+    display: flex;
     width: 100%;
     background: rgba(31,41,55,0.85);
     padding: 16px;
