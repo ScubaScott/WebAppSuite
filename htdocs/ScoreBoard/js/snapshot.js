@@ -4,7 +4,7 @@
  * shape older viewers expect (team name, running score, game time on every row).
  */
 
-import { getPosition } from './clock.js';
+import { getPeriodClock, getPosition } from './clock.js';
 import { formatClock, getPeriodLabel } from './format.js';
 import { getElapsed, getScores, serverStatus, STATUS } from './state.js';
 
@@ -75,7 +75,14 @@ export function buildHistory(game, prefs = {}) {
         } else if (event.eventType === 'paused' || event.eventType === 'resumed') {
             if (showPause) rows.push({ ...event });
         } else if (event.eventType === 'period_start') {
-            if (showStart) rows.push({ ...event });
+            // After a clock correction the start row shows when play really began
+            const periodClock = getPeriodClock(game.events, event.period);
+            const row = { ...event };
+            if (periodClock.adjustMs !== 0 && periodClock.effectiveStart !== null) {
+                row.timestamp = new Date(periodClock.effectiveStart).toISOString();
+                row.adjustedMs = periodClock.adjustMs;
+            }
+            if (showStart) rows.push(row);
         } else {
             rows.push({ ...event });
         }

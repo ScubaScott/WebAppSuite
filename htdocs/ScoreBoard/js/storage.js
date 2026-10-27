@@ -110,6 +110,14 @@ export function createStorage(backend, newId) {
             return write(PREFS_KEY, prefs);
         },
 
+        /** True when preferences have been saved on this device. */
+        hasPrefs() {
+            return read(PREFS_KEY) !== null;
+        },
+
+        /** Normalize preferences that came from elsewhere (for example the profile). */
+        normalize: normalizePrefs,
+
         /** Remove the records of earlier versions, but only once the current game record can be read back. */
         removeLegacy() {
             const current = read(GAME_KEY);

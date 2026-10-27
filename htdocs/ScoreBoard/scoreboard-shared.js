@@ -6,7 +6,7 @@
  */
 
 // Shared module version constant
-const SCOREBOARD_SHARED_VERSION = '1.4';
+const SCOREBOARD_SHARED_VERSION = '1.5';
 
 // Inactivity threshold (30 minutes in ms) after which an active game is considered stalled
 const STALL_THRESHOLD_MS = 30 * 60 * 1000;
@@ -185,7 +185,10 @@ function parseEventDetails(entry, totalPeriods = 2, basePeriods = 2) {
             qualSuffix = ' (Final)';
         }
 
-        const eventLabel = `${periodLabel} - ${action}${qualSuffix}`;
+        // A clock correction already carries its full text, for example "P1 - Clock +1:00"
+        const eventLabel = (entry.eventType === 'clock_adjust' && rawText)
+            ? rawText
+            : `${periodLabel} - ${action}${qualSuffix}`;
         return { periodLabel, action, eventLabel, rawText };
     }
 

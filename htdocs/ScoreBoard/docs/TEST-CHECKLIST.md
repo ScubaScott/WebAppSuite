@@ -30,6 +30,17 @@ Test games appear on the public Active Games list. Set them to private or delete
 - [ ] The viewer and games list show the saved theme.
 - [ ] Log out: the game and preferences keys are cleared.
 
+## Clock corrections (refactor branch)
+
+- [ ] Start a period, wait about 1 minute, tap the elapsed time, press +1 min: the clock reads about 2:00, the Start row shows a time one minute earlier, and a "P1 - Clock +1:00" row appears.
+- [ ] Score a goal, then press +1 min: the goal's time in the history moves later by one minute.
+- [ ] Pause for a while, resume, then correct: the pause length is unchanged and the clock follows the new start.
+- [ ] Press -1 min right after a goal logged within the first 59 seconds: a message names the goal and nothing changes.
+- [ ] Press -5 min within the first minute: a message says the clock cannot go below 0:00.
+- [ ] Remove the "Clock +1:00" row: the clock and every time return to their earlier values.
+- [ ] Correct while paused: it works. Correct between periods: the elapsed time cannot be opened.
+- [ ] Reload after a correction: the clock and the Start row are unchanged.
+
 ## History
 
 - [ ] Tap a row: Add Note, Share, Remove appear. A note saves and shows in the row.

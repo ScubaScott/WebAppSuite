@@ -131,3 +131,15 @@ test('the fingerprint ignores the clock but sees real changes', () => {
     assert.notEqual(statusKey(paused), statusKey(game));
     assert.equal(statusKey(scored), statusKey(game));
 });
+
+test('the start row shows the corrected start time', () => {
+    let game = createGame();
+    const at = Date.parse('2026-10-26T17:01:00');
+    game = reduce(game, { type: 'new_game', gameId: 'g', writeToken: 't', at, periodCount: 2, periodLengthMs: 2400000 });
+    game = reduce(game, { type: 'start', at, id: 'a' });
+    game = reduce(game, { type: 'adjust_clock', at: at + 60000, id: 'b', deltaMs: 60000 });
+    const rows = buildHistory(game, { logPeriodStartStop: true });
+    const start = rows.find((r) => r.eventType === 'period_start');
+    assert.equal(start.timestamp, new Date(Date.parse('2026-10-26T17:00:00')).toISOString());
+    assert.equal(start.adjustedMs, 60000);
+});

@@ -191,3 +191,14 @@ test('the heartbeat sends only while the clock runs', async () => {
     await ctx.syncer.heartbeat();
     assert.equal(ctx.sent.length, 1);
 });
+
+test('a finished game is sent on its own and a conflict is retried once with the server revision', async () => {
+    const ctx = harness({ replies: [{ success: true }, { success: false, conflict: true, rev: 6 }, { success: true }] });
+    ctx.start();
+    await ctx.syncer.publishNow();
+    const finalized = reduce(ctx.game, { type: 'finalize', at: T0 + 1000, id: ctx.id(), endedBy: 'new_game' });
+    await ctx.syncer.sendDetached(finalized);
+    assert.deepEqual(ctx.sent.slice(1).map((p) => [p.rev, p.status, p.ended_by]), [[2, 'final', 'new_game'], [7, 'final', 'new_game']]);
+    // The current game's revision bookkeeping was not touched
+    assert.equal(ctx.game.sync.lastAckRev, 1);
+});

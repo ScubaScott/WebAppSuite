@@ -110,6 +110,27 @@ export function createSyncer(deps) {
         }
     }
 
+    /**
+     * Send a finished game that is no longer the current game (New Game replaces it right after).
+     * Uses its own revision handling and never touches the current game. A conflict is retried once.
+     */
+    async function sendDetached(game) {
+        let rev = Math.max(game.sync.lastSentRev, game.sync.lastAckRev) + 1;
+        for (let attempt = 0; attempt < 2; attempt++) {
+            let result;
+            try {
+                result = await deps.send(buildSyncPayload(game, { rev, now: deps.now(), prefs: deps.getPrefs() }));
+            } catch (error) {
+                return; // Offline: the suite keeps the payload queued
+            }
+            if (result && result.conflict && !result.stopped && result.rev) {
+                rev = result.rev + 1;
+                continue;
+            }
+            return;
+        }
+    }
+
     /** While the clock runs, tell the server the game is still live. */
     function heartbeat() {
         if (deps.getGame().status === STATUS.RUNNING) publishNow();
@@ -130,5 +151,5 @@ export function createSyncer(deps) {
         beaconSent = false;
     }
 
-    return { request, publishNow, heartbeat, pageHidden, pageVisible };
+    return { request, publishNow, sendDetached, heartbeat, pageHidden, pageVisible };
 }

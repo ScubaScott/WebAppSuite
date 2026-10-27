@@ -103,6 +103,8 @@ export function migrateGame(record, options) {
     game.periodLengthMs = saved.timeLimit !== undefined && saved.timeLimit > 0 ? saved.timeLimit : DEFAULT_PERIOD_LENGTH_MS;
     game.overageAcknowledged = !!saved.overageResolvedForCurrentPeriod;
     game.visibility = saved.activeGameVisibility === 'private' ? 'private' : 'public';
+    // When the earlier version last saved; used to tell whether a game was left running
+    if (saved.lastSavedAt) game.savedAt = saved.lastSavedAt;
 
     if (lifecycle === 'idle') {
         return { game, converted: true };
