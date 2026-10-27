@@ -30,6 +30,14 @@ Test games appear on the public Active Games list. Set them to private or delete
 - [ ] The viewer and games list show the saved theme.
 - [ ] Log out: the game and preferences keys are cleared.
 
+## Page structure (Phase 4)
+
+- [ ] The console, viewer, games list and help page look the same as before on a phone-width window: card, score boxes, period box, clocks, history table, settings and dialogs.
+- [ ] Tab to a score box and press Enter or Space: a goal is scored. The focus ring is visible. Same for the period box and the elapsed time.
+- [ ] Open the viewer for a live game, a finished game and a deleted one; the Active Games and My Games tabs, the row action sheet, and the old redirect links (`ScoreBoardActiveGames.html`, `ScoreBoardMyGames.html`) all work.
+- [ ] Go offline after one visit to each page and reload: all pages still open (the new `js/` files are cached).
+- [ ] A theme with a filter (for example Chill Night) still shows its background on the console, viewer and games list.
+
 ## Clock corrections (refactor branch)
 
 - [ ] Start a period, wait about 1 minute, tap the elapsed time, press +1 min: the clock reads about 2:00, the Start row shows a time one minute earlier, and a "P1 - Clock +1:00" row appears.

@@ -2307,3 +2307,698 @@ footer {
     color: inherit;
 }
 
+/* ============================================================
+   Console Layout
+   Styles for the markup of index.html.
+   ============================================================ */
+
+.flush-body {
+    margin: 0;
+    padding: 0;
+}
+
+.console-main {
+    min-height: calc(100vh - 56px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.page-column {
+    width: 100%;
+    max-width: 448px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.scoreboard-card {
+    background: rgba(17,24,39,0.82);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    padding: 24px 24px 44px 24px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    position: relative;
+}
+
+.board-controls {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 8px;
+}
+
+.stack-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.team-name-label {
+    text-align: center;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 10px;
+    width: 80px;
+    margin-bottom: 4px;
+    user-select: none;
+}
+
+.score-box {
+    font-size: 3rem;
+    font-weight: 700;
+    background: #1f2937;
+    border-radius: 14px;
+    padding: 12px 24px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+    border: 1px solid #374151;
+    transition: background 0.15s;
+}
+
+.board-label {
+    font-size: 10px;
+    color: #6b7280;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.period-box {
+    font-size: 1.875rem;
+    font-weight: 900;
+    color: #fff;
+    background: #374151;
+    border-radius: 10px;
+    padding: 8px 16px;
+    border: 2px solid #4b5563;
+    transition: background 0.15s;
+}
+
+.clock-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 20px;
+}
+
+.clock-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.clock-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.timer-main {
+    font-size: 3.75rem;
+    font-family: monospace;
+    text-align: center;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    color: #fff;
+}
+
+.timer-elapsed {
+    font-size: 1.875rem;
+    font-family: monospace;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.adjust-panel {
+    display: none;
+    width: 100%;
+    background: rgba(31,41,55,0.85);
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(29,78,216,0.3);
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.adjust-title {
+    font-size: 10px;
+    color: #93c5fd;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.adjust-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.adjust-btn {
+    background: #374151;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.adjust-hint {
+    font-size: 10px;
+    color: #6b7280;
+    text-align: center;
+}
+
+.history-card {
+    width: 100%;
+    background: #1f2937;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    border: 1px solid #374151;
+}
+
+.history-card-title {
+    background: #374151;
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #d1d5db;
+}
+
+.history-scroll {
+    max-height: 192px;
+    overflow-y: auto;
+}
+
+.history-grid {
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+    table-layout: fixed;
+}
+
+.col-team {
+    width: 42%;
+}
+
+.col-note {
+    width: 34%;
+}
+
+.col-time {
+    width: 24%;
+}
+
+.history-head {
+    background: #1f2937;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.history-head-row {
+    color: #6b7280;
+    font-size: 10px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.th-team {
+    padding: 8px 10px 8px 12px;
+}
+
+.th-note {
+    padding: 8px 6px;
+}
+
+.th-time {
+    padding: 8px 12px 8px 6px;
+    text-align: right;
+}
+
+.fab-wrap {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+}
+
+.fab-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.settings-title-icon {
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+}
+
+.section-label-first {
+    padding-top: 14px;
+}
+
+.section-label-flush {
+    padding-top: 0;
+}
+
+.field-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 600;
+}
+
+.setup-note {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin: 0;
+}
+
+.modal-text {
+    color: #d1d5db;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.modal-actions-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.modal-actions-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.stale-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.stale-card {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 18px;
+    max-width: 400px;
+    width: 100%;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    text-align: center;
+}
+
+.stale-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.stale-title {
+    margin: 0 0 8px;
+    color: #f3f4f6;
+    font-size: 1.25rem;
+}
+
+.stale-text {
+    color: #9ca3af;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0 0 20px;
+}
+
+.stale-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.stale-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.clock-label-dim {
+    color: #4b5563;
+}
+
+.field-stack-wide {
+    gap: 8px;
+}
+
+.modal-text-strong {
+    color: #f3f4f6;
+    font-size: 0.92rem;
+}
+
+.adjust-btn-close {
+    background: #b91c1c;
+}
+
+.stale-btn-danger {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+}
+
+.stale-btn-neutral {
+    background: #374151;
+    color: #fff;
+    border: 1px solid #4b5563;
+}
+
+.team-name-label.is-home {
+    color: #ef4444;
+}
+
+.score-box.is-home {
+    color: #ef4444;
+}
+
+.team-name-label.is-away {
+    color: #3b82f6;
+}
+
+.score-box.is-away {
+    color: #3b82f6;
+}
+
+#setup-home-color-swatch {
+    background: #ef4444;
+}
+
+#setup-away-color-swatch {
+    background: #3b82f6;
+}
+
+.history-preview-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+/* Off-screen textarea used to copy text when the clipboard API is unavailable */
+.clipboard-fallback {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+}
+
+/* ============================================================
+   History table cells and theme overlay (used by the console, viewer and games list)
+   ============================================================ */
+.history-td-team {
+    padding: 6px 6px 6px 12px;
+    vertical-align: middle;
+}
+
+.history-td-note {
+    padding: 6px;
+    vertical-align: middle;
+}
+
+.history-td-time {
+    padding: 6px 12px 6px 6px;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.history-icon {
+    font-size: 1.05rem;
+    line-height: 1;
+    margin-right: 2px;
+}
+
+.history-event-name {
+    font-weight: 700;
+    color: #f3f4f6;
+}
+
+.history-empty {
+    padding: 12px;
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* A filtered theme draws its image on a fixed layer so the filter never touches page content */
+.theme-filter-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-position: right bottom;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+/* ============================================================
+   Viewer, Games List and Redirect Pages
+   Styles for the markup of the other ScoreBoard pages.
+   ============================================================ */
+
+.viewer-banner-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
+.viewer-main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.viewer-state-box {
+    width: 100%;
+    background: rgba(17,24,39,0.82);
+    border: 1px solid #374151;
+}
+
+.viewer-state-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.viewer-state-icon-small {
+    font-size: 1.75rem;
+}
+
+.viewer-state-title {
+    margin: 0 0 8px;
+    color: #f8fafc;
+    font-size: 1.25rem;
+}
+
+.viewer-state-title-small {
+    margin: 0 0 6px;
+    font-size: 1.15rem;
+}
+
+.viewer-state-text {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.viewer-state-text-small {
+    font-size: 0.88rem;
+}
+
+.viewer-card {
+    display: flex;
+    background: rgba(17,24,39,0.82);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    padding: 24px;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.viewer-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+}
+
+.viewer-match-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.viewer-pill-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.viewer-stalled-age {
+    display: block;
+    font-size: 0.75rem;
+    color: #fdba74;
+    font-weight: 600;
+    text-align: right;
+}
+
+.viewer-score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+.clock-stack-tight {
+    gap: 12px;
+}
+
+.timer-main-tight {
+    line-height: 1;
+}
+
+.history-card-sized {
+    box-sizing: border-box;
+}
+
+.score-box-static {
+    cursor: default;
+    user-select: none;
+}
+
+.period-box-static {
+    cursor: default;
+    user-select: none;
+}
+
+.back-link-start {
+    align-self: flex-start;
+}
+
+.games-body {
+    margin: 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.stub-body {
+    font-family: sans-serif;
+    background: #0f172a;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.stub-link {
+    color: #7dd3fc;
+}
+
+.stub-footer {
+    position: fixed;
+    bottom: 12px;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* ============================================================
+   Tappable boxes on the console (score boxes, period, elapsed time)
+   These are buttons; the rules below remove the browser's default button look.
+   ============================================================ */
+button.score-box,
+button.period-box,
+button.timer-elapsed {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button.score-box,
+button.period-box {
+    font-family: inherit;
+}
+
+button.timer-elapsed {
+    background: none;
+    border: 0;
+    padding: 0;
+}
+
+button.score-box:focus-visible,
+button.period-box:focus-visible,
+button.timer-elapsed:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+}

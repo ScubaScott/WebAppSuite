@@ -110,9 +110,7 @@ function copyText(text) {
 function fallbackCopy(text) {
     const area = document.createElement('textarea');
     area.value = text;
-    area.style.position = 'fixed';
-    area.style.left = '-9999px';
-    area.style.top = '0';
+    area.className = 'clipboard-fallback';
     document.body.appendChild(area);
     area.focus();
     area.select();

@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 
-<body style="margin:0;padding:0;">
+<body class="flush-body">
 
     <!-- Suite Header: back link, page title, settings button -->
     <header class="suite-header">
@@ -37,51 +37,51 @@
     </header>
 
     <!-- Main scoreboard content, vertically centered -->
-    <div
-        style="min-height:calc(100vh - 56px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
-        <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
-            <div id="scoreboard-card"
-                style="background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px 24px 44px 24px;width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;position:relative;">
+    <div class="console-main"
+       >
+        <div class="page-column">
+            <div class="scoreboard-card" id="scoreboard-card"
+               >
 
                 <!-- Top-Right Card Menu Ellipsis Button (Edit Match Details) -->
                 <button type="button" id="btn-card-menu" class="card-menu-btn hidden" title="Edit Match Details"
                     aria-label="Edit Match Details">⋮</button>
 
                 <!-- Board controls wrapper: scores, period, cards, and timer (locked in idle and game-over states) -->
-                <div id="board-controls-wrap"
-                    style="width:100%;display:flex;flex-direction:column;align-items:center;gap:24px;">
+                <div class="board-controls" id="board-controls-wrap"
+                   >
 
                     <!-- Score row: Home | Period | Away -->
-                    <div
-                        style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;">
+                    <div class="score-row"
+                       >
                         <!-- Home team -->
-                        <div style="display:flex;flex-direction:column;align-items:center;">
-                            <div id="home-team-name"
-                                style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                        <div class="stack-center">
+                            <div class="team-name-label is-home" id="home-team-name"
+                               >
                                 Us</div>
-                            <div id="score-home" class="interactive-box"
-                                style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
-                                0</div>
+                            <button type="button" id="score-home" class="interactive-box score-box is-home"
+                               >
+                                0</button>
                         </div>
 
                         <!-- Period -->
-                        <div style="display:flex;flex-direction:column;align-items:center;">
-                            <div
-                                style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">
+                        <div class="stack-center">
+                            <div class="board-label"
+                               >
                                 Period</div>
-                            <div id="period-display" class="interactive-box"
-                                style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;transition:background 0.15s;">
-                                P1</div>
+                            <button type="button" id="period-display" class="interactive-box period-box" aria-label="Period. Edit match details"
+                               >
+                                P1</button>
                         </div>
 
                         <!-- Away team -->
-                        <div style="display:flex;flex-direction:column;align-items:center;">
-                            <div id="away-team-name"
-                                style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                        <div class="stack-center">
+                            <div class="team-name-label is-away" id="away-team-name"
+                               >
                                 Them</div>
-                            <div id="score-away" class="interactive-box"
-                                style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;transition:background 0.15s;">
-                                0</div>
+                            <button type="button" id="score-away" class="interactive-box score-box is-away"
+                               >
+                                0</button>
                         </div>
                     </div>
 
@@ -120,54 +120,54 @@
                     </div>
 
                     <!-- Timer displays: Primary Countdown & Secondary Period-Elapsed -->
-                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:20px;">
-                        <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-                            <div
-                                style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                    <div class="clock-stack">
+                        <div class="clock-block">
+                            <div class="clock-label"
+                               >
                                 Remaining</div>
-                            <div id="timer-display"
-                                style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;">
+                            <div class="timer-main" id="timer-display"
+                               >
                                 00:40:00.0</div>
                             <div id="draft-status-badge" class="draft-badge hidden">READY — awaiting start</div>
                             <div id="overage-badge" class="overage-badge hidden">Overage</div>
                         </div>
 
-                        <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-                            <div
-                                style="font-size:0.75rem;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                        <div class="clock-block">
+                            <div class="clock-label clock-label-dim"
+                               >
                                 Period Elapsed</div>
-                            <div id="elapsed-time-display" class="interactive-box"
-                                style="font-size:1.875rem;font-family:monospace;text-align:center;color:#9ca3af;">
+                            <button type="button" id="elapsed-time-display" class="interactive-box timer-elapsed" aria-label="Period elapsed time. Open clock corrections"
+                               >
                                 00:00:00.0
-                            </div>
+                            </button>
                         </div>
                     </div>
 
                 </div><!-- end board-controls-wrap -->
 
                 <!-- Elapsed-time adjustment panel (shown while clock is running) -->
-                <div id="elapsed-adjust-panel"
-                    style="display:none;width:100%;background:rgba(31,41,55,0.85);padding:16px;border-radius:14px;border:1px solid rgba(29,78,216,0.3);flex-direction:column;align-items:center;gap:12px;">
-                    <div
-                        style="font-size:10px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">
+                <div class="adjust-panel" id="elapsed-adjust-panel"
+                   >
+                    <div class="adjust-title"
+                       >
                         Adjust elapsed time</div>
-                    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;">
-                        <button type="button" data-adjust-minutes="5"
-                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+5
+                    <div class="adjust-buttons">
+                        <button class="adjust-btn" type="button" data-adjust-minutes="5"
+                           >+5
                             min</button>
-                        <button type="button" data-adjust-minutes="1"
-                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">+1
+                        <button class="adjust-btn" type="button" data-adjust-minutes="1"
+                           >+1
                             min</button>
-                        <button type="button" data-adjust-minutes="-1"
-                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-1
+                        <button class="adjust-btn" type="button" data-adjust-minutes="-1"
+                           >-1
                             min</button>
-                        <button type="button" data-adjust-minutes="-5"
-                            style="background:#374151;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">-5
+                        <button class="adjust-btn" type="button" data-adjust-minutes="-5"
+                           >-5
                             min</button>
-                        <button type="button" id="btn-adjust-close"
-                            style="background:#b91c1c;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Close</button>
+                        <button class="adjust-btn adjust-btn-close" type="button" id="btn-adjust-close"
+                           >Close</button>
                     </div>
-                    <div style="font-size:10px;color:#6b7280;text-align:center;">Tap elapsed time during a running clock
+                    <div class="adjust-hint">Tap elapsed time during a running clock
                         to correct early/late starts.</div>
                 </div>
 
@@ -183,23 +183,23 @@
                 </div>
 
                 <!-- Score History table (remains interactive during Game Over) -->
-                <div id="score-history-container" class="history-interactive"
-                    style="width:100%;background:#1f2937;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:1px solid #374151;">
-                    <div
-                        style="background:#374151;padding:8px 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#d1d5db;">
+                <div id="score-history-container" class="history-interactive history-card"
+                   >
+                    <div class="history-card-title"
+                       >
                         Score History</div>
-                    <div class="history-table" style="max-height:192px;overflow-y:auto;">
-                        <table style="width:100%;text-align:left;font-size:0.875rem;table-layout:fixed;">
+                    <div class="history-table history-scroll">
+                        <table class="history-grid">
                             <colgroup>
-                                <col style="width:42%;">
-                                <col style="width:34%;">
-                                <col style="width:24%;">
+                                <col class="col-team">
+                                <col class="col-note">
+                                <col class="col-time">
                             </colgroup>
-                            <thead style="background:#1f2937;position:sticky;top:0;z-index:2;">
-                                <tr style="color:#6b7280;font-size:10px;text-transform:uppercase;white-space:nowrap;">
-                                    <th style="padding:8px 10px 8px 12px;">Team (Score)</th>
-                                    <th style="padding:8px 6px;">Note</th>
-                                    <th style="padding:8px 12px 8px 6px;text-align:right;">Time</th>
+                            <thead class="history-head">
+                                <tr class="history-head-row">
+                                    <th class="th-team">Team (Score)</th>
+                                    <th class="th-note">Note</th>
+                                    <th class="th-time">Time</th>
                                 </tr>
                             </thead>
                             <tbody id="history-body"></tbody>
@@ -232,9 +232,9 @@
     </div><!-- end min-height centering wrapper -->
 
     <!-- Floating action buttons (fixed position, bottom corners) -->
-    <div style="position:fixed;right:16px;bottom:16px;">
+    <div class="fab-wrap">
         <button id="mute-btn" class="fab" title="Mute / unmute sound">
-            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:24px;height:24px;"
+            <svg class="fab-icon" id="mute-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                 fill="currentColor">
                 <path
                     d="M5 9v6h4l5 5V4L9 9H5zm12.5 3c0-1.17-.51-2.22-1.32-2.94l-1.42 1.42c.38.39.62.92.62 1.52s-.24 1.13-.62 1.52l1.42 1.42c.81-.72 1.32-1.77 1.32-2.94zm-2.91-4.24l-1.42 1.42C13.97 9.58 14.5 10.74 14.5 12s-.53 2.42-1.33 3.32l1.42 1.42C15.57 15.87 16.5 14.02 16.5 12s-.93-3.87-2.41-4.24z" />
@@ -252,8 +252,8 @@
             <!-- Sticky header -->
             <div class="settings-header">
                 <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                        style="width:20px;height:20px;color:#9ca3af;" fill="currentColor">
+                    <svg class="settings-title-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                        fill="currentColor">
                         <path
                             d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
                     </svg>
@@ -266,7 +266,7 @@
             <div class="settings-body">
 
                 <!-- ── THEME ──────────────────────────────────────── -->
-                <div class="settings-section-label" style="padding-top:14px;">Theme</div>
+                <div class="settings-section-label section-label-first">Theme</div>
                 <div class="theme-dropdown" id="theme-dropdown">
                     <button type="button" class="theme-dropdown-trigger" id="theme-dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
                         <div class="theme-trigger-content">
@@ -395,13 +395,13 @@
             </div>
             <div class="modal-body">
                 <!-- Team Setup Section -->
-                <div class="settings-section-label" style="padding-top:0;">Teams</div>
+                <div class="settings-section-label section-label-flush">Teams</div>
                 <div class="team-setup-grid">
                     <!-- Home team card -->
                     <div class="team-card">
                         <div class="team-card-header">
                             <span class="team-card-label">Home</span>
-                            <div id="setup-home-color-swatch" class="team-color-swatch" style="background:#ef4444;">
+                            <div id="setup-home-color-swatch" class="team-color-swatch">
                             </div>
                         </div>
                         <input id="setup-home-name" class="team-name-input" placeholder="Team name" autocomplete="off"
@@ -422,7 +422,7 @@
                     <div class="team-card">
                         <div class="team-card-header">
                             <span class="team-card-label">Away</span>
-                            <div id="setup-away-color-swatch" class="team-color-swatch" style="background:#3b82f6;">
+                            <div id="setup-away-color-swatch" class="team-color-swatch">
                             </div>
                         </div>
                         <input id="setup-away-name" class="team-name-input" placeholder="Team name" autocomplete="off"
@@ -444,8 +444,8 @@
                 <div class="settings-section-label">Match Rules</div>
 
                 <!-- Total Periods Stepper -->
-                <div style="display:flex;flex-direction:column;gap:6px;">
-                    <label style="font-size:0.75rem;color:#9ca3af;font-weight:600;">Total Periods</label>
+                <div class="field-stack">
+                    <label class="field-label">Total Periods</label>
                     <div class="stepper-container">
                         <button type="button" id="btn-period-minus" class="stepper-btn"
                             title="Decrease periods">-</button>
@@ -456,9 +456,9 @@
                 </div>
 
                 <!-- Period Duration -->
-                <p id="setup-duration-note" class="hidden" style="font-size:0.8rem;color:#9ca3af;margin:0;">The length of a period that has started cannot be changed.</p>
-                <div id="setup-duration-section" style="display:flex;flex-direction:column;gap:8px;">
-                    <label style="font-size:0.75rem;color:#9ca3af;font-weight:600;">Period Duration</label>
+                <p id="setup-duration-note" class="hidden setup-note">The length of a period that has started cannot be changed.</p>
+                <div class="field-stack field-stack-wide" id="setup-duration-section">
+                    <label class="field-label">Period Duration</label>
                     <div class="duration-preset-grid" id="setup-duration-presets">
                         <button type="button" class="duration-preset-btn" data-ms="720000">12 min</button>
                         <button type="button" class="duration-preset-btn" data-ms="1200000">20 min</button>
@@ -531,10 +531,10 @@
                 <button type="button" id="close-end-ot-x" class="modal-close-x" title="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="color:#d1d5db;font-size:0.9rem;line-height:1.5;margin:0;">
+                <p class="modal-text">
                     Would you like to conclude this match as Final or add extra stoppage time / overtime period?
                 </p>
-                <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+                <div class="modal-actions-col">
                     <button type="button" id="btn-modal-finalize" class="modal-action-btn modal-action-btn-danger">
                         🏁 Finalize Match (Final)
                     </button>
@@ -558,11 +558,11 @@
                 <h3>Period Limit Exceeded</h3>
             </div>
             <div class="modal-body">
-                <p style="color:#f3f4f6;font-size:0.92rem;line-height:1.5;margin:0;">
+                <p class="modal-text modal-text-strong">
                     Current elapsed time has passed the configured period duration. Did <strong
                         id="drift-period-name">Period 1</strong> end on schedule, or is the match in stoppage/overage?
                 </p>
-                <div style="display:flex;gap:10px;margin-top:10px;">
+                <div class="modal-actions-row">
                     <button type="button" id="btn-drift-end-on-time" class="modal-action-btn modal-action-btn-primary">
                         End Period on Time
                     </button>
@@ -576,20 +576,20 @@
     </div>
 
     <!-- Stale Game Resume Confirmation Modal -->
-    <div id="stale-resume-modal" class="modal-backdrop hidden"
-        style="position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <div
-            style="background:#1f2937;border:1px solid #374151;border-radius:18px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.7);text-align:center;">
-            <div style="font-size:2rem;margin-bottom:8px;">⏳</div>
-            <h3 style="margin:0 0 8px;color:#f3f4f6;font-size:1.25rem;">Finish Last Game?</h3>
-            <p style="color:#9ca3af;font-size:0.875rem;line-height:1.5;margin:0 0 20px;">This game was left running over
+    <div id="stale-resume-modal" class="modal-backdrop hidden stale-backdrop"
+       >
+        <div class="stale-card"
+           >
+            <div class="stale-icon">⏳</div>
+            <h3 class="stale-title">Finish Last Game?</h3>
+            <p class="stale-text">This game was left running over
                 3 hours ago. Would you like to finalize and archive it, or resume the clock?</p>
-            <div style="display:flex;gap:10px;justify-content:center;">
-                <button type="button" id="btn-stale-finish"
-                    style="flex:1;background:#dc2626;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Finish
+            <div class="stale-actions">
+                <button class="stale-btn stale-btn-danger" type="button" id="btn-stale-finish"
+                   >Finish
                     Game</button>
-                <button type="button" id="btn-stale-resume"
-                    style="flex:1;background:#374151;color:#fff;border:1px solid #4b5563;padding:12px;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Resume
+                <button class="stale-btn stale-btn-neutral" type="button" id="btn-stale-resume"
+                   >Resume
                     Clock</button>
             </div>
         </div>
@@ -644,7 +644,6 @@
 
     <!-- Shared Suite Profile and Cloud Sync Manager -->
     <script src="../media/suite-profile.js"></script>
-    <script src="scoreboard-shared.js"></script>
 
     <script type="module" src="js/console.js"></script>
 

@@ -1,7 +1,9 @@
 /**
  * ScoreBoard theme selector: the background-image dropdown in Settings.
- * The catalog of themes lives in scoreboard-shared.js; this file lists the images and applies the choice.
+ * The catalog of themes lives in shared.js; this file lists the images and applies the choice.
  */
+
+import { SCOREBOARD_THEMES } from './shared.js';
 
 const IMAGE_LIST_KEY = 'scoreboard_discovered_bgimages';
 const DEFAULT_IMAGES = ['EdenPrarie.png', 'MinnesotaStars.png', 'NewPrague.png', 'chill.png', 'saber.png'];
@@ -22,7 +24,7 @@ function formatImageLabel(filename) {
  * @param {{getTheme: function(): string, setTheme: function(string): void}} options
  */
 export function createThemeSelector({ getTheme, setTheme }) {
-    const catalog = window.ScoreBoardShared.SCOREBOARD_THEMES;
+    const catalog = SCOREBOARD_THEMES;
     let images = [...DEFAULT_IMAGES];
 
     // Images found on an earlier visit are available immediately, even offline

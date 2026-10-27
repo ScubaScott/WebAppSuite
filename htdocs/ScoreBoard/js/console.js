@@ -15,10 +15,11 @@ import { createRenderer } from './render.js';
 import { createSetup } from './setup.js';
 import { createHistoryDialog } from './history.js';
 import { createThemeSelector } from './theme.js';
+import { applyThemeToBody } from './shared.js';
 import { showToast, playWhistle, playScoreSplash, playCardRaise, shareText } from './effects.js';
 
 // Page version, shown in the footer
-const APP_VERSION = '6.0';
+const APP_VERSION = '6.1';
 
 const TICK_MS = 100;
 const HEARTBEAT_MS = 20 * 1000;
@@ -124,7 +125,7 @@ function changePrefs(patch) {
 
 /** Show the current preferences on the page. */
 function applyPrefs() {
-    window.ScoreBoardShared.applyThemeToBody(prefs.theme);
+    applyThemeToBody(prefs.theme);
     renderer.renderMute(prefs.muted);
     renderAll();
     themeSelector.update();
@@ -145,8 +146,8 @@ function renderAll() {
 }
 
 const adjustPanel = byId('elapsed-adjust-panel');
-const showAdjustPanel = () => { adjustPanel.style.display = 'flex'; };
-function hideAdjustPanel() { adjustPanel.style.display = 'none'; }
+const showAdjustPanel = () => adjustPanel.classList.remove('hidden');
+function hideAdjustPanel() { adjustPanel.classList.add('hidden'); }
 
 // ---------------------------------------------------------------------------
 // Actions from the screen
@@ -514,7 +515,7 @@ function start() {
     wireStore();
     wireLifecycle();
 
-    window.ScoreBoardShared.applyThemeToBody(prefs.theme);
+    applyThemeToBody(prefs.theme);
     renderer.renderMute(prefs.muted);
     themeSelector.render();
     renderAll();

@@ -31,7 +31,7 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 | 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` removed from the snapshot in Phase 3 (the viewer still reads it for archived games) |
 | 2 | One `toSnapshot()`, one send scheduler, game and preferences stored separately, shared helpers and one theme catalog, single beacon | Done and tested on `full_refactor` (console 5.3, shared 1.6) |
 | 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 to 3.4 done with tests; 3.5 (console rewrite, console 6.0) and 3.6 (history display, shared 1.6, help 2.1) done; 3.8 dead-code removal done; 3.7 server migration script remains |
-| 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
+| 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons, viewer and games list become modules | Done on `full_refactor` (console 6.1, viewer 1.6, games list 1.1, shared 2.0). Every page is free of inline `style` attributes and inline handlers; `scoreboard-shared.js` is now `js/shared.js` and no longer exposes a global. Needs the browser checklist |
 | 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
 | Later | Viewer sends its last `rev` and gets 304 when unchanged | Optional |
 
@@ -43,7 +43,7 @@ Target layout. Files marked *(planned)* do not exist yet.
 
 | File | Role |
 | --- | --- |
-| `index.html` | Console markup only. No inline styles, no inline handlers, no logic. |
+| `index.html` | Console markup only. No inline styles, no inline handlers, no logic. The score boxes, period box and elapsed-time readout are buttons. |
 | `ScoreBoardViewer.html` | Viewer markup. Sub-page: "← Back" to the games list, no "Back to Apps". |
 | `ScoreBoardGames.html` | Games list markup. Sub-page: "← Back" style navigation, no "Back to Apps". |
 | `ScoreBoardHelp.html` | Help page. |
@@ -56,8 +56,8 @@ Target layout. Files marked *(planned)* do not exist yet.
 | `js/setup.js` | New Game / Edit Match / Add Overtime dialog and the minutes:seconds roller. |
 | `js/render.js`, `js/store.js`, `js/history.js`, `js/theme.js`, `js/effects.js` | `render.js`: console DOM updates from the game. `store.js`: holds the game and applies actions. `history.js`: the history entry dialog (note, share, remove). `theme.js`: the theme dropdown in Settings. `effects.js`: toast, whistle, goal and card animations, share. |
 | *(preferences)* | Loaded, saved and normalized in `storage.js`; changed through `changePrefs` in `console.js`. |
-| `js/shared.js` *(planned, replaces `scoreboard-shared.js`)* | Used by all pages: formatters, period labels, status pill, history renderer, theme catalog. |
-| `js/viewer.js`, `js/games.js` *(planned)* | Page scripts for the viewer and games list. |
+| `js/shared.js` | Used by every page: status pill, history renderer, theme catalog and application, date formatting. Imports the clock and period-label formatters from `format.js`. |
+| `js/viewer.js`, `js/games.js` | Page scripts for the viewer and games list. |
 | `media/whistle.mp3` | Period-end whistle. |
 | `media/bgimages/` + `list.php` | Theme background images; `list.php` returns the file list as JSON. |
 | `../api/games.php` | Game API (section 8). Shared database with the rest of the suite. |
@@ -268,7 +268,7 @@ Do not change these without updating this section, the console and the viewer to
 
 ## 10. UI and Code Rules
 
-- No inline `style` attributes and no inline event handlers in any ScoreBoard page. Styles go in `scoreboard.css` using custom properties; listeners are attached in JS.
+- No inline `style` attributes and no inline event handlers in any ScoreBoard page. Styles go in `scoreboard.css` using custom properties; listeners are attached in JS. Values that come from data (team colors, theme images, animation positions) may be set from JS as properties, never written into markup.
 - Show and hide elements by toggling the `hidden` class. Never set `style.display` on an element that may carry `hidden` (it is `display: none !important`).
 - Every tappable control is a `<button>` (or link) with at least a 44×44 px target; score boxes are buttons.
 - One theme catalog, in `shared.js`, used by every page.
@@ -276,7 +276,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 6.0, viewer 1.5, games list 1.0, help 2.1, shared 1.6).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 6.1, viewer 1.6, games list 1.1, help 2.1, shared 2.0).
 
 ---
 

@@ -2,6 +2,8 @@
  * ScoreBoard history entry dialog: add a note, share, or remove one entry of the history.
  */
 
+import { formatEventTime, formatGameTimeMmSs, parseEventDetails } from './shared.js';
+
 const byId = (id) => document.getElementById(id);
 const NOTE_MAX = 60;
 
@@ -9,7 +11,7 @@ const NOTE_MAX = 60;
 function setPreview(element, icon, text) {
     element.textContent = '';
     const iconSpan = document.createElement('span');
-    iconSpan.style.cssText = 'font-size:1.1rem;line-height:1;';
+    iconSpan.className = 'history-preview-icon';
     iconSpan.textContent = icon;
     const textSpan = document.createElement('span');
     textSpan.textContent = text;
@@ -25,7 +27,6 @@ function setPreview(element, icon, text) {
  * @param {function(string): void} options.share Share a text.
  */
 export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, share }) {
-    const shared = window.ScoreBoardShared;
     const el = {
         modal: byId('history-options-modal'),
         actions: byId('history-actions-menu'),
@@ -56,19 +57,19 @@ export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, s
         const game = getGame();
         if (row.type === 'score') {
             setPreview(el.previewEvent, '🥅', `${row.teamName} (${row.currentScore})`);
-            el.previewMeta.textContent = `Time: ${shared.formatGameTimeMmSs(row) || 'N/A'}`;
+            el.previewMeta.textContent = `Time: ${formatGameTimeMmSs(row) || 'N/A'}`;
         } else if (row.type === 'card') {
             setPreview(el.previewEvent, row.cardType === 'yellow' ? '🟨' : '🟥', row.teamName);
-            el.previewMeta.textContent = `Time: ${shared.formatGameTimeMmSs(row) || 'N/A'}`;
+            el.previewMeta.textContent = `Time: ${formatGameTimeMmSs(row) || 'N/A'}`;
         } else {
-            const { eventLabel } = shared.parseEventDetails(row, game.periodCount, game.regulationPeriods);
+            const { eventLabel } = parseEventDetails(row, game.periodCount, game.regulationPeriods);
             setPreview(el.previewEvent, '⏱️', eventLabel);
-            const clockTime = shared.formatEventTime(row.timestamp) || 'N/A';
+            const clockTime = formatEventTime(row.timestamp) || 'N/A';
             if (typeof row.positionMs === 'number') {
                 // Position in the period, then the time of day it happened
-                el.previewMeta.textContent = `Time: ${shared.formatGameTimeMmSs({ periodElapsedMs: row.positionMs })} (${clockTime})`;
+                el.previewMeta.textContent = `Time: ${formatGameTimeMmSs({ periodElapsedMs: row.positionMs })} (${clockTime})`;
             } else if (row.adjustedMs) {
-                el.previewMeta.textContent = `Time: ${clockTime} (pressed at ${shared.formatEventTime(row.recordedTimestamp)})`;
+                el.previewMeta.textContent = `Time: ${clockTime} (pressed at ${formatEventTime(row.recordedTimestamp)})`;
             } else {
                 el.previewMeta.textContent = `Time: ${clockTime}`;
             }
@@ -76,11 +77,11 @@ export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, s
 
         if (row.note) {
             el.previewNote.textContent = `Note: "${row.note}"`;
-            el.previewNote.style.display = 'block';
+            el.previewNote.classList.remove('hidden');
             el.noteButtonText.textContent = 'Edit Note';
         } else {
             el.previewNote.textContent = '';
-            el.previewNote.style.display = 'none';
+            el.previewNote.classList.add('hidden');
             el.noteButtonText.textContent = 'Add Note';
         }
 
@@ -136,14 +137,14 @@ export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, s
             const note = row.note ? ` (${row.note})` : '';
             return `${row.cardType === 'yellow' ? '🟨' : '🟥'} ${row.teamName}${note}`;
         }
-        const { action, eventLabel, periodLabel } = shared.parseEventDetails(row, game.periodCount, game.regulationPeriods);
+        const { action, eventLabel, periodLabel } = parseEventDetails(row, game.periodCount, game.regulationPeriods);
         const note = row.note ? ` (${row.note})` : '';
         const isGameStart = (action === 'Start' && periodLabel === 'P1')
             || (row.eventType === 'period_start' && Number(row.period || 1) === 1);
         if (isGameStart) {
             return `Game on! ${game.home.name.trim()} vs. ${game.away.name.trim()}${note}`;
         }
-        const time = shared.formatEventTime(row.timestamp);
+        const time = formatEventTime(row.timestamp);
         const isPeriodEnd = row.eventType === 'period_end';
         const score = isPeriodEnd ? ` (${row.scoreSnapshot})` : '';
         return `${eventLabel}${time ? ` ${time}` : ''}${score}${note}`;

@@ -13,99 +13,99 @@
     <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 
-<body style="margin:0;padding:0;min-height:100vh;">
+<body class="flush-body">
 
     <!-- Reconnecting status banner (displayed when network encounters temporary drops) -->
-    <div id="reconnecting-banner" class="viewer-reconnecting-banner" style="display:none;position:sticky;top:0;z-index:999;">
+    <div id="reconnecting-banner" class="viewer-reconnecting-banner viewer-banner-sticky hidden">
         Connecting to live feed…
     </div>
 
     <!-- Main scoreboard viewport wrapper -->
-    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
-        <div style="width:100%;max-width:448px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <div class="viewer-main">
+        <div class="page-column">
 
             <!-- Top navigation: single fixed back target computed from origin tab -->
-            <a href="ScoreBoardGames.html?tab=active" id="btn-back" class="back-link" style="align-self:flex-start;">
+            <a href="ScoreBoardGames.html?tab=active" id="btn-back" class="back-link back-link-start">
                 ← Back
             </a>
 
             <!-- Unavailable State Box (Terminal 404: deleted, private, or not found) -->
-            <div id="unavailable-view" class="empty-games-box" style="display:none;width:100%;background:rgba(17,24,39,0.82);border:1px solid #374151;">
-                <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
-                <h3 style="margin:0 0 8px;color:#f8fafc;font-size:1.25rem;">Game Unavailable</h3>
-                <p style="margin:0;color:#94a3b8;font-size:0.9rem;">
+            <div id="unavailable-view" class="empty-games-box viewer-state-box hidden">
+                <div class="viewer-state-icon">🔒</div>
+                <h3 class="viewer-state-title">Game Unavailable</h3>
+                <p class="viewer-state-text">
                     This game is private, completed, or no longer exists.
                 </p>
             </div>
 
             <!-- Loading State Box -->
-            <div id="loading-view" class="empty-games-box" style="width:100%;background:rgba(17,24,39,0.82);border:1px solid #374151;">
-                <div style="font-size:1.75rem;margin-bottom:8px;">⏳</div>
-                <h3 style="margin:0 0 6px;color:#f8fafc;font-size:1.15rem;">Connecting to Game…</h3>
-                <p style="margin:0;color:#94a3b8;font-size:0.88rem;">Synchronizing match feed</p>
+            <div id="loading-view" class="empty-games-box viewer-state-box">
+                <div class="viewer-state-icon viewer-state-icon-small">⏳</div>
+                <h3 class="viewer-state-title viewer-state-title-small">Connecting to Game…</h3>
+                <p class="viewer-state-text viewer-state-text-small">Synchronizing match feed</p>
             </div>
 
             <!-- Main Scoreboard Card (Layout mirrors operator console index.html) -->
-            <div id="scoreboard-card" style="display:none;background:rgba(17,24,39,0.82);backdrop-filter:blur(8px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:24px;width:100%;flex-direction:column;align-items:center;gap:20px;position:relative;box-sizing:border-box;">
+            <div class="viewer-card hidden" id="scoreboard-card">
 
                 <!-- Viewer header bar: Title and Status pill with age indicator -->
                 <div class="viewer-header-info">
-                    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:12px;">
-                        <h2 id="match-title" style="margin:0;font-size:1.1rem;font-weight:800;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    <div class="viewer-title-row">
+                        <h2 class="viewer-match-title" id="match-title">
                             Match Viewer
                         </h2>
-                        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                        <div class="viewer-pill-wrap">
                             <span id="status-pill" class="status-pill pill-live">
                                 <span class="pill-live-dot"></span>
                                 <span>Live</span>
                             </span>
                         </div>
                     </div>
-                    <div id="stalled-age-indicator" style="display:none;font-size:0.75rem;color:#fdba74;font-weight:600;text-align:right;">
+                    <div class="viewer-stalled-age hidden" id="stalled-age-indicator">
                         Last update 30m ago
                     </div>
                 </div>
 
                 <!-- Scores row: Home team, Period, Away team -->
-                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 8px;box-sizing:border-box;">
+                <div class="viewer-score-row">
                     <!-- Home team -->
-                    <div style="display:flex;flex-direction:column;align-items:center;">
-                        <div id="home-team-name" style="color:#ef4444;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                    <div class="stack-center">
+                        <div class="team-name-label is-home" id="home-team-name">
                             Home
                         </div>
-                        <div id="score-home" style="font-size:3rem;font-weight:700;color:#ef4444;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;user-select:none;cursor:default;">
+                        <div class="score-box score-box-static is-home" id="score-home">
                             0
                         </div>
                     </div>
 
                     <!-- Period display -->
-                    <div style="display:flex;flex-direction:column;align-items:center;">
-                        <div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;margin-bottom:4px;">
+                    <div class="stack-center">
+                        <div class="board-label">
                             Period
                         </div>
-                        <div id="period-display" style="font-size:1.875rem;font-weight:900;color:#fff;background:#374151;border-radius:10px;padding:8px 16px;border:2px solid #4b5563;user-select:none;cursor:default;">
+                        <div class="period-box period-box-static" id="period-display">
                             P1
                         </div>
                     </div>
 
                     <!-- Away team -->
-                    <div style="display:flex;flex-direction:column;align-items:center;">
-                        <div id="away-team-name" style="color:#3b82f6;text-align:center;font-weight:700;text-transform:uppercase;font-size:10px;width:80px;margin-bottom:4px;user-select:none;">
+                    <div class="stack-center">
+                        <div class="team-name-label is-away" id="away-team-name">
                             Away
                         </div>
-                        <div id="score-away" style="font-size:3rem;font-weight:700;color:#3b82f6;background:#1f2937;border-radius:14px;padding:12px 24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.4);border:1px solid #374151;user-select:none;cursor:default;">
+                        <div class="score-box score-box-static is-away" id="score-away">
                             0
                         </div>
                     </div>
                 </div>
 
                 <!-- Clock displays: Countdown / Elapsed Time -->
-                <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:12px;">
-                    <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-                        <div id="clock-label" style="font-size:0.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px;">
+                <div class="clock-stack clock-stack-tight">
+                    <div class="clock-block">
+                        <div class="clock-label" id="clock-label">
                             Remaining
                         </div>
-                        <div id="timer-display" style="font-size:3.75rem;font-family:monospace;text-align:center;letter-spacing:-0.02em;font-weight:800;color:#fff;line-height:1;">
+                        <div class="timer-main timer-main-tight" id="timer-display">
                             00:00:00.0
                         </div>
                         <div id="overage-badge" class="overage-badge hidden">Overage</div>
@@ -113,22 +113,22 @@
                 </div>
 
                 <!-- Score History table (Read-only mirror of scorer log) -->
-                <div id="score-history-container" style="width:100%;background:#1f2937;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:1px solid #374151;box-sizing:border-box;">
-                    <div style="background:#374151;padding:8px 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#d1d5db;">
+                <div class="history-card history-card-sized" id="score-history-container">
+                    <div class="history-card-title">
                         Score History
                     </div>
-                    <div class="history-table" style="max-height:192px;overflow-y:auto;">
-                        <table style="width:100%;text-align:left;font-size:0.875rem;table-layout:fixed;">
+                    <div class="history-table history-scroll">
+                        <table class="history-grid">
                             <colgroup>
-                                <col style="width:42%;">
-                                <col style="width:34%;">
-                                <col style="width:24%;">
+                                <col class="col-team">
+                                <col class="col-note">
+                                <col class="col-time">
                             </colgroup>
-                            <thead style="background:#1f2937;position:sticky;top:0;z-index:2;">
-                                <tr style="color:#6b7280;font-size:10px;text-transform:uppercase;white-space:nowrap;">
-                                    <th style="padding:8px 10px 8px 12px;">Team (Score)</th>
-                                    <th style="padding:8px 6px;">Note</th>
-                                    <th style="padding:8px 12px 8px 6px;text-align:right;">Time</th>
+                            <thead class="history-head">
+                                <tr class="history-head-row">
+                                    <th class="th-team">Team (Score)</th>
+                                    <th class="th-note">Note</th>
+                                    <th class="th-time">Time</th>
                                 </tr>
                             </thead>
                             <tbody id="history-body"></tbody>
@@ -140,7 +140,7 @@
 
             <!-- Application Version Footer -->
             <footer class="app-footer">
-                <p>Version <span id="appVersion">1.4</span></p>
+                <p>Version <span id="appVersion"></span></p>
             </footer>
 
         </div>
@@ -148,380 +148,8 @@
 
     <!-- Shared application scripts -->
     <script src="../media/suite-profile.js"></script>
-    <script src="scoreboard-shared.js"></script>
 
-    <script>
-        // Viewer tool version constant
-        const APP_VERSION = '1.5';
-
-        // Polling configuration
-        const BASE_POLL_INTERVAL_MS = 4000;
-        let pollTimer = null;
-        let tickerTimer = null;
-        let consecutiveErrors = 0;
-        // Set once the game is final or unavailable; polling and the clock ticker never restart after that
-        let feedHalted = false;
-
-        // URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const gameId = urlParams.get('id');
-        const fromParam = (urlParams.get('from') || 'active').toLowerCase();
-
-        // DOM elements
-        const btnBack = document.getElementById('btn-back');
-        const loadingView = document.getElementById('loading-view');
-        const unavailableView = document.getElementById('unavailable-view');
-        const scoreboardCard = document.getElementById('scoreboard-card');
-        const reconnectingBanner = document.getElementById('reconnecting-banner');
-        const matchTitleEl = document.getElementById('match-title');
-        const statusPillEl = document.getElementById('status-pill');
-        const stalledAgeIndicator = document.getElementById('stalled-age-indicator');
-        const homeTeamNameEl = document.getElementById('home-team-name');
-        const awayTeamNameEl = document.getElementById('away-team-name');
-        const scoreHomeEl = document.getElementById('score-home');
-        const scoreAwayEl = document.getElementById('score-away');
-        const periodDisplayEl = document.getElementById('period-display');
-        const clockLabelEl = document.getElementById('clock-label');
-        const timerDisplayEl = document.getElementById('timer-display');
-        const overageBadgeEl = document.getElementById('overage-badge');
-        const historyBodyEl = document.getElementById('history-body');
-
-        // State model for spectator display
-        let currentModel = null;
-        let serverClockOffset = 0; // server_now - client Date.now()
-
-        /**
-         * Resolves the navigation back link href per section 3.2.
-         * If origin was 'mine' but viewing user is a guest, back resolves to ?tab=active.
-         */
-        function configureBackLink() {
-            let backTab = (fromParam === 'mine') ? 'mine' : 'active';
-            if (backTab === 'mine') {
-                if (!window.SuiteProfile || SuiteProfile.isGuest()) {
-                    backTab = 'active';
-                }
-            }
-            btnBack.href = `ScoreBoardGames.html?tab=${backTab}`;
-        }
-
-        /**
-         * Fetches latest match snapshot from API and updates presentation state.
-         */
-        async function fetchGameSnapshot() {
-            if (!gameId) {
-                showUnavailableState();
-                return;
-            }
-
-            try {
-                let res = null;
-                if (window.SuiteProfile && SuiteProfile.games) {
-                    res = await SuiteProfile.games.get(gameId);
-                } else {
-                    const fetchRes = await fetch(`../api/games.php?action=get&id=${encodeURIComponent(gameId)}`);
-                    if (fetchRes.status === 404) {
-                        showUnavailableState();
-                        return;
-                    }
-                    res = await fetchRes.json();
-                }
-
-                if (!res || !res.success || !res.game) {
-                    // Section 5.5: Terminal 404 enters Unavailable state
-                    showUnavailableState();
-                    return;
-                }
-
-                consecutiveErrors = 0;
-                hideReconnectingBanner();
-
-                const serverNow = (typeof res.server_now === 'number') ? res.server_now : Date.now();
-                serverClockOffset = serverNow - Date.now();
-
-                const game = res.game;
-                const snap = game.snapshot || game;
-
-                // Merge server response into viewer presentation model
-                currentModel = {
-                    id: game.game_id || game.id,
-                    homeTeamName: game.homeTeamName || snap.homeTeamName || 'Home',
-                    awayTeamName: game.awayTeamName || snap.awayTeamName || 'Away',
-                    homeScore: (game.homeScore !== undefined) ? Number(game.homeScore) : (snap.homeScore || 0),
-                    awayScore: (game.awayScore !== undefined) ? Number(game.awayScore) : (snap.awayScore || 0),
-                    homeTeamColor: snap.homeTeamColor || game.homeTeamColor || '#ef4444',
-                    awayTeamColor: snap.awayTeamColor || game.awayTeamColor || '#3b82f6',
-                    currentPeriod: game.currentPeriod || snap.currentPeriod || 1,
-                    totalPeriods: snap.totalPeriods || 2,
-                    basePeriods: snap.basePeriods || 2,
-                    status: (game.status || snap.status || 'live').toLowerCase(),
-                    timerRunning: Boolean(game.timerRunning !== undefined ? game.timerRunning : snap.timerRunning),
-                    isPaused: Boolean(game.isPaused !== undefined ? game.isPaused : snap.isPaused),
-                    isCountingUp: Boolean(snap.isCountingUp),
-                    timeLimit: (snap.timeLimit !== undefined) ? Number(snap.timeLimit) : 0,
-                    elapsedMs: (game.elapsedMs !== undefined) ? Number(game.elapsedMs) : (snap.elapsedMs || 0),
-                    lastUpdate: (typeof game.lastUpdate === 'number') ? game.lastUpdate : (serverNow - (res.age_ms || 0)),
-                    ageMs: (typeof res.age_ms === 'number') ? res.age_ms : (game.age_ms || 0),
-                    scoreHistory: Array.isArray(snap.scoreHistory) ? snap.scoreHistory : (Array.isArray(game.scoreHistory) ? game.scoreHistory : []),
-                    fetchLocalTs: Date.now()
-                };
-
-                renderBoard();
-
-                // Section 5.5: Stop polling when game is final; the last render already shows the frozen clock
-                if (currentModel.status === 'final') {
-                    feedHalted = true;
-                    stopPolling();
-                    stopTicker();
-                }
-
-            } catch (err) {
-                // Section 5.5: Network error or 5xx never transitions to Unavailable; keep last state & reconnect
-                consecutiveErrors++;
-                if (currentModel) {
-                    showReconnectingBanner();
-                } else {
-                    // Check if initial fetch was a 404 or network failure
-                    if (err && (err.message && err.message.includes('404'))) {
-                        showUnavailableState();
-                    } else {
-                        showReconnectingBanner();
-                    }
-                }
-            }
-        }
-
-        /**
-         * Renders static board elements (scores, names, colors, period, history).
-         */
-        function renderBoard() {
-            if (!currentModel) return;
-
-            loadingView.style.display = 'none';
-            unavailableView.style.display = 'none';
-            scoreboardCard.style.display = 'flex';
-
-            // Match title
-            matchTitleEl.textContent = `${currentModel.homeTeamName} vs ${currentModel.awayTeamName}`;
-
-            // Team names & scores
-            homeTeamNameEl.textContent = currentModel.homeTeamName;
-            awayTeamNameEl.textContent = currentModel.awayTeamName;
-            scoreHomeEl.textContent = currentModel.homeScore;
-            scoreAwayEl.textContent = currentModel.awayScore;
-
-            // Apply custom team colors
-            homeTeamNameEl.style.color = currentModel.homeTeamColor;
-            scoreHomeEl.style.color = currentModel.homeTeamColor;
-            awayTeamNameEl.style.color = currentModel.awayTeamColor;
-            scoreAwayEl.style.color = currentModel.awayTeamColor;
-
-            // Period label
-            periodDisplayEl.textContent = getPeriodLabel(currentModel.currentPeriod, currentModel.totalPeriods, currentModel.basePeriods);
-
-            // Render score history using shared component in read-only mode
-            renderHistoryRows(historyBodyEl, currentModel.scoreHistory, {
-                interactive: false,
-                homeTeamName: currentModel.homeTeamName,
-                awayTeamName: currentModel.awayTeamName,
-                homeTeamColor: currentModel.homeTeamColor,
-                awayTeamColor: currentModel.awayTeamColor,
-                totalPeriods: currentModel.totalPeriods,
-                basePeriods: currentModel.basePeriods
-            });
-
-            // Update clock and status pills
-            updateClockDisplay();
-        }
-
-        /**
-         * High-frequency display update implementing the server-anchored clock model (section 5.4).
-         * Calculates extrapolated elapsed time and renders remaining time without mutating state.
-         */
-        function updateClockDisplay() {
-            if (!currentModel) return;
-
-            const now = Date.now();
-            const serverNowEst = now + serverClockOffset;
-            const elapsedSinceUpdate = Math.max(0, serverNowEst - currentModel.lastUpdate);
-
-            // Compute current age in ms for status derivation
-            const currentEffectiveAgeMs = (currentModel.ageMs || 0) + (now - currentModel.fetchLocalTs);
-
-            // Derive status pill
-            const pillInfo = deriveStatusPill({
-                status: currentModel.status,
-                isPaused: currentModel.isPaused,
-                timerRunning: currentModel.timerRunning,
-                ageMs: currentEffectiveAgeMs
-            });
-
-            // Render status pill
-            statusPillEl.className = `status-pill ${pillInfo.className}`;
-            statusPillEl.innerHTML = '';
-            if (pillInfo.type === 'live') {
-                const dot = document.createElement('span');
-                dot.className = 'pill-live-dot';
-                statusPillEl.appendChild(dot);
-            }
-            statusPillEl.appendChild(document.createTextNode(pillInfo.text));
-
-            // Section 5.2: Age indicator shown ONLY when Stalled
-            if (pillInfo.type === 'stalled') {
-                stalledAgeIndicator.textContent = `Last update ${formatAgeMinutes(currentEffectiveAgeMs)}`;
-                stalledAgeIndicator.style.display = 'block';
-            } else {
-                stalledAgeIndicator.style.display = 'none';
-            }
-
-            // Section 5.4: Clock extrapolation logic
-            let extrapolatedElapsed = currentModel.elapsedMs;
-            const canExtrapolate = (
-                currentModel.status !== 'final' &&
-                currentModel.timerRunning &&
-                !currentModel.isPaused
-            );
-
-            if (canExtrapolate) {
-                const sinceUpdateClamped = Math.min(elapsedSinceUpdate, STALL_THRESHOLD_MS);
-                const runningExtrapolated = currentModel.elapsedMs + sinceUpdateClamped;
-
-                // Stop condition: clamp at period timeLimit unless scorer has already reported overage
-                if (currentModel.timeLimit > 0 && currentModel.elapsedMs < currentModel.timeLimit) {
-                    extrapolatedElapsed = Math.min(runningExtrapolated, currentModel.timeLimit);
-                } else {
-                    extrapolatedElapsed = runningExtrapolated;
-                }
-            }
-
-            // Calculate display milliseconds
-            const timeLimit = currentModel.timeLimit;
-            let displayMs = 0;
-            let isOverage = false;
-
-            if (currentModel.isCountingUp) {
-                clockLabelEl.textContent = 'Elapsed';
-                displayMs = extrapolatedElapsed;
-                if (timeLimit > 0 && extrapolatedElapsed > timeLimit) {
-                    isOverage = true;
-                }
-            } else {
-                clockLabelEl.textContent = 'Remaining';
-                if (timeLimit > 0) {
-                    displayMs = timeLimit - extrapolatedElapsed;
-                    if (extrapolatedElapsed > timeLimit) {
-                        isOverage = true;
-                    }
-                } else {
-                    displayMs = extrapolatedElapsed;
-                }
-            }
-
-            timerDisplayEl.textContent = formatTime(displayMs);
-
-            if (isOverage) {
-                overageBadgeEl.classList.remove('hidden');
-            } else {
-                overageBadgeEl.classList.add('hidden');
-            }
-        }
-
-        /**
-         * Transitions viewer to terminal Unavailable state.
-         */
-        function showUnavailableState() {
-            feedHalted = true;
-            stopPolling();
-            stopTicker();
-            loadingView.style.display = 'none';
-            scoreboardCard.style.display = 'none';
-            hideReconnectingBanner();
-            unavailableView.style.display = 'block';
-        }
-
-        function showReconnectingBanner() {
-            reconnectingBanner.style.display = 'block';
-        }
-
-        function hideReconnectingBanner() {
-            reconnectingBanner.style.display = 'none';
-        }
-
-        /**
-         * Starts periodic polling with backoff during network errors.
-         */
-        function startPolling() {
-            stopPolling();
-            if (feedHalted) return;
-            const delay = consecutiveErrors > 0 ? Math.min(10000, BASE_POLL_INTERVAL_MS * (consecutiveErrors + 1)) : BASE_POLL_INTERVAL_MS;
-            pollTimer = setTimeout(async () => {
-                if (!document.hidden) {
-                    await fetchGameSnapshot();
-                }
-                startPolling();
-            }, delay);
-        }
-
-        function stopPolling() {
-            if (pollTimer) {
-                clearTimeout(pollTimer);
-                pollTimer = null;
-            }
-        }
-
-        function startTicker() {
-            stopTicker();
-            if (feedHalted) return;
-            tickerTimer = setInterval(() => {
-                if (!document.hidden && currentModel) {
-                    updateClockDisplay();
-                }
-            }, 100);
-        }
-
-        function stopTicker() {
-            if (tickerTimer) {
-                clearInterval(tickerTimer);
-                tickerTimer = null;
-            }
-        }
-
-        // Mobile lifecycle: pause polling and ticker on hidden, resume immediately on visible
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopPolling();
-                stopTicker();
-            } else {
-                if (feedHalted) {
-                    // Do not resume polling for a final or unavailable match
-                    return;
-                }
-                fetchGameSnapshot();
-                startPolling();
-                startTicker();
-            }
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const versionEl = document.getElementById('appVersion');
-            if (versionEl) versionEl.textContent = APP_VERSION;
-
-            if (window.SuiteProfile) {
-                SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
-            }
-
-            // Apply viewing user's selected theme (read-only)
-            applySavedThemeReadOnly();
-
-            // Set up dynamic back button
-            configureBackLink();
-
-            // Initial fetch and timer activation
-            fetchGameSnapshot().then(() => {
-                startTicker();
-                startPolling();
-            });
-        });
-    </script>
+    <script type="module" src="js/viewer.js"></script>
 </body>
 
 </html>

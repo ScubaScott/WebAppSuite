@@ -6,6 +6,7 @@
 import { STATUS, getElapsed, getScores, periodLabel } from './state.js';
 import { formatClock } from './format.js';
 import { buildHistory } from './snapshot.js';
+import { renderHistoryRows } from './shared.js';
 
 /** The remaining time (ms) at or below which the countdown turns red. */
 const WARNING_MS = 120000;
@@ -66,6 +67,10 @@ export function createRenderer() {
         el.scoreAway.style.color = game.away.color;
         el.period.textContent = periodLabel(game);
 
+        // The boxes are buttons: say what they do
+        el.scoreHome.setAttribute('aria-label', `Add a goal for ${game.home.name}. Score ${scores.home}`);
+        el.scoreAway.setAttribute('aria-label', `Add a goal for ${game.away.name}. Score ${scores.away}`);
+
         // Board controls are locked before a game exists, before the first Start, and after the game ends
         el.boardControls.classList.toggle('board-locked',
             game.status === STATUS.IDLE || game.status === STATUS.FINAL || draft);
@@ -113,7 +118,7 @@ export function createRenderer() {
      */
     function renderHistory(game, prefs, onRowClick) {
         const rows = buildHistory(game, prefs);
-        window.ScoreBoardShared.renderHistoryRows(el.historyBody, rows, {
+        renderHistoryRows(el.historyBody, rows, {
             interactive: true,
             onRowClick: (index) => onRowClick(rows[index].id),
             homeTeamName: game.home.name,

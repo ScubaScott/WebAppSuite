@@ -1,19 +1,19 @@
 /**
- * WebAppSuite ScoreBoard - Shared Utilities & Helpers
- * Provides standardized clock extrapolation, status pill derivation, history table formatting,
- * read-only theme application, and start-time formatting shared between the operator console,
- * unified Games screen, and spectator Viewer.
+ * ScoreBoard shared helpers: status pill, history table, theme catalog and application, start-time
+ * formatting. Used by the console, the games list and the spectator viewer.
  */
 
+import { getPeriodLabel } from './format.js';
+
 // Shared module version constant
-const SCOREBOARD_SHARED_VERSION = '1.6';
+export const SCOREBOARD_SHARED_VERSION = '2.0';
 
 // Inactivity threshold (30 minutes in ms) after which an active game is considered stalled
-const STALL_THRESHOLD_MS = 30 * 60 * 1000;
+export const STALL_THRESHOLD_MS = 30 * 60 * 1000;
 
 // Theme catalog: the single list of themes used by the console, viewer and games list.
 // Keys are saved with games and preferences, so never rename or remove an entry.
-const SCOREBOARD_THEMES = {
+export const SCOREBOARD_THEMES = {
     'EdenPrarie.png': {
         image: 'EdenPrarie.png',
         bgColor: '#1a1a2e',
@@ -59,7 +59,7 @@ const SCOREBOARD_THEMES = {
  * @param {string|null|undefined} str
  * @returns {string}
  */
-function escapeHtml(str) {
+export function escapeHtml(str) {
     if (str == null) return '';
     return String(str)
         .replace(/&/g, '&amp;')
@@ -70,50 +70,12 @@ function escapeHtml(str) {
 }
 
 /**
- * Formats milliseconds into [ - ]MM:SS.d format (e.g. 03:24.5 or -00:12.3).
- *
- * @param {number} ms
- * @returns {string}
- */
-function formatTime(ms) {
-    const absMs = Math.abs(ms);
-    const totalSeconds = Math.floor(absMs / 1000);
-    const totalMinutes = Math.floor(totalSeconds / 60);
-    const s = totalSeconds % 60;
-    const decis = Math.floor((absMs % 1000) / 100);
-    const pad = (n) => n.toString().padStart(2, '0');
-    return `${ms < 0 ? '-' : ''}${pad(totalMinutes)}:${pad(s)}.${decis}`;
-}
-
-/**
- * Computes user-facing period label: P1, P2, ... or OT / OT1, OT2.
- *
- * @param {number} periodNum
- * @param {number} [totalPeriods=2]
- * @param {number} [basePeriods=2]
- * @returns {string}
- */
-function getPeriodLabel(periodNum, totalPeriods = 2, basePeriods = 2) {
-    const p = Number(periodNum) || 1;
-    const b = Number(basePeriods) || 2;
-    const t = Number(totalPeriods) || b;
-    if (p <= b) {
-        return `P${p}`;
-    }
-    const otIndex = p - b;
-    if (t === b + 1) {
-        return 'OT';
-    }
-    return `OT${otIndex}`;
-}
-
-/**
  * Formats game period elapsed time into MM:SS format without period prefix or subseconds.
  *
  * @param {Object} entry
  * @returns {string}
  */
-function formatGameTimeMmSs(entry) {
+export function formatGameTimeMmSs(entry) {
     if (!entry) return '';
     if (entry.periodElapsedMs !== undefined && entry.periodElapsedMs !== null && !isNaN(entry.periodElapsedMs)) {
         const absMs = Math.abs(entry.periodElapsedMs);
@@ -141,7 +103,7 @@ function formatGameTimeMmSs(entry) {
  * @param {string|number} timestamp
  * @returns {string}
  */
-function formatEventTime(timestamp) {
+export function formatEventTime(timestamp) {
     if (!timestamp) return '';
     const d = new Date(timestamp);
     if (!isNaN(d.getTime())) {
@@ -159,7 +121,7 @@ function formatEventTime(timestamp) {
  * @param {number} [basePeriods=2]
  * @returns {{periodLabel: string, action: string, eventLabel: string, rawText: string}}
  */
-function parseEventDetails(entry, totalPeriods = 2, basePeriods = 2) {
+export function parseEventDetails(entry, totalPeriods = 2, basePeriods = 2) {
     if (!entry) return { periodLabel: '', action: '', eventLabel: '', rawText: '' };
     const rawText = entry.text || '';
 
@@ -227,7 +189,7 @@ function parseEventDetails(entry, totalPeriods = 2, basePeriods = 2) {
  * @param {Object} game
  * @returns {{type: string, text: string, className: string}}
  */
-function deriveStatusPill(game) {
+export function deriveStatusPill(game) {
     if (!game) {
         return { type: 'final', text: 'Final', className: 'pill-final' };
     }
@@ -259,7 +221,7 @@ function deriveStatusPill(game) {
  * @param {string|number|Date} dateVal
  * @returns {string}
  */
-function formatStartDate(dateVal) {
+export function formatStartDate(dateVal) {
     if (!dateVal) return '';
     let d = null;
     if (dateVal instanceof Date) {
@@ -294,7 +256,7 @@ function formatStartDate(dateVal) {
  * @param {number} ms
  * @returns {string}
  */
-function formatAgeMinutes(ms) {
+export function formatAgeMinutes(ms) {
     const totalMinutes = Math.floor(Math.max(0, ms) / 60000);
     if (totalMinutes <= 0) {
         return 'just now';
@@ -318,7 +280,7 @@ function formatAgeMinutes(ms) {
  * @param {number} [options.totalPeriods=2]
  * @param {number} [options.basePeriods=2]
  */
-function renderHistoryRows(tbodyEl, historyList, options = {}) {
+export function renderHistoryRows(tbodyEl, historyList, options = {}) {
     if (!tbodyEl) return;
     tbodyEl.innerHTML = '';
 
@@ -327,10 +289,7 @@ function renderHistoryRows(tbodyEl, historyList, options = {}) {
         const emptyRow = document.createElement('tr');
         const emptyTd = document.createElement('td');
         emptyTd.colSpan = 3;
-        emptyTd.style.padding = '12px';
-        emptyTd.style.textAlign = 'center';
-        emptyTd.style.color = '#94a3b8';
-        emptyTd.style.fontStyle = 'italic';
+        emptyTd.className = 'history-empty';
         emptyTd.textContent = 'No recorded events yet.';
         emptyRow.appendChild(emptyTd);
         tbodyEl.appendChild(emptyRow);
@@ -369,14 +328,14 @@ function renderHistoryRows(tbodyEl, historyList, options = {}) {
                 timeTitle = `Corrected ${entry.adjustedMs > 0 ? '+' : '-'}${minutes} min (pressed at ${formatEventTime(entry.recordedTimestamp)})`;
             }
             row.innerHTML = `
-                <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
+                <td class="history-td-team">
                     <div class="history-team-cell" title="⏱️ ${escapeHtml(eventLabel)}">
-                        <span class="history-watch-icon" style="font-size:1.05rem;line-height:1;margin-right:2px;">⏱️</span>
-                        <span class="history-event-name" style="font-weight:700;color:#f3f4f6;">${escapeHtml(eventLabel)}</span>
+                        <span class="history-watch-icon history-icon">⏱️</span>
+                        <span class="history-event-name">${escapeHtml(eventLabel)}</span>
                     </div>
                 </td>
-                <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
-                <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(timeTitle)}">${escapeHtml(displayTime)}</td>
+                <td class="history-td-note history-note-cell" title="${noteTitle}">${noteDisplay}</td>
+                <td class="history-td-time history-time-cell" title="${escapeHtml(timeTitle)}">${escapeHtml(displayTime)}</td>
             `;
         } else if (entry.type === 'card') {
             const isYellow = (entry.cardType === 'yellow' || (entry.degree && entry.degree.toLowerCase().includes('yellow')));
@@ -385,31 +344,34 @@ function renderHistoryRows(tbodyEl, historyList, options = {}) {
             const teamName = entry.teamName || (entry.teamId === 'home' ? (options.homeTeamName || 'Home') : (options.awayTeamName || 'Away'));
             const displayTime = formatGameTimeMmSs(entry);
             row.innerHTML = `
-                <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
+                <td class="history-td-team">
                     <div class="history-team-cell" title="${cardSymbol} ${escapeHtml(teamName)}">
-                        <span class="history-card-icon" style="font-size:1.05rem;line-height:1;margin-right:2px;">${cardSymbol}</span>
-                        <span class="history-team-name" style="color:${color};">${escapeHtml(teamName)}</span>
+                        <span class="history-card-icon history-icon">${cardSymbol}</span>
+                        <span class="history-team-name" data-team-color="${escapeHtml(color)}">${escapeHtml(teamName)}</span>
                     </div>
                 </td>
-                <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
-                <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
+                <td class="history-td-note history-note-cell" title="${noteTitle}">${noteDisplay}</td>
+                <td class="history-td-time history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
             `;
         } else {
             const color = entry.teamColor || (entry.teamId === 'home' ? homeTeamColor : awayTeamColor);
             const teamName = entry.teamName || (entry.teamId === 'home' ? (options.homeTeamName || 'Home') : (options.awayTeamName || 'Away'));
             const displayTime = formatGameTimeMmSs(entry);
             row.innerHTML = `
-                <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
+                <td class="history-td-team">
                     <div class="history-team-cell" title="${escapeHtml(teamName)} (${entry.currentScore})">
-                        <span class="history-goal-icon" style="font-size:1.05rem;line-height:1;margin-right:2px;">🥅</span>
-                        <span class="history-team-name" style="color:${color};">${escapeHtml(teamName)}</span>
+                        <span class="history-goal-icon history-icon">🥅</span>
+                        <span class="history-team-name" data-team-color="${escapeHtml(color)}">${escapeHtml(teamName)}</span>
                         <span class="history-score-tag">(${entry.currentScore !== undefined ? entry.currentScore : ''})</span>
                     </div>
                 </td>
-                <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
-                <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
+                <td class="history-td-note history-note-cell" title="${noteTitle}">${noteDisplay}</td>
+                <td class="history-td-time history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
             `;
         }
+
+        // Team colors are data from the game, so they are set as a property instead of inside the markup
+        row.querySelectorAll('[data-team-color]').forEach((node) => { node.style.color = node.dataset.teamColor; });
 
         // Newest event renders at the top of the history list
         tbodyEl.prepend(row);
@@ -422,7 +384,7 @@ function renderHistoryRows(tbodyEl, historyList, options = {}) {
  *
  * @param {string} themeName
  */
-function applyThemeToBody(themeName) {
+export function applyThemeToBody(themeName) {
     let imageName = 'saber.png';
     let bgColor = '#111827';
     let filter = null;
@@ -439,10 +401,6 @@ function applyThemeToBody(themeName) {
     const imageUrl = `url("media/bgimages/${imageName}")`;
     document.body.style.backgroundImage = imageUrl;
     document.body.style.backgroundColor = bgColor;
-    document.body.style.backgroundPosition = 'right bottom';
-    document.body.style.backgroundAttachment = 'fixed';
-    document.body.style.backgroundRepeat = 'no-repeat';
-    document.body.style.backgroundSize = 'cover';
 
     // A filtered theme draws the image on a fixed overlay so the filter does not affect page content
     let overlay = document.getElementById('theme-filter-overlay');
@@ -451,14 +409,10 @@ function applyThemeToBody(themeName) {
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.id = 'theme-filter-overlay';
-            overlay.style.cssText = [
-                'position:fixed', 'inset:0', 'z-index:-1',
-                'pointer-events:none'
-            ].join(';');
+            overlay.className = 'theme-filter-overlay';
             document.body.appendChild(overlay);
         }
-        overlay.style.background = `${imageUrl} no-repeat right bottom / cover`;
-        overlay.style.backgroundAttachment = 'fixed';
+        overlay.style.backgroundImage = imageUrl;
         overlay.style.filter = filter;
         document.body.style.backgroundImage = 'none';
     } else {
@@ -471,7 +425,7 @@ function applyThemeToBody(themeName) {
  * Reads the viewing user's selected theme from localStorage and applies it to the page.
  * Strictly read-only: performs zero writes to localStorage or SuiteProfile app data to prevent state corruption.
  */
-function applySavedThemeReadOnly() {
+export function applySavedThemeReadOnly() {
     let themeName = 'saber.png';
     try {
         // Current preferences first, then the record written by earlier versions
@@ -496,7 +450,7 @@ function applySavedThemeReadOnly() {
  * @param {'public'|'mine'} source
  * @returns {Object}
  */
-function normalizeRowViewModel(raw, source = 'public') {
+export function normalizeRowViewModel(raw, source = 'public') {
     const snap = raw.snapshot || {};
     const gameId = raw.game_id || raw.id;
     const homeName = raw.homeTeamName || raw.home_name || snap.homeTeamName || 'Home';
@@ -526,27 +480,5 @@ function normalizeRowViewModel(raw, source = 'public') {
         startedAt,
         endedAt,
         isOwner: (source === 'mine')
-    };
-}
-
-// Global namespace exposure for browser environments
-if (typeof window !== 'undefined') {
-    window.ScoreBoardShared = {
-        VERSION: SCOREBOARD_SHARED_VERSION,
-        STALL_THRESHOLD_MS,
-        SCOREBOARD_THEMES,
-        escapeHtml,
-        formatTime,
-        getPeriodLabel,
-        formatGameTimeMmSs,
-        formatEventTime,
-        parseEventDetails,
-        deriveStatusPill,
-        formatStartDate,
-        formatAgeMinutes,
-        renderHistoryRows,
-        applyThemeToBody,
-        applySavedThemeReadOnly,
-        normalizeRowViewModel
     };
 }
