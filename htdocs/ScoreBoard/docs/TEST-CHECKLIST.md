@@ -40,6 +40,9 @@ Test games appear on the public Active Games list. Set them to private or delete
 - [ ] Remove the "Clock +1:00" row: the clock and every time return to their earlier values.
 - [ ] Correct while paused: it works. Correct between periods: the elapsed time cannot be opened.
 - [ ] Reload after a correction: the clock and the Start row are unchanged.
+- [ ] The Start row of a corrected period shows a `*`; tapping the row shows both the corrected time and when it was pressed.
+- [ ] Pause and resume rows (with "Log Pause/Resume" on) and End rows show a position such as `13:00`; tapping one shows the position and the time of day.
+- [ ] A game finished before this version still shows the times it showed before, and the viewer shows the same rows as the console.
 
 ## History
 

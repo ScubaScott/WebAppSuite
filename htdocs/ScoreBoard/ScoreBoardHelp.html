@@ -35,7 +35,8 @@
                 <h2 class="text-lg font-semibold text-white">Dual Clocks &amp; Overage</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li><strong>Period Countdown (Main):</strong> Shows remaining time in the current period (e.g. <code>40:00.0</code>). The clock is display-only (clicking it does not open the time roller). When the countdown reaches zero, the whistle sounds and the clock transitions into overage (e.g. <code>-01:23.4</code>) with an amber/red overage badge.</li>
-                    <li><strong>Period Elapsed:</strong> Readout beneath the countdown tracking continuous playing time elapsed within the active period. Tap it while running to open quick minute adjustments (+/- 1m, +/- 5m) if the clock was started late or early.</li>
+                    <li><strong>Period Elapsed:</strong> Readout beneath the countdown tracking continuous playing time elapsed within the active period. Tap it while the clock is running or paused to open quick minute corrections (+5, +1, -1, -5 minutes) if the clock was started late or early.</li>
+                    <li><strong>Clock corrections:</strong> A correction moves the start of the period, not just the display. The <code>Start</code> row in the history shows the corrected time (marked with <code>*</code>), a <code>Clock +1:00</code> row records the correction, and goals and cards logged in that period move with it. Pauses keep their length. Remove the <code>Clock</code> row to undo the correction. A correction that would put an entry before the start of the period, or past the end of it, is refused with a message. Goals recorded by older versions of the app keep their original times.</li>
                 </ul>
             </div>
 
@@ -77,7 +78,7 @@
                 <h2 class="text-lg font-semibold text-white">Score Tracking &amp; History Log</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li><strong>Tap a team's score area</strong> to increment that team's score.</li>
-                    <li>Each score entry is logged in the Score History with <strong>Team (Score)</strong>, custom note, period tag (e.g. <code>P1</code>, <code>OT</code>), and period elapsed time.</li>
+                    <li>Each score entry is logged in the Score History with <strong>Team (Score)</strong>, custom note, period tag (e.g. <code>P1</code>, <code>OT</code>), and period elapsed time. Pause, resume and end rows list their position in the period; the period start row lists the time of day.</li>
                     <li><strong>Tap any history row</strong> to open its options menu:
                         <ul class="list-disc list-inside ml-5 mt-1 space-y-1 text-gray-400">
                             <li><strong>Add Note / Edit Note:</strong> Attach a custom single-line note (up to 60 characters) to that event.</li>
@@ -115,13 +116,13 @@
         </div>
     </div>
     <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">2.0</span></p>
+        <p>Version <span id="helpVersion">2.1</span></p>
     </footer>
     <!-- Shared Suite Profile and service worker registration -->
     <script src="../media/suite-profile.js"></script>
     <script>
         // ScoreBoard help documentation version identifier
-        const VERSION = '2.0';
+        const VERSION = '2.1';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;

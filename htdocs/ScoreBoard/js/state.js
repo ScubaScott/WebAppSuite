@@ -75,12 +75,12 @@ export function serverStatus(game) {
 }
 
 /** Whether the current period has had its first Start. */
-export function periodHasStarted(game, period = game.currentPeriod) {
+function periodHasStarted(game, period = game.currentPeriod) {
     return clock.getPeriodClock(game.events, period).recordedStart !== null;
 }
 
 /** Whether the given period has an end event. */
-export function periodHasEnded(game, period = game.currentPeriod) {
+function periodHasEnded(game, period = game.currentPeriod) {
     return clock.getPeriodClock(game.events, period).end !== null;
 }
 

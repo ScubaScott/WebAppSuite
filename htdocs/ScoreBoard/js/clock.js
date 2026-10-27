@@ -6,8 +6,6 @@
  * Times are epoch milliseconds. An event's `timestamp` may be an ISO string or a number.
  */
 
-const MS_PER_MINUTE = 60000;
-
 // Event types that are not "play" events when checking an adjustment: the start row and the
 // adjustment rows themselves.
 const ADJUST_EXEMPT_TYPES = ['period_start', 'clock_adjust'];
@@ -227,13 +225,11 @@ function validateAdjustmentRemoval(events, period, eventId, options) {
 }
 
 export {
-    MS_PER_MINUTE,
     eventTime,
     getPeriodClock,
     getPosition,
     getElapsed,
     getExpiryTime,
-    formatPosition,
     validateAdjustment,
     validateAdjustmentRemoval
 };

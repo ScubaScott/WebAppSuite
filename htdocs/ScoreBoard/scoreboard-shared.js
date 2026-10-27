@@ -6,7 +6,7 @@
  */
 
 // Shared module version constant
-const SCOREBOARD_SHARED_VERSION = '1.5';
+const SCOREBOARD_SHARED_VERSION = '1.6';
 
 // Inactivity threshold (30 minutes in ms) after which an active game is considered stalled
 const STALL_THRESHOLD_MS = 30 * 60 * 1000;
@@ -357,7 +357,17 @@ function renderHistoryRows(tbodyEl, historyList, options = {}) {
 
         if (entry.type === 'event') {
             const { eventLabel } = parseEventDetails(entry, totalPeriods, basePeriods);
-            const displayTime = formatEventTime(entry.timestamp);
+            // Pause, resume and end rows recorded by the current version show their position in the period;
+            // other clock rows show the time of day. A corrected start row is marked with an asterisk.
+            let displayTime = (typeof entry.positionMs === 'number')
+                ? formatGameTimeMmSs({ periodElapsedMs: entry.positionMs })
+                : formatEventTime(entry.timestamp);
+            let timeTitle = displayTime;
+            if (entry.adjustedMs) {
+                const minutes = Math.round(Math.abs(entry.adjustedMs) / 60000);
+                displayTime += '*';
+                timeTitle = `Corrected ${entry.adjustedMs > 0 ? '+' : '-'}${minutes} min (pressed at ${formatEventTime(entry.recordedTimestamp)})`;
+            }
             row.innerHTML = `
                 <td style="padding:6px 6px 6px 12px;vertical-align:middle;">
                     <div class="history-team-cell" title="⏱️ ${escapeHtml(eventLabel)}">
@@ -366,7 +376,7 @@ function renderHistoryRows(tbodyEl, historyList, options = {}) {
                     </div>
                 </td>
                 <td style="padding:6px 6px;vertical-align:middle;" class="history-note-cell" title="${noteTitle}">${noteDisplay}</td>
-                <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(displayTime)}">${escapeHtml(displayTime)}</td>
+                <td style="padding:6px 12px 6px 6px;text-align:right;vertical-align:middle;" class="history-time-cell" title="${escapeHtml(timeTitle)}">${escapeHtml(displayTime)}</td>
             `;
         } else if (entry.type === 'card') {
             const isYellow = (entry.cardType === 'yellow' || (entry.degree && entry.degree.toLowerCase().includes('yellow')));

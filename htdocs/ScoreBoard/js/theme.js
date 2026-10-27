@@ -12,7 +12,7 @@ const sortImages = (names) => Array.from(new Set(names))
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
 /** Human-readable label for an image file name. */
-export function formatImageLabel(filename) {
+function formatImageLabel(filename) {
     const base = filename.replace(/\.[^/.]+$/, '');
     const words = base.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').trim();
     return words.charAt(0).toUpperCase() + words.slice(1);

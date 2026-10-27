@@ -28,9 +28,9 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Done (fixtures in `docs/`) |
-| 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` still present; remove it in Phase 3 |
-| 2 | One `toSnapshot()`, one send scheduler, game and preferences stored separately, shared helpers and one theme catalog, single beacon | Done and tested on `full_refactor` (console 5.3, shared 1.5) |
-| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 to 3.4 done with tests; 3.5 (console rewrite: `js/console.js` and screen modules, console 6.0) code complete, awaiting the browser checklist; then 3.6 to 3.8 |
+| 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` removed from the snapshot in Phase 3 (the viewer still reads it for archived games) |
+| 2 | One `toSnapshot()`, one send scheduler, game and preferences stored separately, shared helpers and one theme catalog, single beacon | Done and tested on `full_refactor` (console 5.3, shared 1.6) |
+| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 to 3.4 done with tests; 3.5 (console rewrite, console 6.0) and 3.6 (history display, shared 1.6, help 2.1) done; 3.8 dead-code removal done; 3.7 server migration script remains |
 | 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
 | 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
 | Later | Viewer sends its last `rev` and gets 304 when unchanged | Optional |
@@ -276,7 +276,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 6.0, viewer 1.5, games list 1.0, help 2.0, shared 1.3).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 6.0, viewer 1.5, games list 1.0, help 2.1, shared 1.6).
 
 ---
 

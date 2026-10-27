@@ -63,7 +63,15 @@ export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, s
         } else {
             const { eventLabel } = shared.parseEventDetails(row, game.periodCount, game.regulationPeriods);
             setPreview(el.previewEvent, '⏱️', eventLabel);
-            el.previewMeta.textContent = `Time: ${shared.formatEventTime(row.timestamp) || 'N/A'}`;
+            const clockTime = shared.formatEventTime(row.timestamp) || 'N/A';
+            if (typeof row.positionMs === 'number') {
+                // Position in the period, then the time of day it happened
+                el.previewMeta.textContent = `Time: ${shared.formatGameTimeMmSs({ periodElapsedMs: row.positionMs })} (${clockTime})`;
+            } else if (row.adjustedMs) {
+                el.previewMeta.textContent = `Time: ${clockTime} (pressed at ${shared.formatEventTime(row.recordedTimestamp)})`;
+            } else {
+                el.previewMeta.textContent = `Time: ${clockTime}`;
+            }
         }
 
         if (row.note) {

@@ -24,7 +24,6 @@ function oldSnapshot(saved, now) {
         totalPeriods: saved.totalPeriods,
         basePeriods: saved.basePeriods,
         timerRunning: saved.running,
-        isCountingUp: saved.isCountingUp,
         timeLimit: saved.timeLimit,
         elapsedMs: saved.accumulatedTime + (saved.startTime ? now - saved.startTime : 0),
         startedAt: saved.activeGameStartedAt,
@@ -142,4 +141,36 @@ test('the start row shows the corrected start time', () => {
     const start = rows.find((r) => r.eventType === 'period_start');
     assert.equal(start.timestamp, new Date(Date.parse('2026-10-26T17:00:00')).toISOString());
     assert.equal(start.adjustedMs, 60000);
+});
+
+test('pause, resume and end rows of new entries carry their position; old entries do not', () => {
+    let game = createGame();
+    const at = Date.parse('2026-10-26T17:00:00');
+    game = reduce(game, { type: 'new_game', gameId: 'g', writeToken: 't', at, periodCount: 2, periodLengthMs: 2400000 });
+    game = reduce(game, { type: 'start', at, id: 'a' });
+    game = reduce(game, { type: 'pause', at: at + 13 * 60000, id: 'b' });
+    game = reduce(game, { type: 'resume', at: at + 15 * 60000, id: 'c', pauseId: 'x' });
+    game = reduce(game, { type: 'end_period', at: at + 30 * 60000, id: 'd', reason: 'manual' });
+    const rows = buildHistory(game, { logPauseResume: true, logPeriodStartStop: true });
+    const byType = (type) => rows.find((r) => r.eventType === type);
+    assert.equal(byType('paused').positionMs, 13 * 60000);
+    assert.equal(byType('resumed').positionMs, 13 * 60000);
+    assert.equal(byType('period_end').positionMs, 28 * 60000);
+    assert.equal(byType('period_start').positionMs, undefined);
+
+    // An entry recorded by an earlier version keeps its stored position and shows its clock time
+    const old = convert(load('timerStateV7_Finalized.json'));
+    const oldEnd = buildHistory(old, {}).filter((r) => r.eventType === 'period_end').pop();
+    assert.equal(oldEnd.positionMs, undefined);
+    assert.equal(oldEnd.periodElapsedMs, 5999);
+});
+
+test('a corrected start row keeps the time that was pressed', () => {
+    let game = createGame();
+    const at = Date.parse('2026-10-26T17:01:00');
+    game = reduce(game, { type: 'new_game', gameId: 'g', writeToken: 't', at, periodCount: 2, periodLengthMs: 2400000 });
+    game = reduce(game, { type: 'start', at, id: 'a' });
+    game = reduce(game, { type: 'adjust_clock', at: at + 60000, id: 'b', deltaMs: 60000 });
+    const start = buildHistory(game, { logPeriodStartStop: true }).find((r) => r.eventType === 'period_start');
+    assert.equal(start.recordedTimestamp, new Date(at).toISOString());
 });

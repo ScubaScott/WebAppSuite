@@ -96,15 +96,7 @@ body {
     font-size: clamp(0.72rem, 2.5vw, 0.85rem);
     font-weight: 700;
 }
-.history-dot {
-    flex-shrink: 0;
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 6px;
-    border: 1px solid rgba(255,255,255,0.25);
-}
+
 .history-team-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -138,42 +130,6 @@ body {
     color: #93c5fd;
     font-style: italic;
     padding-right: 6px;
-}
-
-/* Event log row cell */
-.history-event-cell {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: clamp(0.72rem, 2.4vw, 0.82rem);
-    color: #d1d5db;
-}
-
-.history-delete-btn {
-    background: transparent;
-    border: 1px solid transparent;
-    color: #9ca3af;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.8rem;
-    line-height: 1;
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: auto;
-    transition: all 0.15s ease;
-    flex-shrink: 0;
-}
-.history-delete-btn:hover {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.3);
-}
-.history-delete-btn:active {
-    transform: scale(0.92);
 }
 
 /* ---- Utility ---- */
@@ -498,23 +454,6 @@ body {
     appearance: none;
 }
 
-/* Apply / Save button inside team card */
-.team-apply-btn {
-    width: 100%;
-    border: none;
-    border-radius: 8px;
-    padding: 7px 0;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #fff;
-    cursor: pointer;
-    transition: filter 0.15s;
-}
-.team-apply-btn:hover {
-    filter: brightness(1.2);
-}
-
 /* ============================================================
    Theme Selection (Dropdown with Thumbnail Previews)
    ============================================================ */
@@ -704,65 +643,6 @@ body {
     display: block;
 }
 
-/* Legacy theme grid styles retained for backward compatibility */
-.theme-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding-bottom: 8px;
-}
-.theme-card {
-    border-radius: 14px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s;
-    position: relative;
-}
-.theme-card:hover {
-    transform: scale(1.04);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
-}
-.theme-card.theme-active {
-    border-color: #10b981;
-}
-.theme-preview {
-    width: 100%;
-    aspect-ratio: 3 / 2;
-    background-size: cover;
-    background-position: center;
-}
-.theme-name {
-    width: 100%;
-    padding: 6px 8px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.60);
-    backdrop-filter: blur(4px);
-}
-.theme-check {
-    display: none;
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    background: #10b981;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-.theme-card.theme-active .theme-check {
-    display: flex;
-}
-
 /* ============================================================
    Floating Action Buttons (Mute & Settings)
    ============================================================ */
@@ -790,118 +670,10 @@ body {
 }
 
 /* ============================================================
-   Time Selector & Roller Picker
-   Cylindrical drum wheel selector for custom time limits
-   with quick preset chips and smooth scroll-snapping.
+   Roller Picker
+   Cylindrical drum wheel selector for custom period lengths
+   with smooth scroll-snapping.
    ============================================================ */
-
-.time-selector-panel {
-    display: none;
-    width: 100%;
-    background: rgba(23, 30, 44, 0.94);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 16px 14px;
-    border-radius: 18px;
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    box-sizing: border-box;
-}
-
-.time-selector-header {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 4px;
-}
-
-.time-selector-title {
-    font-size: 0.72rem;
-    color: #f87171;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.time-selector-close-x {
-    background: transparent;
-    border: none;
-    color: #9ca3af;
-    font-size: 1.4rem;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0 4px;
-    transition: color 0.15s ease;
-}
-.time-selector-close-x:hover {
-    color: #ffffff;
-}
-
-/* Preset buttons row */
-.time-preset-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-}
-
-.time-preset-btn {
-    background: #1f2937;
-    color: #d1d5db;
-    border: 1px solid #374151;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-}
-
-.time-preset-btn:hover {
-    background: #374151;
-    color: #ffffff;
-    border-color: #4b5563;
-    transform: translateY(-1px);
-}
-
-.time-preset-btn:active {
-    transform: translateY(0);
-}
-
-.time-preset-btn.time-preset-active {
-    background: rgba(239, 68, 68, 0.25);
-    border-color: #ef4444;
-    color: #ffffff;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
-}
-
-/* Section divider */
-.time-selector-divider {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    text-align: center;
-    color: #6b7280;
-    font-size: 0.62rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    gap: 10px;
-}
-
-.time-selector-divider::before,
-.time-selector-divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid rgba(55, 65, 81, 0.8);
-}
 
 /* Roller Picker Container */
 .roller-picker-wrapper {
@@ -1095,58 +867,6 @@ body {
     z-index: 3;
 }
 
-/* Action buttons at bottom of panel */
-.time-roller-actions {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-    max-width: 260px;
-}
-
-.time-set-btn {
-    flex: 2;
-    background: #10b981;
-    color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.82rem;
-    padding: 10px 14px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    transition: all 0.15s ease;
-}
-
-.time-set-btn:hover {
-    background: #059669;
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
-    transform: translateY(-1px);
-}
-
-.time-set-btn:active {
-    transform: translateY(0);
-}
-
-.time-cancel-btn {
-    flex: 1;
-    background: #374151;
-    color: #d1d5db;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.82rem;
-    padding: 10px 12px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.time-cancel-btn:hover {
-    background: #4b5563;
-    color: #ffffff;
-}
-
 /* ============================================================
    Penalty Cards (Yellow & Red)
    Optional team foul buttons and card raise animation.
@@ -1222,35 +942,6 @@ body {
     font-weight: 800;
     letter-spacing: 0.1em;
     user-select: none;
-}
-
-/* History card foul badge */
-.history-card-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 5px;
-    margin-left: 6px;
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
-    line-height: 1.2;
-}
-
-.history-card-badge.yellow {
-    background: #facc15;
-    color: #713f12;
-    border: 1px solid #ca8a04;
-    box-shadow: 0 0 6px rgba(250, 204, 21, 0.35);
-}
-
-.history-card-badge.red {
-    background: #ef4444;
-    color: #ffffff;
-    border: 1px solid #b91c1c;
-    box-shadow: 0 0 6px rgba(239, 68, 68, 0.35);
 }
 
 /* ============================================================
@@ -2588,15 +2279,6 @@ footer {
     width: 100%;
 }
 
-.viewer-meta-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    font-size: 0.85rem;
-    color: #94a3b8;
-}
-
 .viewer-reconnecting-banner {
     width: 100%;
     padding: 6px 12px;
@@ -2624,6 +2306,4 @@ footer {
     font-size: inherit;
     color: inherit;
 }
-
-
 

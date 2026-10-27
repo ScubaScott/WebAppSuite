@@ -65,20 +65,28 @@ export function buildHistory(game, prefs = {}) {
             const position = isNumber(event.periodElapsedMs)
                 ? event.periodElapsedMs
                 : Math.max(0, getPosition(game.events, event.period, Date.parse(event.timestamp)));
-            rows.push({
+            const row = {
                 ...event,
                 periodLabel: event.periodLabel || label,
                 scoreSnapshot: event.scoreSnapshot || `${tally.home}-${tally.away}`,
                 periodElapsedMs: position,
                 gameTime: event.gameTime || gameTime(position)
-            });
+            };
+            // Entries recorded by this version are listed by their position; older entries keep their clock time
+            if (!isNumber(event.periodElapsedMs)) row.positionMs = position;
+            rows.push(row);
         } else if (event.eventType === 'paused' || event.eventType === 'resumed') {
-            if (showPause) rows.push({ ...event });
+            const row = { ...event };
+            if (!isNumber(event.periodElapsedMs)) {
+                row.positionMs = Math.max(0, getPosition(game.events, event.period, Date.parse(event.timestamp)));
+            }
+            if (showPause) rows.push(row);
         } else if (event.eventType === 'period_start') {
             // After a clock correction the start row shows when play really began
             const periodClock = getPeriodClock(game.events, event.period);
             const row = { ...event };
             if (periodClock.adjustMs !== 0 && periodClock.effectiveStart !== null) {
+                row.recordedTimestamp = event.timestamp;
                 row.timestamp = new Date(periodClock.effectiveStart).toISOString();
                 row.adjustedMs = periodClock.adjustMs;
             }
@@ -111,8 +119,6 @@ export function toSnapshot(game, now, prefs = {}) {
         basePeriods: game.regulationPeriods,
         timerRunning: game.status === STATUS.RUNNING,
         isPaused: game.status === STATUS.PAUSED,
-        // The viewer still reads this flag; the console no longer has a count-up mode
-        isCountingUp: false,
         timeLimit: game.periodLengthMs,
         elapsedMs: getElapsed(game, now),
         startedAt: game.startedAt || now,
