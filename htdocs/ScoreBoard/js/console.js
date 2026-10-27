@@ -14,12 +14,11 @@ import { createSyncer } from './sync.js';
 import { createRenderer } from './render.js';
 import { createSetup } from './setup.js';
 import { createHistoryDialog } from './history.js';
-import { createThemeSelector } from './theme.js';
 import { applyThemeToBody } from './shared.js';
 import { showToast, playWhistle, playScoreSplash, playCardRaise, shareText } from './effects.js';
 
 // Page version, shown in the footer
-const APP_VERSION = '6.1';
+const APP_VERSION = '7.0';
 
 const TICK_MS = 100;
 const HEARTBEAT_MS = 20 * 1000;
@@ -63,7 +62,7 @@ const QUIET_ACTIONS = new Set(['sync_state', 'server_final']);
 const storage = createStorage(window.localStorage, newId);
 let prefs = storage.loadPrefs() || defaultPrefs();
 
-const loaded = storage.loadGame(Date.now());
+const loaded = storage.loadGame(Date.now(), prefs.theme);
 const store = createStore(loaded ? loaded.game : createGame());
 // When the page last saved the game; used to judge a game left running for hours
 let lastSavedAt = loaded && loaded.game.savedAt ? loaded.game.savedAt : Date.now();
@@ -125,10 +124,19 @@ function changePrefs(patch) {
 
 /** Show the current preferences on the page. */
 function applyPrefs() {
-    applyThemeToBody(prefs.theme);
     renderer.renderMute(prefs.muted);
     renderAll();
-    themeSelector.update();
+}
+
+// The theme in force is the game's own; before a game exists (or for a game from an earlier version
+// without one) the operator's last choice is used.
+let appliedTheme = null;
+function applyGameTheme(force = false) {
+    const theme = store.getGame().theme || prefs.theme;
+    if (force || theme !== appliedTheme) {
+        applyThemeToBody(theme);
+        appliedTheme = theme;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -138,6 +146,7 @@ function applyPrefs() {
 /** Redraw everything that depends on the game. */
 function renderAll() {
     const game = store.getGame();
+    applyGameTheme();
     renderer.renderBoard(game, prefs);
     currentRows = renderer.renderHistory(game, prefs, (id) => historyDialog.open(id));
     renderer.renderClock(game, Date.now());
@@ -211,10 +220,14 @@ function handleSetupSubmit(values) {
             ...teams,
             periodCount: values.periodCount,
             periodLengthMs: values.periodLengthMs,
-            visibility: game.visibility
+            visibility: game.visibility,
+            theme: values.theme
         }));
         if (!result.ok) return result.error;
+        // The chosen theme is also the one offered for the next game
+        if (values.theme !== prefs.theme) changePrefs({ theme: values.theme });
         showToast('Game ready — press Start at the whistle');
+        loadTeamSuggestions();
         return null;
     }
 
@@ -230,6 +243,8 @@ function handleSetupSubmit(values) {
     if (values.periodLengthMs !== undefined && values.periodLengthMs !== game.periodLengthMs) {
         edit.periodLengthMs = values.periodLengthMs;
     }
+    // The theme can only change before the first Start
+    if (!isCommitted(game) && values.theme !== game.theme) edit.theme = values.theme;
     const result = store.dispatch(edit);
     if (!result.ok) return result.error;
     showToast('Match details updated');
@@ -238,13 +253,29 @@ function handleSetupSubmit(values) {
 
 const setup = createSetup({
     onSubmit: handleSetupSubmit,
-    canChangePeriodLength: () => canChangePeriodLength(store.getGame())
+    canChangePeriodLength: () => canChangePeriodLength(store.getGame()),
+    // Picking a theme in the dialog shows it behind the dialog; closing restores the game's own theme
+    onThemePreview: (theme) => applyThemeToBody(theme),
+    onClose: () => applyGameTheme(true)
 });
+
+/** Offer the names of the user's earlier teams while typing our team's name (signed-in users only). */
+async function loadTeamSuggestions() {
+    if (!isSignedIn() || !profile().games || !profile().games.listMyTeams) return;
+    try {
+        const result = await profile().games.listMyTeams();
+        if (result && result.success && Array.isArray(result.teams)) {
+            setup.setTeamSuggestions(result.teams.map((team) => team.name));
+        }
+    } catch (error) {
+        // Suggestions are optional
+    }
+}
 
 function openEditMatch() {
     const status = store.getGame().status;
     if (status === STATUS.READY || status === STATUS.PAUSED || status === STATUS.BETWEEN_PERIODS) {
-        setup.open('edit', store.getGame());
+        setup.open('edit', store.getGame(), prefs.theme);
     }
 }
 
@@ -301,7 +332,7 @@ function tick() {
 
 function wireControls() {
     const el = renderer.elements;
-    el.btnNewGame.addEventListener('click', () => setup.open('create', store.getGame()));
+    el.btnNewGame.addEventListener('click', () => setup.open('create', store.getGame(), prefs.theme));
     el.btnStart.addEventListener('click', () => perform(act('start')));
     el.btnPause.addEventListener('click', () => perform(act('pause')));
     el.btnResume.addEventListener('click', () => perform(act('resume')));
@@ -338,7 +369,7 @@ function wireControls() {
     byId('btn-modal-finalize').addEventListener('click', () => finalizeGame('user'));
     byId('btn-modal-add-ot').addEventListener('click', () => {
         closeModal('end-ot-modal');
-        setup.open('overtime', store.getGame());
+        setup.open('overtime', store.getGame(), prefs.theme);
     });
 
     // "Period Limit Exceeded" prompt
@@ -361,11 +392,6 @@ function wireControls() {
     });
 }
 
-const themeSelector = createThemeSelector({
-    getTheme: () => prefs.theme,
-    setTheme: (theme) => changePrefs({ theme })
-});
-
 function wireSettings() {
     const checkbox = (id, key) => {
         const input = byId(id);
@@ -385,12 +411,9 @@ function wireSettings() {
     function openSettings() {
         Object.keys(inputs).forEach((key) => { inputs[key].checked = !!prefs[key]; });
         sharePublic.checked = store.getGame().visibility !== 'private';
-        themeSelector.discover();
-        themeSelector.render();
         openModal('settings-modal');
     }
     function closeSettings() {
-        themeSelector.close();
         closeModal('settings-modal');
     }
     byId('settings-btn').addEventListener('click', openSettings);
@@ -515,10 +538,9 @@ function start() {
     wireStore();
     wireLifecycle();
 
-    applyThemeToBody(prefs.theme);
     renderer.renderMute(prefs.muted);
-    themeSelector.render();
     renderAll();
+    loadTeamSuggestions();
 
     // The current-format records are written now; earlier ones go once the new game record reads back
     if (loaded) {

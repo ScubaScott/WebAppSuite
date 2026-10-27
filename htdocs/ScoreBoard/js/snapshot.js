@@ -120,6 +120,7 @@ export function toSnapshot(game, now, prefs = {}) {
         timerRunning: game.status === STATUS.RUNNING,
         isPaused: game.status === STATUS.PAUSED,
         timeLimit: game.periodLengthMs,
+        theme: game.theme || undefined,
         elapsedMs: getElapsed(game, now),
         startedAt: game.startedAt || now,
         scoreHistory: buildHistory(game, prefs)

@@ -32,7 +32,7 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 | 2 | One `toSnapshot()`, one send scheduler, game and preferences stored separately, shared helpers and one theme catalog, single beacon | Done and tested on `full_refactor` (console 5.3, shared 1.6) |
 | 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 to 3.4 done with tests; 3.5 (console rewrite, console 6.0) and 3.6 (history display, shared 1.6, help 2.1) done; 3.8 dead-code removal done; 3.7 server migration script remains |
 | 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons, viewer and games list become modules | Done on `full_refactor` (console 6.1, viewer 1.6, games list 1.1, shared 2.0). Every page is free of inline `style` attributes and inline handlers; `scoreboard-shared.js` is now `js/shared.js` and no longer exposes a global. Needs the browser checklist |
-| 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
+| 5 | Features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Done on `full_refactor` (console 7.0, games list 1.2, viewer 1.7, help 2.2, suite-profile 2.2); needs the browser checklist, and `setup.php` run once on the server for the new index | Not started. Starts after Phase 4 |
 | Later | Viewer sends its last `rev` and gets 304 when unchanged | Optional |
 
 ---
@@ -95,6 +95,7 @@ Stored fields (names are the target; map from the old names during migration):
 | `overageAcknowledged` | Per-period flag: the operator chose "Continue in Overage" (section 5). |
 | `events` | The event log (below). |
 | `visibility` | `'public'` or `'private'`. |
+| `theme` | Theme key chosen in the New Game dialog; changeable until the first Start, then fixed. `null` for a game from an earlier version that never had one (it adopts the operator's current theme when first loaded). |
 | `startedAt` | ISO time of the first Start. |
 | `sync` | `{ lastAckRev, lastSentRev }` (section 7). |
 
@@ -182,6 +183,7 @@ The full design is in `docs/TIMING-SPEC.md`. Read it before touching any timing 
 | `timerRunning`, `isPaused` | server, viewer, status pill | derived from `status` |
 | `elapsedMs`, `timeLimit` | server, viewer clock | clock formula, `periodLengthMs` |
 | `startedAt` | server | `startedAt` |
+| `theme` | viewer | `theme` (omitted when the game has none). `games.php` drops a value that is not `^[A-Za-z0-9._-]+$` or is longer than 64 characters |
 | `scoreHistory` | viewer | `events` |
 
 The shared history renderer must also display **old-format** history (entries with `teamName`, `teamColor`, `currentScore`, `gameTime`, `text`, or no `labelVersion`), because archived games in the database keep that format.
@@ -276,7 +278,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 6.1, viewer 1.6, games list 1.1, help 2.1, shared 2.0).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.0, viewer 1.7, games list 1.2, help 2.2, shared 2.0).
 
 ---
 
@@ -297,9 +299,9 @@ Do not change these without updating this section, the console and the viewer to
 
 ---
 
-## 12. Planned Features (after Phase 4)
+## 12. Features Added in Phase 5
 
-Do not build these during Phases 1-4, but do not design against them. Each needs the matching change to the snapshot contract (section 6) and, where noted, `games.php`.
+These are built. This section records the rules they follow.
 
 ### 12.1 "Us vs Them" wording
 - Home is always the operator's team. Setup labels become "Our team" and "Opponent"; defaults stay "Us" / "Them".
@@ -313,7 +315,7 @@ Use case: a player is on several teams, for example 2 games as "Shakopee" and 2 
 - UI: team chips (or collapsible team headings) above the list, each with a count; "All" shows everything newest first. Remember the last choice on the device.
 - Setup dialog: suggest our-team names from the user's past games so the spelling stays identical.
 - Guests have no My Games, so nothing changes for them.
-- Open question for the owner: show all teams as headings in one scrolling list, or one team at a time with chips?
+- Decided and built: one team at a time with chips above the list ("All" plus one chip per team with its game count); the chips are hidden when there are fewer than two teams. The server side is `list_mine` with `team` and `list_my_teams`; `setup.php` adds the index `idx_scoreboard_games_owner_team` (run it once; it is safe to repeat). Matching uses the column collation, which ignores case and trailing spaces but not leading spaces or accents-versus-plain differences.
 
 ### 12.3 Theme saved with each game
 Every game remembers the theme in place when it started, and every screen showing that game uses it: the recorder, live viewers, and viewers of finished games.
@@ -323,7 +325,7 @@ Every game remembers the theme in place when it started, and every screen showin
 - `games.php` stores the value inside the snapshot JSON and caps it at 64 characters. Pages must accept only values matching `^[A-Za-z0-9._-]+$` and found in the catalog, because the value ends up in an image URL.
 - Theme keys and image file names become permanent: archived games refer to them. Never rename or delete a catalog entry; if an image is missing, fall back to the default theme.
 - Decided: the theme cannot change during a game, because Settings no longer has a theme selector. Spectators therefore see the same theme from start to finish.
-- Needs Phase 2 first: one shared theme catalog (bug 14).
+- The theme selector is the dropdown in the setup dialog (`js/setup.js` with `js/theme.js`). Picking a theme previews it behind the dialog; cancelling restores the game's own theme. After the first Start the selector is shown dimmed with a note, and `edit_match` rejects a different theme.
 
 ---
 

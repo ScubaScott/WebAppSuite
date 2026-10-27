@@ -91,6 +91,19 @@ header('Content-Type: text/html; charset=utf-8');
                     echo '<div class="error"><strong>Migration Warning:</strong> Unable to verify <code>ended_by</code> ENUM: ' . htmlspecialchars($migrationEx->getMessage()) . '</div>';
                 }
 
+                // Idempotent migration: index for the My Games team filter (owner, our team)
+                try {
+                    $idxCheck = $pdo->query("SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'scoreboard_games' AND INDEX_NAME = 'idx_scoreboard_games_owner_team'");
+                    if ($idxCheck && $idxCheck->fetchColumn()) {
+                        echo '<div class="success"><strong>Schema Verified:</strong> Index <code>idx_scoreboard_games_owner_team</code> exists.</div>';
+                    } else {
+                        $pdo->exec("ALTER TABLE `scoreboard_games` ADD INDEX `idx_scoreboard_games_owner_team` (`owner_id`, `home_name`)");
+                        echo '<div class="success"><strong>Migration Applied:</strong> Index <code>idx_scoreboard_games_owner_team</code> added.</div>';
+                    }
+                } catch (PDOException $migrationEx) {
+                    echo '<div class="error"><strong>Migration Warning:</strong> Unable to add the team index: ' . htmlspecialchars($migrationEx->getMessage()) . '</div>';
+                }
+
                 // Idempotent migration: Ensure scoreboard_game_tombstones table exists
                 try {
                     $tableCheck = $pdo->query("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'scoreboard_game_tombstones'");

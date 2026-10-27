@@ -310,3 +310,20 @@ test('a rejected action returns the same game object', () => {
     assert.equal(reduce(game, pause(1)), game);
     assert.equal(reduce(game, { type: 'no_such_action' }), game);
 });
+
+test('the theme is chosen at New Game and can change until the first Start', () => {
+    let game = run(createGame(), newGame({ theme: 'chill-ice' }));
+    assert.equal(game.theme, 'chill-ice');
+    game = run(game, edit({ theme: 'EdenPrarie.png' }));
+    assert.equal(game.theme, 'EdenPrarie.png');
+    game = run(game, start(1), pause(2));
+    assert.equal(explain(game, edit({ theme: 'chill-ice' })), 'The theme is fixed once the game has started');
+    // Naming the same theme again is not an error
+    assert.equal(explain(game, edit({ theme: 'EdenPrarie.png' })), null);
+});
+
+test('a theme that is not a safe name is dropped', () => {
+    assert.equal(run(createGame(), newGame({ theme: '../etc/passwd' })).theme, null);
+    assert.equal(run(createGame(), newGame({ theme: 'x'.repeat(65) })).theme, null);
+    assert.equal(run(createGame(), newGame({})).theme, null);
+});

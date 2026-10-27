@@ -2583,10 +2583,6 @@ footer {
     color: #9ca3af;
 }
 
-.section-label-first {
-    padding-top: 14px;
-}
-
 .section-label-flush {
     padding-top: 0;
 }
@@ -3001,4 +2997,45 @@ button.period-box:focus-visible,
 button.timer-elapsed:focus-visible {
     outline: 2px solid #93c5fd;
     outline-offset: 2px;
+}
+
+/* ============================================================
+   My Games team filter
+   ============================================================ */
+.team-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+.team-chip {
+    min-height: 44px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #374151;
+    background: rgba(17, 24, 39, 0.6);
+    color: #cbd5e1;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.team-chip[aria-pressed="true"] {
+    background: #1d4ed8;
+    border-color: #3b82f6;
+    color: #fff;
+}
+
+.team-chip:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+/* A theme that is fixed for the running game cannot be changed in the setup dialog */
+.is-locked {
+    opacity: 0.55;
+    pointer-events: none;
 }

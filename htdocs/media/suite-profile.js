@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '2.1';
+const SUITE_PROFILE_VERSION = '2.2';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -930,7 +930,7 @@ const SUITE_PROFILE_VERSION = '2.1';
      * @param {number} [offset=0]
      * @returns {Promise<Object>}
      */
-    async function listMyGames(limit = 20, offset = 0) {
+    async function listMyGames(limit = 20, offset = 0, team = '') {
         const user = getUser();
         if (!user || !user.token) {
             throw new Error('You must be signed in to view your saved games.');
@@ -943,7 +943,7 @@ const SUITE_PROFILE_VERSION = '2.1';
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + user.token
             },
-            body: JSON.stringify({ token: user.token, limit, offset })
+            body: JSON.stringify({ token: user.token, limit, offset, team })
         });
 
         if (res.status === 401) {
@@ -952,6 +952,37 @@ const SUITE_PROFILE_VERSION = '2.1';
         }
         if (!res.ok) {
             throw new Error('Failed to load games archive (' + res.status + ')');
+        }
+        return await res.json();
+    }
+
+    /**
+     * Lists the teams (home names) in the signed-in user's saved games, with game counts.
+     *
+     * @returns {Promise<Object>}
+     */
+    async function listMyTeams() {
+        const user = getUser();
+        if (!user || !user.token) {
+            throw new Error('You must be signed in to view your teams.');
+        }
+
+        const url = getApiUrl('games.php') + '?action=list_my_teams';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ token: user.token })
+        });
+
+        if (res.status === 401) {
+            setSession(null, 'expired');
+            throw new Error('Session expired. Please sign in again.');
+        }
+        if (!res.ok) {
+            throw new Error('Failed to load teams (' + res.status + ')');
         }
         return await res.json();
     }
@@ -1116,6 +1147,7 @@ const SUITE_PROFILE_VERSION = '2.1';
             get: getGame,
             listPublic: listPublicGames,
             listMine: listMyGames,
+            listMyTeams: listMyTeams,
             setVisibility: setGameVisibility,
             remove: removeGame
         }

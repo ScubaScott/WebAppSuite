@@ -90,10 +90,10 @@ export function createStorage(backend, newId) {
          * The saved game: the current record, otherwise the record written by earlier versions (converted).
          * @returns {{game: Object, converted: boolean}|null}
          */
-        loadGame(now) {
+        loadGame(now, theme) {
             const raw = read(GAME_KEY) || read(LEGACY_GAME_KEY);
             if (!raw) return null;
-            return migrateGame(raw, { newId, now });
+            return migrateGame(raw, { newId, now, theme });
         },
 
         /** Save the game. Returns false when storage refused it. */

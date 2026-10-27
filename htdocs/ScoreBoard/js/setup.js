@@ -4,6 +4,7 @@
  */
 
 import { formatClock } from './format.js';
+import { createThemeSelector } from './theme.js';
 
 const byId = (id) => document.getElementById(id);
 const ROLLER_ITEM_HEIGHT = 40;
@@ -14,11 +15,14 @@ const NEW_GAME_LENGTH_MS = 2400000;
 
 /**
  * @param {{
- *   onSubmit: function({mode: string, home: Object, away: Object, periodCount: number, periodLengthMs: number}): (string|null),
- *   canChangePeriodLength: function(): boolean
+ *   onSubmit: function({mode: string, home: Object, away: Object, periodCount: number, periodLengthMs: number, theme: string}): (string|null),
+ *   canChangePeriodLength: function(): boolean,
+ *   onThemePreview: function(string): void,
+ *   onClose: function(): void
  * }} options `onSubmit` returns an error message to keep the dialog open, or null to close it.
+ *   `onThemePreview` shows a theme while the dialog is open; `onClose` runs when the dialog closes.
  */
-export function createSetup({ onSubmit, canChangePeriodLength }) {
+export function createSetup({ onSubmit, canChangePeriodLength, onThemePreview, onClose }) {
     const el = {
         modal: byId('match-setup-modal'),
         title: byId('match-setup-title'),
@@ -40,13 +44,26 @@ export function createSetup({ onSubmit, canChangePeriodLength }) {
         rollerMinutes: byId('roller-minutes'),
         rollerSeconds: byId('roller-seconds'),
         durationSection: byId('setup-duration-section'),
-        durationNote: byId('setup-duration-note')
+        durationNote: byId('setup-duration-note'),
+        themeSection: byId('setup-theme-section'),
+        themeNote: byId('setup-theme-note'),
+        teamSuggestions: byId('team-suggestions')
     };
 
     let mode = 'create';
     let periodCount = NEW_GAME_PERIODS;
     let periodLengthMs = NEW_GAME_LENGTH_MS;
     let lengthLocked = false;
+    let theme = null;
+
+    // The theme dropdown lives in this dialog; choosing a theme previews it behind the dialog
+    const themeSelector = createThemeSelector({
+        getTheme: () => theme,
+        setTheme: (chosen) => {
+            theme = chosen;
+            onThemePreview(chosen);
+        }
+    });
 
     // ---- roller ---------------------------------------------------------
 
@@ -170,10 +187,19 @@ export function createSetup({ onSubmit, canChangePeriodLength }) {
      * Open the dialog.
      * @param {'create'|'edit'|'overtime'} openMode
      * @param {Object} game The current game, used for the starting values.
+     * @param {string} defaultTheme The theme offered when the game has none (the operator's last choice).
      */
-    function open(openMode, game) {
+    function open(openMode, game, defaultTheme) {
         mode = openMode;
         lengthLocked = openMode === 'edit' && !canChangePeriodLength();
+        theme = openMode === 'create' ? defaultTheme : (game.theme || defaultTheme);
+        // Overtime keeps the game's theme; after the first Start the theme can no longer change
+        const themeLocked = openMode === 'overtime' || (openMode === 'edit' && game.startedAt !== null);
+        el.themeSection.classList.toggle('hidden', openMode === 'overtime');
+        el.themeNote.classList.toggle('hidden', !(openMode === 'edit' && themeLocked));
+        el.themeSection.classList.toggle('is-locked', themeLocked);
+        themeSelector.render();
+        themeSelector.discover();
 
         if (mode === 'create') {
             el.title.textContent = 'New Game Setup';
@@ -211,8 +237,10 @@ export function createSetup({ onSubmit, canChangePeriodLength }) {
     }
 
     function close() {
+        themeSelector.close();
         el.modal.classList.add('hidden');
         el.rollerBox.classList.add('hidden');
+        onClose();
     }
 
     function submit() {
@@ -221,7 +249,8 @@ export function createSetup({ onSubmit, canChangePeriodLength }) {
             home: { name: el.homeName.value, color: el.homeColor.value },
             away: { name: el.awayName.value, color: el.awayColor.value },
             periodCount,
-            periodLengthMs: lengthLocked ? undefined : periodLengthMs
+            periodLengthMs: lengthLocked ? undefined : periodLengthMs,
+            theme
         });
         if (!error) close();
         return error;
@@ -272,5 +301,15 @@ export function createSetup({ onSubmit, canChangePeriodLength }) {
 
     buildRoller();
 
-    return { open, close };
+    /** Offer the user's past team names while typing our team's name. */
+    function setTeamSuggestions(names) {
+        el.teamSuggestions.textContent = '';
+        names.forEach((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            el.teamSuggestions.appendChild(option);
+        });
+    }
+
+    return { open, close, setTeamSuggestions, discoverThemes: themeSelector.discover };
 }

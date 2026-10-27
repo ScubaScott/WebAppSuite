@@ -174,3 +174,12 @@ test('a corrected start row keeps the time that was pressed', () => {
     const start = buildHistory(game, { logPeriodStartStop: true }).find((r) => r.eventType === 'period_start');
     assert.equal(start.recordedTimestamp, new Date(at).toISOString());
 });
+
+test('the snapshot carries the game theme, and omits it when there is none', () => {
+    let game = createGame();
+    const at = Date.parse('2026-10-26T17:00:00');
+    game = reduce(game, { type: 'new_game', gameId: 'g', writeToken: 't', at, periodCount: 2, periodLengthMs: 2400000, theme: 'saber-dark' });
+    assert.equal(toSnapshot(game, at).theme, 'saber-dark');
+    game = reduce(createGame(), { type: 'new_game', gameId: 'g', writeToken: 't', at, periodCount: 2, periodLengthMs: 2400000 });
+    assert.equal('theme' in JSON.parse(JSON.stringify(toSnapshot(game, at))), false);
+});

@@ -77,12 +77,14 @@ function syntheticEvent(game, eventType, id, at, details = {}) {
  * Convert a saved record to a game.
  *
  * @param {Object} record The saved object (old flat record, or a current game).
- * @param {{newId: function(): string, now?: number}} options `newId` supplies ids for synthesized entries.
+ * @param {{newId: function(): string, now?: number, theme?: string}} options `newId` supplies ids for synthesized entries;
+ *   `theme` is given to a game from an earlier version, which had no theme of its own.
  * @returns {{game: Object, converted: boolean}} `converted` is false when the record was already current.
  */
 export function migrateGame(record, options) {
     if (isGameObject(record)) return { game: record, converted: false };
     const newId = options.newId;
+    const adoptedTheme = options.theme || null;
     const now = options.now !== undefined ? options.now : Date.now();
     const saved = record || {};
 
@@ -103,6 +105,7 @@ export function migrateGame(record, options) {
     game.periodLengthMs = saved.timeLimit !== undefined && saved.timeLimit > 0 ? saved.timeLimit : DEFAULT_PERIOD_LENGTH_MS;
     game.overageAcknowledged = !!saved.overageResolvedForCurrentPeriod;
     game.visibility = saved.activeGameVisibility === 'private' ? 'private' : 'public';
+    game.theme = saved.theme || adoptedTheme;
     // When the earlier version last saved; used to tell whether a game was left running
     if (saved.lastSavedAt) game.savedAt = saved.lastSavedAt;
 

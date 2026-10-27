@@ -127,3 +127,9 @@ test('a current-format game passes through unchanged', () => {
     assert.equal(again.converted, false);
     assert.equal(again.game, game);
 });
+
+test('a game from an earlier version adopts the given theme', () => {
+    const { game } = migrateGame(load('timerStateV7_Finalized.json'), { newId, theme: 'chill-night' });
+    assert.equal(game.theme, 'chill-night');
+    assert.equal(migrateGame(load('timerStateV7_Finalized.json'), { newId }).game.theme, null);
+});

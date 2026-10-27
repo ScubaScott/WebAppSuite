@@ -44,7 +44,9 @@
                 <h2 class="text-lg font-semibold text-white">Match Setup &amp; Period Settings</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li>Tap <strong>New Game</strong> or the card menu button (<strong>⋮</strong> in the top-right corner) at any time to open Match Setup.</li>
-                    <li>Configure <strong>Team Names</strong>, custom <strong>Team Colors</strong>, total regulation periods (1–8 periods), and duration presets (<strong>12m</strong>, <strong>20m</strong>, <strong>35m</strong>, <strong>40m</strong>).</li>
+                    <li>Configure <strong>Our Team</strong> and <strong>Opponent</strong> (name and color), a <strong>Theme</strong>, total regulation periods (1–8 periods), and duration presets (<strong>12m</strong>, <strong>20m</strong>, <strong>35m</strong>, <strong>40m</strong>).</li>
+                    <li><strong>Our Team</strong> is always the team you are scoring for and appears on the left. When you are signed in, the names of your earlier teams are suggested as you type.</li>
+                    <li>The <strong>Theme</strong> is saved with the game when you press Start, so the console, spectators and anyone who opens the game later all see the same look. You can change it until the first Start; after that it is fixed.</li>
                     <li>The interactive dual-wheel time roller is accessible directly within this modal (tap <strong>Custom Duration (Roller)</strong>) to dial custom minutes and seconds.</li>
                     <li>Tapping the <strong>Period</strong> indicator while stopped or paused also opens the match setup editor.</li>
                 </ul>
@@ -116,13 +118,13 @@
         </div>
     </div>
     <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">2.1</span></p>
+        <p>Version <span id="helpVersion">2.2</span></p>
     </footer>
     <!-- Shared Suite Profile and service worker registration -->
     <script src="../media/suite-profile.js"></script>
     <script>
         // ScoreBoard help documentation version identifier
-        const VERSION = '2.1';
+        const VERSION = '2.2';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;

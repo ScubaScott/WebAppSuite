@@ -38,6 +38,8 @@ export function createGame() {
         overageAcknowledged: false,
         events: [],
         visibility: 'public',
+        // Theme key of the look this game is shown in, fixed at the first Start (null = viewers use their own)
+        theme: null,
         startedAt: null,
         endedBy: null,
         sync: { lastSentRev: 0, lastAckRev: 0 }
@@ -172,6 +174,11 @@ function clockOptions(game, at) {
     };
 }
 
+/** A theme key or image file name that is safe to use in an image URL, otherwise null. */
+function validTheme(theme) {
+    return typeof theme === 'string' && theme.length <= 64 && /^[A-Za-z0-9._-]+$/.test(theme) ? theme : null;
+}
+
 function sanitizeTeam(current, update) {
     if (!update) return current;
     const name = typeof update.name === 'string' ? update.name.trim() : '';
@@ -199,7 +206,8 @@ function apply(game, action) {
                 periodCount,
                 regulationPeriods: periodCount,
                 periodLengthMs: action.periodLengthMs,
-                visibility: action.visibility || game.visibility
+                visibility: action.visibility || game.visibility,
+                theme: validTheme(action.theme)
             });
         }
 
@@ -218,6 +226,10 @@ function apply(game, action) {
                 if (!(action.periodLengthMs > 0)) return reject('Period length must be more than 0:00');
                 if (!canChangePeriodLength(game)) return reject('The period length can only change before the period starts');
                 next.periodLengthMs = action.periodLengthMs;
+            }
+            if (action.theme !== undefined && action.theme !== game.theme) {
+                if (isCommitted(game)) return reject('The theme is fixed once the game has started');
+                next.theme = validTheme(action.theme);
             }
             return accept(next);
         }

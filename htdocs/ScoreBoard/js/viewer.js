@@ -4,10 +4,10 @@
  */
 
 import { formatClock, getPeriodLabel } from './format.js';
-import { STALL_THRESHOLD_MS, deriveStatusPill, formatAgeMinutes, renderHistoryRows, applySavedThemeReadOnly } from './shared.js';
+import { STALL_THRESHOLD_MS, deriveStatusPill, formatAgeMinutes, renderHistoryRows, applySavedThemeReadOnly, applyThemeToBody } from './shared.js';
 
 // Viewer tool version constant
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 
 // Polling configuration
 const BASE_POLL_INTERVAL_MS = 4000;
@@ -43,6 +43,8 @@ const historyBodyEl = document.getElementById('history-body');
 
 // State model for spectator display
 let currentModel = null;
+// Theme currently applied from the game (so it is only applied when it changes)
+let appliedTheme = null;
 let serverClockOffset = 0; // server_now - client Date.now()
 
 /**
@@ -116,6 +118,7 @@ async function fetchGameSnapshot() {
             elapsedMs: (game.elapsedMs !== undefined) ? Number(game.elapsedMs) : (snap.elapsedMs || 0),
             lastUpdate: (typeof game.lastUpdate === 'number') ? game.lastUpdate : (serverNow - (res.age_ms || 0)),
             ageMs: (typeof res.age_ms === 'number') ? res.age_ms : (game.age_ms || 0),
+            theme: (typeof snap.theme === 'string' && snap.theme) ? snap.theme : null,
             scoreHistory: Array.isArray(snap.scoreHistory) ? snap.scoreHistory : (Array.isArray(game.scoreHistory) ? game.scoreHistory : []),
             fetchLocalTs: Date.now()
         };
@@ -154,6 +157,12 @@ function renderBoard() {
     loadingView.classList.add('hidden');
     unavailableView.classList.add('hidden');
     scoreboardCard.classList.remove('hidden');
+
+    // The game's own theme, when it has one, replaces the viewer's saved theme
+    if (currentModel.theme && currentModel.theme !== appliedTheme) {
+        applyThemeToBody(currentModel.theme);
+        appliedTheme = currentModel.theme;
+    }
 
     // Match title
     matchTitleEl.textContent = `${currentModel.homeTeamName} vs ${currentModel.awayTeamName}`;

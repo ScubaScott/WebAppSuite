@@ -6,7 +6,7 @@
 import { deriveStatusPill, formatStartDate, normalizeRowViewModel, applySavedThemeReadOnly } from './shared.js';
 
 // Application version constant (follows suite 2-part decimal convention)
-const APP_VERSION = '1.1';
+const APP_VERSION = '1.2';
 
 // Pagination page size for My Games archive
 const PAGE_LIMIT = 20;
@@ -24,6 +24,15 @@ let mineTotal = 0;
 // Currently selected game in the My Games action sheet
 let selectedMenuGame = null;
 
+// My Games team filter: '' shows every team. The choice is remembered on this device.
+const TEAM_FILTER_KEY = 'scoreboardMyGamesTeam';
+let currentTeam = '';
+try {
+    currentTeam = localStorage.getItem(TEAM_FILTER_KEY) || '';
+} catch (error) {
+    // Storage unavailable: start with all teams
+}
+
 // DOM references
 const tabBtnActive = document.getElementById('tab-btn-active');
 const tabBtnMine = document.getElementById('tab-btn-mine');
@@ -34,6 +43,7 @@ const activeEmptyEl = document.getElementById('active-empty-state');
 const mineListEl = document.getElementById('mine-games-list');
 const mineEmptyEl = document.getElementById('mine-empty-state');
 const minePaginationEl = document.getElementById('mine-pagination');
+const teamChipsEl = document.getElementById('team-chips');
 const btnPagePrev = document.getElementById('btn-page-prev');
 const btnPageNext = document.getElementById('btn-page-next');
 const paginationStatus = document.getElementById('pagination-status');
@@ -99,8 +109,74 @@ function switchTab(tab) {
         panelActive.classList.add('hidden');
 
         stopActivePolling();
-        fetchMyGames();
+        loadMyGames();
     }
+}
+
+/**
+ * Loads the team chips first (so a remembered team that no longer exists is dropped), then the games.
+ */
+async function loadMyGames() {
+    await fetchMyTeams();
+    fetchMyGames();
+}
+
+/**
+ * Fetches the user's teams and draws the filter chips. With fewer than two teams there is nothing to
+ * choose between, so the chips are hidden and every game is shown.
+ */
+async function fetchMyTeams() {
+    let teams = [];
+    try {
+        const res = await window.SuiteProfile.games.listMyTeams();
+        if (res && res.success && Array.isArray(res.teams)) teams = res.teams;
+    } catch (error) {
+        // Without the team list the page still shows every game
+    }
+    const known = teams.some((team) => team.name.toLowerCase() === currentTeam.toLowerCase());
+    if (!known || teams.length < 2) setCurrentTeam('');
+    renderTeamChips(teams);
+}
+
+function setCurrentTeam(name) {
+    currentTeam = name;
+    try {
+        localStorage.setItem(TEAM_FILTER_KEY, name);
+    } catch (error) {
+        // The choice just is not remembered
+    }
+}
+
+/**
+ * Draws "All" plus one chip per team, each with its game count.
+ *
+ * @param {Array<{name: string, games: number}>} teams
+ */
+function renderTeamChips(teams) {
+    teamChipsEl.textContent = '';
+    if (teams.length < 2) {
+        teamChipsEl.classList.add('hidden');
+        return;
+    }
+    const total = teams.reduce((sum, team) => sum + team.games, 0);
+    const entries = [{ name: '', label: `All (${total})` }].concat(
+        teams.map((team) => ({ name: team.name, label: `${team.name} (${team.games})` })));
+
+    entries.forEach((entry) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'team-chip';
+        chip.textContent = entry.label;
+        chip.setAttribute('aria-pressed', entry.name.toLowerCase() === currentTeam.toLowerCase() ? 'true' : 'false');
+        chip.addEventListener('click', () => {
+            setCurrentTeam(entry.name);
+            mineOffset = 0;
+            teamChipsEl.querySelectorAll('.team-chip').forEach((other) => other.setAttribute('aria-pressed', other === chip ? 'true' : 'false'));
+            fetchMyGames();
+        });
+        teamChipsEl.appendChild(chip);
+    });
+    teamChipsEl.classList.remove('hidden');
 }
 
 /**
@@ -258,7 +334,7 @@ async function fetchMyGames() {
     }
 
     try {
-        const res = await window.SuiteProfile.games.listMine(PAGE_LIMIT, mineOffset);
+        const res = await window.SuiteProfile.games.listMine(PAGE_LIMIT, mineOffset, currentTeam);
         if (res && res.success && Array.isArray(res.games)) {
             mineTotal = res.total || 0;
             renderMyGames(res.games);
@@ -427,7 +503,7 @@ btnSheetDelete.addEventListener('click', async () => {
         const res = await window.SuiteProfile.games.remove(targetGame.id);
         if (res && res.success) {
             closeActionSheet();
-            fetchMyGames();
+            loadMyGames();
         } else {
             alert('Unable to delete match record.');
             btnSheetDelete.disabled = false;
@@ -479,7 +555,7 @@ document.addEventListener('visibilitychange', () => {
             fetchActiveGames();
             startActivePolling();
         } else if (currentTab === 'mine') {
-            fetchMyGames();
+            loadMyGames();
         }
     }
 });

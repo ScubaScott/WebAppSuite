@@ -114,6 +114,14 @@ if ($action === 'sync') {
         }
     }
 
+    // Theme saved with the game: a catalog key or image file name only, because pages put it in an image URL
+    if (isset($snapshot['theme'])) {
+        if (!is_string($snapshot['theme']) || strlen($snapshot['theme']) > 64
+            || !preg_match('/^[A-Za-z0-9._-]+$/', $snapshot['theme'])) {
+            unset($snapshot['theme']);
+        }
+    }
+
     // Resolve user session if a token is present
     $token = getAuthToken($payload);
     $user = authenticateUser($pdo, $token);
@@ -476,9 +484,14 @@ if ($action === 'list_mine') {
     $limit = isset($payload['limit']) ? max(1, min(100, (int)$payload['limit'])) : 20;
     $offset = isset($payload['offset']) ? max(0, (int)$payload['offset']) : 0;
 
+    // Optional filter: only games where this is our team (home_name). The column collation ignores case
+    // and trailing spaces, so "Eagles" and "eagles " are the same team.
+    $team = isset($payload['team']) ? sanitizeText($payload['team'], 60) : '';
+    $teamClause = $team !== '' ? ' AND home_name = ?' : '';
+
     // Count total owned games
-    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM scoreboard_games WHERE owner_id = ?');
-    $countStmt->execute([$user['id']]);
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM scoreboard_games WHERE owner_id = ?' . $teamClause);
+    $countStmt->execute($team !== '' ? [$user['id'], $team] : [$user['id']]);
     $total = (int)$countStmt->fetchColumn();
 
     // Query paginated games list including timer and pause fields for unified row derivation
@@ -488,12 +501,16 @@ if ($action === 'list_mine') {
                                       started_at, ended_at, last_activity_at,
                                       TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
                                FROM scoreboard_games
-                               WHERE owner_id = ?
+                               WHERE owner_id = ?' . $teamClause . '
                                ORDER BY started_at DESC
                                LIMIT ? OFFSET ?');
-    $listStmt->bindValue(1, (int)$user['id'], PDO::PARAM_INT);
-    $listStmt->bindValue(2, $limit, PDO::PARAM_INT);
-    $listStmt->bindValue(3, $offset, PDO::PARAM_INT);
+    $bindIndex = 1;
+    $listStmt->bindValue($bindIndex++, (int)$user['id'], PDO::PARAM_INT);
+    if ($team !== '') {
+        $listStmt->bindValue($bindIndex++, $team, PDO::PARAM_STR);
+    }
+    $listStmt->bindValue($bindIndex++, $limit, PDO::PARAM_INT);
+    $listStmt->bindValue($bindIndex++, $offset, PDO::PARAM_INT);
     $listStmt->execute();
     $rows = $listStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -535,6 +552,48 @@ if ($action === 'list_mine') {
         'limit' => $limit,
         'offset' => $offset
     ]);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// 4b. List the user's teams (distinct home_name values with game counts)
+// -----------------------------------------------------------------------------
+if ($action === 'list_my_teams') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => 'Method not allowed. Use POST.']);
+        exit;
+    }
+
+    $payload = getRequestPayload();
+    $token = getAuthToken($payload);
+    $user = authenticateUser($pdo, $token);
+
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Authentication required to view your teams.']);
+        exit;
+    }
+
+    // The column collation merges spellings that differ only by case or trailing spaces
+    $teamStmt = $pdo->prepare('SELECT home_name, COUNT(*) AS games, MAX(started_at) AS last_started_at
+                               FROM scoreboard_games
+                               WHERE owner_id = ?
+                               GROUP BY home_name
+                               ORDER BY last_started_at DESC
+                               LIMIT 100');
+    $teamStmt->execute([$user['id']]);
+
+    $teams = [];
+    foreach ($teamStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $teams[] = [
+            'name' => $row['home_name'],
+            'games' => (int)$row['games'],
+            'lastStartedAt' => $row['last_started_at']
+        ];
+    }
+
+    echo json_encode(['success' => true, 'teams' => $teams]);
     exit;
 }
 

@@ -30,6 +30,18 @@ Test games appear on the public Active Games list. Set them to private or delete
 - [ ] The viewer and games list show the saved theme.
 - [ ] Log out: the game and preferences keys are cleared.
 
+## Theme, wording and teams (Phase 5)
+
+- [ ] New Game shows a Theme dropdown (and Settings no longer has one). Picking a theme previews it behind the dialog; Cancel restores the old look.
+- [ ] After Ready, change the theme with the ⋮ button before pressing Start: it works. After Start, the ⋮ dialog shows the theme dimmed with "The theme is fixed once the game has started".
+- [ ] Start a game with theme A, then change nothing: reload, the console still shows theme A. Open the viewer on another device or profile with a different saved theme: it shows theme A. Open the same game from My Games after it finishes: theme A.
+- [ ] Start a second game with theme B; the New Game dialog offered theme A first (the last one used).
+- [ ] The labels read "Our Team" and "Opponent" in the setup dialog, "Our Team" and "Opponent" in the card tooltips, and in the Score Splash settings.
+- [ ] **(signed in)** In New Game, typing in our team's name suggests names from earlier games.
+- [ ] **(signed in)** With games for two different home teams (for example "Shakopee" and "Eden Prairie") in My Games, the chips appear with counts; tapping one shows only that team; "All" shows everything; the choice is still selected after a reload; deleting the last game of a team removes its chip.
+- [ ] **(signed in)** A team typed as "shakopee " groups with "Shakopee".
+- [ ] Run `htdocs/api/setup.php` once on the server: it reports the new index added (or already present).
+
 ## Page structure (Phase 4)
 
 - [ ] The console, viewer, games list and help page look the same as before on a phone-width window: card, score boxes, period box, clocks, history table, settings and dialogs.
