@@ -6,12 +6,12 @@
 import { deriveStatusPill, formatStartDate, normalizeRowViewModel, applySavedThemeReadOnly } from './shared.js';
 
 // Application version constant (follows suite 2-part decimal convention)
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.4';
 
 // Pagination page size for My Games archive
 const PAGE_LIMIT = 20;
 
-// Active tab tracking ('active' | 'mine')
+// Active tab tracking ('active' | 'mine' | 'all'); 'all' is for admins
 let currentTab = 'active';
 
 // Polling timer for active games feed
@@ -21,8 +21,13 @@ let activePollTimer = null;
 let mineOffset = 0;
 let mineTotal = 0;
 
+// Pagination state for the admin All Games tab
+let allOffset = 0;
+let allTotal = 0;
+
 // Currently selected game in the My Games action sheet
 let selectedMenuGame = null;
+let selectedMenuTab = 'mine';
 
 // My Games team filter: '' shows every team. The choice is remembered on this device.
 const TEAM_FILTER_KEY = 'scoreboardMyGamesTeam';
@@ -44,6 +49,14 @@ const mineListEl = document.getElementById('mine-games-list');
 const mineEmptyEl = document.getElementById('mine-empty-state');
 const minePaginationEl = document.getElementById('mine-pagination');
 const teamChipsEl = document.getElementById('team-chips');
+const tabBtnAll = document.getElementById('tab-btn-all');
+const panelAll = document.getElementById('panel-all');
+const allListEl = document.getElementById('all-games-list');
+const allEmptyEl = document.getElementById('all-empty-state');
+const allPaginationEl = document.getElementById('all-pagination');
+const allPaginationStatus = document.getElementById('all-pagination-status');
+const btnAllPrev = document.getElementById('btn-all-prev');
+const btnAllNext = document.getElementById('btn-all-next');
 const btnPagePrev = document.getElementById('btn-page-prev');
 const btnPageNext = document.getElementById('btn-page-next');
 const paginationStatus = document.getElementById('pagination-status');
@@ -61,18 +74,23 @@ const btnSheetCancel = document.getElementById('btn-sheet-cancel');
 /**
  * Parses current tab parameter from URL query string.
  *
- * @returns {'active'|'mine'}
+ * @returns {'active'|'mine'|'all'}
  */
 function getInitialTabFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const tabParam = (params.get('tab') || '').toLowerCase();
-    return (tabParam === 'mine') ? 'mine' : 'active';
+    return (tabParam === 'mine' || tabParam === 'all') ? tabParam : 'active';
+}
+
+/** True when the signed-in user is an admin (the All Games tab is theirs only). */
+function isAdminUser() {
+    return !!(window.SuiteProfile && window.SuiteProfile.isAdmin());
 }
 
 /**
  * Switches the active tab view, updating URL query parameter via replaceState.
  *
- * @param {'active'|'mine'} tab
+ * @param {'active'|'mine'|'all'} tab
  */
 function switchTab(tab) {
     // Guard: Guests attempting to access My Games are redirected to apps launcher
@@ -83,6 +101,12 @@ function switchTab(tab) {
         }
     }
 
+    // Non-admins cannot open the All Games tab
+    if (tab === 'all' && !isAdminUser()) {
+        window.location.replace('ScoreBoardGames.html?tab=active');
+        return;
+    }
+
     currentTab = tab;
 
     // Update URL without adding browser history stack entry
@@ -90,26 +114,23 @@ function switchTab(tab) {
     url.searchParams.set('tab', tab);
     window.history.replaceState(null, '', url.pathname + url.search);
 
-    if (tab === 'active') {
-        tabBtnActive.classList.add('active');
-        tabBtnActive.setAttribute('aria-selected', 'true');
-        tabBtnMine.classList.remove('active');
-        tabBtnMine.setAttribute('aria-selected', 'false');
-        panelActive.classList.remove('hidden');
-        panelMine.classList.add('hidden');
+    // Show only the selected tab and panel
+    [['active', tabBtnActive, panelActive], ['mine', tabBtnMine, panelMine], ['all', tabBtnAll, panelAll]]
+        .forEach(([name, button, panel]) => {
+            button.classList.toggle('active', name === tab);
+            button.setAttribute('aria-selected', name === tab ? 'true' : 'false');
+            panel.classList.toggle('hidden', name !== tab);
+        });
 
+    if (tab === 'active') {
         fetchActiveGames();
         startActivePolling();
-    } else {
-        tabBtnMine.classList.add('active');
-        tabBtnMine.setAttribute('aria-selected', 'true');
-        tabBtnActive.classList.remove('active');
-        tabBtnActive.setAttribute('aria-selected', 'false');
-        panelMine.classList.remove('hidden');
-        panelActive.classList.add('hidden');
-
+    } else if (tab === 'mine') {
         stopActivePolling();
         loadMyGames();
+    } else {
+        stopActivePolling();
+        fetchAllGames();
     }
 }
 
@@ -184,7 +205,7 @@ function renderTeamChips(teams) {
  * Safe against XSS: all variable text is inserted through DOM text nodes.
  *
  * @param {Object} game - Normalized view model
- * @param {'active'|'mine'} originTab
+ * @param {'active'|'mine'|'all'} originTab
  * @returns {HTMLElement}
  */
 function createGameRowElement(game, originTab) {
@@ -209,6 +230,14 @@ function createGameRowElement(game, originTab) {
     dateEl.className = 'game-row-date';
     dateEl.textContent = formatStartDate(game.startedAt);
     titleBlock.appendChild(dateEl);
+
+    // Admins see who owns each game on the Active and All tabs (never on My Games: it is always their own)
+    if (game.ownerName && originTab !== 'mine') {
+        const ownerEl = document.createElement('div');
+        ownerEl.className = 'game-row-owner';
+        ownerEl.textContent = `owner:${game.ownerName}`;
+        titleBlock.appendChild(ownerEl);
+    }
 
     const badgesBlock = document.createElement('div');
     badgesBlock.className = 'game-row-badges';
@@ -262,14 +291,14 @@ function createGameRowElement(game, originTab) {
             }
         });
     } else {
-        // My Games tab tap: opens row action menu
+        // My Games and All Games tab tap: opens row action menu
         card.addEventListener('click', () => {
-            openActionSheet(game);
+            openActionSheet(game, originTab);
         });
         card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                openActionSheet(game);
+                openActionSheet(game, originTab);
             }
         });
     }
@@ -379,6 +408,88 @@ function renderMyGames(games) {
 }
 
 /**
+ * Fetches a page of every game on the server (admins only) and updates the All Games list.
+ */
+async function fetchAllGames() {
+    if (!isAdminUser()) {
+        window.location.replace('ScoreBoardGames.html?tab=active');
+        return;
+    }
+
+    try {
+        const res = await window.SuiteProfile.games.listAll(PAGE_LIMIT, allOffset);
+        if (res && res.success && Array.isArray(res.games)) {
+            allTotal = res.total || 0;
+            renderAllGames(res.games);
+            updateAllPagination();
+        } else {
+            allListEl.innerHTML = '';
+            allEmptyEl.classList.remove('hidden');
+            allPaginationEl.classList.add('hidden');
+        }
+    } catch (err) {
+        if (err && err.message && err.message.toLowerCase().includes('session expired')) {
+            window.location.replace('../index.html');
+            return;
+        }
+        allListEl.innerHTML = '';
+        allEmptyEl.textContent = 'Unable to load games. Please check connection.';
+        allEmptyEl.classList.remove('hidden');
+        allPaginationEl.classList.add('hidden');
+    }
+}
+
+/**
+ * Renders every game, with its owner tag, into the All Games list.
+ *
+ * @param {Array<Object>} games
+ */
+function renderAllGames(games) {
+    allListEl.innerHTML = '';
+    if (!games || games.length === 0) {
+        allEmptyEl.classList.remove('hidden');
+        allPaginationEl.classList.add('hidden');
+        return;
+    }
+
+    allEmptyEl.classList.add('hidden');
+    games.forEach(rawGame => {
+        allListEl.appendChild(createGameRowElement(normalizeRowViewModel(rawGame, 'all'), 'all'));
+    });
+}
+
+/**
+ * Updates pagination UI controls for All Games.
+ */
+function updateAllPagination() {
+    if (allTotal <= PAGE_LIMIT) {
+        allPaginationEl.classList.add('hidden');
+        return;
+    }
+    allPaginationEl.classList.remove('hidden');
+    const currentPage = Math.floor(allOffset / PAGE_LIMIT) + 1;
+    const totalPages = Math.max(1, Math.ceil(allTotal / PAGE_LIMIT));
+
+    allPaginationStatus.textContent = `Page ${currentPage} of ${totalPages} (${allTotal} games)`;
+    btnAllPrev.disabled = (allOffset <= 0);
+    btnAllNext.disabled = (allOffset + PAGE_LIMIT >= allTotal);
+}
+
+btnAllPrev.addEventListener('click', () => {
+    if (allOffset > 0) {
+        allOffset = Math.max(0, allOffset - PAGE_LIMIT);
+        fetchAllGames();
+    }
+});
+
+btnAllNext.addEventListener('click', () => {
+    if (allOffset + PAGE_LIMIT < allTotal) {
+        allOffset += PAGE_LIMIT;
+        fetchAllGames();
+    }
+});
+
+/**
  * Updates pagination UI controls for My Games.
  */
 function updateMinePagination() {
@@ -410,17 +521,21 @@ btnPageNext.addEventListener('click', () => {
 });
 
 /**
- * Opens the bottom action sheet for a selected game on My Games tab.
+ * Opens the bottom action sheet for a selected game on the My Games or All Games tab.
+ * On All Games the admin can view and delete, but not change visibility (that belongs to the owner).
  *
  * @param {Object} game
+ * @param {'mine'|'all'} originTab
  */
-function openActionSheet(game) {
+function openActionSheet(game, originTab) {
     selectedMenuGame = game;
+    selectedMenuTab = originTab;
+    btnSheetVisibility.classList.toggle('hidden', originTab === 'all');
     sheetTitleEl.textContent = `${game.homeName} vs ${game.awayName}`;
     sheetMetaEl.textContent = `${game.homeScore} – ${game.awayScore} • ${formatStartDate(game.startedAt)}`;
 
     // Configure View button
-    btnSheetView.href = `ScoreBoardViewer.html?id=${encodeURIComponent(game.id)}&from=mine`;
+    btnSheetView.href = `ScoreBoardViewer.html?id=${encodeURIComponent(game.id)}&from=${originTab}`;
 
     // Configure Visibility button
     const isPublic = (game.visibility === 'public');
@@ -503,7 +618,11 @@ btnSheetDelete.addEventListener('click', async () => {
         const res = await window.SuiteProfile.games.remove(targetGame.id);
         if (res && res.success) {
             closeActionSheet();
-            loadMyGames();
+            if (selectedMenuTab === 'all') {
+                fetchAllGames();
+            } else {
+                loadMyGames();
+            }
         } else {
             alert('Unable to delete match record.');
             btnSheetDelete.disabled = false;
@@ -545,6 +664,7 @@ function stopActivePolling() {
 // Handle tab button click events
 tabBtnActive.addEventListener('click', () => switchTab('active'));
 tabBtnMine.addEventListener('click', () => switchTab('mine'));
+tabBtnAll.addEventListener('click', () => switchTab('all'));
 
 // Mobile lifecycle: pause polling on hidden, resume and fetch immediately on visible
 document.addEventListener('visibilitychange', () => {
@@ -556,6 +676,8 @@ document.addEventListener('visibilitychange', () => {
             startActivePolling();
         } else if (currentTab === 'mine') {
             loadMyGames();
+        } else if (currentTab === 'all') {
+            fetchAllGames();
         }
     }
 });
@@ -575,6 +697,9 @@ function initPage() {
     } else {
         tabBtnMine.classList.remove('hidden');
     }
+
+    // The All Games tab is for admins only
+    tabBtnAll.classList.toggle('hidden', !isAdminUser());
 
     const initialTab = getInitialTabFromUrl();
     if (initialTab === 'mine' && isUserGuest) {

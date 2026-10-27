@@ -18,7 +18,7 @@ import { applyThemeToBody } from './shared.js';
 import { showToast, playWhistle, playScoreSplash, playCardRaise, shareText } from './effects.js';
 
 // Page version, shown in the footer
-const APP_VERSION = '7.0';
+const APP_VERSION = '7.1';
 
 const TICK_MS = 100;
 const HEARTBEAT_MS = 20 * 1000;
@@ -420,6 +420,15 @@ function wireSettings() {
     byId('close-settings-btn').addEventListener('click', closeSettings);
     byId('close-settings-x').addEventListener('click', closeSettings);
 
+    // The gear on the other ScoreBoard pages links here with ?settings=1
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('settings') === '1') {
+        params.delete('settings');
+        const query = params.toString();
+        history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
+        openSettings();
+    }
+
     sharePublic.addEventListener('change', async () => {
         const game = store.getGame();
         const next = sharePublic.checked ? 'public' : 'private';
@@ -530,7 +539,6 @@ function start() {
     byId('appVersion').textContent = APP_VERSION;
 
     // Links and settings that only exist for signed-in users
-    byId('link-my-games').classList.toggle('hidden', !isSignedIn());
     byId('settings-sharing-section').classList.toggle('hidden', !isSignedIn());
 
     wireControls();

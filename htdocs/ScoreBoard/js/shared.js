@@ -479,6 +479,7 @@ export function normalizeRowViewModel(raw, source = 'public') {
         visibility,
         startedAt,
         endedAt,
+        ownerName: (typeof raw.ownerName === 'string' && raw.ownerName) ? raw.ownerName : '',
         isOwner: (source === 'mine')
     };
 }

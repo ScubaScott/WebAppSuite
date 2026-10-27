@@ -9,22 +9,30 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../media/suite-header.css">
     <link rel="stylesheet" href="scoreboard.css">
     <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 
 <body class="games-body">
 
+    <!-- Suite Header: back to the parent page, page title, settings -->
+    <header class="suite-header">
+        <a href="index.html" class="suite-header__back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+        </a>
+        <h1 class="suite-header__title">Games</h1>
+        <a href="index.html?settings=1" class="suite-header__gear" title="Settings" aria-label="Open settings"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+            </svg></a>
+    </header>
+
     <!-- Standard page shell container -->
     <div class="unified-page-shell">
-
-        <!-- Top navigation: single fixed back target to ScoreBoard root -->
-        <a href="index.html" class="back-link back-link-start">← Back</a>
-
-        <!-- Page header -->
-        <div class="page-header">
-            <h1 class="page-header-title">Games</h1>
-        </div>
 
         <!-- Two-tab bar: Active Games & My Games (My Games tab rendered only for authenticated users) -->
         <div class="games-tab-bar" id="games-tab-bar" role="tablist">
@@ -33,6 +41,9 @@
             </button>
             <button type="button" class="games-tab-btn hidden" id="tab-btn-mine" role="tab" aria-selected="false" aria-controls="panel-mine">
                 My Games
+            </button>
+            <button type="button" class="games-tab-btn hidden" id="tab-btn-all" role="tab" aria-selected="false" aria-controls="panel-all">
+                All Games
             </button>
         </div>
 
@@ -57,6 +68,19 @@
                 <button type="button" class="pagination-btn" id="btn-page-prev">Previous</button>
                 <div class="pagination-info" id="pagination-status">Page 1 of 1</div>
                 <button type="button" class="pagination-btn" id="btn-page-next">Next</button>
+            </div>
+        </div>
+
+        <!-- All Games Panel (Admins only) -->
+        <div id="panel-all" role="tabpanel" aria-labelledby="tab-btn-all" class="games-feed hidden">
+            <div id="all-games-list" class="games-feed"></div>
+            <div id="all-empty-state" class="empty-games-box hidden">
+                There are no games on the server.
+            </div>
+            <div class="pagination-controls hidden" id="all-pagination">
+                <button type="button" class="pagination-btn" id="btn-all-prev">Previous</button>
+                <div class="pagination-info" id="all-pagination-status">Page 1 of 1</div>
+                <button type="button" class="pagination-btn" id="btn-all-next">Next</button>
             </div>
         </div>
 

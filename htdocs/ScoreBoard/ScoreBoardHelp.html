@@ -8,16 +8,33 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../media/suite-header.css">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
+<body class="bg-black text-white min-h-screen">
+
+    <!-- Suite Header: back to the parent page, page title, settings -->
+    <header class="suite-header">
+        <a href="index.html" class="suite-header__back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+        </a>
+        <h1 class="suite-header__title">Help</h1>
+        <a href="index.html?settings=1" class="suite-header__gear" title="Settings" aria-label="Open settings"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+            </svg></a>
+    </header>
+
+    <div class="flex items-center justify-center p-4">
     <div class="bg-gray-900 rounded-3xl shadow-2xl p-6 w-full max-w-2xl space-y-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold">ScoreBoard Help</h1>
+                <h2 class="text-2xl font-bold">ScoreBoard Help</h2>
                 <p class="text-sm text-gray-400 mt-1">Instructions for using the timer, scoring, and history features.</p>
             </div>
-            <a href="index.html" class="text-sm font-bold text-blue-400 hover:text-blue-200 underline">Back</a>
         </div>
         <div class="space-y-4 text-sm text-gray-300">
             <div>
@@ -117,14 +134,15 @@
             </div>
         </div>
     </div>
+    </div>
     <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">2.2</span></p>
+        <p>Version <span id="helpVersion">2.3</span></p>
     </footer>
     <!-- Shared Suite Profile and service worker registration -->
     <script src="../media/suite-profile.js"></script>
     <script>
         // ScoreBoard help documentation version identifier
-        const VERSION = '2.2';
+        const VERSION = '2.3';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;

@@ -239,7 +239,8 @@ Each action causes exactly one local write and at most one scheduled server sync
 
 Do not change these without updating this section, the console and the viewer together.
 
-- Actions: `sync` (POST), `list_public`, `get`, `list_mine`, `set_visibility`, `delete`.
+- Actions: `sync` (POST), `list_public`, `get`, `list_mine`, `list_my_teams`, `list_all` (admin), `set_visibility`, `delete`.
+- Admins (Admin group, profile with a password: the same gate as `api/admin.php`) also: `list_all` returns every game, paginated; `list_public` and `list_all` add `ownerName` (`guest` for unowned games) for them only; `get` returns private games to them; `delete` removes any final game. `set_visibility` stays owner-only.
 - Table `scoreboard_games` stores the snapshot as JSON plus summary columns pulled from it (names, scores, period, `timer_running`, `is_paused`, `elapsed_ms`).
 - Writes are authorized by the write token (stored as a SHA-256 hash) or by owning the row. Sessions are checked against `suite_sessions` (SHA-256 token hashes).
 - Guest games expire 24 hours after their last update. A signed-in user who syncs a guest game with its write token claims it; owned games never expire.
@@ -264,6 +265,7 @@ Do not change these without updating this section, the console and the viewer to
 
 ### Games list
 - Active tab polls `list_public` every 4 s while visible. Tapping a row opens the viewer.
+- All Games is a third tab for admins only (`?tab=all`; others are redirected to Active). It lists every game, 20 per page, newest activity first, with View and Delete (final games only) in the row sheet. Rows on Active and All Games show a small `owner:<username>` tag for admins; My Games never shows it.
 - My Games is for signed-in users only; guests opening `?tab=mine` go to the launcher. Pages of 20. Row actions: View, Make Private/Public, Delete (final games only, with confirmation).
 
 ---
@@ -272,13 +274,14 @@ Do not change these without updating this section, the console and the viewer to
 
 - No inline `style` attributes and no inline event handlers in any ScoreBoard page. Styles go in `scoreboard.css` using custom properties; listeners are attached in JS. Values that come from data (team colors, theme images, animation positions) may be set from JS as properties, never written into markup.
 - Show and hide elements by toggling the `hidden` class. Never set `style.display` on an element that may carry `hidden` (it is `display: none !important`).
+- Every ScoreBoard page opens with the standard suite header (`suite-header.css`): back on the left, a one-word title, and on the right a settings gear on every page except the viewer. The console's back goes to the Apps launcher, the other pages go back one level (Games and Help to the console, the viewer to the games list). The gear on Games and Help opens the console with `?settings=1`, which opens its Settings dialog.
 - Every tappable control is a `<button>` (or link) with at least a 44×44 px target; score boxes are buttons.
 - One theme catalog, in `shared.js`, used by every page.
 - One copy of each helper (formatters, `getPeriodLabel`, `escapeHtml`, history renderer), in `shared.js`. Never redefine them in a page script.
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.0, viewer 1.7, games list 1.2, help 2.2, shared 2.0).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.1, viewer 1.9, games list 1.4, help 2.3, shared 2.0).
 
 ---
 

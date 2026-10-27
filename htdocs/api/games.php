@@ -3,7 +3,7 @@
 // Handles match synchronization, active games directory, and user game archive persistence.
 
 // API endpoint version identifier
-$GAMES_API_VERSION = '1.5';
+$GAMES_API_VERSION = '1.6';
 
 // Inactivity threshold (in hours) after which a live game is automatically finalized
 define('GAME_TIMEOUT_HOURS', 3);
@@ -45,6 +45,53 @@ function sanitizeText($text, $maxLength = 60) {
     // Strip ASCII control characters (0x00-0x1F, 0x7F) and trim
     $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', trim($text));
     return mb_substr($cleaned, 0, $maxLength, 'UTF-8');
+}
+
+/**
+ * True when the user belongs to the Admin group and their profile has a password
+ * (the same gate as api/admin.php).
+ *
+ * @param PDO $pdo
+ * @param array|null $user Authenticated user row, or null for a guest
+ * @return bool
+ */
+function isAdminUser($pdo, $user) {
+    if (!$user || empty($user['password_hash'])) {
+        return false;
+    }
+    $stmt = $pdo->prepare('SELECT 1 FROM suite_user_groups ug
+                           JOIN suite_groups g ON g.id = ug.group_id
+                           WHERE ug.user_id = ? AND g.slug = \'admin\' LIMIT 1');
+    $stmt->execute([$user['id']]);
+    return (bool)$stmt->fetchColumn();
+}
+
+/**
+ * Maps owner ids to usernames for the admin lists. Games without an owner are guest games.
+ *
+ * @param PDO $pdo
+ * @param array $rows Rows that include an owner_id column
+ * @return array<int,string> owner id => username
+ */
+function loadOwnerNames($pdo, $rows) {
+    $ids = [];
+    foreach ($rows as $row) {
+        if ($row['owner_id'] !== null) {
+            $ids[(int)$row['owner_id']] = true;
+        }
+    }
+    if (!$ids) {
+        return [];
+    }
+    $ids = array_keys($ids);
+    $marks = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare('SELECT id, username FROM suite_users WHERE id IN (' . $marks . ')');
+    $stmt->execute($ids);
+    $names = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $user) {
+        $names[(int)$user['id']] = $user['username'];
+    }
+    return $names;
 }
 
 // -----------------------------------------------------------------------------
@@ -290,8 +337,12 @@ if ($action === 'list_public') {
     $nowUtc = gmdate('Y-m-d H:i:s');
     $nowTs = time();
 
+    // Owner names are shown to admins only; other callers get the list without them
+    $viewer = authenticateUser($pdo, getAuthToken());
+    $viewerIsAdmin = isAdminUser($pdo, $viewer);
+
     // Query public active games and recent games finished within the past 24 hours
-    $sql = 'SELECT game_id, visibility, home_name, away_name, home_score, away_score, current_period,
+    $sql = 'SELECT game_id, owner_id, visibility, home_name, away_name, home_score, away_score, current_period,
                    status, timer_running, is_paused, elapsed_ms, started_at, ended_at, last_activity_at,
                    TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
             FROM scoreboard_games
@@ -306,6 +357,7 @@ if ($action === 'list_public') {
 
     $games = [];
     $timeoutSeconds = GAME_TIMEOUT_HOURS * 3600;
+    $ownerNames = $viewerIsAdmin ? loadOwnerNames($pdo, $rows) : [];
 
     foreach ($rows as $row) {
         $ageSeconds = max(0, (int)$row['age_seconds']);
@@ -344,6 +396,11 @@ if ($action === 'list_public') {
             'last_activity_at' => $row['last_activity_at'],
             'gameTitle' => $row['home_name'] . ' vs ' . $row['away_name']
         ];
+        if ($viewerIsAdmin) {
+            $games[count($games) - 1]['ownerName'] = $row['owner_id'] === null
+                ? 'guest'
+                : ($ownerNames[(int)$row['owner_id']] ?? 'unknown');
+        }
     }
 
     // Sort: Non-final games first ordered by last_activity_at descending; then finals ordered by ended_at descending
@@ -408,7 +465,7 @@ if ($action === 'get') {
 
     // Access control for private games: only the verified owner may retrieve them
     if ($game['visibility'] === 'private') {
-        if (!$user || (int)$user['id'] !== (int)$game['owner_id']) {
+        if ((!$user || (int)$user['id'] !== (int)$game['owner_id']) && !isAdminUser($pdo, $user)) {
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Game not found or no longer shared.']);
             exit;
@@ -556,6 +613,93 @@ if ($action === 'list_mine') {
 }
 
 // -----------------------------------------------------------------------------
+// 4a. List every game (admins only), with the owner's username
+// -----------------------------------------------------------------------------
+if ($action === 'list_all') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => 'Method not allowed. Use POST.']);
+        exit;
+    }
+
+    $payload = getRequestPayload();
+    $user = authenticateUser($pdo, getAuthToken($payload));
+
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Authentication required.']);
+        exit;
+    }
+    if (!isAdminUser($pdo, $user)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Admin access required.']);
+        exit;
+    }
+
+    $limit = isset($payload['limit']) ? max(1, min(100, (int)$payload['limit'])) : 20;
+    $offset = isset($payload['offset']) ? max(0, (int)$payload['offset']) : 0;
+
+    // Guest games past their expiry are about to be purged, so they are left out
+    $notExpired = '(expires_at IS NULL OR expires_at > UTC_TIMESTAMP())';
+    $total = (int)$pdo->query('SELECT COUNT(*) FROM scoreboard_games WHERE ' . $notExpired)->fetchColumn();
+
+    $listStmt = $pdo->prepare('SELECT game_id, owner_id, visibility, status, ended_by,
+                                      home_name, away_name, home_score, away_score, current_period,
+                                      timer_running, is_paused, elapsed_ms,
+                                      started_at, ended_at, last_activity_at,
+                                      TIMESTAMPDIFF(SECOND, last_activity_at, UTC_TIMESTAMP()) AS age_seconds
+                               FROM scoreboard_games
+                               WHERE ' . $notExpired . '
+                               ORDER BY last_activity_at DESC
+                               LIMIT ? OFFSET ?');
+    $listStmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $listStmt->bindValue(2, $offset, PDO::PARAM_INT);
+    $listStmt->execute();
+    $rows = $listStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $ownerNames = loadOwnerNames($pdo, $rows);
+    $games = [];
+
+    foreach ($rows as $row) {
+        $ageSeconds = max(0, (int)$row['age_seconds']);
+        $effectiveStatus = $row['status'];
+        if ($row['status'] === 'live' && $ageSeconds >= GAME_TIMEOUT_HOURS * 3600) {
+            $effectiveStatus = 'final';
+        }
+
+        $games[] = [
+            'id' => $row['game_id'],
+            'game_id' => $row['game_id'],
+            'homeTeamName' => $row['home_name'],
+            'awayTeamName' => $row['away_name'],
+            'homeScore' => (int)$row['home_score'],
+            'awayScore' => (int)$row['away_score'],
+            'currentPeriod' => (int)$row['current_period'],
+            'status' => $effectiveStatus,
+            'timerRunning' => (int)$row['timer_running'] === 1,
+            'isPaused' => (int)$row['is_paused'] === 1,
+            'elapsedMs' => (int)$row['elapsed_ms'],
+            'age_ms' => $ageSeconds * 1000,
+            'age_seconds' => $ageSeconds,
+            'visibility' => $row['visibility'],
+            'startedAt' => $row['started_at'],
+            'endedAt' => $row['ended_at'],
+            'lastActivityAt' => $row['last_activity_at'],
+            'ownerName' => $row['owner_id'] === null ? 'guest' : ($ownerNames[(int)$row['owner_id']] ?? 'unknown')
+        ];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'games' => $games,
+        'total' => $total,
+        'limit' => $limit,
+        'offset' => $offset
+    ]);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
 // 4b. List the user's teams (distinct home_name values with game counts)
 // -----------------------------------------------------------------------------
 if ($action === 'list_my_teams') {
@@ -680,7 +824,7 @@ if ($action === 'delete') {
     $stmt->execute([$gameId]);
     $game = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$game || (int)$game['owner_id'] !== (int)$user['id']) {
+    if (!$game || ((int)$game['owner_id'] !== (int)$user['id'] && !isAdminUser($pdo, $user))) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Game not found or not owned by user.']);
         exit;

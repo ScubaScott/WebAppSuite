@@ -39,21 +39,6 @@ body {
     min-height: 100vh;
 }
 
-/* ---- Back Link ---- */
-.back-link {
-    display: inline-block;
-    margin-bottom: 12px;
-    color: #fef2f2;
-    text-decoration: none;
-    font-size: 0.95rem;
-    font-weight: 600;
-    transition: color 0.15s;
-}
-.back-link:hover {
-    text-decoration: underline;
-    color: #ffffff;
-}
-
 /* ---- Interactive score / name boxes ---- */
 .interactive-box {
     cursor: pointer;
@@ -1500,20 +1485,6 @@ footer {
     }
 }
 
-/* My Games secondary sublink */
-.my-games-sublink {
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: #a78bfa;
-    text-decoration: underline;
-    transition: color 0.15s;
-    padding: 4px 8px;
-}
-
-.my-games-sublink:hover {
-    color: #c4b5fd;
-}
-
 /* Overage indicator badge */
 .overage-badge {
     font-size: 0.65rem;
@@ -1876,21 +1847,8 @@ footer {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding: 16px;
     box-sizing: border-box;
-}
-
-.page-header {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.page-header-title {
-    margin: 0;
-    font-size: clamp(1.5rem, 5vw, 2rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: #f8fafc;
 }
 
 /* Tab controls */
@@ -1997,6 +1955,18 @@ footer {
     font-size: 0.8rem;
     color: #94a3b8;
     line-height: 1.2;
+}
+
+.game-row-owner {
+    align-self: flex-start;
+    padding: 1px 8px;
+    border-radius: 999px;
+    border: 1px solid #475569;
+    background: rgba(30, 41, 59, 0.7);
+    color: #cbd5e1;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.5;
 }
 
 .game-row-badges {
@@ -2807,7 +2777,7 @@ footer {
 }
 
 .viewer-main {
-    min-height: 100vh;
+    min-height: calc(100vh - 56px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2930,13 +2900,9 @@ footer {
     user-select: none;
 }
 
-.back-link-start {
-    align-self: flex-start;
-}
-
 .games-body {
     margin: 0;
-    padding: 16px;
+    padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;

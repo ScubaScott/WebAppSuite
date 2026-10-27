@@ -9,11 +9,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../media/suite-header.css">
     <link rel="stylesheet" href="scoreboard.css">
     <link rel="stylesheet" href="../media/suite-profile.css">
 </head>
 
 <body class="flush-body">
+
+    <!-- Suite Header: back to the parent page, page title, settings -->
+    <header class="suite-header">
+        <a href="ScoreBoardGames.html?tab=active" id="btn-back" class="suite-header__back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+        </a>
+        <h1 class="suite-header__title">Viewer</h1>
+        <span class="suite-header__spacer" aria-hidden="true"></span>
+    </header>
 
     <!-- Reconnecting status banner (displayed when network encounters temporary drops) -->
     <div id="reconnecting-banner" class="viewer-reconnecting-banner viewer-banner-sticky hidden">
@@ -23,11 +37,6 @@
     <!-- Main scoreboard viewport wrapper -->
     <div class="viewer-main">
         <div class="page-column">
-
-            <!-- Top navigation: single fixed back target computed from origin tab -->
-            <a href="ScoreBoardGames.html?tab=active" id="btn-back" class="back-link back-link-start">
-                ← Back
-            </a>
 
             <!-- Unavailable State Box (Terminal 404: deleted, private, or not found) -->
             <div id="unavailable-view" class="empty-games-box viewer-state-box hidden">

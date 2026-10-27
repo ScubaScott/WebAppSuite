@@ -7,7 +7,7 @@ import { formatClock, getPeriodLabel } from './format.js';
 import { STALL_THRESHOLD_MS, deriveStatusPill, formatAgeMinutes, renderHistoryRows, applySavedThemeReadOnly, applyThemeToBody } from './shared.js';
 
 // Viewer tool version constant
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.9';
 
 // Polling configuration
 const BASE_POLL_INTERVAL_MS = 4000;
@@ -52,9 +52,14 @@ let serverClockOffset = 0; // server_now - client Date.now()
  * If origin was 'mine' but viewing user is a guest, back resolves to ?tab=active.
  */
 function configureBackLink() {
-    let backTab = (fromParam === 'mine') ? 'mine' : 'active';
+    let backTab = (fromParam === 'mine' || fromParam === 'all') ? fromParam : 'active';
     if (backTab === 'mine') {
         if (!window.SuiteProfile || window.SuiteProfile.isGuest()) {
+            backTab = 'active';
+        }
+    }
+    if (backTab === 'all') {
+        if (!window.SuiteProfile || !window.SuiteProfile.isAdmin()) {
             backTab = 'active';
         }
     }
