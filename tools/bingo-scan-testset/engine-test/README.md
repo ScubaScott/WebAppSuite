@@ -24,7 +24,7 @@ Notes:
 labeled photos, checks that the windows are found automatically, reads the numbers, compares the review grid with
 `labels.json`, switches on Show detection, opens and applies the manual corner handles, reads again, and uploads a
 picture with no card. It needs the same dev server as above plus the photos in `../photos/`
-(`node e2e-scan-test.js <repo root> <output folder>`). `e2e-last-result.json` is the last passing run (25 checks).
+(`node e2e-scan-test.js <repo root> <output folder>`). `e2e-last-result.json` is the last passing run (35 checks, including a photo the decoder improves from 17 to 22 correct).
 
 ## Phone-speed estimate
 `throttle-bench.js <port> <rate> <output folder>` runs the benchmark page under Chrome's CPU throttling (a bench

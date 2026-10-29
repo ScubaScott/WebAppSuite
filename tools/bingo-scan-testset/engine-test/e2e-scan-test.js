@@ -34,7 +34,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // Show detection starts off
     check('detection card hidden until switched on', await page.$eval('#detectionCard', e => e.classList.contains('hidden')));
 
-    for (const name of ['20260721_195125.jpg', '20260721_195119.jpg']) {
+    // [photo, numbers that must be right]; 195121 reads only 17 of 24 without the decoder, so 21 shows the decoder at work in the page
+    for (const [name, minCorrect] of [['20260721_195125.jpg', 22], ['20260721_195119.jpg', 21], ['20260721_195121.jpg', 21]]) {
       const photo = path.join(repo, 'tools/bingo-scan-testset/photos', name);
       const want = labels[name].labels;
       const input = await page.$('#fileInput');
@@ -53,7 +54,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       const grid = await page.evaluate(() => scannedGridData.slice());
       let correct = 0, wrong = 0;
       grid.forEach((v, i) => { if (i === 12) return; if (v === want[i]) correct++; else if (v !== null && v !== '') wrong++; });
-      check(`${name}: review grid has at least 17 of 24 numbers right`, correct >= 17, `${correct} correct, ${wrong} wrong`);
+      check(`${name}: review grid has at least ${minCorrect} of 24 numbers right`, correct >= minCorrect, `${correct} correct, ${wrong} wrong`);
+      check(`${name}: no more than 1 wrong number shown`, wrong <= 1, wrong + ' wrong');
       check(`${name}: FREE space stays in the center`, grid[12] === 'FREE');
       check(`${name}: review grid is drawn`, (await page.$$('#scannedGridElements .editor-cell')).length === 25);
 

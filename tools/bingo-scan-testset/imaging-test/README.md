@@ -20,5 +20,18 @@ Node-only tests with synthetic images; no browser needed.
 
       node tools/bingo-scan-testset/imaging-test/reader-test.js htdocs/Bingo/scan
 
+- `decoder-test.js` checks `htdocs/Bingo/scan/decoder.js` on synthetic cases: candidate expansion (look-alikes, missing
+  and extra digits), the column solver and its tie-break, the ambiguity rule, flags, and a property test that random
+  cards always decode to valid numbers.
+
+      node tools/bingo-scan-testset/imaging-test/decoder-test.js htdocs/Bingo/scan
+
+- `decoder-eval.js` replays the saved real readings (`../baselines/1.5-reader-readings.json`, taken from the
+  benchmark) through the decoder and prints reader-alone against decoded accuracy per group, in about a second and
+  without a browser. Add `verbose` to list every cell the decoder changed. Use it to tune or check decoder settings;
+  regenerate the readings file with the benchmark whenever the reader or the window finder changes.
+
+      node tools/bingo-scan-testset/imaging-test/decoder-eval.js . [verbose]
+
 The canvas helpers (warp, overlay, crops) need a browser and are covered by `../engine-test/` and by the
 detection-only benchmark (`bench.html?auto=1&geometry=1`, add `&sheet=1` for the crop sheets).

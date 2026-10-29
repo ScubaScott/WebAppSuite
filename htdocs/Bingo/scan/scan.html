@@ -846,6 +846,7 @@
     <script src="geometry.js"></script>
     <script src="utils.js"></script>
     <script src="readers/tesseract-reader.js"></script>
+    <script src="decoder.js"></script>
     <script src="ocr.js"></script>
 </head>
 
@@ -2241,7 +2242,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '1.9';
+        const SCAN_PAGE_VERSION = '2.0';
         const APP_VERSION = SCAN_PAGE_VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;

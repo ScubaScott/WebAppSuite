@@ -1,16 +1,7 @@
 // OCR module version identifier
-const OCR_VERSION = '2.0';
+const OCR_VERSION = '2.1';
 const VERSION = OCR_VERSION;
 
-
-// Standard 75-ball bingo column ranges (B-I-N-G-O). A reading outside its column's range is a misread.
-const COLUMN_RANGES = [
-    [1, 15],   // B
-    [16, 30],  // I
-    [31, 45],  // N
-    [46, 60],  // G
-    [61, 75],  // O
-];
 
 // Index of the FREE space in the 25-cell grid
 const FREE_CELL = 12;
@@ -43,41 +34,22 @@ async function readCardFromPhoto(photoCanvas, geometry, onStage) {
     if (onStage) onStage('Reading the numbers…');
     const readings = await reader.read(grays);
 
-    const grid = Array.from({ length: 5 }, () => Array(5).fill(null));
-    grid[2][2] = 'FREE';
-    numbered.forEach((cell, k) => {
-        const [lo, hi] = COLUMN_RANGES[cell.col];
-        // The best-scored candidate that fits the cell's column range wins; readings outside the range are misreads
-        const fit = readings[k].candidates.find(c => c.value >= lo && c.value <= hi);
-        if (fit) grid[cell.row][cell.col] = fit.value;
-    });
-    deduplicateGrid(grid);
+    // The decoder picks the most likely valid card: each number inside its column's range, none repeated in a column,
+    // look-alike digits and missing digits corrected where one reading clearly stands out
+    if (onStage) onStage('Checking the numbers against the card rules…');
+    const decodeInput = numbered.map((c, k) => ({
+        index: c.index, col: c.col, row: c.row,
+        raw: readings[k].raw, candidates: readings[k].candidates, covered: c.covered, glare: c.glare
+    }));
+    const decoded = Decoder.decode(decodeInput);
+    // What the reader's own best answers would give without the decoder, for comparison
+    const readerGrid = Decoder.baseline(decodeInput);
 
     return {
-        grid, cells,
+        grid: decoded.grid, readerGrid, decoded, cells, numbered, readings,
         reader: { id: reader.id, version: reader.version },
         stats: { extractMs, ...readings.stats, totalMs: Math.round(performance.now() - started) }
     };
-}
-
-// Remove duplicate numbers from the OCR grid. Each valid bingo number should appear only once.
-// When a duplicate is found, the later occurrence is cleared to null.
-// FREE cells and null/empty cells are ignored during deduplication.
-function deduplicateGrid(grid) {
-    const seen = new Set();
-    for (let r = 0; r < grid.length; r++) {
-        for (let c = 0; c < grid[r].length; c++) {
-            const val = grid[r][c];
-            if (val === "FREE" || val === null || val === undefined) continue;
-            if (seen.has(val)) {
-                console.warn(`OCR dedup: removed duplicate ${val} at [${r},${c}]`);
-                grid[r][c] = null;
-            } else {
-                seen.add(val);
-            }
-        }
-    }
-    return grid;
 }
 
 // State for interactive scanned grid review

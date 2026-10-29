@@ -275,6 +275,17 @@ Readers run in a Web Worker. A **shadow reader** may run after the primary; its 
 5. Each output cell carries `value`, `score`, `changedByDecoder`, and flags (`covered`, `glare`).
 6. **Orientation check (Phase 2):** when the reader is fast, decode all four 90° lattice orientations and keep the one with the highest total score.
 
+### 7.6a Implemented in step 1.5 (decoder)
+`decoder.js` (v1.0, no DOM, 0.13 ms per card) sits between the reader and the review grid; `ocr.js` (v2.1) feeds it the reader's candidates and cell flags and uses its grid. It also now owns `COLUMN_RANGES`. `readCardFromPhoto` returns the decoded `grid`, the reader-only `readerGrid` for comparison, and the per-cell decoder output. What it does, and where it differs from the plan above:
+
+- **Expansion:** each reader candidate also offers (a) one digit swapped for a look-alike, (b) for a lone digit, every number in the column that starts or ends with it (a lone "4" in G gives 46-49 and 54), and (c) for three or more digits, every one or two digits in a row (the "520" in G offers 52). Only numbers inside the cell's column range are kept, at most 8 per cell. Reading scores below 0.05 count as 0.05, because the reader sometimes reports confidence 0 for a correct digit.
+- **Weights:** a swap counts 0.30 for pairs seen in the test photos (read 3 for 6 or 5, 1 for 7 or 4, 2 for 5, 8 or 9 for 3, 5 for 6) and 0.12 for the usual look-alikes (1/7, 3/8, 5/6, 6/8, 0/8, 4/9, 2/7 in both directions); a missing digit counts 0.3, extra digits 0.5; an empty cell counts 0.02. The measured pairs come from six photos of one card (the same few cells repeat in them), so they are deliberately coarse tiers; **re-measure them when more cards are available.**
+- **Column solve:** exhaustive search per column for the choice with the best product of likelihoods and no repeated number. An exact tie (two cells that both read "9" and are corrected by the same weight) goes to the more confident reading.
+- **Ambiguity rule (not in the plan):** a guessed number (anything but the reader's own answer) is kept only when it holds at least 55% of the likelihood of everything the cell could be. Otherwise the cell is left empty with kind `ambiguous` and the leading options in `alternatives` for the review screen. Without this rule the decoder turned a lone "2" in column O into 62 half the time (it is 62 or 72) and a lone "3" in N into 31 (nine possibilities): correct cells rose but wrong cells quadrupled.
+- **Output per cell:** `value`, `score` (the decoder's confidence), `kind` (`exact`, `swap`, `drop`, `extra`, `ambiguous`, `blank`), `changedByDecoder` (differs from what the reader alone would give), `covered`, `glare`, `alternatives`. Covered cells are never read.
+- **Not done:** the four-way orientation check (a Phase 2 item); decoding with confusion alternatives from the reader's own character confidences.
+- **Tests:** `tools/bingo-scan-testset/imaging-test/decoder-test.js` (31 checks, including a property test that 300 random cards always decode to in-range numbers with no repeats) and `decoder-eval.js`, which replays the saved real readings (`baselines/1.5-reader-readings.json`) in Node in a second and prints reader-alone against decoded.
+
 ### 7.7 Review UI
 - Reuse the existing review grid and column picker (`renderScannedGridReview`), adding Confident/Check/Missing/Covered states as CSS classes with tokens in `style.css`.
 - Summary line above the grid: "21 read · 3 to check".
@@ -486,6 +497,17 @@ Wrong answers are now rare (0-1 per card); a cell the reader cannot read is left
 
 **Scan time** (finding the windows plus reading, 10 slider photos): 0.32-0.66 s on this desktop (first-use recognizer start-up 0.2 s). The target is 5 s on a mid-range phone, which could not be measured on a device. As a stand-in the benchmark was run under Chrome's 6x CPU throttling; the throttle slowed the page but not the recognizer's worker thread, so the worker's time (recognition and retries) was multiplied by 6 by hand. Result: median **2.9 s, worst case 4.5 s** (`baselines/1.4-throttled-6x-slider.json`). The slowest cases are photos where the window finder needs its third mask mode (about 3 s of the total under throttling). A real-phone measurement should replace this estimate when a device is available.
 
+**After step 1.5** (decoder added; `decoder.js` 1.0, `ocr.js` 2.1, `bench.html` 1.5; raw results in `baselines/1.5-decoder.json`):
+
+| Group | Photos | Reader alone | With decoder | Wrong (reader alone / decoder) | Cards exact |
+|---|---|---|---|---|---|
+| Slider, checked labels (headline) | 9 | 168 / 216 (77.8%) | **185 / 216 (85.6%)** | 3 / 4 | 1 / 9 |
+| — tune photos (decoder weights were set on these) | 6 | 113 / 144 | 127 / 144 (88.2%) | 2 / 3 | 0 / 6 |
+| — holdout photos | 3 | 55 / 72 | **58 / 72 (80.6%)** | 1 / 1 | 1 / 3 |
+| Slider, `needs-review` labels (`crazy-2`, a different card, never used for tuning) | 1 | 20 / 24 | **22 / 24 (91.7%)** | 1 / 0 | 0 / 1 |
+
+Gain: +17 correct cells on the headline (+8.8 points), +3 on the held-out photos, +2 on the other card, and **no photo got worse**; per card the headline photos now read 24, 23, 23, 23, 22, 22, 21, 14 and 13 of 24 (the two lowest are the blue-lit glare photo and the strongly tilted one, where the reader returns nothing for 9-10 cells; a decoder cannot invent those). On one photo (`195121`) the decoder lifts 17 to 23 of 24 by correcting misreads such as "32" to 52, "33" to 53 and 63, "19" to 49, "34" to 54 and "37" to 67. Wrong answers did not grow (3 to 4 on the headline, 1 to 1 on the holdout) because uncertain guesses are left empty. Scan time is unchanged (the decoder adds 0.13 ms). The remaining errors are the reader's own misreads that land inside the right column range (3 read as "8", 2 as "7" or "9", 27 as "21"), which only a better reader (DigitNet, Phase 2) can fix.
+
 Targets for Phase 1 are measured against the headline row. Re-run the bench after steps 1.3, 1.4 and 1.5 and add a row here.
 
 ## 11. Hosting Move (no longer required for Phases 1–2)
@@ -555,7 +577,7 @@ Revisit only if DigitNet fails the Phase 2 targets on a card format for which co
 | **1.2** | `imaging.js` replaces OpenCV — **done**, see §8.4b | OpenCV script tag removed — **done** (no `cv` references remain in `htdocs/`) |
 | **1.3** | `profiles.js` (`slider`, `manual`) + `geometry.js` + canonical crops + shutter/glare flags + debug overlay — **done**, see §7.3a | Slider detection succeeds on ≥ 90% of slider test photos — **10 / 10** (§10.1) |
 | **1.4** | `CellReader` contract + Tesseract single-sheet adapter — **done**, see §7.5a | ≤ 5 s per scan on a mid-range phone — **0.3-0.7 s on this desktop; 2.9 s median, 4.5 s worst case under a 6x slowdown model** (§10.1); not yet measured on a real phone |
-| **1.5** | `decoder.js` | Measurable accuracy gain over the raw reader on bench |
+| **1.5** | `decoder.js` — **done**, see §7.6a | Measurable accuracy gain over the raw reader on bench — **+17 cells (168 to 185 of 216) on the headline, +3 on the holdout, +2 on a second card, no photo worse** (§10.1) |
 | **1.6** | Training pipeline: `training-store.js` outbox, `/api/training` endpoint + table + validation + admin routes, Contribute default on, first-scan notice, export backup | Samples arrive in MySQL from a phone; admin stats endpoint works |
 | **1.7** | Review UI states, summary line, profile chip; tuning panel removed | — |
 | **1.8** | Guided capture overlay + auto-shutter | Phase 1 slider targets in §1 met |
