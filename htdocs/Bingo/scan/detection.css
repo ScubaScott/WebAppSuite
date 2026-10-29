@@ -1,0 +1,12 @@
+/* Detection view card on the Scan tab: the photo with the detected number windows and fitted grid */
+.detection-card.hidden {
+    display: none;
+}
+
+.detection-canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+}

@@ -1,5 +1,5 @@
 // Imaging module version identifier
-const IMAGING_VERSION = '1.0';
+const IMAGING_VERSION = '1.2';
 
 // Small plain-JavaScript image toolkit used by the scanner (no external libraries).
 // Gray images are objects { width, height, data } where data is a Uint8Array of 0-255 values.
@@ -160,6 +160,32 @@ const Imaging = (() => {
         return { width: gray.width, height: gray.height, data: out };
     }
 
+    // Average of the (size x size) neighborhood around every pixel, computed from an integral image so the
+    // cost does not depend on the window size. Near the edges the average covers only the pixels that exist.
+    function boxMean(gray, size) {
+        const { width: w, height: h, data } = gray;
+        const r = size >> 1;
+        const stride = w + 1;
+        const integral = new Float64Array(stride * (h + 1));
+        for (let y = 0; y < h; y++) {
+            let rowSum = 0;
+            for (let x = 0; x < w; x++) {
+                rowSum += data[y * w + x];
+                integral[(y + 1) * stride + (x + 1)] = integral[y * stride + (x + 1)] + rowSum;
+            }
+        }
+        const out = new Float32Array(w * h);
+        for (let y = 0; y < h; y++) {
+            const y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1);
+            for (let x = 0; x < w; x++) {
+                const x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
+                const sum = integral[y1 * stride + x1] - integral[y0 * stride + x1] - integral[y1 * stride + x0] + integral[y0 * stride + x0];
+                out[y * w + x] = sum / ((x1 - x0) * (y1 - y0));
+            }
+        }
+        return out;
+    }
+
     // Local threshold: each pixel is compared with the (Gaussian or box) average of its neighborhood minus c.
     // With invert, pixels darker than the local average become 255.
     function adaptiveThreshold(gray, options) {
@@ -167,7 +193,7 @@ const Imaging = (() => {
         const { width: w, height: h, data } = gray;
         let mean;
         if (method === 'mean') {
-            mean = convolveSeparable(data, w, h, new Array(blockSize).fill(1 / blockSize));
+            mean = boxMean(gray, blockSize);
         } else {
             mean = convolveSeparable(data, w, h, gaussianKernel(blockSize));
         }
@@ -217,8 +243,10 @@ const Imaging = (() => {
     // Finds connected groups of pixels equal to `fg` (default 255) in a mask.
     // Returns one entry per group with its bounding box, pixel count, centroid and the four
     // extreme pixels (tl = smallest x+y, br = largest x+y, tr = largest x-y, bl = smallest x-y).
+    // With options.labels = true the returned array also has a `.index` Int32Array giving, for each pixel,
+    // the position of its group in the array (or -1 for pixels that are not part of any group).
     function connectedComponents(mask, options) {
-        const { fg = 255, connectivity = 8 } = options || {};
+        const { fg = 255, connectivity = 8, labels: wantLabels = false } = options || {};
         const { width: w, height: h, data } = mask;
         const labels = new Int32Array(w * h);
         const parent = [0];
@@ -261,6 +289,7 @@ const Imaging = (() => {
 
         // Second pass: collect statistics per final group
         const stats = new Map();
+        const index = wantLabels ? new Int32Array(w * h).fill(-1) : null;
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
                 const l = labels[y * w + x];
@@ -272,8 +301,10 @@ const Imaging = (() => {
                         minX: x, maxX: x, minY: y, maxY: y, area: 0, sumX: 0, sumY: 0,
                         tl: { x, y }, br: { x, y }, tr: { x, y }, bl: { x, y }
                     };
+                    s.position = stats.size;
                     stats.set(root, s);
                 }
+                if (index) index[y * w + x] = s.position;
                 if (x < s.minX) s.minX = x;
                 if (x > s.maxX) s.maxX = x;
                 if (y < s.minY) s.minY = y;
@@ -288,11 +319,37 @@ const Imaging = (() => {
             }
         }
 
-        return Array.from(stats.values()).map(s => ({
+        const list = Array.from(stats.values()).map(s => ({
             x: s.minX, y: s.minY, w: s.maxX - s.minX + 1, h: s.maxY - s.minY + 1,
             area: s.area, cx: s.sumX / s.area, cy: s.sumY / s.area,
             tl: s.tl, tr: s.tr, br: s.br, bl: s.bl
         }));
+        if (index) list.index = index;
+        return list;
+    }
+
+    // Fills small enclosed holes (groups of 0 pixels that do not touch the image edge) in a 255/0 mask,
+    // so a bright window with a dark digit inside becomes one solid blob.
+    function fillHoles(mask, maxHoleArea) {
+        const { width: w, height: h } = mask;
+        const holes = connectedComponents(mask, { fg: 0, connectivity: 4, labels: true });
+        const out = new Uint8Array(mask.data);
+        const fillIt = holes.map(c => c.x > 0 && c.y > 0 && c.x + c.w < w && c.y + c.h < h && c.area <= maxHoleArea);
+        for (let i = 0; i < out.length; i++) {
+            const k = holes.index[i];
+            if (k >= 0 && fillIt[k]) out[i] = 255;
+        }
+        return { width: w, height: h, data: out };
+    }
+
+    // Per-pixel minimum of red, green and blue: high only where a pixel is bright in every channel (white or
+    // light gray), so white windows stand out from orange cards and dark tables.
+    function minChannel(img) {
+        const n = img.width * img.height;
+        const out = new Uint8Array(n);
+        const d = img.data;
+        for (let i = 0, p = 0; i < n; i++, p += 4) out[i] = Math.min(d[p], d[p + 1], d[p + 2]);
+        return { width: img.width, height: img.height, data: out };
     }
 
     // Mask (255/0) of pixels whose hue/saturation/value fall in any of the given ranges.
@@ -351,6 +408,66 @@ const Imaging = (() => {
         for (let i = 0; i < 8; i++) h.push(a[i][8] / a[i][i]);
         h.push(1);
         return h;
+    }
+
+    // Least-squares homography from n >= 4 point pairs (src[i] -> dst[i]). Coordinates are normalized
+    // internally so large pixel values do not make the equations ill-conditioned. Returns null on failure.
+    function fitHomography(src, dst) {
+        const n = src.length;
+        if (n < 4) return null;
+        const norm = pts => {
+            let mx = 0, my = 0;
+            for (const p of pts) { mx += p.x; my += p.y; }
+            mx /= pts.length; my /= pts.length;
+            let d = 0;
+            for (const p of pts) d += Math.hypot(p.x - mx, p.y - my);
+            const s = d > 0 ? Math.SQRT2 * pts.length / d : 1;
+            return { mx, my, s };
+        };
+        const ns = norm(src), nd = norm(dst);
+        const S = src.map(p => ({ x: (p.x - ns.mx) * ns.s, y: (p.y - ns.my) * ns.s }));
+        const D = dst.map(p => ({ x: (p.x - nd.mx) * nd.s, y: (p.y - nd.my) * nd.s }));
+
+        // Normal equations (A^T A) h = A^T b with h33 fixed to 1
+        const ata = Array.from({ length: 8 }, () => new Array(9).fill(0));
+        const addRow = (row, rhs) => {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) ata[i][j] += row[i] * row[j];
+                ata[i][8] += row[i] * rhs;
+            }
+        };
+        for (let i = 0; i < n; i++) {
+            const { x, y } = S[i];
+            const { x: u, y: v } = D[i];
+            addRow([x, y, 1, 0, 0, 0, -u * x, -u * y], u);
+            addRow([0, 0, 0, x, y, 1, -v * x, -v * y], v);
+        }
+        for (let col = 0; col < 8; col++) {
+            let pivot = col;
+            for (let r = col + 1; r < 8; r++) if (Math.abs(ata[r][col]) > Math.abs(ata[pivot][col])) pivot = r;
+            if (Math.abs(ata[pivot][col]) < 1e-12) return null;
+            [ata[col], ata[pivot]] = [ata[pivot], ata[col]];
+            for (let r = 0; r < 8; r++) {
+                if (r === col) continue;
+                const f = ata[r][col] / ata[col][col];
+                for (let c = col; c < 9; c++) ata[r][c] -= f * ata[col][c];
+            }
+        }
+        const h = [];
+        for (let i = 0; i < 8; i++) h.push(ata[i][8] / ata[i][i]);
+        h.push(1);
+
+        // Undo the normalization: H = Td^-1 * Hn * Ts
+        const mul = (A, B) => {
+            const C = new Array(9).fill(0);
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) C[i * 3 + j] += A[i * 3 + k] * B[k * 3 + j];
+            return C;
+        };
+        const Ts = [ns.s, 0, -ns.mx * ns.s, 0, ns.s, -ns.my * ns.s, 0, 0, 1];
+        const TdInv = [1 / nd.s, 0, nd.mx, 0, 1 / nd.s, nd.my, 0, 0, 1];
+        const H = mul(TdInv, mul(h, Ts));
+        const scale = H[8];
+        return scale ? H.map(v => v / scale) : null;
     }
 
     // Maps a point through a homography
@@ -448,9 +565,9 @@ const Imaging = (() => {
         VERSION: IMAGING_VERSION,
         canvasToImageData, grayFromRGBA, invert, cropGray,
         gaussianKernel, gaussianBlur, medianBlur,
-        otsuThreshold, threshold, adaptiveThreshold, morphology,
-        connectedComponents, hsvMask,
-        solveHomography, applyHomography, warpPerspectiveData,
+        otsuThreshold, threshold, adaptiveThreshold, boxMean, morphology,
+        connectedComponents, fillHoles, minChannel, hsvMask,
+        solveHomography, fitHomography, applyHomography, warpPerspectiveData,
         downscaleCanvas, warpPerspective, grayToCanvas
     };
 })();

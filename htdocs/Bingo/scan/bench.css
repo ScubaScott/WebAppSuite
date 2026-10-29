@@ -70,3 +70,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .settings-table td:first-child { color: var(--muted); }
 
 .app-footer { text-align: center; margin-top: 24px; color: var(--muted); }
+
+/* Detection overlay thumbnail in the per-photo table */
+.overlay-thumb { width: 220px; max-width: 100%; border-radius: 6px; display: block; }

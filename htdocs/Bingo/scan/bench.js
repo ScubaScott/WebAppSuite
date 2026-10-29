@@ -1,5 +1,5 @@
 // Benchmark runner version identifier
-const BENCH_VERSION = '1.2';
+const BENCH_VERSION = '1.3';
 const APP_VERSION = BENCH_VERSION;
 
 // Cells compared per card: the 24 numbered squares (index 12 is the FREE space)
@@ -38,6 +38,12 @@ const params = new URLSearchParams(location.search);
 const autoMode = params.get('auto') === '1' && location.hostname === 'localhost';
 // Optional comma-separated profile filter, e.g. ?profiles=slider
 const profileFilter = (params.get('profiles') || '').split(',').filter(Boolean);
+// ?geometry=1 runs only the window detector (no OCR) for quick checks of the grid finder
+const geometryOnly = params.get('geometry') === '1';
+// ?mask=<mode> replaces each overlay with the detector's mask for that mode (for tuning the window finder)
+const maskDebugMode = params.get('mask');
+// ?sheet=1 replaces each overlay with the 5x5 sheet of canonical cell crops
+const sheetMode = params.get('sheet') === '1';
 
 // Download any missing engine files, then load Tesseract from the engine cache
 async function waitForLibraries() {
@@ -56,14 +62,6 @@ async function blobToCanvas(blob) {
     canvas.getContext('2d').drawImage(bmp, 0, 0);
     bmp.close();
     return canvas;
-}
-
-// True when auto-crop returned the central-85% fallback instead of a detected grid
-function isFallbackCrop(rawCanvas, corners) {
-    if (!corners) return true;
-    const w = rawCanvas.width, h = rawCanvas.height;
-    return corners.tl.x === Math.round(w * 0.075) && corners.tl.y === Math.round(h * 0.075) &&
-        corners.br.x === Math.round(w * 0.925) && corners.br.y === Math.round(h * 0.925);
 }
 
 // Score a recognized 5x5 grid against the 25 labels
@@ -100,7 +98,15 @@ async function runPhoto(name, entry) {
         cropped = raw;
     }
     const t1 = performance.now();
-    const fallbackCrop = isFallbackCrop(raw, cropped.corners);
+    const geometry = cropped.geometry || null;
+    const geometryOk = !!(geometry && geometry.ok);
+    // Small picture of what the window detector saw, for the results table
+    let overlay = null;
+    try {
+        if (maskDebugMode) overlay = Geometry.debugMask(raw, maskDebugMode, 360).toDataURL('image/jpeg', 0.6);
+        else if (sheetMode && geometry && geometry.ok) overlay = Geometry.drawCellSheet(Geometry.extractCells(raw, geometry)).toDataURL('image/png');
+        else if (geometry) overlay = Geometry.drawOverlay(raw, geometry, 360).toDataURL('image/jpeg', 0.6);
+    } catch (err) { /* overlay is optional */ }
 
     const work = document.createElement('canvas');
     work.width = cropped.width;
@@ -108,10 +114,12 @@ async function runPhoto(name, entry) {
     work.getContext('2d').drawImage(cropped, 0, 0);
 
     let grid = null, error = null;
-    try {
-        grid = await runOCR(work);
-    } catch (err) {
-        error = String(err && err.message ? err.message : err);
+    if (!geometryOnly) {
+        try {
+            grid = await runOCR(work);
+        } catch (err) {
+            error = String(err && err.message ? err.message : err);
+        }
     }
     const t2 = performance.now();
 
@@ -121,7 +129,14 @@ async function runPhoto(name, entry) {
         profile: entry.profile,
         split: entry.split,
         labelStatus: entry.labelStatus,
-        fallbackCrop,
+        fallbackCrop: !geometryOk,
+        geometryOk,
+        windows: geometry ? geometry.windows : 0,
+        geometryErr: geometry && geometry.err !== null ? Math.round(geometry.err * 1000) / 10 : null,
+        geometryReason: geometry ? geometry.reason : null,
+        geometryMode: geometry ? geometry.mode : null,
+        geometryMs: geometry ? geometry.ms : null,
+        overlay,
         cropMs: Math.round(t1 - t0),
         ocrMs: Math.round(t2 - t1),
         error,
@@ -136,9 +151,10 @@ function summarize(label, rows) {
     const correct = rows.reduce((a, r) => a + r.correct, 0);
     const exact = rows.filter(r => r.exact).length;
     const fallback = rows.filter(r => r.fallbackCrop).length;
+    const geomOk = rows.length - fallback;
     const times = rows.map(r => r.cropMs + r.ocrMs).sort((a, b) => a - b);
     const median = n ? times[Math.floor(n / 2)] : 0;
-    return { label, n, correct, cells, exact, fallback, medianMs: median };
+    return { label, n, correct, cells, exact, fallback, geomOk, medianMs: median };
 }
 
 // Summary groups: scored slider photos first, then everything that is not scored yet
@@ -161,13 +177,13 @@ function renderResults(results) {
     summaryEl.innerHTML = '';
     const table = document.createElement('table');
     table.innerHTML = '<thead><tr><th>Group</th><th class="num">Photos</th><th class="num">Cells correct</th>' +
-        '<th class="num">Cards exact</th><th class="num">Grid not found</th><th class="num">Median time</th></tr></thead>';
+        '<th class="num">Cards exact</th><th class="num">Windows found</th><th class="num">Median time</th></tr></thead>';
     const body = document.createElement('tbody');
     for (const s of sum) {
         const tr = document.createElement('tr');
         const cls = s.n && s.correct / s.cells >= 0.8 ? 'good' : (s.n && s.correct / s.cells >= 0.4 ? 'warn' : 'bad');
         tr.innerHTML = `<td></td><td class="num">${s.n}</td><td class="num ${cls}">${s.correct}/${s.cells} (${pct(s.correct, s.cells)})</td>` +
-            `<td class="num">${s.exact}/${s.n}</td><td class="num">${s.fallback}/${s.n}</td><td class="num">${(s.medianMs / 1000).toFixed(1)} s</td>`;
+            `<td class="num">${s.exact}/${s.n}</td><td class="num">${s.geomOk}/${s.n} (${pct(s.geomOk, s.n)})</td><td class="num">${(s.medianMs / 1000).toFixed(1)} s</td>`;
         tr.firstChild.textContent = s.label;
         body.appendChild(tr);
     }
@@ -177,13 +193,20 @@ function renderResults(results) {
     detailsEl.innerHTML = '';
     const dt = document.createElement('table');
     dt.innerHTML = '<thead><tr><th>Photo</th><th>Profile</th><th>Split</th><th class="num">Correct</th>' +
-        '<th class="num">Wrong</th><th class="num">Missing</th><th>Grid</th><th class="num">Time</th></tr></thead>';
+        '<th class="num">Wrong</th><th class="num">Missing</th><th>Windows</th><th class="num">Time</th><th>Detection</th></tr></thead>';
     const db = document.createElement('tbody');
     for (const r of results) {
         const tr = document.createElement('tr');
         tr.innerHTML = '<td></td><td></td><td></td>' +
             `<td class="num">${r.correct}</td><td class="num">${r.wrong}</td><td class="num">${r.missing}</td>` +
-            `<td>${r.fallbackCrop ? 'not found' : 'found'}</td><td class="num">${((r.cropMs + r.ocrMs) / 1000).toFixed(1)} s</td>`;
+            `<td>${r.geometryOk ? r.windows + '/25, err ' + r.geometryErr + '%' : 'not found'}</td><td class="num">${((r.cropMs + r.ocrMs) / 1000).toFixed(1)} s</td><td></td>`;
+        if (r.overlay) {
+            const img = document.createElement('img');
+            img.src = r.overlay;
+            img.alt = 'Detection overlay for ' + r.name;
+            img.className = 'overlay-thumb';
+            tr.children[8].appendChild(img);
+        }
         tr.children[0].textContent = r.name;
         tr.children[1].textContent = r.profile + (r.labelStatus === 'checked' ? '' : ' *');
         tr.children[2].textContent = r.split;
@@ -193,7 +216,7 @@ function renderResults(results) {
     detailsEl.appendChild(dt);
     const note = document.createElement('p');
     note.className = 'status';
-    note.textContent = '* labels still marked needs-review. "Grid not found" means auto-crop fell back to the central 85% of the photo.';
+    note.textContent = '* labels still marked needs-review. "Windows" is how many of the 25 number windows the detector matched; "not found" means the grid could not be located and the scanner would ask for manual corners.';
     detailsEl.appendChild(note);
 }
 
@@ -267,7 +290,8 @@ copyBtn.addEventListener('click', async () => {
 // Startup: wait for libraries, then in automatic mode fetch the test set and run it
 (async () => {
     try {
-        await waitForLibraries();
+        // Detection-only runs do not need the OCR engine files
+        if (!geometryOnly) await waitForLibraries();
     } catch (err) {
         setStatus(err.message, true);
         report('/bench-result', { error: err.message });

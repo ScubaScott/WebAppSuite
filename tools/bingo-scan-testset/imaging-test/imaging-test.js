@@ -117,5 +117,39 @@ const cr = I.cropGray(gray(10, 10, (x, y) => x + y * 10), 2, 3, 4, 2);
 t('cropGray: size and first value', cr.width === 4 && cr.height === 2 && cr.data[0] === 32 && cr.data[7] === 45);
 t('invert', I.invert(gray(2, 1, x => x === 0 ? 0 : 200)).data.join(',') === '255,55');
 
+
+// ---- Added for step 1.3 ----
+// Labeled components
+const lab = I.connectedComponents(two, { labels: true });
+t('components: labels option gives a per-pixel index', lab.index && lab.index[2 * 20 + 2] >= 0 && lab.index[0] === -1 && lab.index[2 * 20 + 2] !== lab.index[8 * 20 + 10]);
+
+// fillHoles: a bright window with a dark digit hole is solid afterwards; background touching the edge is not filled
+const win = gray(30, 30, (x, y) => (x >= 5 && x <= 24 && y >= 5 && y <= 24 && !(x >= 10 && x <= 14 && y >= 10 && y <= 18)) ? 255 : 0);
+const filled = I.fillHoles(win, 100);
+t('fillHoles: digit hole inside a window is filled', filled.data[12 * 30 + 12] === 255);
+t('fillHoles: outside background stays empty', filled.data[0] === 0 && filled.data[29 * 30 + 29] === 0);
+t('fillHoles: holes larger than the limit are kept', I.fillHoles(win, 10).data[12 * 30 + 12] === 0);
+
+// minChannel
+const mc = I.minChannel(rgba(3, 1, x => [[255, 255, 255], [255, 140, 20], [30, 30, 200]][x]));
+t('minChannel: white stays high, orange and blue-ish drop', mc.data[0] === 255 && mc.data[1] === 20 && mc.data[2] === 30, Array.from(mc.data).join(','));
+
+// Least-squares homography on noisy data
+const lattice = []; for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) lattice.push({ x: i, y: j });
+const Htrue = I.solveHomography(sq.map(p => ({ x: p.x / 25, y: p.y / 25 })), quad);
+let seed = 12345; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5;
+const noisy = lattice.map(p => { const q = I.applyHomography(Htrue, p.x, p.y); return { x: q.x + rnd() * 0.6, y: q.y + rnd() * 0.6 }; });
+const Hfit = I.fitHomography(lattice, noisy);
+let maxErr = 0;
+for (let i = 0; i < lattice.length; i++) { const q = I.applyHomography(Hfit, lattice[i].x, lattice[i].y); const tr = I.applyHomography(Htrue, lattice[i].x, lattice[i].y); maxErr = Math.max(maxErr, Math.hypot(q.x - tr.x, q.y - tr.y)); }
+t('fitHomography: 25 noisy lattice points recover the true mapping within noise', maxErr < 0.6, 'max error ' + maxErr.toFixed(3));
+const Hexact = I.fitHomography(lattice, lattice.map(p => I.applyHomography(Htrue, p.x, p.y)));
+t('fitHomography: exact data reproduces the mapping', Hexact.every((v, i) => near(v, Htrue[i] / Htrue[8], 1e-6)));
+t('fitHomography: fewer than 4 points returns null', I.fitHomography(lattice.slice(0, 3), lattice.slice(0, 3)) === null);
+const big = lattice.map(p => ({ x: 1000 + p.x * 150, y: 2000 + p.y * 140 }));
+const Hbig = I.fitHomography(lattice, big);
+const pb = I.applyHomography(Hbig, 2, 3);
+t('fitHomography: pixel-scale coordinates stay accurate', near(pb.x, 1300, 1e-6) && near(pb.y, 2420, 1e-6), JSON.stringify(pb));
+
 console.log(failed ? `\n${failed} FAILED` : '\nall passed');
 process.exit(failed ? 1 : 0);

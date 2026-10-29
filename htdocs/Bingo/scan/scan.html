@@ -889,12 +889,15 @@
 
     <!-- Scanner engine (Tesseract OCR) downloaded once and cached by engine-loader.js -->
     <link rel="stylesheet" href="engine-loader.css">
+    <link rel="stylesheet" href="detection.css">
     <script src="engine-loader.js"></script>
 
     <!-- Suite Profile & Bingo Sync engine -->
     <script src="../../media/suite-profile.js"></script>
     <script src="../sync.js"></script>
     <script src="imaging.js"></script>
+    <script src="profiles.js"></script>
+    <script src="geometry.js"></script>
     <script src="utils.js"></script>
     <script src="ocr.js"></script>
 </head>
@@ -1014,6 +1017,13 @@
                             </label>
                             <span class="crop-toggle-label">Auto-Crop</span>
                         </div>
+                        <div class="crop-toggle-wrap">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showDetectionToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="crop-toggle-label">Show detection</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1094,6 +1104,13 @@
                 </button>
 
                 <div id="status" class="status-box">Ready to capture photo or choose from Camera Roll</div>
+            </section>
+
+            <!-- Detection view: the photo with the number windows and fitted grid the scanner found -->
+            <section id="detectionCard" class="scan-card detection-card hidden">
+                <div class="card-title"><span>Detection view</span></div>
+                <p id="detectionSummary" class="engine-card-text"></p>
+                <canvas id="detectionCanvas" class="detection-canvas"></canvas>
             </section>
 
             <!-- OCR Result Grid — review before applying to editor -->
@@ -1245,7 +1262,7 @@
     <div id="manualCropModal" class="crop-modal hidden">
         <div class="crop-modal-content">
             <div class="crop-modal-header">
-                <h3>Manual Crop — Drag Corners to Frame Grid</h3>
+                <h3>Manual Crop — Drag Each Corner onto the Center of a Corner Number Window</h3>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <button id="modalRotateCwBtn" class="back-link" type="button"
                         style="font-size: 12px; padding: 4px 8px;">Rotate 90° ↻</button>
@@ -1257,7 +1274,7 @@
             </div>
             <div class="crop-modal-footer">
                 <button id="applyCropBtn" class="btn btn-primary" type="button">✓ Apply Crop</button>
-                <button id="fullPhotoCropBtn" class="btn btn-secondary" type="button">Full Photo</button>
+                <button id="fullPhotoCropBtn" class="btn btn-secondary" type="button">Reset</button>
                 <button id="cancelCropBtn" class="btn btn-secondary" type="button">Cancel</button>
             </div>
         </div>
@@ -2027,27 +2044,36 @@
         // Process captured image through auto-crop or show raw
         function processCapturedImage(sourceName) {
             const isAutoCropOn = autoCropToggle.checked;
-            if (isAutoCropOn && typeof autoCrop === 'function' && typeof Imaging !== 'undefined') {
-                if (statusDiv) statusDiv.textContent = 'Auto-cropping card grid...';
+            if (isAutoCropOn && typeof autoCrop === 'function' && typeof Geometry !== 'undefined') {
+                if (statusDiv) statusDiv.textContent = 'Finding the number windows...';
                 autoCrop(rawCapturedCanvas).then(croppedCanvas => {
                     previewCanvas.width = croppedCanvas.width;
                     previewCanvas.height = croppedCanvas.height;
                     previewCanvas.getContext('2d').drawImage(croppedCanvas, 0, 0);
                     if (croppedCanvas.corners) currentCorners = croppedCanvas.corners;
-                    if (cropStatusBadge) cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
-                    if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Card isolated! Click Run OCR to recognize digits, or Manual Crop to adjust.'; }
+                    const geometry = croppedCanvas.geometry;
+                    lastGeometry = geometry || null;
+                    renderDetectionView();
+                    if (geometry && geometry.ok) {
+                        if (cropStatusBadge) cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
+                        if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = `Found ${geometry.windows} of 25 number windows. Click Run OCR to recognize digits, or Manual Crop to adjust.`; }
+                    } else {
+                        // Windows not found: the preview uses default corner positions, so ask for manual placement
+                        if (cropStatusBadge) cropStatusBadge.textContent = `${sourceName} (windows not found)`;
+                        if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the number windows. Tap Manual Crop and drag the four handles onto the corner windows, or retake the photo."; }
+                    }
                     if (ocrBtn) ocrBtn.disabled = false;
                 }).catch(err => {
                     console.warn('Auto-crop failed:', err);
                     drawRawPhotoToPreview();
                     if (cropStatusBadge) cropStatusBadge.textContent = sourceName;
-                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Auto-crop could not find grid. Click Manual Crop to frame card, or Run OCR.'; }
+                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Auto-crop failed. Click Manual Crop to place the corners, or retake the photo.'; }
                     if (ocrBtn) ocrBtn.disabled = false;
                 });
             } else {
                 drawRawPhotoToPreview();
                 if (cropStatusBadge) cropStatusBadge.textContent = `${sourceName} (Auto-Crop OFF)`;
-                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Photo loaded! Click Manual Crop to frame 5×5 grid, or Run OCR.'; }
+                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Photo loaded! Click Manual Crop to place the corners on the four corner windows, or Run OCR.'; }
                 if (ocrBtn) ocrBtn.disabled = false;
             }
         }
@@ -2067,12 +2093,7 @@
             const origW = rawCapturedCanvas.width;
             const origH = rawCapturedCanvas.height;
             if (!currentCorners) {
-                currentCorners = {
-                    tl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.08) },
-                    tr: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.08) },
-                    br: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.92) },
-                    bl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.92) }
-                };
+                currentCorners = defaultWindowCenters(origW, origH);
             }
             const maxW = Math.min(window.innerWidth - 44, 580);
             const maxH = Math.min(window.innerHeight * 0.55, 460);
@@ -2118,20 +2139,36 @@
             ctx.closePath(); ctx.clip();
             ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
 
-            // 5×5 guide grid lines inside the crop quad
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
-            for (let i = 1; i < 5; i++) {
-                const t = i / 5;
-                ctx.beginPath();
-                ctx.moveTo(dp.tl.x + t * (dp.tr.x - dp.tl.x), dp.tl.y + t * (dp.tr.y - dp.tl.y));
-                ctx.lineTo(dp.bl.x + t * (dp.br.x - dp.bl.x), dp.bl.y + t * (dp.br.y - dp.bl.y));
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(dp.tl.x + t * (dp.bl.x - dp.tl.x), dp.tl.y + t * (dp.bl.y - dp.tl.y));
-                ctx.lineTo(dp.tr.x + t * (dp.br.x - dp.tr.x), dp.tr.y + t * (dp.br.y - dp.tr.y));
-                ctx.stroke();
-            }
             ctx.restore();
+
+            // Guide: where the 25 window centers fall for the current handle positions (lines through them plus dots)
+            const guide = Geometry.fromCorners(currentCorners);
+            if (guide.ok) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
+                for (let k = 0; k < 5; k++) {
+                    ctx.beginPath();
+                    for (let t = 0; t < 5; t++) {
+                        const p = Geometry.cellCenter(guide, t, k);
+                        if (t === 0) ctx.moveTo(p.x * cropScaleX, p.y * cropScaleY); else ctx.lineTo(p.x * cropScaleX, p.y * cropScaleY);
+                    }
+                    ctx.stroke();
+                    ctx.beginPath();
+                    for (let t = 0; t < 5; t++) {
+                        const p = Geometry.cellCenter(guide, k, t);
+                        if (t === 0) ctx.moveTo(p.x * cropScaleX, p.y * cropScaleY); else ctx.lineTo(p.x * cropScaleX, p.y * cropScaleY);
+                    }
+                    ctx.stroke();
+                }
+                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 5; c++) {
+                        const p = Geometry.cellCenter(guide, c, r);
+                        ctx.beginPath(); ctx.arc(p.x * cropScaleX, p.y * cropScaleY, 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
 
             // Blue quad border
             ctx.save();
@@ -2206,7 +2243,11 @@
 
         applyCropBtn.onclick = () => {
             if (!rawCapturedCanvas || !currentCorners) return;
-            const croppedCanvas = warpCorners(rawCapturedCanvas, currentCorners);
+            const croppedCanvas = warpFromCenters(rawCapturedCanvas, currentCorners);
+            if (!croppedCanvas) {
+                if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'The four corners are too close together. Move them onto the four corner windows.'; }
+                return;
+            }
             previewCanvas.width = croppedCanvas.width;
             previewCanvas.height = croppedCanvas.height;
             previewCanvas.getContext('2d').drawImage(croppedCanvas, 0, 0);
@@ -2218,12 +2259,8 @@
 
         fullPhotoCropBtn.onclick = () => {
             if (!rawCapturedCanvas) return;
-            currentCorners = {
-                tl: { x: 0, y: 0 },
-                tr: { x: rawCapturedCanvas.width, y: 0 },
-                br: { x: rawCapturedCanvas.width, y: rawCapturedCanvas.height },
-                bl: { x: 0, y: rawCapturedCanvas.height }
-            };
+            // Reset puts the four handles back at the default positions near the middle of the photo
+            currentCorners = defaultWindowCenters(rawCapturedCanvas.width, rawCapturedCanvas.height);
             drawCropCanvas();
         };
 
@@ -2266,6 +2303,31 @@
         }
 
         if (ocrBtn) ocrBtn.onclick = doOCR;
+
+        // ---- Detection view: shows what the window finder saw in the current photo ----
+        const showDetectionToggle = document.getElementById('showDetectionToggle');
+        const detectionCard = document.getElementById('detectionCard');
+        const detectionCanvas = document.getElementById('detectionCanvas');
+        const detectionSummary = document.getElementById('detectionSummary');
+        let lastGeometry = null;
+
+        // Draws the photo with detected windows and the fitted grid when the toggle is on
+        function renderDetectionView() {
+            if (!showDetectionToggle.checked || !lastGeometry || !rawCapturedCanvas) {
+                detectionCard.classList.add('hidden');
+                return;
+            }
+            const overlay = Geometry.drawOverlay(rawCapturedCanvas, lastGeometry, 700);
+            detectionCanvas.width = overlay.width;
+            detectionCanvas.height = overlay.height;
+            detectionCanvas.getContext('2d').drawImage(overlay, 0, 0);
+            const g = lastGeometry;
+            detectionSummary.textContent = g.ok
+                ? `Profile ${g.profileId}: ${g.windows} of 25 windows matched, fit error ${(g.err * 100).toFixed(1)}% of the cell spacing, found in ${g.ms} ms. Green = matched window, orange = position predicted from the fit.`
+                : `Not found (${g.reason}). Gray boxes are bright shapes that were considered.`;
+            detectionCard.classList.remove('hidden');
+        }
+        showDetectionToggle.addEventListener('change', renderDetectionView);
 
         // ---- Scanner engine: one-time download, then loaded from the device cache ----
         const engineCard = document.getElementById('engineCard');
@@ -2337,7 +2399,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '1.7';
+        const SCAN_PAGE_VERSION = '1.8';
         const APP_VERSION = SCAN_PAGE_VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;

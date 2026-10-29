@@ -206,10 +206,26 @@ Line-anchor (`paper-grid`): inverted threshold, enclosed-cell components, same s
 Ink-anchor (`paper-plain`): dark-ink components merged per number (two digits close together), same steps 5–7.
 Manual: homography fit from the four user-placed corner cell centers.
 
+### 7.3a Implemented in step 1.3 (window detector)
+`profiles.js` (v1.2), `geometry.js` (v1.2) and `imaging.js` (v1.2). What differs from the plan above, and why:
+
+- **Mask:** the plan was a brightness threshold. Real photos showed that the window plastic and the orange card have almost the same brightness, and under the blue venue lighting the card turns lavender too, so luma and a global threshold merge the card into one blob. The detector instead compares the **blue channel** (high on window plastic, low on orange or pink card) with the average of its neighborhood, requiring it to be brighter by 25 levels, at three neighborhood sizes (6%, 10% and 16% of the photo's long side). Fallbacks: the same test on min(R,G,B) and a two-level global cut. The first mode that gives a clean, nearly complete grid (22+ windows, error 5% or less) ends the search; otherwise the best score wins.
+- **Blobs:** holes (digits) are filled so each window is one solid blob; blobs are kept when their area is 0.015%-1.2% of the picture, width/height 0.6-1.6, fill 0.6 or more, not touching the edge, and within 0.4x-2.5x of a reference area (tried at the 30th, 50th and 70th percentile so other bright objects cannot skew it).
+- **Grid assembly:** the plan clustered blobs into rows by y-gap, which fails under tilt (rows overlap in y). Instead the two grid directions (one cell right, one cell down) are estimated by voting over near-neighbor offsets, then each blob is used as a seed and grown outward, labeling neighbors within 35% of the local step; the best 5x5 window of labels wins. Outermost rows and columns must hold windows, otherwise the position is ambiguous and the photo is rejected.
+- **Fit:** least-squares homography on the labeled blobs, dropping any blob more than 22% of a cell spacing off the fit; accepted when 16 or more windows remain and the mean error is under 8% of a cell spacing (a convex quadrilateral and similar horizontal and vertical spacing are also required).
+- **Rectification for the current reader:** the photo is warped so the 25 cells fall on an exact 5x5 grid of equal squares in a 600x600 image (`Geometry.rectifiedGrid`), which is what the existing tile-cutting reader needs. Step 1.4 replaces that with the canonical crops below.
+- **Canonical crops (§7.4):** 72 x 80 px (width x height) instead of 96 x 64, because the windows are almost square (width/height about 0.9); a 96 x 64 crop would stretch digits sideways by about 1.6x. The crop is the measured window size with a **2%** edge inset instead of 8%, because the detected blob is the bright interior and already excludes the frame; an 8% inset cut the first digit of two-digit numbers (checked on crop sheets of all 10 slider photos). Sheet of 25 crops: 360 x 400 px (replaces 480 x 320 in §9.2). DigitNet input (§13.2) is resized from this crop.
+- **Flags:** closed-shutter tint (35% of the crop red/orange) and glare (35% near-white) are computed per cell.
+- **Manual profile:** four handles on the centers of the four corner windows (`Geometry.fromCorners`); the Scan page's manual crop uses it, with a guide showing where all 25 window centers land. When detection fails the page tells the user to place the corners.
+- **Debug view:** a "Show detection" switch on the Scan tab draws the photo with candidate blobs (gray), matched windows (green), predicted positions of unseen windows (orange) and the fitted grid. `bench.html` shows the same overlay per photo and accepts `?geometry=1` (detection only), `&sheet=1` (crop sheets) and `&mask=<mode>` (mask debug).
+- **Removed:** the old slider-tab, cell-box and outer-contour detectors in `utils.js` (diagnosis items D1-D3). Paper cards now go to manual placement until a paper profile exists.
+- **Known limits:** the card must be roughly upright (grid axes within 45 degrees of horizontal and vertical); upside-down cards are not detected as such. Photos where the card fills the whole picture and the outer windows touch the edge are rejected.
+- **Tests:** Node tests with rendered synthetic cards (`tools/bingo-scan-testset/imaging-test/geometry-test.js`, 14 checks) and the benchmark on real photos.
+
 ### 7.4 Cell Extraction
 - For each lattice cell, sample a crop through the homography with bilinear interpolation from the **full-resolution** photo.
-- Crop extent: window size from the profile (or measured median blob size) plus 8% inset to exclude window frames.
-- **Canonical crop:** 96 × 64 px (w × h), RGB. All readers resize from this; training samples store this exact crop.
+- Crop extent: the measured window size (median detected blob size relative to the cell spacing; the profile default when it cannot be measured) with a 2% edge inset (see §7.3a for why not 8%).
+- **Canonical crop:** 72 × 80 px (w × h), RGB. All readers resize from this; training samples store this exact crop.
 - Normalization for readers: grayscale, per-crop contrast stretch (2nd–98th percentile).
 - **Shutter check** (window profiles): strong orange/red tint flags the cell `covered`.
 - **Glare check:** near-white saturated pixels > 35% of the crop flags the cell `glare` (lowers confidence; shown amber).
@@ -318,7 +334,7 @@ On **Apply to Card Editor**, when **Contribute scans** is on. Default **on** for
 | `profile` | chosen profile id + all profile scores |
 | `reader` | `{ id, version }`; `shadow` reader in Phase 2 |
 | `device` | short UA family + screen size |
-| `sheet` | JPEG (q 0.9) of the 25 canonical crops tiled 5×5 (FREE included), 480 × 320 px |
+| `sheet` | JPEG (q 0.9) of the 25 canonical crops tiled 5×5 (FREE included), 360 × 400 px |
 | `cells[25]` | `{ label, predicted, score, corrected, covered, glare }` (`label` = confirmed value; `null` for FREE/blank) |
 | `geometry` | detected window centers + homography (for improving detection) |
 | `photo` (optional) | 1000 px JPEG of the original capture; only when **Include full photo** is on (default **off**) |
@@ -373,7 +389,7 @@ CREATE TABLE bingo_scan_samples (
 ### 9.5 Validation & Abuse Controls
 - Request body ≤ 450 KB (base64 images inside the existing JSON payload format).
 - `cells` must have 25 entries; index 12 null; each non-null `label` in its column range; no duplicate labels.
-- Images must start with JPEG magic bytes and be within size limits; `sheet` must decode to 480 × 320.
+- Images must start with JPEG magic bytes and be within size limits; `sheet` must decode to 360 × 400.
 - Rate limit: ≤ 30 samples per `ip_hash` per hour (`429` beyond).
 - Global storage cap: a config constant (start at 150 MB of BLOB data). When reached, `POST` returns `507` and the client stops uploading and keeps samples locally until the next app version.
 - Raw IP addresses are never stored.
@@ -423,6 +439,18 @@ Observations:
 **After step 1.1** (self-hosted Tesseract 4.1.4 with the `best_int` language file, `ocr.js` 1.5, `bench.html` 1.1; raw results in `baselines/1.1-self-hosted-engine.json`): slider headline 2 / 216 cells (0.9%), 0 / 9 cards exact; needs-review slider 0 / 24; other formats 17 / 120. Cell accuracy is identical to the baseline, so swapping the engine files and the smaller language model changed nothing. A second run confirmed it: identical per-photo results and a median of 10.2 s per photo, the same as the baseline's 10.0 s. An earlier run had measured 23.9 s; timing on this machine varies from run to run, so compare times only between runs made back to back.
 
 **After step 1.2** (OpenCV replaced by `imaging.js`, `utils.js` 1.1, `ocr.js` 1.6, `bench.html` 1.2; raw results in `baselines/1.2-no-opencv.json`): slider headline 6 / 216 cells (2.8%), 0 / 9 cards exact; needs-review slider 1 / 24; other formats 11 / 120 (was 17). Per photo the counts moved by a cell or two in both directions (for example the paper card `162316_b` fell from 5 to 0 while several slider photos gained one), which is noise at this accuracy level and expected because the old detectors were re-implemented rather than copied pixel for pixel. The point of this step was removing OpenCV, not accuracy; the scores confirm nothing broke. Auto-crop now takes 0.1-0.3 s per photo and the median full run was 13.4 s (timing is noisy on this machine).
+
+**After step 1.3** (window-based geometry feeding the existing tile reader; `geometry.js` 1.2, `utils.js` 1.2, `ocr.js` 1.6, `bench.html` 1.3; raw results in `baselines/1.3-window-geometry.json`):
+
+| Group | Photos | Windows found | Cells correct | Cards exact |
+|---|---|---|---|---|
+| Slider, checked labels (headline) | 9 | 9 / 9 | **92 / 216 (42.6%)** | 0 / 9 |
+| — tune photos | 6 | 6 / 6 | 64 / 144 | 0 / 6 |
+| — holdout photos | 3 | 3 / 3 | 28 / 72 | 0 / 3 |
+| Slider, `needs-review` labels (`crazy-2`) | 1 | 1 / 1 | 16 / 24 | 0 / 1 |
+| Paper / other (not scored) | 5 | 0 / 5 | 21 / 120 | 0 / 5 |
+
+Window detection succeeded on all 10 slider photos (100%, target 90%), with 22-25 of 25 windows matched, fit error 1.2-2.1% of a cell spacing, and 0.2-0.8 s per photo; the debug overlays and the crop sheets of every slider photo were inspected and the grid sits on the windows, including the strongly tilted and the blue-lit photos. Cell accuracy rose from 0.9% to 42.6% with the old reader, unchanged, which confirms the diagnosis (D1-D3): the old reader was reading the wrong places. The remaining errors are the reader's (D4-D5: Tesseract on gray digits and the retry loop); full-photo OCR still takes 1-13 s because cells that fail validation go through the retry loop. Paper cards score 21 / 120 because they have no profile yet and go to manual placement (the numbers here come from the default handle positions).
 
 Targets for Phase 1 are measured against the headline row. Re-run the bench after steps 1.3, 1.4 and 1.5 and add a row here.
 
@@ -491,7 +519,7 @@ Revisit only if DigitNet fails the Phase 2 targets on a card format for which co
 | **0.2** | `bench.html` running the **current** pipeline — **done**, baseline in §10.1 | Baseline numbers recorded in this spec — **done** |
 | **1.1** | Engine caching: `ENGINE_CACHE`, SW skip/cache-first rule, `.htaccess`, `manifest.json`, `engine-loader.js`; self-hosted pinned Tesseract — **done**, see §8.4a | Scanner works offline after one download; SW version bump does not re-download — **verified** with an automated Chrome test (15 checks, see §8.6) |
 | **1.2** | `imaging.js` replaces OpenCV — **done**, see §8.4b | OpenCV script tag removed — **done** (no `cv` references remain in `htdocs/`) |
-| **1.3** | `profiles.js` (`slider`, `manual`) + `geometry.js` + canonical crops + shutter/glare flags + debug overlay | Slider detection succeeds on ≥ 90% of slider test photos |
+| **1.3** | `profiles.js` (`slider`, `manual`) + `geometry.js` + canonical crops + shutter/glare flags + debug overlay — **done**, see §7.3a | Slider detection succeeds on ≥ 90% of slider test photos — **10 / 10** (§10.1) |
 | **1.4** | `CellReader` contract + Tesseract single-sheet adapter | ≤ 5 s per scan on a mid-range phone |
 | **1.5** | `decoder.js` | Measurable accuracy gain over the raw reader on bench |
 | **1.6** | Training pipeline: `training-store.js` outbox, `/api/training` endpoint + table + validation + admin routes, Contribute default on, first-scan notice, export backup | Samples arrive in MySQL from a phone; admin stats endpoint works |
