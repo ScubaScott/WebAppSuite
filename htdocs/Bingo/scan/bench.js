@@ -1,5 +1,5 @@
 // Benchmark runner version identifier
-const BENCH_VERSION = '1.0';
+const BENCH_VERSION = '1.1';
 const APP_VERSION = BENCH_VERSION;
 
 // Cells compared per card: the 24 numbered squares (index 12 is the FREE space)
@@ -39,20 +39,12 @@ const autoMode = params.get('auto') === '1' && location.hostname === 'localhost'
 // Optional comma-separated profile filter, e.g. ?profiles=slider
 const profileFilter = (params.get('profiles') || '').split(',').filter(Boolean);
 
-// Wait until OpenCV and Tesseract are both usable
+// Download any missing engine files, then load OpenCV and Tesseract from the engine cache
 async function waitForLibraries() {
-    const started = Date.now();
-    while (Date.now() - started < 120000) {
-        const cvReady = typeof cv !== 'undefined' && cv && typeof cv.Mat === 'function';
-        const tessReady = typeof Tesseract !== 'undefined';
-        if (cvReady && tessReady) return;
-        // Newer OpenCV builds expose a thenable that resolves to the module
-        if (typeof cv !== 'undefined' && cv && typeof cv.then === 'function' && !cvReady) {
-            try { window.cv = await cv; continue; } catch (e) { /* keep polling */ }
-        }
-        await new Promise(r => setTimeout(r, 200));
-    }
-    throw new Error('OpenCV or Tesseract failed to load (network blocked?)');
+    await EngineLoader.ensure(null, (loaded, total) => {
+        setStatus(`Downloading scanner… ${Math.round(100 * loaded / Math.max(1, total))}%`);
+    });
+    await EngineLoader.load();
 }
 
 // Load an image Blob into a full-resolution canvas, applying the photo's EXIF rotation

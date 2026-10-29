@@ -887,11 +887,9 @@
         }
     </style>
 
-    <!-- OpenCV for auto-crop detection -->
-    <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
-
-    <!-- Tesseract.js for OCR digit recognition -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <!-- Scanner engine (OpenCV auto-crop + Tesseract OCR) downloaded once and cached by engine-loader.js -->
+    <link rel="stylesheet" href="engine-loader.css">
+    <script src="engine-loader.js"></script>
 
     <!-- Suite Profile & Bingo Sync engine -->
     <script src="../../media/suite-profile.js"></script>
@@ -993,6 +991,14 @@
 
         <!-- ===== Panel: Scan ===== -->
         <div class="editor-panel hidden" data-panel="scan" id="panelScan">
+
+            <!-- Scanner download: shown until the engine files are stored on this device -->
+            <section id="engineCard" class="scan-card engine-card hidden">
+                <div class="card-title"><span>Scanner download</span></div>
+                <p id="engineText" class="engine-card-text"></p>
+                <progress id="engineProgress" class="engine-progress hidden" value="0" max="100"></progress>
+                <button id="engineDownloadBtn" class="btn btn-primary" type="button">Download scanner</button>
+            </section>
 
             <!-- Unified Camera & Captured Preview Section -->
             <section class="scan-card">
@@ -2226,6 +2232,13 @@
 
         // Run OCR — result populates the review grid in the Scan tab and scrolls smoothly to results
         async function doOCR() {
+            // The OCR and image libraries must be downloaded and loaded first
+            if (!engineReady) {
+                if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Download the scanner first, then run OCR again.'; }
+                engineCard.classList.remove('hidden');
+                engineCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
             if (ocrBtn) ocrBtn.disabled = true;
             if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Running OCR digit recognition... Please wait.'; }
             try {
@@ -2253,8 +2266,77 @@
 
         if (ocrBtn) ocrBtn.onclick = doOCR;
 
+        // ---- Scanner engine: one-time download, then loaded from the device cache ----
+        const engineCard = document.getElementById('engineCard');
+        const engineText = document.getElementById('engineText');
+        const engineProgress = document.getElementById('engineProgress');
+        const engineDownloadBtn = document.getElementById('engineDownloadBtn');
+        let engineReady = false;
+
+        function formatMegabytes(bytes) {
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Shows the download card with the size still to fetch (or an error message)
+        function showEngineCard(text, canDownload) {
+            engineCard.classList.remove('hidden');
+            engineText.textContent = text;
+            engineProgress.classList.add('hidden');
+            engineDownloadBtn.classList.toggle('hidden', !canDownload);
+            engineDownloadBtn.disabled = false;
+        }
+
+        // Loads the cached engine scripts and unlocks OCR
+        async function startEngine() {
+            try {
+                await EngineLoader.load();
+                engineReady = true;
+                engineCard.classList.add('hidden');
+            } catch (err) {
+                console.warn('Scanner engine failed to start:', err);
+                showEngineCard('The scanner could not start: ' + err.message, true);
+            }
+        }
+
+        // Checks the device cache on page open; downloads nothing until the user asks
+        async function initScannerEngine() {
+            try {
+                const st = await EngineLoader.status();
+                if (st.ready) {
+                    await startEngine();
+                    return;
+                }
+                const onMobileData = navigator.connection && navigator.connection.type === 'cellular';
+                showEngineCard(
+                    `The scanner needs a one-time download of ${formatMegabytes(st.missingBytes)}. ` +
+                    (onMobileData ? 'You appear to be on mobile data; Wi-Fi is recommended.' : 'Wi-Fi is recommended.'),
+                    true
+                );
+            } catch (err) {
+                showEngineCard(err.message, false);
+            }
+        }
+
+        engineDownloadBtn.addEventListener('click', async () => {
+            engineDownloadBtn.disabled = true;
+            engineProgress.classList.remove('hidden');
+            engineText.textContent = 'Downloading scanner… keep this page open.';
+            try {
+                await EngineLoader.ensure(null, (loaded, total) => {
+                    engineProgress.max = total || 1;
+                    engineProgress.value = loaded;
+                    engineText.textContent = `Downloading scanner… ${formatMegabytes(loaded)} of ${formatMegabytes(total)}`;
+                });
+                await startEngine();
+            } catch (err) {
+                showEngineCard('Download failed: ' + err.message + ' You can try again.', true);
+            }
+        });
+
+        initScannerEngine();
+
         // Application version identifier
-        const SCAN_PAGE_VERSION = '1.5';
+        const SCAN_PAGE_VERSION = '1.6';
         const APP_VERSION = SCAN_PAGE_VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;

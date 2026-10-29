@@ -271,17 +271,26 @@ Behind a **Show detection** toggle in settings:
 - Call `navigator.storage.persist()` after the first engine download.
 - Offline with no cached engine: "Scanner needs a one-time download — connect to Wi-Fi"; manual entry stays available.
 
-### 8.4 Server Headers (`htdocs/.htaccess`)
-- Under `Bingo/scan/engine/`: `Cache-Control: public, max-age=31536000, immutable` for `.wasm`, `.js`, `.traineddata`, `.gz`, `.bin`, `.txt`, and versioned `.json` layer files.
-- `manifest.json` keeps the existing `no-cache` rule.
-- `.wasm` served as `application/wasm`; `.bin` as `application/octet-stream`.
-- Add rewrite rules for `api/training` and `api/training/<id>` following the existing `cards` pattern.
+### 8.4 Server Headers
+- A nested `htdocs/Bingo/scan/engine/.htaccess` (child directory settings override the root `.htaccess`) sets `Cache-Control: public, max-age=31536000, immutable` for every file in the folder, clears `Pragma`/`Expires`, and keeps `manifest.json` on `no-cache, must-revalidate`. It also sets `.wasm` to `application/wasm`, `.traineddata` to `application/octet-stream`, and removes the `.gz` content-encoding mapping.
+- The Tesseract language file is stored **uncompressed** (`eng.traineddata`, loaded with `gzip: false`), so a server that adds `Content-Encoding` to `.gz` files cannot corrupt it.
+- Add rewrite rules for `api/training` and `api/training/<id>` to the root `htdocs/.htaccess` (step 1.6), following the existing `cards` pattern.
+
+### 8.4a Implemented in step 1.1
+- Files: `scan/engine-loader.js` (v1.2), `scan/engine-loader.css`, `scan/engine/manifest.json`, `scan/engine/.htaccess`, `scan/engine/NOTICES.txt`, `scan/engine/tesseract/…`; `sw.js` v4.7 (`ENGINE_CACHE = 'bingo-scan-engine'`, cleanup skips it, engine files cache-first, manifest network-first and in `APP_SHELL`).
+- Pinned files: tesseract.js 4.1.4 (`tesseract-4.1.4.min.js`, `worker-4.1.4.min.js`), tesseract.js-core 4.0.4 (SIMD and non-SIMD builds; the browser's SIMD support picks which one is downloaded), and `eng.traineddata` from `@tesseract.js-data/eng` 1.0.0 folder `4.0.0_best_int` (decompressed, 5.2 MB). The "fast" model is not published in that package; best_int is the closest small model (2.9 MB compressed).
+- **OpenCV is still external.** `opencv.js` 4.13.0 is 10.96 MB, over the ~10 MB host file limit, so it cannot be self-hosted. Until step 1.2 removes OpenCV, the loader fetches `https://docs.opencv.org/4.13.0/opencv.js` without CORS and stores the opaque response in the engine cache; the service worker serves it from there (`ENGINE_EXTERNAL_HOSTS`). The URL is pinned to 4.13.0 (what `4.x` resolved to). Opaque files cannot be size- or hash-checked.
+- UX: `scan.html` (v1.6) shows a "Scanner download" card with the size still to fetch (20.1 MB today, about 10 MB after step 1.2) and a progress bar; OCR is blocked until the files are loaded. `bench.html` (v1.1) uses the same loader.
+- Persistent storage is requested without waiting for the answer (some browsers show a permission prompt).
+
+### 8.6 Verification of step 1.1
+`tools/bingo-scan-testset/engine-test/` holds an automated Chrome test (README there). Result of the passing run: first visit offers the download and fetches nothing before the user asks; the engine cache holds 5 files; Tesseract reads "47" from a test canvas and OpenCV initializes from cached files; after a service worker version bump the engine cache survives and the server receives no engine file requests; OpenCV is served by the service worker; with the network off the page reloads and OCR still works.
 
 ### 8.5 Size Budget
 
 | Phase | Files | Approx. first download |
 |---|---|---|
-| 1 | tesseract.js + worker + LSTM core + fast `eng` data | 6–8 MB |
+| 1 (step 1.1) | tesseract.js + worker + LSTM core (SIMD) + `eng` best_int data | ~10.1 MB, plus OpenCV 11.0 MB until step 1.2 (20.1 MB total) |
 | 2 | DigitNet weights + layer description | 0.1–0.4 MB |
 | 2 (after Tesseract removal) | Tesseract files deleted from devices | total drops to < 1 MB |
 
@@ -405,6 +414,8 @@ Observations:
 - Time per photo is ~10 s on a fast desktop. A phone is several times slower, which fits the reported minutes.
 - Paper cards do better (up to 8/24) even though they have no dedicated handling, because their cells are evenly spaced.
 
+**After step 1.1** (self-hosted Tesseract 4.1.4 with the `best_int` language file, `ocr.js` 1.5, `bench.html` 1.1; raw results in `baselines/1.1-self-hosted-engine.json`): slider headline 2 / 216 cells (0.9%), 0 / 9 cards exact; needs-review slider 0 / 24; other formats 17 / 120. Cell accuracy is identical to the baseline, so swapping the engine files and the smaller language model changed nothing. Median time per photo was 23.9 s against 10.0 s in the baseline run; the cause was not investigated (machine load and the different language model are both possible), so treat time as noisy until step 1.4 removes the retry loop.
+
 Targets for Phase 1 are measured against the headline row. Re-run the bench after steps 1.3, 1.4 and 1.5 and add a row here.
 
 ## 11. Hosting Move (no longer required for Phases 1–2)
@@ -470,7 +481,7 @@ Revisit only if DigitNet fails the Phase 2 targets on a card format for which co
 |---|---|---|
 | **0.1** | Test set + `labels.json` in `tools/bingo-scan-testset/`; move `example/` there (drop `unnamed.webp`) — **done** | The 9 existing photos labeled — **done**; more added later from field uploads (§10) |
 | **0.2** | `bench.html` running the **current** pipeline — **done**, baseline in §10.1 | Baseline numbers recorded in this spec — **done** |
-| **1.1** | Engine caching: `ENGINE_CACHE`, SW skip/cache-first rule, `.htaccess`, `manifest.json`, `engine-loader.js`; self-hosted pinned Tesseract | Scanner works offline after one download; SW version bump does not re-download |
+| **1.1** | Engine caching: `ENGINE_CACHE`, SW skip/cache-first rule, `.htaccess`, `manifest.json`, `engine-loader.js`; self-hosted pinned Tesseract — **done**, see §8.4a | Scanner works offline after one download; SW version bump does not re-download — **verified** with an automated Chrome test (15 checks, see §8.6) |
 | **1.2** | `imaging.js` replaces OpenCV | OpenCV script tag removed |
 | **1.3** | `profiles.js` (`slider`, `manual`) + `geometry.js` + canonical crops + shutter/glare flags + debug overlay | Slider detection succeeds on ≥ 90% of slider test photos |
 | **1.4** | `CellReader` contract + Tesseract single-sheet adapter | ≤ 5 s per scan on a mid-range phone |

@@ -1,5 +1,5 @@
 // OCR module version identifier
-const OCR_VERSION = '1.4';
+const OCR_VERSION = '1.5';
 const VERSION = OCR_VERSION;
 
 
@@ -29,7 +29,8 @@ async function getWorker(oem) {
         ocrWorker = null;
     }
     if (!ocrWorker) {
-        ocrWorker = await Tesseract.createWorker();
+        // Worker, core and language files come from the engine cache (see engine-loader.js)
+        ocrWorker = await Tesseract.createWorker(EngineLoader.tesseractOptions());
         await ocrWorker.loadLanguage('eng');
         await ocrWorker.initialize('eng', oem);
         ocrWorkerOem = oem;

@@ -1,0 +1,70 @@
+[
+  {
+    "name": "page controlled by service worker",
+    "ok": true
+  },
+  {
+    "name": "A: download card shown on first visit",
+    "ok": true,
+    "detail": "The scanner needs a one-time download of 20.1 MB. Wi-Fi is recommended."
+  },
+  {
+    "name": "A: nothing from the engine folder fetched before the user asks",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "A: card hidden after download",
+    "ok": true
+  },
+  {
+    "name": "A: engine cache holds 5 files (4 local + OpenCV)",
+    "ok": true,
+    "detail": "tesseract-4.1.4.min.js, worker-4.1.4.min.js, tesseract-core-simd.wasm.js, eng.traineddata, opencv.js"
+  },
+  {
+    "name": "A: persist() call did not block the download",
+    "ok": true
+  },
+  {
+    "name": "B: Tesseract recognizes digits from cached files",
+    "ok": true,
+    "detail": "{\"text\":\"47\",\"cvMat\":true}"
+  },
+  {
+    "name": "B: OpenCV is initialized",
+    "ok": true
+  },
+  {
+    "name": "C: new app cache created, old one removed",
+    "ok": true,
+    "detail": "bingo-scan-engine, scuba-app-suite-v99.9"
+  },
+  {
+    "name": "C: engine cache survived the version bump",
+    "ok": true
+  },
+  {
+    "name": "C: no engine file requested from the server after the bump",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "C: OpenCV served by the service worker, not the network",
+    "ok": true,
+    "detail": "[{\"url\":\"https://docs.opencv.org/4.13.0/opencv.js\",\"fromSW\":true}]"
+  },
+  {
+    "name": "C: card stays hidden (no re-download prompt)",
+    "ok": true
+  },
+  {
+    "name": "D: offline reload loads page and engine",
+    "ok": true
+  },
+  {
+    "name": "D: offline OCR works",
+    "ok": true,
+    "detail": "{\"text\":\"47\",\"cvMat\":true}"
+  }
+]

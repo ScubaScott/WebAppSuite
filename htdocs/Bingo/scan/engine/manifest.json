@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "engines": {
+    "tesseract": {
+      "label": "Text recognition engine",
+      "version": "tesseract.js 4.1.4, core 4.0.4, eng best_int 4.0.0",
+      "scripts": ["tesseract/tesseract-4.1.4.min.js"],
+      "options": {
+        "workerPath": "tesseract/worker-4.1.4.min.js",
+        "corePath": "tesseract/core-4.0.4/",
+        "langPath": "tesseract/eng-best-int-4.0.0/"
+      },
+      "files": [
+        { "path": "tesseract/tesseract-4.1.4.min.js", "bytes": 67947, "sha256": "99d4a84071a4d6c084a1a2a32f4df9a2290b2ad7da8270ee5d4fb152333e7440" },
+        { "path": "tesseract/worker-4.1.4.min.js", "bytes": 125479, "sha256": "c1c22bcc747e414ed95e12c99a2480740bfd6ba038836edc8f28df836825fdcf" },
+        { "path": "tesseract/core-4.0.4/tesseract-core-simd.wasm.js", "bytes": 4738901, "sha256": "747cc0ffb4ba10a4ef2c6c82fca5c969742c26cb06c7607f8fd4d5f4a285ab6b", "requires": "simd" },
+        { "path": "tesseract/core-4.0.4/tesseract-core.wasm.js", "bytes": 4738329, "sha256": "c7309ce105c085c6afffc18090d29a271c4991526a179b0a78b61ee708f5a09d", "requires": "nosimd" },
+        { "path": "tesseract/eng-best-int-4.0.0/eng.traineddata", "bytes": 5199098, "sha256": "5dc5d8d640a212c9d6184921ba103b186f50e0fed9ee716c53e6b312b400d747" }
+      ]
+    },
+    "opencv": {
+      "label": "Image engine",
+      "version": "opencv.js 4.13.0 (external, until the scanner no longer uses it)",
+      "scripts": ["https://docs.opencv.org/4.13.0/opencv.js"],
+      "files": [
+        { "url": "https://docs.opencv.org/4.13.0/opencv.js", "approxBytes": 10964323, "external": true }
+      ]
+    }
+  }
+}
