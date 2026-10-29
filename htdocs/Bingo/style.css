@@ -2948,10 +2948,18 @@ body {
     overflow-y: auto;
 }
 
-.stats-readout {
+.stats-summary {
     font-size: 14px;
-    color: var(--text-subtle);
-    min-height: 20px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.stats-readout {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    min-height: 26px;
     margin-bottom: 10px;
 }
 
@@ -2964,6 +2972,9 @@ body {
     height: 180px;
     padding-top: 14px;
     border-bottom: 1px solid var(--border);
+    touch-action: none; /* finger scrubs the chart instead of scrolling the page */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .stats-ymax {
@@ -2978,11 +2989,36 @@ body {
     flex: 1 1 0;
     min-width: 0;
     padding: 0;
-    border: 0;
-    background: transparent;
     display: flex;
     align-items: flex-end;
-    cursor: pointer;
+}
+
+/* Bar under the finger */
+.stats-col.active {
+    background: var(--primary-soft);
+}
+
+.stats-col.active .stats-bar {
+    opacity: 1;
+}
+
+/* Enlarged label that follows the finger, drawn above the bars */
+.stats-bubble {
+    position: absolute;
+    top: -34px;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.stats-bubble.hidden {
+    display: none;
 }
 
 .stats-bar {

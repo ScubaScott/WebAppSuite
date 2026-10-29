@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '4.4';
+const VERSION = '4.5';
 
 
 // ============================================================
@@ -15,6 +15,7 @@ let session = {
     inputMode: "number",
     doubleMode: false,  // double bingo: requires 2 matching patterns on one card to win
     ballTarget: 0,      // prize-window target ball count (0 = disabled)
+    gamesPlayed: 0,     // number of times Clear Cards was used (games finished this session)
     callCounts: {}      // times each ball (1-75) has been called this session; survives Clear Cards
 };
 
@@ -82,7 +83,8 @@ function saveSession() {
         dauber: session.dauber,
         doubleMode: session.doubleMode || false,
         ballTarget: session.ballTarget || 0,  // prize-window target ball count
-        callCounts: session.callCounts || {}
+        callCounts: session.callCounts || {},
+        gamesPlayed: session.gamesPlayed || 0
     }));
 }
 
@@ -102,6 +104,7 @@ function loadSession() {
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     session.doubleMode = obj.doubleMode || false;
     session.ballTarget = obj.ballTarget || 0;  // restore prize-window target (default off)
+    session.gamesPlayed = obj.gamesPlayed || 0;
     session.callCounts = (obj.callCounts && typeof obj.callCounts === 'object') ? obj.callCounts : {};
 
     // Migrate cards: ensure editMode, active, and serial fields exist
@@ -539,10 +542,19 @@ function openStatsModal() {
         }
         resetBtn.disabled = false;
 
+        const games = session.gamesPlayed || 0;
+
+        // Summary line: total games (Clear Cards count), calls, and repeated balls
+        const summary = document.createElement("div");
+        summary.className = "stats-summary";
+        const repeats = Object.values(counts).filter(c => c > 1).length;
+        summary.textContent = `${games} game${games === 1 ? "" : "s"} · ${total} calls · ${repeats} repeated`;
+        body.appendChild(summary);
+
+        // Readout shows the ball under the finger while scrubbing the chart
         const readout = document.createElement("div");
         readout.className = "stats-readout";
-        const repeats = Object.values(counts).filter(c => c > 1).length;
-        const defaultText = `${total} calls · ${repeats} ball${repeats === 1 ? "" : "s"} repeated · tap a bar for details`;
+        const defaultText = "Slide a finger across the graph";
         readout.textContent = defaultText;
         body.appendChild(readout);
 
@@ -557,24 +569,73 @@ function openStatsModal() {
         yMax.textContent = max;
         chart.appendChild(yMax);
 
+        const cols = [];
         for (let n = 1; n <= 75; n++) {
             const c = counts[n] || 0;
-            const col = document.createElement("button");
-            col.type = "button";
+            const col = document.createElement("div");
             col.className = "stats-col";
-            const letter = session.word[Math.floor((n - 1) / 15)] || "";
-            const label = `${letter}${n}: called ${c} time${c === 1 ? "" : "s"}`;
-            col.title = label;
-            col.setAttribute("aria-label", label);
 
             const bar = document.createElement("span");
             bar.className = "stats-bar" + (c > 1 ? " repeat" : "");
             bar.style.height = `${(c / max) * 100}%`;
             col.appendChild(bar);
 
-            col.addEventListener("click", () => { readout.textContent = label; });
             chart.appendChild(col);
+            cols.push(col);
         }
+
+        // Magnified bubble that follows the finger above the chart
+        const bubble = document.createElement("div");
+        bubble.className = "stats-bubble hidden";
+        chart.appendChild(bubble);
+
+        // Highlights the bar at a pointer X position and shows its count
+        let activeIdx = -1;
+        function selectAt(clientX) {
+            const first = cols[0].getBoundingClientRect();
+            const last = cols[74].getBoundingClientRect();
+            const span = last.right - first.left;
+            const idx = Math.min(74, Math.max(0, Math.floor(((clientX - first.left) / span) * 75)));
+            if (idx === activeIdx) return;
+            if (activeIdx >= 0) cols[activeIdx].classList.remove("active");
+            activeIdx = idx;
+            cols[idx].classList.add("active");
+
+            const n = idx + 1;
+            const c = counts[n] || 0;
+            const letter = session.word[Math.floor((n - 1) / 15)] || "";
+            readout.textContent = `${letter}${n}: called ${c} time${c === 1 ? "" : "s"}`;
+            bubble.textContent = `${letter}${n} × ${c}`;
+            bubble.classList.remove("hidden");
+
+            // Center the bubble over the bar, clamped inside the chart
+            const chartRect = chart.getBoundingClientRect();
+            const center = cols[idx].getBoundingClientRect().left + cols[idx].offsetWidth / 2 - chartRect.left;
+            const half = bubble.offsetWidth / 2;
+            bubble.style.left = `${Math.min(chartRect.width - half, Math.max(half, center))}px`;
+        }
+        function clearSelection() {
+            if (activeIdx >= 0) cols[activeIdx].classList.remove("active");
+            activeIdx = -1;
+            bubble.classList.add("hidden");
+        }
+
+        // Pointer capture keeps the scrub going even if the finger drifts off the chart
+        chart.addEventListener("pointerdown", (e) => {
+            chart.setPointerCapture(e.pointerId);
+            selectAt(e.clientX);
+        });
+        chart.addEventListener("pointermove", (e) => {
+            if (chart.hasPointerCapture(e.pointerId)) selectAt(e.clientX);
+        });
+        // Mouse hover also previews bars on desktop
+        chart.addEventListener("mousemove", (e) => {
+            if (e.buttons === 0) selectAt(e.clientX);
+        });
+        const endScrub = () => { clearSelection(); };
+        chart.addEventListener("pointerup", endScrub);
+        chart.addEventListener("pointercancel", endScrub);
+        chart.addEventListener("mouseleave", endScrub);
         body.appendChild(chart);
 
         // X-axis markers at the start of each letter range
@@ -597,6 +658,7 @@ function openStatsModal() {
     resetBtn.addEventListener("click", () => {
         if (!confirm("Reset ball call stats for this session? The call log and board are not affected.")) return;
         session.callCounts = {};
+        session.gamesPlayed = 0;
         saveSession();
         render();
     });
@@ -645,6 +707,7 @@ if (clearCardsBtn) {
         session.called = [];
         session.lastBall = null;
         activeLetterIdx = -1;
+        session.gamesPlayed = (session.gamesPlayed || 0) + 1;  // each clear ends one game
 
         saveSession();
         updateUI();
