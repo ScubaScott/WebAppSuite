@@ -1,11 +1,9 @@
 // OCR module version identifier
-const OCR_VERSION = '1.6';
+const OCR_VERSION = '2.0';
 const VERSION = OCR_VERSION;
 
 
-// Standard 75-ball bingo column ranges (B-I-N-G-O). Used as a sanity check: if a recognized
-// number falls outside the range for its column, it's almost certainly a misread, so we retry
-// with different crop/zoom/PSM combinations rather than accepting the first guess.
+// Standard 75-ball bingo column ranges (B-I-N-G-O). A reading outside its column's range is a misread.
 const COLUMN_RANGES = [
     [1, 15],   // B
     [16, 30],  // I
@@ -14,307 +12,52 @@ const COLUMN_RANGES = [
     [61, 75],  // O
 ];
 
-// Absolute valid range for any 75-ball bingo number.
-// Used by extractNumber to reject garbage OCR output before column-specific checks.
-const BINGO_MIN = 1;
-const BINGO_MAX = 75;
+// Index of the FREE space in the 25-cell grid
+const FREE_CELL = 12;
 
-// A single, reused Tesseract worker.
-let ocrWorker = null;
-let ocrWorkerOem = null;
+// Reader used to turn cell crops into numbers (see readers/tesseract-reader.js for the reader contract)
+let activeReader = null;
 
-async function getWorker(oem) {
-    if (ocrWorker && ocrWorkerOem !== oem) {
-        await ocrWorker.terminate();
-        ocrWorker = null;
-    }
-    if (!ocrWorker) {
-        // Worker, core and language files come from the engine cache (see engine-loader.js)
-        ocrWorker = await Tesseract.createWorker(EngineLoader.tesseractOptions());
-        await ocrWorker.loadLanguage('eng');
-        await ocrWorker.initialize('eng', oem);
-        ocrWorkerOem = oem;
-    }
-    return ocrWorker;
+function getActiveReader() {
+    if (!activeReader) activeReader = TesseractReader;
+    return activeReader;
 }
 
-// Retries for cell OCR
-const RETRY_ATTEMPTS = [
-    { paddingRatio: 0.25, zoom: 3, psm: 6 },
-    { paddingRatio: 0.25, zoom: 3, psm: 8 },
-    { paddingRatio: 0.35, zoom: 4, psm: 7 },
-    { paddingRatio: 0.15, zoom: 3, psm: 13 },
-];
+// Reads a card from the original photo and its window geometry (Geometry.analyze / Geometry.fromCorners result).
+// Returns { grid, cells, reader, stats }:
+//   grid   5x5 array of numbers (null where nothing valid was read, 'FREE' in the center)
+//   cells  per-cell info from Geometry.extractCells (covered / glare flags, whether the window was seen)
+//   stats  timings in ms (extractMs, sheetMs, recognizeMs, retryMs, totalMs) and the number of single-cell retries
+async function readCardFromPhoto(photoCanvas, geometry, onStage) {
+    const started = performance.now();
+    const reader = getActiveReader();
+    if (onStage) onStage('Cutting out the numbers…');
+    const cells = Geometry.extractCells(photoCanvas, geometry);
+    const extractMs = Math.round(performance.now() - started);
 
-// Run Tesseract over every bingo cell and return a 5x5 grid of detected numbers.
-async function runOCR(canvas) {
-    if (typeof Imaging === "undefined" || typeof Tesseract === "undefined") {
-        return [];
-    }
+    // The reader gets the 24 numbered cells (FREE left out), contrast-stretched. Cells hidden by a closed
+    // shutter or without a usable crop are skipped.
+    const numbered = cells.filter(c => c.index !== FREE_CELL);
+    const grays = numbered.map(c => (c.image && !c.covered ? Geometry.normalizeCrop(c.image) : null));
 
-    const oem = getOcrEngineMode();
-    const worker = await getWorker(oem);
+    if (onStage) onStage('Reading the numbers…');
+    const readings = await reader.read(grays);
 
-    // Initial pass on current orientation
-    let result = await evaluateCanvasGrid(canvas, worker);
+    const grid = Array.from({ length: 5 }, () => Array(5).fill(null));
+    grid[2][2] = 'FREE';
+    numbered.forEach((cell, k) => {
+        const [lo, hi] = COLUMN_RANGES[cell.col];
+        // The best-scored candidate that fits the cell's column range wins; readings outside the range are misreads
+        const fit = readings[k].candidates.find(c => c.value >= lo && c.value <= hi);
+        if (fit) grid[cell.row][cell.col] = fit.value;
+    });
+    deduplicateGrid(grid);
 
-    // Check if initial pass passed column range validation
-    if (result.validCount >= 14 || !document.getElementById("validateColumnRanges").checked) {
-        return deduplicateGrid(result.grid);
-    }
-
-    console.warn(`Initial orientation validity low (${result.validCount}/24). Testing rotations...`);
-
-    // Test 90°, 180°, 270° rotations to automatically fix sideways or upside-down photos
-    let bestResult = result;
-    let bestRotatedCanvas = canvas;
-    let currentRotatedCanvas = canvas;
-
-    for (let rot = 1; rot <= 3; rot++) {
-        currentRotatedCanvas = rotateCanvas90(currentRotatedCanvas, true);
-        const evalRes = await evaluateCanvasGrid(currentRotatedCanvas, worker);
-        if (evalRes.validCount > bestResult.validCount) {
-            bestResult = evalRes;
-            bestRotatedCanvas = currentRotatedCanvas;
-        }
-        if (bestResult.validCount >= 18) break;
-    }
-
-    if (bestResult.validCount > result.validCount) {
-        console.log(`Auto-rotated photo by ${(bestResult.rotationAngle || 90)}° for optimal OCR (${bestResult.validCount}/24 valid cells)`);
-        // Update global preview canvas to reflect the auto-rotated photo
-        if (typeof drawCanvasToPreview === "function") {
-            drawCanvasToPreview(bestRotatedCanvas);
-        } else {
-            canvas.width = bestRotatedCanvas.width;
-            canvas.height = bestRotatedCanvas.height;
-            canvas.getContext("2d").drawImage(bestRotatedCanvas, 0, 0);
-        }
-    }
-
-    bestResult.grid = deduplicateGrid(bestResult.grid);
-    return bestResult.grid;
-}
-
-// Slice canvas into 5x5 cells and run OCR
-async function evaluateCanvasGrid(canvas, worker) {
-    const w = canvas.width;
-    const h = canvas.height;
-    const cellW = Math.max(1, w / 5);
-    const cellH = Math.max(1, h / 5);
-    const rowOffset = parseInt(document.getElementById("rowOffset").value, 10) || 0;
-    const colOffset = parseInt(document.getElementById("colOffset").value, 10) || 0;
-    const zoomFactor = parseInt(document.getElementById("zoomFactor").value, 10) || 3;
-    const validateRanges = document.getElementById("validateColumnRanges").checked;
-
-    const grid = [];
-    let validCount = 0;
-
-    for (let row = 0; row < 5; row++) {
-        const rowData = [];
-
-        for (let col = 0; col < 5; col++) {
-            const sourceRow = Math.max(0, Math.min(4, row + rowOffset));
-            const sourceCol = Math.max(0, Math.min(4, col + colOffset));
-
-            // FREE space at center cell
-            if (sourceRow === 2 && sourceCol === 2) {
-                rowData.push("FREE");
-                continue;
-            }
-
-            // Trim 8% margin off cell edges to avoid grid frame lines and shutter tab borders
-            const marginW = cellW * 0.08;
-            const marginH = cellH * 0.08;
-
-            const cellCanvas = document.createElement("canvas");
-            cellCanvas.width = Math.max(1, Math.round(cellW - marginW * 2));
-            cellCanvas.height = Math.max(1, Math.round(cellH - marginH * 2));
-
-            const cellCtx = cellCanvas.getContext("2d");
-            cellCtx.drawImage(
-                canvas,
-                sourceCol * cellW + marginW, sourceRow * cellH + marginH,
-                cellCanvas.width, cellCanvas.height,
-                0, 0, cellCanvas.width, cellCanvas.height
-            );
-
-            const binaryCell = computeBinaryCell(cellCanvas);
-            const num = await ocrCellWithRetries(worker, binaryCell, sourceCol, zoomFactor, validateRanges);
-
-            rowData.push(num);
-
-            const [lo, hi] = COLUMN_RANGES[sourceCol];
-            if (num !== null && num >= lo && num <= hi) {
-                validCount++;
-            }
-        }
-
-        grid.push(rowData);
-    }
-
-    return { grid, validCount };
-}
-
-// Try the user's configured settings first, then fall back through alternate combinations
-async function ocrCellWithRetries(worker, binaryCell, sourceCol, primaryZoom, validateRanges) {
-    const userPsm = getPageSegMode();
-    const attempts = [...RETRY_ATTEMPTS, { paddingRatio: 0.20, zoom: primaryZoom, psm: userPsm }];
-
-    const [lo, hi] = COLUMN_RANGES[sourceCol];
-    const candidates = [];
-    let lastPsm = null;
-
-    for (const attempt of attempts) {
-        if (attempt.psm !== lastPsm) {
-            await worker.setParameters({
-                tessedit_char_whitelist: '0123456789',
-                tessedit_pageseg_mode: String(attempt.psm),
-                classify_bln_numeric_mode: '1'
-            });
-            lastPsm = attempt.psm;
-        }
-
-        // Crop to the digit ink, then enlarge it so Tesseract sees larger glyphs
-        const cropped = tightCropToInk(binaryCell, attempt.paddingRatio);
-        const attemptCanvas = Imaging.grayToCanvas(cropped, attempt.zoom);
-
-        const { data } = await worker.recognize(attemptCanvas);
-        const num = extractNumber(data.text);
-
-        if (num !== null) {
-            candidates.push(num);
-            if (!validateRanges || (num >= lo && num <= hi)) {
-                return num;
-            }
-        }
-    }
-
-    if (candidates.length === 0) return null;
-    const counts = new Map();
-    for (const c of candidates) counts.set(c, (counts.get(c) || 0) + 1);
-    let best = candidates[0], bestCount = 0;
-    for (const [val, count] of counts) {
-        if (count > bestCount) { best = val; bestCount = count; }
-    }
-    return best;
-}
-
-// Convert a single bingo cell canvas into a black-and-white gray image (0 = ink, 255 = paper)
-function computeBinaryCell(cellCanvas) {
-    const threshMode = document.getElementById("threshMode").value;
-    const blurMode = document.getElementById("blurMode").value;
-    const invertColors = document.getElementById("invertColors").checked;
-    const morphMode = document.getElementById("morphMode").value;
-    const binaryThreshold = parseInt(document.getElementById("binaryThreshold").value, 10) || 127;
-    const adaptiveBlockSize = parseInt(document.getElementById("adaptiveBlockSize").value, 10) || 11;
-    const adaptiveC = parseInt(document.getElementById("adaptiveC").value, 10) || 2;
-
-    let gray = Imaging.grayFromRGBA(Imaging.canvasToImageData(cellCanvas));
-
-    if (invertColors) {
-        gray = Imaging.invert(gray);
-    }
-
-    let blurred = gray;
-    if (blurMode === "gaussian") {
-        blurred = Imaging.gaussianBlur(gray, 3);
-    } else if (blurMode === "median") {
-        blurred = Imaging.medianBlur(gray, 5);
-    }
-
-    let binary;
-    if (threshMode === "binary") {
-        binary = Imaging.threshold(blurred, binaryThreshold);
-    } else if (threshMode === "adaptive") {
-        const blockSize = Math.max(3, Math.min(31, adaptiveBlockSize + (adaptiveBlockSize % 2 === 0 ? 1 : 0)));
-        binary = Imaging.adaptiveThreshold(blurred, { method: 'gaussian', blockSize, c: adaptiveC });
-    } else {
-        binary = Imaging.threshold(blurred, Imaging.otsuThreshold(blurred));
-    }
-
-    if (morphMode !== "none") {
-        binary = Imaging.morphology(binary, morphMode);
-    }
-
-    return binary;
-}
-
-// Crop a binary gray image to its central ink region, ignoring outer cell frame border noise
-function tightCropToInk(binary, paddingRatio) {
-    const data = binary.data;
-    const rows = binary.height;
-    const cols = binary.width;
-
-    // Ignore 6% outer margin when looking for central digit ink bounding box
-    const marginX = Math.floor(cols * 0.06);
-    const marginY = Math.floor(rows * 0.06);
-
-    let minX = cols;
-    let maxX = -1;
-    let minY = rows;
-    let maxY = -1;
-
-    // Ink is the dark (0) pixels of the binarized cell
-    for (let y = marginY; y < rows - marginY; y++) {
-        for (let x = marginX; x < cols - marginX; x++) {
-            if (data[y * cols + x] === 0) {
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-            }
-        }
-    }
-
-    // Fall back to full cell bounds if no ink was found in central region
-    if (maxX === -1) {
-        return Imaging.cropGray(binary, 0, 0, cols, rows);
-    }
-
-    const rectW = maxX - minX + 1;
-    const rectH = maxY - minY + 1;
-
-    const padX = Math.round(rectW * paddingRatio);
-    const padY = Math.round(rectH * paddingRatio);
-    const x = Math.max(0, minX - padX);
-    const y = Math.max(0, minY - padY);
-    const cropW = Math.min(cols - x, rectW + padX * 2);
-    const cropH = Math.min(rows - y, rectH + padY * 2);
-
-    return Imaging.cropGray(binary, x, y, Math.max(1, cropW), Math.max(1, cropH));
-}
-
-function getPageSegMode() {
-    const mode = document.getElementById("pageSegMode").value;
-    switch (mode) {
-        case "single_block": return 6;
-        case "single_line": return 7;
-        case "single_word": return 8;
-        case "single_char": return 10;
-        default: return 3;
-    }
-}
-
-function getOcrEngineMode() {
-    const mode = document.getElementById("ocrEngineMode").value;
-    switch (mode) {
-        case "legacy": return Tesseract.OEM.TESSERACT_ONLY;
-        case "lstm": return Tesseract.OEM.LSTM_ONLY;
-        default: return Tesseract.OEM.DEFAULT;
-    }
-}
-
-// Parse OCR text to a valid bingo number (1–75). Any value outside that range is rejected.
-function extractNumber(text) {
-    if (!text) return null;
-    const digits = text.replace(/[^0-9]/g, "");
-    if (!digits) return null;
-    const num = parseInt(digits, 10);
-    if (isNaN(num)) return null;
-    // Hard-reject anything outside the legal bingo range — catches misreads like 144, 0, etc.
-    if (num < BINGO_MIN || num > BINGO_MAX) return null;
-    return num;
+    return {
+        grid, cells,
+        reader: { id: reader.id, version: reader.version },
+        stats: { extractMs, ...readings.stats, totalMs: Math.round(performance.now() - started) }
+    };
 }
 
 // Remove duplicate numbers from the OCR grid. Each valid bingo number should appear only once.

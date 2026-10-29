@@ -678,60 +678,6 @@
             color: #c5221f;
         }
 
-        /* ---- Scan tab: OCR tuning ---- */
-        details.tuning-details {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 14px 18px;
-        }
-
-        details.tuning-details summary {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-subtle);
-            cursor: pointer;
-            user-select: none;
-        }
-
-        details.tuning-details summary:hover {
-            color: var(--primary);
-        }
-
-        .tuning-table-wrap {
-            margin-top: 14px;
-            overflow-x: auto;
-        }
-
-        .tuning-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .tuning-table th,
-        .tuning-table td {
-            border: 1px solid var(--border);
-            padding: 8px 10px;
-            text-align: left;
-            color: var(--text-main);
-        }
-
-        .tuning-table th {
-            background: var(--surface);
-            font-weight: 600;
-        }
-
-        .tuning-table select,
-        .tuning-table input[type='number'] {
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            font-size: 13px;
-            background: var(--card);
-            color: var(--text-main);
-        }
-
         /* ---- Manual crop modal ---- */
         .crop-modal {
             position: fixed;
@@ -899,6 +845,7 @@
     <script src="profiles.js"></script>
     <script src="geometry.js"></script>
     <script src="utils.js"></script>
+    <script src="readers/tesseract-reader.js"></script>
     <script src="ocr.js"></script>
 </head>
 
@@ -1122,123 +1069,6 @@
                 </div>
             </section>
 
-            <!-- OCR Tuning (collapsible) -->
-            <details class="tuning-details">
-                <summary>⚙️ Advanced OCR Tuning &amp; Controls</summary>
-                <div class="tuning-table-wrap">
-                    <table class="tuning-table">
-                        <thead>
-                            <tr>
-                                <th>Setting</th>
-                                <th>Value</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><label for="threshMode">Threshold Mode</label></td>
-                                <td>
-                                    <select id="threshMode">
-                                        <option value="otsu">OTSU</option>
-                                        <option value="binary">Binary</option>
-                                        <option value="adaptive">Adaptive</option>
-                                    </select>
-                                </td>
-                                <td>Chooses how image is binarized into black-and-white.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="blurMode">Blur</label></td>
-                                <td>
-                                    <select id="blurMode">
-                                        <option value="none">None</option>
-                                        <option value="gaussian" selected>Gaussian</option>
-                                        <option value="median">Median</option>
-                                    </select>
-                                </td>
-                                <td>Softens noise before thresholding.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="zoomFactor">Zoom Factor</label></td>
-                                <td><input id="zoomFactor" type="number" value="3" min="1" max="5"></td>
-                                <td>Enlarges numbers before recognition.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="ocrEngineMode">OCR Engine Mode</label></td>
-                                <td>
-                                    <select id="ocrEngineMode">
-                                        <option value="default">Default</option>
-                                        <option value="legacy">Legacy</option>
-                                        <option value="lstm" selected>LSTM</option>
-                                    </select>
-                                </td>
-                                <td>Engine choice (LSTM recommended for digits).</td>
-                            </tr>
-                            <tr>
-                                <td><label for="pageSegMode">Page Segmentation</label></td>
-                                <td>
-                                    <select id="pageSegMode">
-                                        <option value="auto">Auto</option>
-                                        <option value="single_block" selected>Single Block</option>
-                                        <option value="single_line">Single Line</option>
-                                        <option value="single_word">Single Word</option>
-                                        <option value="single_char">Single Char</option>
-                                    </select>
-                                </td>
-                                <td>Tells Tesseract structure of target digit images.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="invertColors">Invert Colors</label></td>
-                                <td><input id="invertColors" type="checkbox"></td>
-                                <td>Use if light digits appear on dark background.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="morphMode">Morphology</label></td>
-                                <td>
-                                    <select id="morphMode">
-                                        <option value="none">None</option>
-                                        <option value="dilate">Dilate</option>
-                                        <option value="erode">Erode</option>
-                                        <option value="open">Open</option>
-                                        <option value="close">Close</option>
-                                    </select>
-                                </td>
-                                <td>Cleanup pass after thresholding.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="binaryThreshold">Binary Threshold</label></td>
-                                <td><input id="binaryThreshold" type="number" value="127" min="0" max="255"></td>
-                                <td>Cutoff threshold for Binary mode.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="adaptiveBlockSize">Adaptive Block Size</label></td>
-                                <td><input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2">
-                                </td>
-                                <td>Neighborhood size for Adaptive thresholding.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="adaptiveC">Adaptive C</label></td>
-                                <td><input id="adaptiveC" type="number" value="2" min="0" max="20"></td>
-                                <td>Cutoff bias for Adaptive mode.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="rowOffset">Row Shift</label></td>
-                                <td><input id="rowOffset" type="number" value="0" min="-2" max="2"></td>
-                                <td>Shifts OCR sampling up/down by row.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="colOffset">Column Shift</label></td>
-                                <td><input id="colOffset" type="number" value="0" min="-2" max="2"></td>
-                                <td>Shifts OCR sampling left/right by column.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="validateColumnRanges">Validate Column Ranges</label></td>
-                                <td><input id="validateColumnRanges" type="checkbox" checked></td>
-                                <td>Validates B-I-N-G-O 75-ball ranges (1-15, 16-30, etc.).</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </details>
         </div>
 
         <!-- ===== Panel: Load from Server ===== -->
@@ -1889,6 +1719,8 @@
         let cropScaleX = 1;
         let cropScaleY = 1;
         let isImageCaptured = false;
+        // Window geometry used to cut out the cells: from auto-detection, or from the manual corner handles
+        let currentGeometry = null;
 
         // Back button — return to main bingo page without saving
         backBtn.onclick = () => { window.location.href = '../index.html'; };
@@ -2034,16 +1866,11 @@
             openManualCropper();
         };
 
-        // Global helper for ocr.js to update preview canvas after auto-rotation
-        window.drawCanvasToPreview = function (canvasSource) {
-            previewCanvas.width = canvasSource.width;
-            previewCanvas.height = canvasSource.height;
-            previewCanvas.getContext('2d').drawImage(canvasSource, 0, 0);
-        };
 
         // Process captured image through auto-crop or show raw
         function processCapturedImage(sourceName) {
             const isAutoCropOn = autoCropToggle.checked;
+            currentGeometry = null;
             if (isAutoCropOn && typeof autoCrop === 'function' && typeof Geometry !== 'undefined') {
                 if (statusDiv) statusDiv.textContent = 'Finding the number windows...';
                 autoCrop(rawCapturedCanvas).then(croppedCanvas => {
@@ -2053,6 +1880,8 @@
                     if (croppedCanvas.corners) currentCorners = croppedCanvas.corners;
                     const geometry = croppedCanvas.geometry;
                     lastGeometry = geometry || null;
+                    // When the windows were not found the default handle positions define the geometry until the user adjusts them
+                    currentGeometry = (geometry && geometry.ok) ? geometry : Geometry.fromCorners(croppedCanvas.corners);
                     renderDetectionView();
                     if (geometry && geometry.ok) {
                         if (cropStatusBadge) cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
@@ -2251,6 +2080,7 @@
             previewCanvas.width = croppedCanvas.width;
             previewCanvas.height = croppedCanvas.height;
             previewCanvas.getContext('2d').drawImage(croppedCanvas, 0, 0);
+            currentGeometry = Geometry.fromCorners(currentCorners);
             manualCropModal.classList.add('hidden');
             if (cropStatusBadge) cropStatusBadge.textContent = 'Manual Cropped';
             if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Card cropped! Click Run OCR to recognize digits.'; }
@@ -2277,12 +2107,24 @@
                 engineCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
             }
+            // Reading needs to know where the number windows are (auto-detected, or set with Manual Crop)
+            if (!currentGeometry) {
+                const found = Geometry.analyze(rawCapturedCanvas);
+                if (!found.ok) {
+                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the number windows. Tap Manual Crop and drag the four handles onto the corner windows."; }
+                    return;
+                }
+                currentGeometry = found;
+            }
             if (ocrBtn) ocrBtn.disabled = true;
-            if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Running OCR digit recognition... Please wait.'; }
+            if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Reading the numbers... Please wait.'; }
             try {
-                const grid = await runOCR(previewCanvas);
-                drawBingoGrid(grid);
-                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = '✓ OCR completed! Verify numbers below, then click "Apply to Card Editor".'; }
+                const result = await readCardFromPhoto(rawCapturedCanvas, currentGeometry, msg => {
+                    if (statusDiv) statusDiv.textContent = msg;
+                });
+                drawBingoGrid(result.grid);
+                const seconds = (result.stats.totalMs / 1000).toFixed(1);
+                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = `✓ Read in ${seconds} s. Verify numbers below, then click "Apply to Card Editor".`; }
 
                 // Smoothly scroll down to the OCR results grid
                 const outputSection = document.getElementById('bingoOutputSection');
@@ -2399,7 +2241,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '1.8';
+        const SCAN_PAGE_VERSION = '1.9';
         const APP_VERSION = SCAN_PAGE_VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;

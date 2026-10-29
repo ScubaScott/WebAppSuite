@@ -23,29 +23,10 @@
             <p id="status" class="status">Waiting for libraries…</p>
         </section>
 
-        <!-- Settings the pipeline reads (same defaults as the Scan tab); shown read-only so a run records them -->
-        <details class="panel">
-            <summary>Pipeline settings used</summary>
-            <div class="wrap">
-                <table class="settings-table">
-                    <tbody>
-                        <tr><td>Threshold mode</td><td><select id="threshMode" disabled><option value="otsu" selected>OTSU</option></select></td></tr>
-                        <tr><td>Blur</td><td><select id="blurMode" disabled><option value="gaussian" selected>Gaussian</option></select></td></tr>
-                        <tr><td>Zoom factor</td><td><input id="zoomFactor" type="number" value="3" disabled></td></tr>
-                        <tr><td>OCR engine mode</td><td><select id="ocrEngineMode" disabled><option value="lstm" selected>LSTM</option></select></td></tr>
-                        <tr><td>Page segmentation</td><td><select id="pageSegMode" disabled><option value="single_block" selected>Single Block</option></select></td></tr>
-                        <tr><td>Invert colors</td><td><input id="invertColors" type="checkbox" disabled></td></tr>
-                        <tr><td>Morphology</td><td><select id="morphMode" disabled><option value="none" selected>None</option></select></td></tr>
-                        <tr><td>Binary threshold</td><td><input id="binaryThreshold" type="number" value="127" disabled></td></tr>
-                        <tr><td>Adaptive block size</td><td><input id="adaptiveBlockSize" type="number" value="11" disabled></td></tr>
-                        <tr><td>Adaptive C</td><td><input id="adaptiveC" type="number" value="2" disabled></td></tr>
-                        <tr><td>Row shift</td><td><input id="rowOffset" type="number" value="0" disabled></td></tr>
-                        <tr><td>Column shift</td><td><input id="colOffset" type="number" value="0" disabled></td></tr>
-                        <tr><td>Validate column ranges</td><td><input id="validateColumnRanges" type="checkbox" checked disabled></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </details>
+        <section class="panel">
+            <h2>Reader</h2>
+            <p id="readerInfo" class="status">Tesseract reads all 24 cell crops of a card in one pass on a single sheet; cells that come back empty or weak get one single-cell retry.</p>
+        </section>
 
         <section class="panel">
             <h2>Summary</h2>
@@ -66,6 +47,7 @@
     <script src="profiles.js"></script>
     <script src="geometry.js"></script>
     <script src="utils.js"></script>
+    <script src="readers/tesseract-reader.js"></script>
     <script src="ocr.js"></script>
     <script src="bench.js"></script>
 </body>

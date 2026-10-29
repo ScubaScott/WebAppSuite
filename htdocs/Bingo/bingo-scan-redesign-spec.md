@@ -247,6 +247,26 @@ Readers run in a Web Worker. A **shadow reader** may run after the primary; its 
 - Tiles with no word or confidence < 40 get **one** single-word retry on the individual crop. No other retries; no rotation search.
 - Candidates: the recognized value plus confusion alternatives (§7.6).
 
+### 7.5a Implemented in step 1.4 (Tesseract single-sheet reader)
+`readers/tesseract-reader.js` (v1.0) implements the contract above; `ocr.js` (v2.0) now only orchestrates (`readCardFromPhoto(photo, geometry)`: cut the 24 crops, normalize them, read, apply the column-range filter, de-duplicate) and keeps the review grid UI. `scan.html` (v1.9) and `bench.html` (v1.4) call it; the old tile reader (about 300 lines: five Tesseract passes per cell, four rotations, OpenCV-era image cleanup) is gone. What differs from the plan above, found by measuring each choice on the slider test photos (cells correct of 216, headline group, lower is worse):
+
+| Choice | Tried | Result | Kept |
+|---|---|---|---|
+| Crop cleaning before reading | contrast-stretched gray / Otsu black-and-white / adaptive threshold | 103 / **134** / 114 | Otsu |
+| Black/white cut (multiplier on Otsu's threshold) | 1.1, 1.0, 0.9, 0.75, 0.6 | 137, 134 (at the then layout), 160, **166**, 161 | 0.75 (0.6-0.9 is a plateau) |
+| Sheet enlargement | 0.5, 0.7, 1, 2, 3 | 74, **103**, 90, 76, 68 | 0.7 (digits are already about 45 px tall) |
+| Sheet layout | 6 columns with one-crop-height gaps; 4 columns with gaps of 2 and 3 crop heights; 3, 2 and 1 columns | 134; 148 and **152**; 151, 150, 150 | 4 columns, horizontal gap of 3 crop heights (neighbors in one row were being read as one long word, for example "2544272") |
+| Crop size | 2% inset (kept); 0%; 5%; 8%; negative insets of 5-15% | 134; 134; 113; 105; 124-45 | 2% (bigger crops pull frame and card into the cleaned image) |
+| Clearing a border strip of each cleaned crop | 2, 3, 5, 7, 9 px | 133, 131, 124, 105, 80 | none (digits reach the crop edge) |
+
+- **Retry:** cells that come back empty or under 40 confidence are read once more alone (single-word mode). The retry no longer replaces the sheet reading: both readings stay as candidates, best score first, so a later range check can choose (a correct "63" with confidence 0 used to be overwritten by a wrong "53").
+- **Skipped cells:** a cell flagged `covered` (closed shutter) is not read.
+- **Range filter in `ocr.js`:** the best-scored candidate that fits the cell's column range wins; a reading outside the range is dropped, not guessed. De-duplication (clearing the later copy of a repeated number) is unchanged until step 1.5.
+- **No rotation search:** the card must be upright (the user can still tap Rotate 90).
+- **Tuning panel removed from the Scan tab** in this step instead of 1.7: none of its controls (thresholds, page segmentation, zoom, row/column shifts) exist in the new reader.
+- **Profile defaults for manual corners:** the median window size measured on the 10 slider photos is 0.466 of the cell spacing wide and 0.54 tall (very consistent, within 0.02), now the slider and manual defaults (was a guess of 0.55 wide). Before this, manual corners read 12 of 24 on the test photo; after, 23 of 24.
+- **Tests:** `tools/bingo-scan-testset/imaging-test/reader-test.js` (28 checks of sheet layout, word-to-cell mapping, retry rules and crop cleaning against a stand-in recognizer) and `tools/bingo-scan-testset/engine-test/e2e-scan-test.js` (25 checks on the real Scan page: download, upload, auto detection, reading, review grid, Show detection, manual corners, a photo with no card).
+
 ### 7.6 Decoder (`decoder.js`)
 1. **Candidate expansion** (for readers that return a single answer): add alternatives from a confusion table with reduced scores, e.g. 1↔7, 3↔8, 5↔6, 6↔8, 0↔8, 4↔9, 2↔7; and a dropped digit (a lone "4" in the G column expands to 46–49).
 2. **Range filter:** discard candidates outside the cell's column range.
@@ -452,6 +472,20 @@ Observations:
 
 Window detection succeeded on all 10 slider photos (100%, target 90%), with 22-25 of 25 windows matched, fit error 1.2-2.1% of a cell spacing, and 0.2-0.8 s per photo; the debug overlays and the crop sheets of every slider photo were inspected and the grid sits on the windows, including the strongly tilted and the blue-lit photos. Cell accuracy rose from 0.9% to 42.6% with the old reader, unchanged, which confirms the diagnosis (D1-D3): the old reader was reading the wrong places. The remaining errors are the reader's (D4-D5: Tesseract on gray digits and the retry loop); full-photo OCR still takes 1-13 s because cells that fail validation go through the retry loop. Paper cards score 21 / 120 because they have no profile yet and go to manual placement (the numbers here come from the default handle positions).
 
+**After step 1.4** (single-sheet reader on the window-based crops; `ocr.js` 2.0, `tesseract-reader.js` 1.0, `geometry.js` 1.3, `bench.html` 1.4; raw results in `baselines/1.4-single-sheet-reader.json`):
+
+| Group | Photos | Windows found | Cells correct | Cards exact | Median scan time |
+|---|---|---|---|---|---|
+| Slider, checked labels (headline) | 9 | 9 / 9 | **168 / 216 (77.8%)** | 1 / 9 | 0.42 s |
+| — tune photos | 6 | 6 / 6 | 113 / 144 | 0 / 6 | 0.51 s |
+| — holdout photos | 3 | 3 / 3 | 55 / 72 | 1 / 3 | 0.42 s |
+| Slider, `needs-review` labels (`crazy-2`) | 1 | 1 / 1 | 20 / 24 | 0 / 1 | 0.57 s |
+| Paper / other (not scored) | 5 | 0 / 5 | 1 / 120 | 0 / 5 | 0.57 s |
+
+Wrong answers are now rare (0-1 per card); a cell the reader cannot read is left empty. Per card on the headline photos: 24, 22, 22, 20, 20, 19, 17, 13 and 11 of 24 correct (the lowest are the blue-lit glare photo and the strongly tilted one). The remaining errors are look-alike digits (5 read as 3, 7 as 1, 4 as 1, 6 as 5 — "52" read as "32", "72" as "12", "49" as "19") and cells left empty on glare; the decoder in step 1.5 targets exactly these using the column ranges.
+
+**Scan time** (finding the windows plus reading, 10 slider photos): 0.32-0.66 s on this desktop (first-use recognizer start-up 0.2 s). The target is 5 s on a mid-range phone, which could not be measured on a device. As a stand-in the benchmark was run under Chrome's 6x CPU throttling; the throttle slowed the page but not the recognizer's worker thread, so the worker's time (recognition and retries) was multiplied by 6 by hand. Result: median **2.9 s, worst case 4.5 s** (`baselines/1.4-throttled-6x-slider.json`). The slowest cases are photos where the window finder needs its third mask mode (about 3 s of the total under throttling). A real-phone measurement should replace this estimate when a device is available.
+
 Targets for Phase 1 are measured against the headline row. Re-run the bench after steps 1.3, 1.4 and 1.5 and add a row here.
 
 ## 11. Hosting Move (no longer required for Phases 1–2)
@@ -520,7 +554,7 @@ Revisit only if DigitNet fails the Phase 2 targets on a card format for which co
 | **1.1** | Engine caching: `ENGINE_CACHE`, SW skip/cache-first rule, `.htaccess`, `manifest.json`, `engine-loader.js`; self-hosted pinned Tesseract — **done**, see §8.4a | Scanner works offline after one download; SW version bump does not re-download — **verified** with an automated Chrome test (15 checks, see §8.6) |
 | **1.2** | `imaging.js` replaces OpenCV — **done**, see §8.4b | OpenCV script tag removed — **done** (no `cv` references remain in `htdocs/`) |
 | **1.3** | `profiles.js` (`slider`, `manual`) + `geometry.js` + canonical crops + shutter/glare flags + debug overlay — **done**, see §7.3a | Slider detection succeeds on ≥ 90% of slider test photos — **10 / 10** (§10.1) |
-| **1.4** | `CellReader` contract + Tesseract single-sheet adapter | ≤ 5 s per scan on a mid-range phone |
+| **1.4** | `CellReader` contract + Tesseract single-sheet adapter — **done**, see §7.5a | ≤ 5 s per scan on a mid-range phone — **0.3-0.7 s on this desktop; 2.9 s median, 4.5 s worst case under a 6x slowdown model** (§10.1); not yet measured on a real phone |
 | **1.5** | `decoder.js` | Measurable accuracy gain over the raw reader on bench |
 | **1.6** | Training pipeline: `training-store.js` outbox, `/api/training` endpoint + table + validation + admin routes, Contribute default on, first-scan notice, export backup | Samples arrive in MySQL from a phone; admin stats endpoint works |
 | **1.7** | Review UI states, summary line, profile chip; tuning panel removed | — |

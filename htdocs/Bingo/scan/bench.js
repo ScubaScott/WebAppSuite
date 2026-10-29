@@ -1,5 +1,5 @@
 // Benchmark runner version identifier
-const BENCH_VERSION = '1.3';
+const BENCH_VERSION = '1.4';
 const APP_VERSION = BENCH_VERSION;
 
 // Cells compared per card: the 24 numbered squares (index 12 is the FREE space)
@@ -44,6 +44,15 @@ const geometryOnly = params.get('geometry') === '1';
 const maskDebugMode = params.get('mask');
 // ?sheet=1 replaces each overlay with the 5x5 sheet of canonical cell crops
 const sheetMode = params.get('sheet') === '1';
+// ?sheetScale=1.5 sets the enlargement of the sheet the reader recognizes (for comparing settings)
+if (params.get('sheetScale')) TesseractReader.options.scale = Number(params.get('sheetScale'));
+// ?readerDebug=1 keeps each cell's raw reading in the results (first pass and final)
+if (params.get('readerDebug') === '1') TesseractReader.options.debug = true;
+// ?prep=stretch|otsu|adaptive picks how each crop is cleaned before reading
+if (params.get('prep')) TesseractReader.options.prep = params.get('prep');
+// ?cols=4&gutterX=2&border=3 change the sheet layout and edge cleaning; ?inset=-0.1 changes the cell crop size
+for (const key of ['cols', 'gutterX', 'border', 'cut']) if (params.get(key)) TesseractReader.options[key] = Number(params.get(key));
+if (params.get('inset')) CardProfiles.slider.cell.inset = Number(params.get('inset'));
 
 // Download any missing engine files, then load Tesseract from the engine cache
 async function waitForLibraries() {
@@ -108,15 +117,15 @@ async function runPhoto(name, entry) {
         else if (geometry) overlay = Geometry.drawOverlay(raw, geometry, 360).toDataURL('image/jpeg', 0.6);
     } catch (err) { /* overlay is optional */ }
 
-    const work = document.createElement('canvas');
-    work.width = cropped.width;
-    work.height = cropped.height;
-    work.getContext('2d').drawImage(cropped, 0, 0);
-
-    let grid = null, error = null;
+    let grid = null, error = null, readStats = null, readerInfo = null;
     if (!geometryOnly) {
         try {
-            grid = await runOCR(work);
+            // Same choice the Scan page makes: the detected grid, or the default corner handles when detection failed
+            const useGeometry = geometryOk ? geometry : Geometry.fromCorners(cropped.corners);
+            const read = await readCardFromPhoto(raw, useGeometry);
+            grid = read.grid;
+            readStats = read.stats;
+            readerInfo = read.reader;
         } catch (err) {
             error = String(err && err.message ? err.message : err);
         }
@@ -136,9 +145,16 @@ async function runPhoto(name, entry) {
         geometryReason: geometry ? geometry.reason : null,
         geometryMode: geometry ? geometry.mode : null,
         geometryMs: geometry ? geometry.ms : null,
+        windowFrac: geometry && geometry.windowFrac ? Math.round(geometry.windowFrac * 1000) / 1000 : null,
+        windowFracY: geometry && geometry.windowFracY ? Math.round(geometry.windowFracY * 1000) / 1000 : null,
+        pitchRatio: geometry && geometry.pitchX ? Math.round(geometry.pitchX / geometry.pitchY * 1000) / 1000 : null,
         overlay,
         cropMs: Math.round(t1 - t0),
         ocrMs: Math.round(t2 - t1),
+        read: readStats,
+        reader: readerInfo,
+        // Time a user waits: finding the windows plus reading the numbers
+        scanMs: (geometry ? geometry.ms : 0) + (readStats ? readStats.totalMs : 0),
         error,
         ...scoreGrid(grid, entry.labels)
     };
@@ -152,7 +168,7 @@ function summarize(label, rows) {
     const exact = rows.filter(r => r.exact).length;
     const fallback = rows.filter(r => r.fallbackCrop).length;
     const geomOk = rows.length - fallback;
-    const times = rows.map(r => r.cropMs + r.ocrMs).sort((a, b) => a - b);
+    const times = rows.map(r => r.scanMs).sort((a, b) => a - b);
     const median = n ? times[Math.floor(n / 2)] : 0;
     return { label, n, correct, cells, exact, fallback, geomOk, medianMs: median };
 }
@@ -177,7 +193,7 @@ function renderResults(results) {
     summaryEl.innerHTML = '';
     const table = document.createElement('table');
     table.innerHTML = '<thead><tr><th>Group</th><th class="num">Photos</th><th class="num">Cells correct</th>' +
-        '<th class="num">Cards exact</th><th class="num">Windows found</th><th class="num">Median time</th></tr></thead>';
+        '<th class="num">Cards exact</th><th class="num">Windows found</th><th class="num">Median scan time</th></tr></thead>';
     const body = document.createElement('tbody');
     for (const s of sum) {
         const tr = document.createElement('tr');
@@ -199,7 +215,7 @@ function renderResults(results) {
         const tr = document.createElement('tr');
         tr.innerHTML = '<td></td><td></td><td></td>' +
             `<td class="num">${r.correct}</td><td class="num">${r.wrong}</td><td class="num">${r.missing}</td>` +
-            `<td>${r.geometryOk ? r.windows + '/25, err ' + r.geometryErr + '%' : 'not found'}</td><td class="num">${((r.cropMs + r.ocrMs) / 1000).toFixed(1)} s</td><td></td>`;
+            `<td>${r.geometryOk ? r.windows + '/25, err ' + r.geometryErr + '%' : 'not found'}</td><td class="num">${(r.scanMs / 1000).toFixed(1)} s${r.read ? ' (' + r.read.retries + ' retries)' : ''}</td><td></td>`;
         if (r.overlay) {
             const img = document.createElement('img');
             img.src = r.overlay;
@@ -227,6 +243,14 @@ async function runAll() {
     const names = Object.keys(labelsDoc.photos).filter(n =>
         !profileFilter.length || profileFilter.includes(labelsDoc.photos[n].profile));
     const results = [];
+    // Start the recognizer before timing any photo, and record how long that takes
+    let readerLoadMs = null;
+    if (!geometryOnly) {
+        setStatus('Starting the text recognizer…');
+        const tl = performance.now();
+        await getActiveReader().load();
+        readerLoadMs = Math.round(performance.now() - tl);
+    }
     for (let i = 0; i < names.length; i++) {
         setStatus(`Photo ${i + 1} of ${names.length}: ${names[i]}…`);
         report('/bench-progress', { index: i + 1, total: names.length, name: names[i] });
@@ -244,6 +268,9 @@ async function runAll() {
         benchVersion: BENCH_VERSION,
         ocrVersion: typeof OCR_VERSION !== 'undefined' ? OCR_VERSION : null,
         utilsVersion: typeof UTILS_VERSION !== 'undefined' ? UTILS_VERSION : null,
+        geometryVersion: typeof GEOMETRY_VERSION !== 'undefined' ? GEOMETRY_VERSION : null,
+        reader: typeof TesseractReader !== 'undefined' ? { id: TesseractReader.id, version: TesseractReader.version, options: TesseractReader.options } : null,
+        readerLoadMs,
         ranAt: new Date().toISOString(),
         summary: buildSummary(results),
         photos: results

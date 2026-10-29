@@ -1,0 +1,115 @@
+[
+  {
+    "name": "engine downloads and loads",
+    "ok": true
+  },
+  {
+    "name": "old tuning panel is gone",
+    "ok": true
+  },
+  {
+    "name": "detection card hidden until switched on",
+    "ok": true
+  },
+  {
+    "name": "20260721_195125.jpg: windows found automatically",
+    "ok": true,
+    "detail": "Found 25 of 25 number windows. Click Run OCR to recognize digits, or Manual Crop to adjust."
+  },
+  {
+    "name": "20260721_195125.jpg: geometry kept for reading",
+    "ok": true
+  },
+  {
+    "name": "20260721_195125.jpg: reading finishes",
+    "ok": true,
+    "detail": "✓ Read in 0.5 s. Verify numbers below, then click \"Apply to Card Editor\"."
+  },
+  {
+    "name": "20260721_195125.jpg: reading takes under 5 s",
+    "ok": true,
+    "detail": "0.5 s"
+  },
+  {
+    "name": "20260721_195125.jpg: review grid has at least 17 of 24 numbers right",
+    "ok": true,
+    "detail": "24 correct, 0 wrong"
+  },
+  {
+    "name": "20260721_195125.jpg: FREE space stays in the center",
+    "ok": true
+  },
+  {
+    "name": "20260721_195125.jpg: review grid is drawn",
+    "ok": true
+  },
+  {
+    "name": "Show detection draws the detection view",
+    "ok": true,
+    "detail": "700x1515"
+  },
+  {
+    "name": "detection summary names the profile and windows",
+    "ok": true
+  },
+  {
+    "name": "manual crop asks for the corner windows",
+    "ok": true,
+    "detail": "Manual Crop — Drag Each Corner onto the Center of a Corner Number Window"
+  },
+  {
+    "name": "handles start on the detected window centers (inside the photo)",
+    "ok": true
+  },
+  {
+    "name": "applying manual corners succeeds",
+    "ok": true,
+    "detail": "Card cropped! Click Run OCR to recognize digits."
+  },
+  {
+    "name": "reading after manual corners still works",
+    "ok": true,
+    "detail": "23 correct"
+  },
+  {
+    "name": "20260721_195119.jpg: windows found automatically",
+    "ok": true,
+    "detail": "Found 24 of 25 number windows. Click Run OCR to recognize digits, or Manual Crop to adjust."
+  },
+  {
+    "name": "20260721_195119.jpg: geometry kept for reading",
+    "ok": true
+  },
+  {
+    "name": "20260721_195119.jpg: reading finishes",
+    "ok": true,
+    "detail": "✓ Read in 0.3 s. Verify numbers below, then click \"Apply to Card Editor\"."
+  },
+  {
+    "name": "20260721_195119.jpg: reading takes under 5 s",
+    "ok": true,
+    "detail": "0.3 s"
+  },
+  {
+    "name": "20260721_195119.jpg: review grid has at least 17 of 24 numbers right",
+    "ok": true,
+    "detail": "22 correct, 0 wrong"
+  },
+  {
+    "name": "20260721_195119.jpg: FREE space stays in the center",
+    "ok": true
+  },
+  {
+    "name": "20260721_195119.jpg: review grid is drawn",
+    "ok": true
+  },
+  {
+    "name": "photo without a card: tells the user to place the corners",
+    "ok": true
+  },
+  {
+    "name": "page scripts raised no errors",
+    "ok": true,
+    "detail": ""
+  }
+]

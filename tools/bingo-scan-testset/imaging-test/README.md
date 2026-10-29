@@ -13,5 +13,12 @@ Node-only tests with synthetic images; no browser needed.
 
       node tools/bingo-scan-testset/imaging-test/geometry-test.js htdocs/Bingo/scan
 
+- `reader-test.js` checks `htdocs/Bingo/scan/readers/tesseract-reader.js` against a stand-in for the Tesseract
+  worker: sheet layout (one sheet, no overlaps, white gaps), mapping recognized words to cells, joining split words,
+  ignoring words in the gaps, the retry rules (only weak or empty cells, both readings kept), skipped cells, and the
+  crop cleaning.
+
+      node tools/bingo-scan-testset/imaging-test/reader-test.js htdocs/Bingo/scan
+
 The canvas helpers (warp, overlay, crops) need a browser and are covered by `../engine-test/` and by the
 detection-only benchmark (`bench.html?auto=1&geometry=1`, add `&sheet=1` for the crop sheets).

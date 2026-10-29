@@ -1,5 +1,5 @@
 // Geometry module version identifier
-const GEOMETRY_VERSION = '1.2';
+const GEOMETRY_VERSION = '1.3';
 
 // Finds the 5x5 grid of number windows in a card photo, fits the camera perspective to it, and cuts one
 // standard-size crop per cell. Works from the windows themselves (not the card outline or slider tabs).
@@ -374,7 +374,7 @@ const Geometry = (() => {
         return {
             ok: true, profileId: 'manual', score: 0, windows: 4, err: 0, mode: 'corners', reason: null, scale: 1,
             H, pitch: (pitchX + pitchY) / 2, pitchX, pitchY,
-            windowFrac: CardProfiles.manual.cell.windowFrac, windowFracY: null,
+            windowFrac: CardProfiles.manual.cell.windowFrac, windowFracY: CardProfiles.manual.cell.windowFracY,
             candidates: [], used: [
                 { ...corners.tl, w: 0, h: 0, col: 0, row: 0 }, { ...corners.tr, w: 0, h: 0, col: N - 1, row: 0 },
                 { ...corners.br, w: 0, h: 0, col: N - 1, row: N - 1 }, { ...corners.bl, w: 0, h: 0, col: 0, row: N - 1 }

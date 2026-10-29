@@ -1,5 +1,5 @@
 // Card profiles version identifier
-const PROFILES_VERSION = '1.2';
+const PROFILES_VERSION = '1.3';
 
 // Card profiles describe how the scanner finds the 5x5 number grid on one physical card format.
 // geometry.js reads these plain objects; adding a format means adding an object here (plus test photos).
@@ -18,7 +18,8 @@ const PROFILES_VERSION = '1.2';
 //                  how far from its predicted spot a neighbor may sit (fraction of spacing)
 //   cell           canonical cell crop: size in pixels, edge inset (fraction of the measured window per side;
 //                  the measured window is the bright interior, so the inset stays small to keep two-digit numbers whole),
-//                  default window width as a fraction of the spacing (used when it cannot be measured)
+//                  default window width and height as fractions of the cell spacing, used when they cannot be measured
+//                  (manual corners); the slider values are the medians measured on the test photos (0.466 x 0.54)
 //   checks         per-cell checks: closed-shutter tint and glare
 const CardProfiles = {
     slider: {
@@ -30,7 +31,7 @@ const CardProfiles = {
         blob: { minAreaFrac: 0.00015, maxAreaFrac: 0.012, aspect: [0.6, 1.6], minFill: 0.6, maxHoleFrac: 0.004 },
         areaBand: [0.4, 2.5],
         lattice: { minWindows: 16, maxError: 0.08, neighborTol: 0.35, goodEnough: { windows: 22, error: 0.05 } },
-        cell: { size: { w: 72, h: 80 }, aspect: 0.9, inset: 0.02, windowFrac: 0.55 },
+        cell: { size: { w: 72, h: 80 }, aspect: 0.9, inset: 0.02, windowFrac: 0.466, windowFracY: 0.54 },
         checks: { shutterTint: true, glare: true }
     },
 
@@ -39,7 +40,7 @@ const CardProfiles = {
         id: 'manual',
         label: 'Manual',
         anchor: 'corners',
-        cell: { size: { w: 72, h: 80 }, aspect: 0.9, inset: 0.02, windowFrac: 0.55 },
+        cell: { size: { w: 72, h: 80 }, aspect: 0.9, inset: 0.02, windowFrac: 0.466, windowFracY: 0.54 },
         checks: { shutterTint: true, glare: true }
     },
 
