@@ -33,5 +33,11 @@ Node-only tests with synthetic images; no browser needed.
 
       node tools/bingo-scan-testset/imaging-test/decoder-eval.js . [verbose]
 
+- `training-store-test.js` checks the pure rules of `htdocs/Bingo/scan/training-store.js`: default settings, which
+  confirmed numbers may become labels (column range, no repeats), corrections against the reader's guess, and the
+  device text. Storage, upload and export are tested in `../server-test/`.
+
+      node tools/bingo-scan-testset/imaging-test/training-store-test.js htdocs/Bingo/scan
+
 The canvas helpers (warp, overlay, crops) need a browser and are covered by `../engine-test/` and by the
 detection-only benchmark (`bench.html?auto=1&geometry=1`, add `&sheet=1` for the crop sheets).

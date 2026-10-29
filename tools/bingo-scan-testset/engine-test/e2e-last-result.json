@@ -125,12 +125,12 @@
   {
     "name": "20260721_195121.jpg: reading finishes",
     "ok": true,
-    "detail": "✓ Read in 0.3 s. Verify numbers below, then click \"Apply to Card Editor\"."
+    "detail": "✓ Read in 0.4 s. Verify numbers below, then click \"Apply to Card Editor\"."
   },
   {
     "name": "20260721_195121.jpg: reading takes under 5 s",
     "ok": true,
-    "detail": "0.3 s"
+    "detail": "0.4 s"
   },
   {
     "name": "20260721_195121.jpg: review grid has at least 21 of 24 numbers right",

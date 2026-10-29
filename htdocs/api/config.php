@@ -17,6 +17,11 @@ define('DB_CHARSET', 'utf8mb4');
 // The profile must already exist and must have a password for Admin access to be active.
 define('SUITE_ADMIN_USERNAME', 'your_username_here');
 
+// Optional limits for the Bingo scan training endpoint (api/training.php). Uncomment to change a default.
+// define('TRAINING_MAX_STORE_BYTES', 150 * 1024 * 1024);  // stop accepting samples when stored images reach this size
+// define('TRAINING_RATE_PER_HOUR', 30);                    // samples accepted per device per hour
+// define('TRAINING_IP_SALT', 'any long random text');      // salt for the hashed device address (default derives from DB_PASS)
+
 /**
  * Establishes and returns a shared PDO database connection.
  * Returns null if the database connection cannot be established.

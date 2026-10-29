@@ -1,5 +1,5 @@
 // OCR module version identifier
-const OCR_VERSION = '2.1';
+const OCR_VERSION = '2.2';
 const VERSION = OCR_VERSION;
 
 
@@ -102,6 +102,10 @@ function renderScannedGridReview() {
             </div>
             <div id="scannedGridElements" class="editor-grid" role="grid" aria-label="Scanned card number grid"></div>
             <div id="scannedPickerEl" class="editor-picker hidden" aria-live="polite"></div>
+            <div id="contributeNotice" class="contribute-notice hidden" role="note">
+                <span>Scans help train the scanner. When you apply a card, its number crops (not the whole photo) and the numbers you confirmed are sent anonymously. You can change this under "Help improve the scanner" below.</span>
+                <button id="contributeNoticeOk" class="btn btn-secondary" type="button">OK</button>
+            </div>
             <button id="applyOCRBtn" class="btn btn-success" type="button" style="margin-top: 10px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
@@ -242,6 +246,16 @@ function renderScannedGridReview() {
         pickerEl.classList.add('hidden');
     }
 
+    // One-time explanation of what contributing sends, shown above the Apply button until it is dismissed
+    const notice = document.getElementById('contributeNotice');
+    if (notice && typeof TrainingStore !== 'undefined' && TrainingStore.shouldShowNotice()) {
+        notice.classList.remove('hidden');
+        document.getElementById('contributeNoticeOk').onclick = () => {
+            TrainingStore.setSettings({ noticeSeen: true });
+            notice.classList.add('hidden');
+        };
+    }
+
     const applyBtn = document.getElementById('applyOCRBtn');
     if (applyBtn) {
         applyBtn.onclick = () => {
@@ -252,6 +266,8 @@ function renderScannedGridReview() {
                     return idx === 12 ? 'FREE' : scannedGridData[idx];
                 })
             );
+            // Confirming the card also records it as a training sample (when contributing is on)
+            if (typeof window.recordTrainingSample === 'function') window.recordTrainingSample(scannedGridData.slice());
             // Pass result to card editor
             if (typeof window.applyOCRResult === 'function') {
                 window.applyOCRResult(grid2D);

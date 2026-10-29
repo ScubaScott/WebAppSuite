@@ -836,6 +836,7 @@
     <!-- Scanner engine (Tesseract OCR) downloaded once and cached by engine-loader.js -->
     <link rel="stylesheet" href="engine-loader.css">
     <link rel="stylesheet" href="detection.css">
+    <link rel="stylesheet" href="training.css">
     <script src="engine-loader.js"></script>
 
     <!-- Suite Profile & Bingo Sync engine -->
@@ -847,6 +848,7 @@
     <script src="utils.js"></script>
     <script src="readers/tesseract-reader.js"></script>
     <script src="decoder.js"></script>
+    <script src="training-store.js"></script>
     <script src="ocr.js"></script>
 </head>
 
@@ -1067,6 +1069,31 @@
                     <p style="text-align: center; color: var(--text-subtle); font-size: 14px; padding: 20px 0;">
                         Capture a photo and run OCR to extract numbers, then click "Apply to Card Editor".
                     </p>
+                </div>
+            </section>
+
+            <!-- Help improve the scanner: what is sent when a scanned card is applied, and the sending queue -->
+            <section id="contributeCard" class="scan-card">
+                <div class="card-title"><span>Help improve the scanner</span></div>
+                <p class="engine-card-text">When you apply a scanned card, the 25 number crops and the numbers you confirmed are sent anonymously so the scanner can learn to read cards better. Samples wait on this device until they can be sent.</p>
+                <div class="contribute-row">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="contributeToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="crop-toggle-label">Contribute scans</span>
+                </div>
+                <div class="contribute-row">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="includePhotoToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="crop-toggle-label">Also send the full photo</span>
+                </div>
+                <p id="contributeStatus" class="contribute-status"></p>
+                <div class="button-group">
+                    <button id="contributeSendBtn" class="btn btn-secondary" type="button">Send now</button>
+                    <button id="contributeExportBtn" class="btn btn-secondary" type="button">Save waiting samples</button>
                 </div>
             </section>
 
@@ -1722,6 +1749,8 @@
         let isImageCaptured = false;
         // Window geometry used to cut out the cells: from auto-detection, or from the manual corner handles
         let currentGeometry = null;
+        // The last card read from a photo (reading, geometry and photo), waiting to be confirmed with Apply
+        let lastScanRead = null;
 
         // Back button — return to main bingo page without saving
         backBtn.onclick = () => { window.location.href = '../index.html'; };
@@ -1872,6 +1901,7 @@
         function processCapturedImage(sourceName) {
             const isAutoCropOn = autoCropToggle.checked;
             currentGeometry = null;
+            lastScanRead = null;
             if (isAutoCropOn && typeof autoCrop === 'function' && typeof Geometry !== 'undefined') {
                 if (statusDiv) statusDiv.textContent = 'Finding the number windows...';
                 autoCrop(rawCapturedCanvas).then(croppedCanvas => {
@@ -2123,6 +2153,8 @@
                 const result = await readCardFromPhoto(rawCapturedCanvas, currentGeometry, msg => {
                     if (statusDiv) statusDiv.textContent = msg;
                 });
+                // Kept so that confirming the card (Apply) can also record it as a training sample
+                lastScanRead = { read: result, geometry: currentGeometry, photo: rawCapturedCanvas };
                 drawBingoGrid(result.grid);
                 const seconds = (result.stats.totalMs / 1000).toFixed(1);
                 if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = `✓ Read in ${seconds} s. Verify numbers below, then click "Apply to Card Editor".`; }
@@ -2171,6 +2203,47 @@
             detectionCard.classList.remove('hidden');
         }
         showDetectionToggle.addEventListener('change', renderDetectionView);
+
+        // ---- Training samples: settings card and recording a confirmed scan ----
+        const contributeToggle = document.getElementById('contributeToggle');
+        const includePhotoToggle = document.getElementById('includePhotoToggle');
+        const contributeStatus = document.getElementById('contributeStatus');
+        const contributeSendBtn = document.getElementById('contributeSendBtn');
+        const contributeExportBtn = document.getElementById('contributeExportBtn');
+
+        // Shows the settings and how many samples are waiting or sent
+        async function refreshContribution() {
+            const s = TrainingStore.getSettings();
+            contributeToggle.checked = s.contribute;
+            includePhotoToggle.checked = s.includePhoto;
+            includePhotoToggle.disabled = !s.contribute;
+            const c = await TrainingStore.counts();
+            const parts = [`Waiting to send: ${c.queued}`, `Sent: ${c.uploaded}`];
+            if (c.failed) parts.push(`Refused by the server: ${c.failed}`);
+            let text = parts.join(' · ');
+            if (c.blocked) text += '. Sending is paused because the collection is full; samples stay on this device until the next app update.';
+            else if (c.queued && !navigator.onLine) text += '. You are offline; they will be sent when you are back online.';
+            contributeStatus.textContent = text;
+            contributeSendBtn.disabled = !c.queued;
+            contributeExportBtn.disabled = !(c.queued || c.failed);
+        }
+        contributeToggle.addEventListener('change', () => TrainingStore.setSettings({ contribute: contributeToggle.checked }));
+        includePhotoToggle.addEventListener('change', () => TrainingStore.setSettings({ includePhoto: includePhotoToggle.checked }));
+        contributeSendBtn.addEventListener('click', () => TrainingStore.drain());
+        contributeExportBtn.addEventListener('click', async () => {
+            const done = await TrainingStore.exportQueued();
+            if (done.count) contributeStatus.textContent = `Saved ${done.count} samples to ${done.name}. You can remove them from this device now.`;
+        });
+        TrainingStore.onChange(refreshContribution);
+
+        // Called when a scanned card is confirmed with Apply; grid is the 25 confirmed values
+        window.recordTrainingSample = function (grid) {
+            const last = lastScanRead;
+            lastScanRead = null;
+            if (!last) return;
+            TrainingStore.recordScan({ read: last.read, geometry: last.geometry, photoCanvas: last.photo, labels: grid, appVersion: SCAN_PAGE_VERSION })
+                .catch(err => console.warn('Could not record the scan for training:', err));
+        };
 
         // ---- Scanner engine: one-time download, then loaded from the device cache ----
         const engineCard = document.getElementById('engineCard');
@@ -2242,14 +2315,21 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '2.0';
+        const SCAN_PAGE_VERSION = '2.1';
+        // The training store needs the app version; it also resumes sending anything left from an earlier session
+        TrainingStore.init(SCAN_PAGE_VERSION).then(refreshContribution);
+        refreshContribution();
         const APP_VERSION = SCAN_PAGE_VERSION;
-        const versionEl = document.getElementById('appVersion');
-        if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;
-
-        if (window.SuiteProfile) {
-            SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+        // The footer comes after this script in the page, so it is filled in once the page has been parsed
+        function initFooter() {
+            const versionEl = document.getElementById('appVersion');
+            if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;
+            if (window.SuiteProfile) {
+                SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+            }
         }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFooter);
+        else initFooter();
 
         initCardState();
 
@@ -2271,7 +2351,7 @@
     </script>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.5</span></p>
+        <p>Version <span id="appVersion">2.1</span></p>
     </footer>
 </body>
 

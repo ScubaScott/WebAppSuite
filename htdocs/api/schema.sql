@@ -216,3 +216,27 @@ INSERT IGNORE INTO `bingo_patterns` (`id`, `game_id`, `name`, `cells`, `sort_ord
 ('60000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000006', 'L-Shape', '[0,5,10,15,20,21,22,23,24]', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Bingo scan training samples: one row per confirmed card scan uploaded by a phone (see Bingo/bingo-scan-redesign-spec.md, section 9).
+-- Rows live here only until a training run has used them; training.php (trainingEnsureTable) holds the same definition.
+CREATE TABLE IF NOT EXISTS `bingo_scan_samples` (
+    `id`          VARCHAR(36)  NOT NULL,          -- client-generated UUID, makes uploads idempotent
+    `schema_ver`  TINYINT      NOT NULL,
+    `created_at`  DATETIME     NOT NULL,          -- client capture time (UTC)
+    `received_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `app_version` VARCHAR(10)  NOT NULL,
+    `profile`     VARCHAR(20)  NOT NULL,
+    `reader`      VARCHAR(40)  NOT NULL,          -- id@version
+    `device`      VARCHAR(100) NOT NULL DEFAULT '',
+    `uploaded_by` VARCHAR(100) DEFAULT NULL,      -- SuiteProfile username; NULL = guest
+    `ip_hash`     CHAR(64)     NOT NULL,          -- salted SHA-256, used only for rate limiting
+    `cells`       JSON         NOT NULL,
+    `meta`        JSON         NOT NULL,
+    `sheet`       MEDIUMBLOB   NOT NULL,          -- JPEG, at most 100 KB
+    `photo`       MEDIUMBLOB   DEFAULT NULL,      -- JPEG, at most 300 KB
+    `status`      VARCHAR(10)  NOT NULL DEFAULT 'new',
+    PRIMARY KEY (`id`),
+    INDEX `idx_scan_samples_received` (`received_at`),
+    INDEX `idx_scan_samples_status` (`status`),
+    INDEX `idx_scan_samples_ip` (`ip_hash`, `received_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

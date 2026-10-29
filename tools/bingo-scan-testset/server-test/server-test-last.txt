@@ -1,0 +1,95 @@
+PASS upload: a valid sample is stored (201) :: 201 {"id":"abcd0001-1111-4222-8333-000000100001","stored":true}
+PASS upload: it is in the database with status new
+PASS upload: the sheet bytes are stored exactly (JPEG, same length)
+PASS upload: the sheet starts with the JPEG marker
+PASS upload: no photo unless one was sent
+PASS upload: profile, reader, app version and device are recorded :: slider | tesseract@4.1.4/eng-best_int | 2.1 | Chrome 130 / Android; 412x915@2.6 | 1 | 1 | 2026-10-29 23:51:30
+PASS upload: a guest upload has no username
+PASS upload: all 25 cells are stored with labels, predictions and flags :: {"label":1,"predicted":2,"score":0.5,"corrected":true,"covered":false,"glare":false}
+PASS upload: meta is stored as given
+PASS upload: the client address is stored only as a 64-character hash
+PASS upload: sending the same sample again is accepted without storing it twice (200, duplicate) :: 200 {"id":"abcd0001-1111-4222-8333-000000100001","stored":false,"duplicate":true}
+PASS photo: a photo under 300 KB is stored :: 201 {"id":"abcd0002-1111-4222-8333-000000100002","stored":true}
+PASS photo: a photo over 300 KB is refused (400) :: 400 {"error":"photo is larger than 300 KB"}
+PASS photo: a photo that is not a JPEG is refused (400) :: {"error":"photo is not a JPEG image"}
+PASS auth: a signed-in upload records the username
+PASS auth: an invalid token does not block an upload (it counts as a guest) :: 201 {"id":"abcd0006-1111-4222-8333-000000100006","stored":true}
+PASS validation: wrong schema version :: 400 Unsupported schema version
+PASS validation: missing schema :: 400 Unsupported schema version
+PASS validation: id that is not a UUID :: 400 id must be a UUID
+PASS validation: id with SQL characters :: 400 id must be a UUID
+PASS validation: createdAt that is not a date :: 400 createdAt must be an ISO 8601 date
+PASS validation: app version with letters :: 400 appVersion must look like 2.0
+PASS validation: unknown card profile :: 400 Unknown card profile
+PASS validation: reader missing :: 400 reader must be { id, version }
+PASS validation: reader with odd characters :: 400 reader must be { id, version }
+PASS validation: device that is not text :: 400 device must be text
+PASS validation: only 24 cells :: 400 cells must be a list of exactly 25 entries
+PASS validation: cells that are not a list :: 400 cells must be a list of exactly 25 entries
+PASS validation: a label outside its column range :: 400 cells[0].label 16 is outside its column range 1-15
+PASS validation: a label that is not a whole number :: 400 cells[1].label must be a whole number or null
+PASS validation: a label on the FREE space :: 400 cells[12] is the FREE space and must have no label
+PASS validation: the same number twice in a column :: 400 cells[10].label 7 appears more than once
+PASS validation: a prediction that is not 1-75 :: 400 cells[2].predicted must be 1-75 or null
+PASS validation: a score above 1 :: 400 cells[2].score must be between 0 and 1
+PASS validation: meta that is not an object :: 400 meta must be an object
+PASS validation: meta that is too large :: 400 meta is too large
+PASS validation: sheet missing :: 400 sheet must be a base64 JPEG
+PASS validation: sheet that is not base64 :: 400 sheet is not valid base64
+PASS validation: sheet that is a PNG :: 400 sheet is not a JPEG image
+PASS validation: sheet of the wrong size :: 400 sheet must be 360x400 pixels (got 300x300)
+PASS validation: sheet over 100 KB :: 400 sheet is larger than 100 KB
+PASS validation: a body that is not JSON is refused (400) :: 400 {"error":"Body must be a JSON object"}
+PASS validation: a JSON list instead of an object is refused (400)
+PASS validation: nothing refused above was stored
+PASS limits: a request body over 450 KB is refused (413) :: 413 {"error":"Request body too large"}
+PASS methods: PUT on the collection is refused (405)
+PASS cors: the preflight allows PATCH :: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+PASS admin: stats without a token is refused (401)
+PASS admin: stats for a signed-in non-admin is refused (403)
+PASS admin: an admin profile without a password is refused (403)
+PASS admin: the list without a token is refused (401)
+PASS admin: changing a status as a non-admin is refused (403)
+PASS admin: deleting as a non-admin is refused (403) and nothing is deleted
+PASS admin: purge without a token is refused (401)
+PASS stats: count matches the database :: 4 vs 4
+PASS stats: total image bytes match the database :: 164086 vs 164086
+PASS stats: counts by status and profile :: [{"new":4},{"slider":4}]
+PASS stats: one sample carries a photo
+PASS stats: per-number label counts are right (number 1 appears in every sample that labeled it) :: 1
+PASS stats: labels counted and user corrections counted :: 96, 16
+PASS stats: the numbers with no sample are listed exactly (so gaps in the data are visible) :: 25 numbers have no sample
+PASS stats: the storage cap and its use are reported
+PASS list: a page has the requested number of items :: 200 3
+PASS list: an item carries its fields and the sheet as base64 that decodes to a JPEG :: id,schema,createdAt,receivedAt,appVersion,profile,reader,device,uploadedBy,cells,meta,sheet,photo,status
+PASS list: guests show uploadedBy null and photo null
+PASS list: paging with the cursor visits every sample exactly once :: 8 samples in 3 pages
+PASS list: the page size is capped at 25
+PASS list: an unknown status filter is refused (400)
+PASS list: an invalid since value is refused (400)
+PASS list: filtering by a status with no samples gives an empty page
+PASS list: a sample with a photo returns it as base64
+PASS list: a signed-in upload shows the username
+PASS status: an admin can mark a sample imported
+PASS status: an unknown status is refused (400)
+PASS status: an unknown sample is reported (404)
+PASS status: the default list no longer includes the imported sample
+PASS status: an admin can reject a sample
+PASS purge: only imported samples are deleted :: {"deleted":["abcd0001-1111-4222-8333-000000100001"],"skipped":[{"id":"abcd0002-1111-4222-8333-000000100002","reason":"status is rejected, not imported"},{"id":"abcd0005-1111-4222-8333-000000100005","r
+PASS purge: the rest are reported as skipped with a reason
+PASS purge: the deleted sample is gone and the others remain
+PASS purge: an empty list is refused (400)
+PASS purge: more than 500 ids is refused (400)
+PASS delete: an admin can delete one sample (204)
+PASS delete: deleting it again is reported (404)
+PASS rate limit: exactly 30 samples are accepted within an hour :: accepted 30
+PASS rate limit: the 31st is refused (429) with a Retry-After :: 429
+PASS rate limit: further uploads stay refused
+PASS rate limit: after the hour passes uploads work again :: 201
+PASS cap: samples are accepted until the stored images reach the cap :: stored 2, cap 60000, sheet 23819
+PASS cap: the next one is refused with 507 and the cap is reported :: 507 {"error":"Training sample storage is full","capBytes":60000}
+PASS cap: a refused sample is not stored
+PASS cap: it stays full for new samples
+PASS cap: re-sending a sample that is already stored is still accepted (duplicate) :: 200
+
+93 checks, all passed

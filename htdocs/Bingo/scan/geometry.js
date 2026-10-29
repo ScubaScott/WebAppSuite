@@ -1,5 +1,5 @@
 // Geometry module version identifier
-const GEOMETRY_VERSION = '1.3';
+const GEOMETRY_VERSION = '1.4';
 
 // Finds the 5x5 grid of number windows in a card photo, fits the camera perspective to it, and cuts one
 // standard-size crop per cell. Works from the windows themselves (not the card outline or slider tabs).
@@ -509,8 +509,10 @@ const Geometry = (() => {
     }
 
     // Tiles the 25 crops from extractCells() into one 5x5 sheet canvas (row-major). Cells whose window was not
-    // seen are outlined orange, closed shutters red and glare yellow.
-    function drawCellSheet(cells) {
+    // seen are outlined orange, closed shutters red and glare yellow; pass { marks: false } for the clean crops
+    // (what training samples store).
+    function drawCellSheet(cells, options) {
+        const marks = !options || options.marks !== false;
         const first = cells.find(c => c.image);
         if (!first) return null;
         const w = first.image.width, h = first.image.height;
@@ -525,7 +527,7 @@ const Geometry = (() => {
             if (!cell.image) continue;
             const x = cell.col * w, y = cell.row * h;
             g.putImageData(new ImageData(cell.image.data, w, h), x, y);
-            const color = cell.covered ? '#e74c3c' : (cell.glare ? '#f1c40f' : (cell.found ? null : '#ff9800'));
+            const color = !marks ? null : (cell.covered ? '#e74c3c' : (cell.glare ? '#f1c40f' : (cell.found ? null : '#ff9800')));
             if (color) { g.strokeStyle = color; g.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); }
         }
         return sheet;
