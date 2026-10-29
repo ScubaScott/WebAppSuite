@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '4.2';
+const VERSION = '4.3';
 
 
 // ============================================================
@@ -14,7 +14,8 @@ let session = {
     gameId: null,
     inputMode: "number",
     doubleMode: false,  // double bingo: requires 2 matching patterns on one card to win
-    ballTarget: 0       // prize-window target ball count (0 = disabled)
+    ballTarget: 0,      // prize-window target ball count (0 = disabled)
+    callCounts: {}      // times each ball (1-75) has been called this session; survives Clear Cards
 };
 
 // ============================================================
@@ -80,7 +81,8 @@ function saveSession() {
         inputMode: inputMode,
         dauber: session.dauber,
         doubleMode: session.doubleMode || false,
-        ballTarget: session.ballTarget || 0   // prize-window target ball count
+        ballTarget: session.ballTarget || 0,  // prize-window target ball count
+        callCounts: session.callCounts || {}
     }));
 }
 
@@ -100,6 +102,7 @@ function loadSession() {
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     session.doubleMode = obj.doubleMode || false;
     session.ballTarget = obj.ballTarget || 0;  // restore prize-window target (default off)
+    session.callCounts = (obj.callCounts && typeof obj.callCounts === 'object') ? obj.callCounts : {};
 
     // Migrate cards: ensure editMode, active, and serial fields exist
     session.cards = Array.isArray(obj.cards)
@@ -335,6 +338,7 @@ function onNumberPick(n) {
         // Prompt before un-calling a number
         if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
         session.called = session.called.filter(x => x !== n);
+        adjustCallCount(n, -1);
         if (session.lastBall === n) {
             session.lastBall = session.called[session.called.length - 1] || null;
         }
@@ -342,6 +346,7 @@ function onNumberPick(n) {
         // Toggle ON — call the number (single tap, no prompt)
         session.called.push(n);
         session.lastBall = n;
+        adjustCallCount(n, 1);
         if (!prevWinnerExists) shouldScrollToWinner = true;
     }
 
@@ -403,6 +408,7 @@ function onNumberGridClick(n) {
         // Prompt before un-calling a number
         if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
         session.called = session.called.filter(x => x !== n);
+        adjustCallCount(n, -1);
         if (session.lastBall === n) {
             session.lastBall = session.called[session.called.length - 1] || null;
         }
@@ -410,6 +416,7 @@ function onNumberGridClick(n) {
         // Toggle ON — call the number (single tap, no prompt)
         session.called.push(n);
         session.lastBall = n;
+        adjustCallCount(n, 1);
         if (!prevWinnerExists) shouldScrollToWinner = true;
     }
 
@@ -425,6 +432,14 @@ callLogLink.addEventListener("click", (e) => {
     e.preventDefault();
     openCallLogModal();
 });
+
+// Adds delta to a ball's session call tally (never below zero; zero entries are dropped)
+function adjustCallCount(n, delta) {
+    if (!session.callCounts) session.callCounts = {};
+    const next = Math.max(0, (session.callCounts[n] || 0) + delta);
+    if (next === 0) delete session.callCounts[n];
+    else session.callCounts[n] = next;
+}
 
 function openCallLogModal() {
     const modal = document.createElement("div");
@@ -475,6 +490,127 @@ function openCallLogModal() {
     }
 
     panel.appendChild(content);
+
+    // Bottom-left link to the per-ball call statistics modal
+    const footer = document.createElement("div");
+    footer.className = "call-log-footer";
+    const statsLink = document.createElement("button");
+    statsLink.className = "link-button";
+    statsLink.type = "button";
+    statsLink.textContent = "Stats";
+    statsLink.addEventListener("click", () => openStatsModal());
+    footer.appendChild(statsLink);
+    panel.appendChild(footer);
+
+    modal.appendChild(panel);
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+}
+
+// Stats modal: bar graph of how many times each ball (1-75) was called this session
+function openStatsModal() {
+    const modal = document.createElement("div");
+    modal.className = "game-picker-modal stats-modal";
+
+    const panel = document.createElement("div");
+    panel.className = "game-picker-panel";
+
+    const hdr = document.createElement("div");
+    hdr.className = "game-picker-header";
+    const title = document.createElement("h2");
+    title.className = "game-picker-title";
+    title.textContent = "Ball Call Stats";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "link-button";
+    closeBtn.textContent = "✕ Close";
+    closeBtn.addEventListener("click", () => modal.remove());
+    hdr.appendChild(title);
+    hdr.appendChild(closeBtn);
+    panel.appendChild(hdr);
+
+    const body = document.createElement("div");
+    body.className = "stats-body";
+    panel.appendChild(body);
+
+    // Rebuilds the chart from the current tallies (also used after reset)
+    function render() {
+        body.innerHTML = "";
+        const counts = session.callCounts || {};
+        const max = Math.max(0, ...Object.values(counts));
+        const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+        if (total === 0) {
+            body.innerHTML = '<p class="bingo-cards-placeholder">No balls called yet this session.</p>';
+            resetBtn.disabled = true;
+            return;
+        }
+        resetBtn.disabled = false;
+
+        const readout = document.createElement("div");
+        readout.className = "stats-readout";
+        const repeats = Object.values(counts).filter(c => c > 1).length;
+        const defaultText = `${total} calls · ${repeats} ball${repeats === 1 ? "" : "s"} repeated · tap a bar for details`;
+        readout.textContent = defaultText;
+        body.appendChild(readout);
+
+        const chart = document.createElement("div");
+        chart.className = "stats-chart";
+        chart.setAttribute("role", "img");
+        chart.setAttribute("aria-label", "Bar graph of times each ball was called");
+
+        // Y-axis guide showing the tallest bar's count
+        const yMax = document.createElement("span");
+        yMax.className = "stats-ymax";
+        yMax.textContent = max;
+        chart.appendChild(yMax);
+
+        for (let n = 1; n <= 75; n++) {
+            const c = counts[n] || 0;
+            const col = document.createElement("button");
+            col.type = "button";
+            col.className = "stats-col";
+            const letter = session.word[Math.floor((n - 1) / 15)] || "";
+            const label = `${letter}${n}: called ${c} time${c === 1 ? "" : "s"}`;
+            col.title = label;
+            col.setAttribute("aria-label", label);
+
+            const bar = document.createElement("span");
+            bar.className = "stats-bar" + (c > 1 ? " repeat" : "");
+            bar.style.height = `${(c / max) * 100}%`;
+            col.appendChild(bar);
+
+            col.addEventListener("click", () => { readout.textContent = label; });
+            chart.appendChild(col);
+        }
+        body.appendChild(chart);
+
+        // X-axis markers at the start of each letter range
+        const axis = document.createElement("div");
+        axis.className = "stats-axis";
+        for (let i = 0; i < 5; i++) {
+            const tick = document.createElement("span");
+            tick.textContent = `${session.word[i] || ""} ${i * 15 + 1}-${i * 15 + 15}`;
+            axis.appendChild(tick);
+        }
+        body.appendChild(axis);
+    }
+
+    const footer = document.createElement("div");
+    footer.className = "stats-footer";
+    const resetBtn = document.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "stats-reset-btn";
+    resetBtn.textContent = "Reset Stats";
+    resetBtn.addEventListener("click", () => {
+        if (!confirm("Reset ball call stats for this session? The call log and board are not affected.")) return;
+        session.callCounts = {};
+        saveSession();
+        render();
+    });
+    footer.appendChild(resetBtn);
+    panel.appendChild(footer);
+
+    render();
     modal.appendChild(panel);
     document.body.appendChild(modal);
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });

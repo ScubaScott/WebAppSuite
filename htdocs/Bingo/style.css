@@ -2933,4 +2933,110 @@ body {
 .favorite-star-btn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
-}
+}
+
+/* ===== Call log footer + ball call stats modal ===== */
+
+/* Bottom row of the call log panel; Stats link sits bottom-left */
+.call-log-footer {
+    display: flex;
+    justify-content: flex-start;
+    padding: 8px 20px 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.call-log-footer .link-button {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.stats-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+}
+
+.stats-readout {
+    font-size: 14px;
+    color: var(--text-subtle);
+    min-height: 20px;
+    margin-bottom: 10px;
+}
+
+/* Chart area: 75 equal-width columns, bars grow from the bottom */
+.stats-chart {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: 1px;
+    height: 180px;
+    padding-top: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.stats-ymax {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 11px;
+    color: var(--text-subtle);
+}
+
+.stats-col {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: flex-end;
+    cursor: pointer;
+}
+
+.stats-bar {
+    display: block;
+    width: 100%;
+    background: var(--primary);
+    opacity: 0.55;
+    border-radius: 2px 2px 0 0;
+}
+
+/* Balls called more than once stand out */
+.stats-bar.repeat {
+    opacity: 1;
+}
+
+.stats-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-subtle);
+}
+
+.stats-footer {
+    padding: 12px 20px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.stats-reset-btn {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: #d93025;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.stats-reset-btn:active {
+    transform: scale(0.98);
+}
+
+.stats-reset-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
