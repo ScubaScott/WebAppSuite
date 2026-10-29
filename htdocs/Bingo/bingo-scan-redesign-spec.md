@@ -370,10 +370,15 @@ CREATE TABLE bingo_scan_samples (
 
 ## 10. Benchmark & Test Set
 
-- **Test set** lives outside the deployed tree at `tools/bingo-scan-testset/`: photos plus `labels.json` (per photo: `profile` and a 25-value array in row-major order, B-I-N-G-O columns). Move `htdocs/Bingo/example/` there (it is currently deployed publicly).
+- **Test set** lives outside the deployed tree at `tools/bingo-scan-testset/`: photos plus `labels.json` (per photo: `profile` and a 25-value array in row-major order, B-I-N-G-O columns). Photos are in `tools/bingo-scan-testset/photos/` (git-ignored, never deployed); `labels.json` and `README.md` are tracked. Each photo has a `card` id, a `split` (`tune` or `holdout`) and optional `hardCells`.
 - Initial label (`20260721_195823.jpg`, slider, rows top to bottom):
   `[2,25,44,52,72, 12,20,39,53,74, 4,27,"FREE",49,73, 10,17,33,47,63, 3,26,37,54,67]` — 47 and 54 are washed out by glare/tint and are good hard cases.
-- **Current set:** the 9 JPGs in `example/` are the same slider card under varied conditions (flat on a table, hand-held, angled, glare). Confirm each photo matches the label above while building `labels.json`. `unnamed.webp` is an app screenshot, not a card; exclude it.
+- **Current set (15 labeled photos):**
+  - **Slider, scored:** 9 photos of `crazy-1` (6 `tune`, 3 `holdout`: `195125`, `195821`, `195833`), labels `checked`; plus `20260804_200032_crop.jpg`, a second physical card (`crazy-2`, `holdout`), label `needs-review`.
+  - **Paper/hard-card, not scored until a profile exists:** 5 photos (`paper-804022-a/b/c`, `paper-351959-br`, `hard-red-1`), cropped from larger photos, labels `needs-review`.
+  - 9 further photos are listed under `unlabeled` in `labels.json` (selfies with small slider cards, heavily daubed paper sheets) with the reason each was skipped.
+  - Crops are not tight, so the card still has to be found. `unnamed.webp` (an app screenshot) was deleted.
+- Labels read from a single photo are `needs-review` and are excluded from headline scores until a person confirms them.
 - With one card, tune detection thresholds on 6 photos and keep 3 held out as an unseen check, so geometry is not over-fitted to specific images.
 - **Growing the set:** turn on **Include full photo** (§9.2) on the developer's own device. Every confirmed field scan then uploads a photo with user-confirmed labels, which can be copied into the test set (instead of being used for training) without hand-labeling.
 - Target: ≥ 10 slider photos from ≥ 3 different cards. Add ≥ 3 photos of each other format before its profile is built (§7.2).
@@ -381,6 +386,26 @@ CREATE TABLE bingo_scan_samples (
 - Test photos are **never** used for training, and bench runs never upload samples.
 
 ---
+
+### 10.1 Baseline: current pipeline (step 0.2)
+
+Run 2026-10-29 with `scan/bench.html` v1.0 (`ocr.js` 1.4, `utils.js` 1.0, unchanged Tesseract 4 + OpenCV settings from the Scan tab), headless desktop Chrome. Raw results: `tools/bingo-scan-testset/baselines/0.2-current-pipeline.json`.
+
+| Group | Photos | Cells correct | Cards exact | Median time |
+|---|---|---|---|---|
+| Slider, checked labels (headline) | 9 | **2 / 216 (0.9%)** | 0 / 9 | 10.0 s |
+| — tune photos | 6 | 2 / 144 | 0 / 6 | 10.4 s |
+| — holdout photos | 3 | 0 / 72 | 0 / 3 | 9.9 s |
+| Slider, `needs-review` labels (`crazy-2`) | 1 | 0 / 24 | 0 / 1 | 7.7 s |
+| Paper / other (not scored yet) | 5 | 17 / 120 (14%) | 0 / 5 | 7.5 s |
+
+Observations:
+- On slider photos, 5–9 cells per card are read as a wrong number and 14–19 are blank (rejected or de-duplicated). Almost nothing is correct, which matches the reported 1–2 correct squares per card.
+- "Grid found" is not a useful signal: auto-crop returned a box (not the central-85% fallback) on all 15 photos, yet the result is wrong, which confirms the diagnosis that the detected box and the 25 equal tiles do not line up with the windows (D1–D3).
+- Time per photo is ~10 s on a fast desktop. A phone is several times slower, which fits the reported minutes.
+- Paper cards do better (up to 8/24) even though they have no dedicated handling, because their cells are evenly spaced.
+
+Targets for Phase 1 are measured against the headline row. Re-run the bench after steps 1.3, 1.4 and 1.5 and add a row here.
 
 ## 11. Hosting Move (no longer required for Phases 1–2)
 Move hosts only if one of these happens:
@@ -443,8 +468,8 @@ Revisit only if DigitNet fails the Phase 2 targets on a card format for which co
 
 | Step | Deliverable | Exit criteria |
 |---|---|---|
-| **0.1** | Test set + `labels.json` in `tools/bingo-scan-testset/`; move `example/` there (drop `unnamed.webp`) | The 9 existing photos labeled; more added later from field uploads (§10) |
-| **0.2** | `bench.html` running the **current** pipeline | Baseline numbers recorded in this spec |
+| **0.1** | Test set + `labels.json` in `tools/bingo-scan-testset/`; move `example/` there (drop `unnamed.webp`) — **done** | The 9 existing photos labeled — **done**; more added later from field uploads (§10) |
+| **0.2** | `bench.html` running the **current** pipeline — **done**, baseline in §10.1 | Baseline numbers recorded in this spec — **done** |
 | **1.1** | Engine caching: `ENGINE_CACHE`, SW skip/cache-first rule, `.htaccess`, `manifest.json`, `engine-loader.js`; self-hosted pinned Tesseract | Scanner works offline after one download; SW version bump does not re-download |
 | **1.2** | `imaging.js` replaces OpenCV | OpenCV script tag removed |
 | **1.3** | `profiles.js` (`slider`, `manual`) + `geometry.js` + canonical crops + shutter/glare flags + debug overlay | Slider detection succeeds on ≥ 90% of slider test photos |

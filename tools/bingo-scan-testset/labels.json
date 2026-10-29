@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "gridOrder": "row-major, columns B-I-N-G-O, index 12 is FREE",
+  "labelStatus": "checked = verified by eye against several photos; needs-review = read from one photo, confirm before using in scores",
+  "photos": {
+    "20260721_195119.jpg": {"card": "crazy-1", "profile": "slider", "split": "tune", "conditions": "hand-held, upright, pink light", "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195121.jpg": {"card": "crazy-1", "profile": "slider", "split": "tune", "conditions": "flat on table, far away, other cards and glass in frame", "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195123.jpg": {"card": "crazy-1", "profile": "slider", "split": "tune", "conditions": "flat on table, shadow across lower left", "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195125.jpg": {"card": "crazy-1", "profile": "slider", "split": "holdout", "conditions": "flat on table, slight tilt", "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195821.jpg": {"card": "crazy-1", "profile": "slider", "split": "holdout", "conditions": "blue light across lower half, glare on 52 and 53", "hardCells": [52, 53], "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195823.jpg": {"card": "crazy-1", "profile": "slider", "split": "tune", "conditions": "flat on table, strong perspective tilt, glare on 47 and 54", "hardCells": [47, 54], "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195831.jpg": {"card": "crazy-1", "profile": "slider", "split": "tune", "conditions": "hand-held, busy background, bottom row shadowed", "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195833.jpg": {"card": "crazy-1", "profile": "slider", "split": "holdout", "conditions": "hand-held, tilted toward camera, finger over lower right edge", "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260721_195838.jpg": {"card": "crazy-1", "profile": "slider", "split": "tune", "conditions": "hand-held, upright, close, finger over lower right edge", "labels": [2, 25, 44, 52, 72, 12, 20, 39, 53, 74, 4, 27, "FREE", 49, 73, 10, 17, 33, 47, 63, 3, 26, 37, 54, 67], "labelStatus": "checked"},
+    "20260804_200032_crop.jpg": {"card": "crazy-2", "profile": "slider", "split": "holdout", "source": "20260804_200032.jpg", "conditions": "second physical Crazy card (FREE 883), hand-held close, purple light, left edge of card slightly clipped", "labels": [2, 24, 38, 54, 70, 10, 18, 41, 47, 72, 5, 26, "FREE", 50, 73, 9, 16, 40, 57, 64, 12, 29, 33, 55, 69], "labelStatus": "needs-review"},
+    "20251109_162316_a.jpg": {"card": "paper-804022-a", "profile": "paper-grid", "split": "tune", "source": "20251109_162316.jpg", "conditions": "orange paper sheet on dark table, dim, neighbor cards partly in frame", "labels": [8, 21, 37, 59, 67, 4, 26, 38, 50, 65, 7, 20, "FREE", 60, 68, 13, 25, 42, 47, 70, 10, 28, 33, 49, 69], "labelStatus": "needs-review"},
+    "20251109_162316_b.jpg": {"card": "paper-804022-b", "profile": "paper-grid", "split": "holdout", "source": "20251109_162316.jpg", "conditions": "orange paper sheet, dim, slight tilt, neighbor cards partly in frame", "labels": [7, 24, 34, 46, 62, 2, 25, 33, 59, 64, 6, 27, "FREE", 55, 68, 12, 19, 35, 52, 69, 9, 16, 38, 60, 70], "labelStatus": "needs-review"},
+    "20251109_162316_c.jpg": {"card": "paper-804022-c", "profile": "paper-grid", "split": "tune", "source": "20251109_162316.jpg", "conditions": "orange paper sheet, dim, rotated about 5 degrees", "labels": [2, 28, 36, 57, 74, 3, 20, 31, 50, 67, 1, 27, "FREE", 51, 69, 6, 30, 45, 59, 62, 10, 17, 38, 47, 66], "labelStatus": "needs-review"},
+    "20241130_140857_br.jpg": {"card": "paper-351959-br", "profile": "paper-grid", "split": "tune", "source": "20241130_140857.jpg", "conditions": "orange paper sheet close up, strong perspective, motion blur, left edge clipped (the 4 and 14 are partly cut off)", "labels": [15, 21, 32, 53, 65, 11, 28, 34, 57, 68, 4, 24, "FREE", 59, 66, 9, 25, 41, 49, 70, 14, 23, 45, 51, 67], "labelStatus": "needs-review"},
+    "IMG_0853_red.jpg": {"card": "hard-red-1", "profile": "paper-grid", "split": "tune", "source": "IMG_0853.JPG", "conditions": "stiff red card on tablecloth, strong perspective tilt, daylight, red FREE text", "labels": [7, 16, 38, 47, 63, 15, 30, 32, 46, 72, 4, 24, "FREE", 54, 67, 2, 23, 37, 56, 62, 10, 18, 31, 60, 75], "labelStatus": "needs-review"}
+  },
+  "unlabeled": {
+    "20230128_150623.jpg": "six paper cards, several cut off at the left edge; could be cropped and labeled",
+    "20230128_160624.jpg": "many cards, most covered in dauber marks",
+    "20240512_113819.jpg": "cruise-ship paper cards, small and partly daubed",
+    "20241124_140857.jpg": "selfie holding a small slider card; most numbers unreadable",
+    "20241124_141658.jpg": "selfie with a slider card; many shutters closed",
+    "20241124_143504.jpg": "selfie with a slider card; several windows glared or closed",
+    "20251109_175303.jpg": "six paper cards, nearly every number covered by dauber marks",
+    "20260321_194347.jpg": "two small slider cards, tilted, many shutters closed",
+    "20260404_192225.jpg": "selfie with a slider card; many shutters closed"
+  }
+}
