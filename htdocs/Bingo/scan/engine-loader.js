@@ -1,5 +1,5 @@
 // Engine loader version identifier
-const ENGINE_LOADER_VERSION = '1.2';
+const ENGINE_LOADER_VERSION = '1.3';
 
 // Downloads the scanner engine files listed in engine/manifest.json into a dedicated Cache Storage
 // bucket, verifies them, and loads the scripts from that cache. The service worker serves the same
@@ -78,7 +78,7 @@ const EngineLoader = (() => {
             const engine = manifest.engines[id];
             const entry = { label: engine.label, ready: true, missing: [] };
             for (const file of requiredFiles(engine)) {
-                const size = file.bytes || file.approxBytes || 0;
+                const size = file.bytes || 0;
                 result.totalBytes += size;
                 const hit = await cache.match(fileUrl(file));
                 if (!hit) {
@@ -104,14 +104,6 @@ const EngineLoader = (() => {
     // Downloads one file into the cache, reporting bytes as they arrive
     async function downloadFile(cache, file, onBytes) {
         const url = fileUrl(file);
-
-        // External files are fetched without CORS and stored as opaque responses (size and hash cannot be read)
-        if (file.external) {
-            const res = await fetch(url, { mode: 'no-cors' });
-            await cache.put(url, res);
-            onBytes(file.approxBytes || 0);
-            return;
-        }
 
         const res = await fetch(url, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`Download failed (${res.status}): ${file.path}`);
@@ -207,33 +199,17 @@ const EngineLoader = (() => {
         });
     }
 
-    // Waits until the OpenCV runtime has finished initializing
-    async function waitForOpenCv() {
-        const started = Date.now();
-        while (Date.now() - started < 60000) {
-            if (typeof cv !== 'undefined' && cv) {
-                if (typeof cv.Mat === 'function') return;
-                // Only a real Promise is awaited. The OpenCV module object itself has a .then method that
-                // resolves to itself, so awaiting it would loop forever; it is polled for cv.Mat instead.
-                if (cv instanceof Promise) {
-                    try { window.cv = await cv; continue; } catch (err) { /* keep polling */ }
-                }
-            }
-            await new Promise(r => setTimeout(r, 100));
-        }
-        throw new Error('The image engine did not start');
-    }
-
     // Loads the scripts of the requested engines (their files must already be cached)
     async function load(ids) {
         await getManifest();
+        // Drop cached files the manifest no longer lists (a retired engine file frees its space here)
+        try { await cleanup(); } catch (err) { /* cleanup is best effort */ }
         for (const id of engineIds(ids)) {
             if (loadedEngines.has(id)) continue;
             const engine = manifest.engines[id];
             for (const script of engine.scripts) {
                 await injectScript(script.startsWith('http') ? script : new URL(script, BASE_URL).href);
             }
-            if (id === 'opencv') await waitForOpenCv();
             loadedEngines.add(id);
         }
         loaded = true;

@@ -6,7 +6,7 @@
   {
     "name": "A: download card shown on first visit",
     "ok": true,
-    "detail": "The scanner needs a one-time download of 20.1 MB. Wi-Fi is recommended."
+    "detail": "The scanner needs a one-time download of 9.7 MB. Wi-Fi is recommended."
   },
   {
     "name": "A: nothing from the engine folder fetched before the user asks",
@@ -18,9 +18,9 @@
     "ok": true
   },
   {
-    "name": "A: engine cache holds 5 files (4 local + OpenCV)",
+    "name": "A: engine cache holds exactly the 4 Tesseract files (no OpenCV)",
     "ok": true,
-    "detail": "tesseract-4.1.4.min.js, worker-4.1.4.min.js, tesseract-core-simd.wasm.js, eng.traineddata, opencv.js"
+    "detail": "tesseract-4.1.4.min.js, worker-4.1.4.min.js, tesseract-core-simd.wasm.js, eng.traineddata"
   },
   {
     "name": "A: persist() call did not block the download",
@@ -32,8 +32,18 @@
     "detail": "{\"text\":\"47\",\"cvMat\":true}"
   },
   {
-    "name": "B: OpenCV is initialized",
+    "name": "B: imaging module present and no OpenCV global",
     "ok": true
+  },
+  {
+    "name": "B: canvas perspective warp gives 600x600 and the right center pixel",
+    "ok": true,
+    "detail": "{\"w\":600,\"h\":600,\"r\":100,\"g\":100}"
+  },
+  {
+    "name": "B: stale OpenCV cache entry is deleted on load",
+    "ok": true,
+    "detail": "4 entries"
   },
   {
     "name": "C: new app cache created, old one removed",
@@ -50,9 +60,9 @@
     "detail": ""
   },
   {
-    "name": "C: OpenCV served by the service worker, not the network",
+    "name": "C: no request to any outside site (OpenCV or CDN)",
     "ok": true,
-    "detail": "[{\"url\":\"https://docs.opencv.org/4.13.0/opencv.js\",\"fromSW\":true}]"
+    "detail": "[]"
   },
   {
     "name": "C: card stays hidden (no re-download prompt)",

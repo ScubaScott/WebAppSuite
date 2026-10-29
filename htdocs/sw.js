@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '4.7';
+const SW_VERSION = '4.8';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Scanner engine files (OCR/image libraries and models) live in their own cache that has no version
@@ -9,8 +9,6 @@ const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 // re-downloaded until the engine manifest lists a differently named file.
 const ENGINE_CACHE = 'bingo-scan-engine';
 const ENGINE_PATH = '/Bingo/scan/engine/';
-// Cross-origin hosts whose files the engine loader stores in ENGINE_CACHE
-const ENGINE_EXTERNAL_HOSTS = ['docs.opencv.org'];
 
 // Static app-shell assets pre-cached on install for offline functionality.
 // Includes the root launcher and entry points for all sub-applications.
@@ -43,6 +41,7 @@ const APP_SHELL = [
   './Bingo/scan/style.css',
   './Bingo/scan/ocr.js',
   './Bingo/scan/utils.js',
+  './Bingo/scan/imaging.js',
   './Bingo/scan/engine-loader.js',
   './Bingo/scan/engine-loader.css',
   './Bingo/scan/engine/manifest.json',
@@ -108,10 +107,8 @@ function isNetworkFirst(url, request) {
 // True for scanner engine files that are served cache-first from ENGINE_CACHE.
 // The engine manifest is excluded so it stays network-first like other app code.
 function isEngineAsset(url) {
-  if (url.origin === self.location.origin) {
-    return url.pathname.includes(ENGINE_PATH) && !url.pathname.endsWith('/manifest.json');
-  }
-  return ENGINE_EXTERNAL_HOSTS.includes(url.hostname);
+  return url.origin === self.location.origin &&
+    url.pathname.includes(ENGINE_PATH) && !url.pathname.endsWith('/manifest.json');
 }
 
 // Serves an engine file from ENGINE_CACHE; on a miss it goes to the network without storing the

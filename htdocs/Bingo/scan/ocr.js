@@ -1,5 +1,5 @@
 // OCR module version identifier
-const OCR_VERSION = '1.5';
+const OCR_VERSION = '1.6';
 const VERSION = OCR_VERSION;
 
 
@@ -48,7 +48,7 @@ const RETRY_ATTEMPTS = [
 
 // Run Tesseract over every bingo cell and return a 5x5 grid of detected numbers.
 async function runOCR(canvas) {
-    if (typeof cv === "undefined" || typeof Tesseract === "undefined") {
+    if (typeof Imaging === "undefined" || typeof Tesseract === "undefined") {
         return [];
     }
 
@@ -139,9 +139,8 @@ async function evaluateCanvasGrid(canvas, worker) {
                 0, 0, cellCanvas.width, cellCanvas.height
             );
 
-            const binaryMat = computeBinaryCell(cellCanvas);
-            const num = await ocrCellWithRetries(worker, binaryMat, sourceCol, zoomFactor, validateRanges);
-            binaryMat.delete();
+            const binaryCell = computeBinaryCell(cellCanvas);
+            const num = await ocrCellWithRetries(worker, binaryCell, sourceCol, zoomFactor, validateRanges);
 
             rowData.push(num);
 
@@ -158,7 +157,7 @@ async function evaluateCanvasGrid(canvas, worker) {
 }
 
 // Try the user's configured settings first, then fall back through alternate combinations
-async function ocrCellWithRetries(worker, binaryMat, sourceCol, primaryZoom, validateRanges) {
+async function ocrCellWithRetries(worker, binaryCell, sourceCol, primaryZoom, validateRanges) {
     const userPsm = getPageSegMode();
     const attempts = [...RETRY_ATTEMPTS, { paddingRatio: 0.20, zoom: primaryZoom, psm: userPsm }];
 
@@ -176,17 +175,9 @@ async function ocrCellWithRetries(worker, binaryMat, sourceCol, primaryZoom, val
             lastPsm = attempt.psm;
         }
 
-        const cropped = tightCropToInk(binaryMat, attempt.paddingRatio);
-        const zoomed = new cv.Mat();
-        cv.resize(cropped, zoomed, new cv.Size(
-            Math.max(1, cropped.cols * attempt.zoom),
-            Math.max(1, cropped.rows * attempt.zoom)
-        ));
-        cropped.delete();
-
-        const attemptCanvas = document.createElement("canvas");
-        cv.imshow(attemptCanvas, zoomed);
-        zoomed.delete();
+        // Crop to the digit ink, then enlarge it so Tesseract sees larger glyphs
+        const cropped = tightCropToInk(binaryCell, attempt.paddingRatio);
+        const attemptCanvas = Imaging.grayToCanvas(cropped, attempt.zoom);
 
         const { data } = await worker.recognize(attemptCanvas);
         const num = extractNumber(data.text);
@@ -209,7 +200,7 @@ async function ocrCellWithRetries(worker, binaryMat, sourceCol, primaryZoom, val
     return best;
 }
 
-// Convert a single bingo cell canvas into a black-and-white (binary) OpenCV Mat
+// Convert a single bingo cell canvas into a black-and-white gray image (0 = ink, 255 = paper)
 function computeBinaryCell(cellCanvas) {
     const threshMode = document.getElementById("threshMode").value;
     const blurMode = document.getElementById("blurMode").value;
@@ -219,63 +210,41 @@ function computeBinaryCell(cellCanvas) {
     const adaptiveBlockSize = parseInt(document.getElementById("adaptiveBlockSize").value, 10) || 11;
     const adaptiveC = parseInt(document.getElementById("adaptiveC").value, 10) || 2;
 
-    let src = cv.imread(cellCanvas);
-    let gray = new cv.Mat();
-    let blur = new cv.Mat();
-    let binary = new cv.Mat();
-    let morph = new cv.Mat();
-
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    let gray = Imaging.grayFromRGBA(Imaging.canvasToImageData(cellCanvas));
 
     if (invertColors) {
-        cv.bitwise_not(gray, gray);
+        gray = Imaging.invert(gray);
     }
 
+    let blurred = gray;
     if (blurMode === "gaussian") {
-        cv.GaussianBlur(gray, blur, new cv.Size(3, 3), 0);
+        blurred = Imaging.gaussianBlur(gray, 3);
     } else if (blurMode === "median") {
-        cv.medianBlur(gray, blur, 5);
-    } else {
-        blur = gray.clone();
+        blurred = Imaging.medianBlur(gray, 5);
     }
 
-    if (threshMode === "otsu") {
-        cv.threshold(blur, binary, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
-    } else if (threshMode === "binary") {
-        cv.threshold(blur, binary, binaryThreshold, 255, cv.THRESH_BINARY);
+    let binary;
+    if (threshMode === "binary") {
+        binary = Imaging.threshold(blurred, binaryThreshold);
     } else if (threshMode === "adaptive") {
         const blockSize = Math.max(3, Math.min(31, adaptiveBlockSize + (adaptiveBlockSize % 2 === 0 ? 1 : 0)));
-        cv.adaptiveThreshold(blur, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, blockSize, adaptiveC);
+        binary = Imaging.adaptiveThreshold(blurred, { method: 'gaussian', blockSize, c: adaptiveC });
+    } else {
+        binary = Imaging.threshold(blurred, Imaging.otsuThreshold(blurred));
     }
 
     if (morphMode !== "none") {
-        const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
-        if (morphMode === "dilate") cv.dilate(binary, morph, kernel);
-        else if (morphMode === "erode") cv.erode(binary, morph, kernel);
-        else if (morphMode === "open") cv.morphologyEx(binary, morph, cv.MORPH_OPEN, kernel);
-        else if (morphMode === "close") cv.morphologyEx(binary, morph, cv.MORPH_CLOSE, kernel);
-        kernel.delete();
-        binary.delete();
-        binary = morph;
-    } else {
-        morph.delete();
+        binary = Imaging.morphology(binary, morphMode);
     }
-
-    src.delete();
-    gray.delete();
-    blur.delete();
 
     return binary;
 }
 
-// Crop binary Mat to central ink region, ignoring outer cell frame border noise
-function tightCropToInk(binaryMat, paddingRatio) {
-    const inverted = new cv.Mat();
-    cv.bitwise_not(binaryMat, inverted); // ink (originally dark) becomes non-zero
-
-    const data = inverted.data;
-    const rows = inverted.rows;
-    const cols = inverted.cols;
+// Crop a binary gray image to its central ink region, ignoring outer cell frame border noise
+function tightCropToInk(binary, paddingRatio) {
+    const data = binary.data;
+    const rows = binary.height;
+    const cols = binary.width;
 
     // Ignore 6% outer margin when looking for central digit ink bounding box
     const marginX = Math.floor(cols * 0.06);
@@ -286,10 +255,10 @@ function tightCropToInk(binaryMat, paddingRatio) {
     let minY = rows;
     let maxY = -1;
 
+    // Ink is the dark (0) pixels of the binarized cell
     for (let y = marginY; y < rows - marginY; y++) {
         for (let x = marginX; x < cols - marginX; x++) {
-            const idx = y * cols + x;
-            if (data[idx] > 0) {
+            if (data[y * cols + x] === 0) {
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
                 if (y < minY) minY = y;
@@ -298,11 +267,9 @@ function tightCropToInk(binaryMat, paddingRatio) {
         }
     }
 
-    inverted.delete();
-
     // Fall back to full cell bounds if no ink was found in central region
     if (maxX === -1) {
-        return binaryMat.clone();
+        return Imaging.cropGray(binary, 0, 0, cols, rows);
     }
 
     const rectW = maxX - minX + 1;
@@ -315,10 +282,7 @@ function tightCropToInk(binaryMat, paddingRatio) {
     const cropW = Math.min(cols - x, rectW + padX * 2);
     const cropH = Math.min(rows - y, rectH + padY * 2);
 
-    const roi = binaryMat.roi(new cv.Rect(x, y, Math.max(1, cropW), Math.max(1, cropH)));
-    const result = roi.clone();
-    roi.delete();
-    return result;
+    return Imaging.cropGray(binary, x, y, Math.max(1, cropW), Math.max(1, cropH));
 }
 
 function getPageSegMode() {

@@ -279,12 +279,18 @@ Behind a **Show detection** toggle in settings:
 ### 8.4a Implemented in step 1.1
 - Files: `scan/engine-loader.js` (v1.2), `scan/engine-loader.css`, `scan/engine/manifest.json`, `scan/engine/.htaccess`, `scan/engine/NOTICES.txt`, `scan/engine/tesseract/…`; `sw.js` v4.7 (`ENGINE_CACHE = 'bingo-scan-engine'`, cleanup skips it, engine files cache-first, manifest network-first and in `APP_SHELL`).
 - Pinned files: tesseract.js 4.1.4 (`tesseract-4.1.4.min.js`, `worker-4.1.4.min.js`), tesseract.js-core 4.0.4 (SIMD and non-SIMD builds; the browser's SIMD support picks which one is downloaded), and `eng.traineddata` from `@tesseract.js-data/eng` 1.0.0 folder `4.0.0_best_int` (decompressed, 5.2 MB). The "fast" model is not published in that package; best_int is the closest small model (2.9 MB compressed).
-- **OpenCV is still external.** `opencv.js` 4.13.0 is 10.96 MB, over the ~10 MB host file limit, so it cannot be self-hosted. Until step 1.2 removes OpenCV, the loader fetches `https://docs.opencv.org/4.13.0/opencv.js` without CORS and stores the opaque response in the engine cache; the service worker serves it from there (`ENGINE_EXTERNAL_HOSTS`). The URL is pinned to 4.13.0 (what `4.x` resolved to). Opaque files cannot be size- or hash-checked.
-- UX: `scan.html` (v1.6) shows a "Scanner download" card with the size still to fetch (20.1 MB today, about 10 MB after step 1.2) and a progress bar; OCR is blocked until the files are loaded. `bench.html` (v1.1) uses the same loader.
+- **OpenCV** (10.96 MB, over the host file limit) was loaded from its CDN and cached by the service worker during step 1.1 only; step 1.2 removed it (§8.4b).
+- UX: `scan.html` shows a "Scanner download" card with the size still to fetch (9.7 MB after step 1.2; 20.1 MB in step 1.1) and a progress bar; OCR is blocked until the files are loaded. `bench.html` (v1.1) uses the same loader.
 - Persistent storage is requested without waiting for the answer (some browsers show a permission prompt).
 
 ### 8.6 Verification of step 1.1
 `tools/bingo-scan-testset/engine-test/` holds an automated Chrome test (README there). Result of the passing run: first visit offers the download and fetches nothing before the user asks; the engine cache holds 5 files; Tesseract reads "47" from a test canvas and OpenCV initializes from cached files; after a service worker version bump the engine cache survives and the server receives no engine file requests; OpenCV is served by the service worker; with the network off the page reloads and OCR still works.
+
+### 8.4b Implemented in step 1.2 (OpenCV removed)
+- New `scan/imaging.js` (v1.0): gray conversion, Gaussian and median blur, Otsu/fixed/adaptive (Gaussian or box) thresholds, 2x2 morphology, connected components (two-pass union-find, 4- or 8-connectivity, with bounding box, area, centroid and four extreme corner pixels), HSV color masks, 8-unknown homography solver, bilinear perspective warp, and canvas helpers (downscale, warp, gray-to-canvas). Its numeric functions are unit-tested in Node (`tools/bingo-scan-testset/imaging-test/`, 37 checks).
+- `utils.js` (v1.1) and `ocr.js` (v1.6) no longer reference `cv`. `scan.html` (v1.7) and `bench.html` load `imaging.js` before them; the OpenCV script tag, manifest entry, `ENGINE_EXTERNAL_HOSTS` and the loader's external-file code are gone. `engine-loader.js` (v1.3) now deletes cached files that the manifest no longer lists every time it loads, so devices that cached OpenCV in step 1.1 drop the 11 MB file automatically. Service worker v4.8.
+- First download is now 9.7 MB (Tesseract only).
+- Replacements for operations that have no direct equivalent: contour bounding boxes became connected-component boxes (for cell detection both the ink groups and the enclosed interiors are used, which mirrors a contour tree); the outer-card detector (Canny edges plus polygon approximation) became "largest bright or dark region that is not the whole picture, using its four extreme corner pixels". These are the old, to-be-replaced detectors from the diagnosis (D1-D3), kept only until step 1.3 replaces them with window-based geometry.
 
 ### 8.5 Size Budget
 
@@ -414,7 +420,9 @@ Observations:
 - Time per photo is ~10 s on a fast desktop. A phone is several times slower, which fits the reported minutes.
 - Paper cards do better (up to 8/24) even though they have no dedicated handling, because their cells are evenly spaced.
 
-**After step 1.1** (self-hosted Tesseract 4.1.4 with the `best_int` language file, `ocr.js` 1.5, `bench.html` 1.1; raw results in `baselines/1.1-self-hosted-engine.json`): slider headline 2 / 216 cells (0.9%), 0 / 9 cards exact; needs-review slider 0 / 24; other formats 17 / 120. Cell accuracy is identical to the baseline, so swapping the engine files and the smaller language model changed nothing. Median time per photo was 23.9 s against 10.0 s in the baseline run; the cause was not investigated (machine load and the different language model are both possible), so treat time as noisy until step 1.4 removes the retry loop.
+**After step 1.1** (self-hosted Tesseract 4.1.4 with the `best_int` language file, `ocr.js` 1.5, `bench.html` 1.1; raw results in `baselines/1.1-self-hosted-engine.json`): slider headline 2 / 216 cells (0.9%), 0 / 9 cards exact; needs-review slider 0 / 24; other formats 17 / 120. Cell accuracy is identical to the baseline, so swapping the engine files and the smaller language model changed nothing. A second run confirmed it: identical per-photo results and a median of 10.2 s per photo, the same as the baseline's 10.0 s. An earlier run had measured 23.9 s; timing on this machine varies from run to run, so compare times only between runs made back to back.
+
+**After step 1.2** (OpenCV replaced by `imaging.js`, `utils.js` 1.1, `ocr.js` 1.6, `bench.html` 1.2; raw results in `baselines/1.2-no-opencv.json`): slider headline 6 / 216 cells (2.8%), 0 / 9 cards exact; needs-review slider 1 / 24; other formats 11 / 120 (was 17). Per photo the counts moved by a cell or two in both directions (for example the paper card `162316_b` fell from 5 to 0 while several slider photos gained one), which is noise at this accuracy level and expected because the old detectors were re-implemented rather than copied pixel for pixel. The point of this step was removing OpenCV, not accuracy; the scores confirm nothing broke. Auto-crop now takes 0.1-0.3 s per photo and the median full run was 13.4 s (timing is noisy on this machine).
 
 Targets for Phase 1 are measured against the headline row. Re-run the bench after steps 1.3, 1.4 and 1.5 and add a row here.
 
@@ -482,7 +490,7 @@ Revisit only if DigitNet fails the Phase 2 targets on a card format for which co
 | **0.1** | Test set + `labels.json` in `tools/bingo-scan-testset/`; move `example/` there (drop `unnamed.webp`) — **done** | The 9 existing photos labeled — **done**; more added later from field uploads (§10) |
 | **0.2** | `bench.html` running the **current** pipeline — **done**, baseline in §10.1 | Baseline numbers recorded in this spec — **done** |
 | **1.1** | Engine caching: `ENGINE_CACHE`, SW skip/cache-first rule, `.htaccess`, `manifest.json`, `engine-loader.js`; self-hosted pinned Tesseract — **done**, see §8.4a | Scanner works offline after one download; SW version bump does not re-download — **verified** with an automated Chrome test (15 checks, see §8.6) |
-| **1.2** | `imaging.js` replaces OpenCV | OpenCV script tag removed |
+| **1.2** | `imaging.js` replaces OpenCV — **done**, see §8.4b | OpenCV script tag removed — **done** (no `cv` references remain in `htdocs/`) |
 | **1.3** | `profiles.js` (`slider`, `manual`) + `geometry.js` + canonical crops + shutter/glare flags + debug overlay | Slider detection succeeds on ≥ 90% of slider test photos |
 | **1.4** | `CellReader` contract + Tesseract single-sheet adapter | ≤ 5 s per scan on a mid-range phone |
 | **1.5** | `decoder.js` | Measurable accuracy gain over the raw reader on bench |

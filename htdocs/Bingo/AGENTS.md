@@ -13,7 +13,7 @@ The Bingo suite consists of a Bingo Number Tracker, caller system, call log, gam
 - `tracking.js`: Core tracking state, Web Speech API audio announcements, board persistence, and game mode logic.
 - `game-creator.html`: Generator tool for customizable, printable Bingo cards.
 - `style.css`: Visual styling for numbers, caller balls, cards, and modal sheets.
-- `scan/`: camera card scanner (`scan.html`, `utils.js`, `ocr.js`) plus `bench.html` (benchmark page, not linked from the launcher). Its OCR and image libraries are not loaded from CDNs: `engine-loader.js` downloads the files listed in `scan/engine/manifest.json` once into a dedicated cache, and the service worker serves them cache-first. To change an engine file, add the new file under a new versioned name and update the manifest (sizes and SHA-256); never edit a published engine file in place. The redesign plan is in `bingo-scan-redesign-spec.md`; labeled test photos are in `tools/bingo-scan-testset/`.
+- `scan/`: camera card scanner (`scan.html`, `utils.js`, `ocr.js`) plus `bench.html` (benchmark page, not linked from the launcher). Image processing is plain JavaScript in `imaging.js` (no OpenCV). Its OCR files are not loaded from CDNs: `engine-loader.js` downloads the files listed in `scan/engine/manifest.json` once into a dedicated cache, and the service worker serves them cache-first. To change an engine file, add the new file under a new versioned name and update the manifest (sizes and SHA-256); never edit a published engine file in place. The redesign plan is in `bingo-scan-redesign-spec.md`; labeled test photos are in `tools/bingo-scan-testset/`.
 - `php/`: Optional backend persistence/sync scripts.
 
 ---

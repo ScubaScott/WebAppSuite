@@ -12,6 +12,3 @@ tesseract/eng-best-int-4.0.0/eng.traineddata
   English language model from the Tesseract project's tessdata_best set (integer-quantized
   build), distributed through the npm package @tesseract.js-data/eng 1.0.0 (MIT wrapper).
   The model data is covered by the Apache License 2.0.
-
-OpenCV (opencv.js 4.13.0) is not stored here. It is loaded from docs.opencv.org (Apache License 2.0)
-and cached on the device by the service worker until it is removed from the scanner.

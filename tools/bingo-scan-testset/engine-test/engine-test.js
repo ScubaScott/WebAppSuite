@@ -1,6 +1,6 @@
 // Exit-criteria test for step 1.1, driven through real Chrome.
 //  A. first visit: scanner card offers a download; download fills the engine cache
-//  B. Tesseract + OpenCV run from the cache
+//  B. Tesseract + the imaging module run from the cache; no OpenCV is requested
 //  C. SW_VERSION bump: engine cache survives and no engine file is requested from the server again
 //  D. offline reload: page, engine and OCR still work
 const puppeteer = require('puppeteer-core');
@@ -24,7 +24,7 @@ const OCR_PROBE = `(async () => {
   await w.loadLanguage('eng'); await w.initialize('eng');
   await w.setParameters({ tessedit_char_whitelist: '0123456789' });
   const r = await w.recognize(c); await w.terminate();
-  return { text: r.data.text.trim(), cvMat: typeof cv !== 'undefined' && typeof cv.Mat === 'function' };
+  return { text: r.data.text.trim(), cvMat: typeof Imaging !== 'undefined' && typeof cv === 'undefined' };
 })()`;
 
 (async () => {
@@ -39,7 +39,7 @@ const OCR_PROBE = `(async () => {
     const external = [];
     page.on('response', r => {
       const u = r.url();
-      if (!u.startsWith('http://localhost')) external.push({ url: u, fromSW: r.fromServiceWorker() });
+      if (/docs\.opencv\.org|cdn\.jsdelivr\.net|unpkg\.com|projectnaptha/.test(u)) external.push({ url: u, fromSW: r.fromServiceWorker() });
     });
     page.on('pageerror', e => console.log('pageerror:', e.message));
 
@@ -62,13 +62,21 @@ const OCR_PROBE = `(async () => {
     await page.waitForFunction(() => EngineLoader.isLoaded(), { timeout: 240000 });
     check('A: card hidden after download', await page.$eval('#engineCard', e => e.classList.contains('hidden')));
     const keys = await page.evaluate(async () => (await (await caches.open('bingo-scan-engine')).keys()).map(r => r.url));
-    check('A: engine cache holds 5 files (4 local + OpenCV)', keys.length === 5, keys.map(k => k.split('/').pop()).join(', '));
+    check('A: engine cache holds exactly the 4 Tesseract files (no OpenCV)', keys.length === 4 && !keys.some(k => k.includes('opencv')), keys.map(k => k.split('/').pop()).join(', '));
     check('A: persist() call did not block the download', true);
 
     // B. engines run from the cache
     const probe = await page.evaluate(OCR_PROBE);
     check('B: Tesseract recognizes digits from cached files', probe.text === '47', JSON.stringify(probe));
-    check('B: OpenCV is initialized', probe.cvMat);
+    check('B: imaging module present and no OpenCV global', probe.cvMat);
+    const warp = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 100; c.height = 100; const g = c.getContext('2d'); const id = g.createImageData(100, 100); for (let y = 0; y < 100; y++) for (let x = 0; x < 100; x++) { const o = (y * 100 + x) * 4; id.data[o] = x * 2; id.data[o + 1] = y * 2; id.data[o + 2] = 0; id.data[o + 3] = 255; } g.putImageData(id, 0, 0); const w = Imaging.warpPerspective(c, { tl: { x: 10, y: 10 }, tr: { x: 90, y: 10 }, br: { x: 90, y: 90 }, bl: { x: 10, y: 90 } }, 600, 600); const px = w.getContext('2d').getImageData(300, 300, 1, 1).data; return { w: w.width, h: w.height, r: px[0], g: px[1] }; });
+    check('B: canvas perspective warp gives 600x600 and the right center pixel', warp.w === 600 && warp.h === 600 && Math.abs(warp.r - 100) <= 2 && Math.abs(warp.g - 100) <= 2, JSON.stringify(warp));
+    // A leftover OpenCV entry from the previous version must be removed when the scanner loads
+    await page.evaluate(async () => { await (await caches.open('bingo-scan-engine')).put('https://docs.opencv.org/4.13.0/opencv.js', new Response('old')); });
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForFunction(() => EngineLoader.isLoaded(), { timeout: 60000 });
+    const keysAfter = await page.evaluate(async () => (await (await caches.open('bingo-scan-engine')).keys()).map(r => r.url));
+    check('B: stale OpenCV cache entry is deleted on load', keysAfter.length === 4 && !keysAfter.some(k => k.includes('opencv')), keysAfter.length + ' entries');
 
     // C. service worker version bump
     const mark = requests().length;
@@ -83,8 +91,7 @@ const OCR_PROBE = `(async () => {
     await page.reload({ waitUntil: 'load' });
     await page.waitForFunction(() => EngineLoader.isLoaded(), { timeout: 60000 });
     check('C: no engine file requested from the server after the bump', engineRequests(mark).length === 0, engineRequests(mark).join(', '));
-    const opencvResp = external.filter(e => e.url.includes('docs.opencv.org'));
-    check('C: OpenCV served by the service worker, not the network', opencvResp.length > 0 && opencvResp.every(e => e.fromSW), JSON.stringify(opencvResp));
+    check('C: no request to any outside site (OpenCV or CDN)', external.length === 0, JSON.stringify(external));
     check('C: card stays hidden (no re-download prompt)', await page.$eval('#engineCard', e => e.classList.contains('hidden')));
 
     // D. offline

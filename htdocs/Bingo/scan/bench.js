@@ -1,5 +1,5 @@
 // Benchmark runner version identifier
-const BENCH_VERSION = '1.1';
+const BENCH_VERSION = '1.2';
 const APP_VERSION = BENCH_VERSION;
 
 // Cells compared per card: the 24 numbered squares (index 12 is the FREE space)
@@ -39,7 +39,7 @@ const autoMode = params.get('auto') === '1' && location.hostname === 'localhost'
 // Optional comma-separated profile filter, e.g. ?profiles=slider
 const profileFilter = (params.get('profiles') || '').split(',').filter(Boolean);
 
-// Download any missing engine files, then load OpenCV and Tesseract from the engine cache
+// Download any missing engine files, then load Tesseract from the engine cache
 async function waitForLibraries() {
     await EngineLoader.ensure(null, (loaded, total) => {
         setStatus(`Downloading scanner… ${Math.round(100 * loaded / Math.max(1, total))}%`);

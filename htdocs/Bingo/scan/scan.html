@@ -887,13 +887,14 @@
         }
     </style>
 
-    <!-- Scanner engine (OpenCV auto-crop + Tesseract OCR) downloaded once and cached by engine-loader.js -->
+    <!-- Scanner engine (Tesseract OCR) downloaded once and cached by engine-loader.js -->
     <link rel="stylesheet" href="engine-loader.css">
     <script src="engine-loader.js"></script>
 
     <!-- Suite Profile & Bingo Sync engine -->
     <script src="../../media/suite-profile.js"></script>
     <script src="../sync.js"></script>
+    <script src="imaging.js"></script>
     <script src="utils.js"></script>
     <script src="ocr.js"></script>
 </head>
@@ -2026,7 +2027,7 @@
         // Process captured image through auto-crop or show raw
         function processCapturedImage(sourceName) {
             const isAutoCropOn = autoCropToggle.checked;
-            if (isAutoCropOn && typeof autoCrop === 'function' && typeof cv !== 'undefined') {
+            if (isAutoCropOn && typeof autoCrop === 'function' && typeof Imaging !== 'undefined') {
                 if (statusDiv) statusDiv.textContent = 'Auto-cropping card grid...';
                 autoCrop(rawCapturedCanvas).then(croppedCanvas => {
                     previewCanvas.width = croppedCanvas.width;
@@ -2336,7 +2337,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '1.6';
+        const SCAN_PAGE_VERSION = '1.7';
         const APP_VERSION = SCAN_PAGE_VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;
