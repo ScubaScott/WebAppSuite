@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '4.3';
+const VERSION = '4.4';
 
 
 // ============================================================
@@ -428,6 +428,10 @@ function onNumberGridClick(n) {
 // CALL LOG MODAL & NEW SESSION
 // ============================================================
 
+// Stats link in the Last 6 footer opens the per-ball call statistics modal
+const statsLink = document.getElementById("statsLink");
+if (statsLink) statsLink.addEventListener("click", () => openStatsModal());
+
 callLogLink.addEventListener("click", (e) => {
     e.preventDefault();
     openCallLogModal();
@@ -490,17 +494,6 @@ function openCallLogModal() {
     }
 
     panel.appendChild(content);
-
-    // Bottom-left link to the per-ball call statistics modal
-    const footer = document.createElement("div");
-    footer.className = "call-log-footer";
-    const statsLink = document.createElement("button");
-    statsLink.className = "link-button";
-    statsLink.type = "button";
-    statsLink.textContent = "Stats";
-    statsLink.addEventListener("click", () => openStatsModal());
-    footer.appendChild(statsLink);
-    panel.appendChild(footer);
 
     modal.appendChild(panel);
     document.body.appendChild(modal);
