@@ -857,10 +857,16 @@ body {
 /* ---- Footer row inside .last-six-card ---- */
 .last-six-footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     padding-top: 8px;
     border-top: 1px solid var(--border);
+}
+
+/* Stats link sits bottom-left, opposite the called count badge */
+.last-six-footer .link-button {
+    min-height: 44px;
+    min-width: 44px;
 }
 
 .last-six-called-badge {
@@ -2936,20 +2942,6 @@ body {
 }
 
 /* ===== Call log footer + ball call stats modal ===== */
-
-/* Bottom row of the call log panel; Stats link sits bottom-left */
-.call-log-footer {
-    display: flex;
-    justify-content: flex-start;
-    padding: 8px 20px 16px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-}
-
-.call-log-footer .link-button {
-    min-height: 44px;
-    min-width: 44px;
-}
 
 .stats-body {
     padding: 16px 20px;

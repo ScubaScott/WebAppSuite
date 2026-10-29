@@ -43,6 +43,7 @@
                 </div>
                 <div id="lastSixList" class="last-six-list" aria-live="polite"></div>
                 <div class="last-six-footer" id="lastSixFooter">
+                    <button id="statsLink" class="link-button" type="button">Stats</button>
                     <div class="last-six-called-badge" id="floatingTotalBadge" title="Total Numbers Called">
                         <span class="ft-label" id="ftLabel">Called</span>
                         <span class="ft-num" id="totalCalled">0</span>
@@ -256,12 +257,12 @@
     </div>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">4.3</span></p>
+        <p>Version <span id="appVersion">4.4</span></p>
     </footer>
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '4.3';
+        const INDEX_VERSION = '4.4';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
