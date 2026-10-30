@@ -1,5 +1,5 @@
 // Card profiles version identifier
-const PROFILES_VERSION = '1.3';
+const PROFILES_VERSION = '1.4';
 
 // Card profiles describe how the scanner finds the 5x5 number grid on one physical card format.
 // geometry.js reads these plain objects; adding a format means adding an object here (plus test photos).
@@ -21,6 +21,9 @@ const PROFILES_VERSION = '1.3';
 //                  default window width and height as fractions of the cell spacing, used when they cannot be measured
 //                  (manual corners); the slider values are the medians measured on the test photos (0.466 x 0.54)
 //   checks         per-cell checks: closed-shutter tint and glare
+//   live           window finding on the live camera picture (capture.js): the picture is cut to a square and
+//                  shrunk to `size` pixels, and only the first `maskModes` mask modes are tried, which keeps each
+//                  check to a few tens of milliseconds. 320 px found all 10 slider test photos and none of the paper cards.
 const CardProfiles = {
     slider: {
         id: 'slider',
@@ -32,7 +35,8 @@ const CardProfiles = {
         areaBand: [0.4, 2.5],
         lattice: { minWindows: 16, maxError: 0.08, neighborTol: 0.35, goodEnough: { windows: 22, error: 0.05 } },
         cell: { size: { w: 72, h: 80 }, aspect: 0.9, inset: 0.02, windowFrac: 0.466, windowFracY: 0.54 },
-        checks: { shutterTint: true, glare: true }
+        checks: { shutterTint: true, glare: true },
+        live: { size: 320, maskModes: 3 }
     },
 
     // Always available: the user places four handles on the centers of the four corner windows

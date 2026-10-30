@@ -96,7 +96,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     fs.writeFileSync(blank, Buffer.from(dataUrl.split(',')[1], 'base64'));
     await (await page.$('#fileInput')).uploadFile(blank);
     await page.waitForFunction(() => /Couldn't find/.test(document.getElementById('status').textContent), { timeout: 60000 });
-    check('photo without a card: tells the user to place the corners', /Manual Crop/.test(await page.$eval('#status', e => e.textContent)));
+    check('photo without a card: says the windows were not found and offers Retake / Adjust corners', /Couldn't find the windows/.test(await page.$eval('#status', e => e.textContent)) && await page.$eval('#detectFail', e => !e.classList.contains('hidden')));
     check('page scripts raised no errors', errors.length === 0, errors.join(' | '));
   } catch (err) {
     check('test run completed without error', false, String(err && err.stack || err));

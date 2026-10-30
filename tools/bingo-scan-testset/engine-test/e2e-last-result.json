@@ -151,7 +151,7 @@
     "ok": true
   },
   {
-    "name": "photo without a card: tells the user to place the corners",
+    "name": "photo without a card: says the windows were not found and offers Retake / Adjust corners",
     "ok": true
   },
   {

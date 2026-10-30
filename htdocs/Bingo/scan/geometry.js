@@ -1,5 +1,5 @@
 // Geometry module version identifier
-const GEOMETRY_VERSION = '1.4';
+const GEOMETRY_VERSION = '1.5';
 
 // Finds the 5x5 grid of number windows in a card photo, fits the camera perspective to it, and cuts one
 // standard-size crop per cell. Works from the windows themselves (not the card outline or slider tabs).
@@ -360,6 +360,16 @@ const Geometry = (() => {
         return best;
     }
 
+    // Quick window check for the live camera picture. img is ImageData of the square picture already shrunk to the
+    // profile's live size. Returns the detector result in that image's own pixel coordinates (not scaled up):
+    // { ok, windows, err, used: [{ blob, col, row }], H }; ok is false when no profile with live settings fits.
+    function detectLive(img, profileId) {
+        const base = CardProfiles[profileId || CardProfiles.autoOrder[0]];
+        if (!base || !base.live) return { ok: false, windows: 0, err: null, used: [], reason: 'no live settings' };
+        const live = { ...base, maskModes: base.maskModes.slice(0, base.live.maskModes) };
+        return detectOnImageData(img, live);
+    }
+
     // ---- Manual placement ----
 
     // Builds a result from the centers of the four corner windows: { tl, tr, br, bl } in photo pixels
@@ -589,7 +599,7 @@ const Geometry = (() => {
         // Detection (ImageData in, no browser needed)
         detectOnImageData, estimateSteps, candidateBlobs, buildMask,
         // Photo canvas in
-        analyze, fromCorners,
+        analyze, detectLive, fromCorners,
         // Using a result
         cellCenter, cornerCenters, gridQuad, rectifiedGrid, extractCells, normalizeCrop, drawOverlay, debugMask, drawCellSheet
     };

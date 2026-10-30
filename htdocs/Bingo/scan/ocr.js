@@ -1,5 +1,5 @@
 // OCR module version identifier
-const OCR_VERSION = '2.2';
+const OCR_VERSION = '2.4';
 const VERSION = OCR_VERSION;
 
 
@@ -56,11 +56,19 @@ async function readCardFromPhoto(photoCanvas, geometry, onStage) {
 let scannedGridData = Array(25).fill(null);
 scannedGridData[12] = 'FREE';
 let activeScannedPickerIdx = -1;
+// How each of the 25 cells is shown (Review.classify result); null when the grid did not come from a scan
+let scannedCellStates = null;
+// Profile chip on the review screen: { label, hint, onTap } or null
+let scannedProfileChip = null;
 
-// Render the scanned 5x5 bingo numbers into an interactive editable grid with headers and column picker
-function drawBingoGrid(grid) {
+// Render the scanned 5x5 bingo numbers into an interactive editable grid with headers and column picker.
+// options.decoded (the decoder result) turns on the confident / check / missing / covered states and the summary line;
+// options.profileChip adds the tappable chip naming the card format used.
+function drawBingoGrid(grid, options) {
     const container = document.getElementById("bingoOutput");
     if (!container) return;
+    scannedCellStates = (options && options.decoded && typeof Review !== 'undefined') ? Review.classify(options.decoded) : null;
+    scannedProfileChip = (options && options.profileChip) || null;
 
     // Convert 2D grid (if passed) to flat 25-element array
     if (Array.isArray(grid) && grid.length > 0 && Array.isArray(grid[0])) {
@@ -87,6 +95,11 @@ function drawBingoGrid(grid) {
     renderScannedGridReview();
 }
 
+// Marks a cell as settled by the user, so it no longer carries the scan's check / missing / covered state
+function markCellEdited(idx) {
+    if (scannedCellStates) scannedCellStates[idx] = { state: 'edited', reason: '', alternatives: [] };
+}
+
 // Render the interactive 5x5 grid and number picker inside #bingoOutput
 function renderScannedGridReview() {
     const container = document.getElementById("bingoOutput");
@@ -99,6 +112,10 @@ function renderScannedGridReview() {
             <div class="card-title">
                 <span>Scanned Grid Numbers</span>
                 <span style="font-size: 12px; font-weight: 400; color: var(--text-subtle);">Tap a cell to select number</span>
+            </div>
+            <div class="review-summary-row">
+                <span id="reviewSummary" class="review-summary" aria-live="polite"></span>
+                <button id="profileChip" class="profile-chip hidden" type="button"></button>
             </div>
             <div id="scannedGridElements" class="editor-grid" role="grid" aria-label="Scanned card number grid"></div>
             <div id="scannedPickerEl" class="editor-picker hidden" aria-live="polite"></div>
@@ -147,6 +164,9 @@ function renderScannedGridReview() {
         const isDuplicate = !isFree && !isBlank && (valueCounts.get(value) > 1);
         const isInvalid = isOutOfRange || isDuplicate;
         const isSelected = (activeScannedPickerIdx === idx);
+        // The scan's verdict on this cell (amber check, red missing, hatched covered); a cell filled in by hand is trusted
+        const verdict = (!isFree && scannedCellStates) ? scannedCellStates[idx] : null;
+        const stateClass = verdict && !isInvalid ? 'cell-' + verdict.state : '';
 
         const cell = document.createElement('div');
         cell.className = [
@@ -155,14 +175,17 @@ function renderScannedGridReview() {
             !isFree && isBlank ? 'empty invalid' : '',
             !isFree && !isBlank && isInvalid ? 'filled invalid' : '',
             !isFree && !isBlank && !isInvalid ? 'filled' : '',
+            stateClass,
             isSelected ? 'selected' : ''
         ].filter(Boolean).join(' ');
 
         cell.textContent = isFree ? 'FREE' : (isBlank ? '' : value);
         cell.setAttribute('role', 'gridcell');
+        if (verdict && verdict.reason && verdict.state !== 'confident') cell.title = verdict.reason;
 
         if (!isFree) {
-            cell.setAttribute('aria-label', `${colHeaders[col]} column, ${isBlank ? 'empty (invalid)' : (isInvalid ? 'invalid value ' + value : 'value ' + value)}`);
+            const stateText = verdict && verdict.state === 'check' ? ', please check' : (verdict && verdict.state === 'covered' ? ', shutter closed' : '');
+            cell.setAttribute('aria-label', `${colHeaders[col]} column, ${isBlank ? 'empty (invalid)' : (isInvalid ? 'invalid value ' + value : 'value ' + value)}${stateText}`);
             cell.addEventListener('click', () => {
                 activeScannedPickerIdx = (activeScannedPickerIdx === idx) ? -1 : idx;
                 renderScannedGridReview();
@@ -172,6 +195,17 @@ function renderScannedGridReview() {
         gridEl.appendChild(cell);
     }
 
+    // Summary line ("21 read · 3 to check") and the profile chip
+    const summaryEl = document.getElementById('reviewSummary');
+    if (summaryEl) summaryEl.textContent = scannedCellStates ? Review.summarize(scannedCellStates).text : '';
+    const chipEl = document.getElementById('profileChip');
+    if (chipEl && scannedProfileChip) {
+        chipEl.textContent = scannedProfileChip.label + ' ▾';
+        chipEl.title = scannedProfileChip.hint || '';
+        chipEl.classList.remove('hidden');
+        chipEl.onclick = scannedProfileChip.onTap;
+    }
+
     // Render number picker dropdown if a cell is selected
     if (activeScannedPickerIdx !== -1) {
         pickerEl.classList.remove('hidden');
@@ -179,6 +213,8 @@ function renderScannedGridReview() {
         const col = cellIdx % 5;
         const [lo, hi] = COLUMN_RANGES[col];
         const currentValue = scannedGridData[cellIdx];
+        // The scan's next most likely numbers for this cell, highlighted in the picker
+        const suggested = (scannedCellStates && scannedCellStates[cellIdx] && scannedCellStates[cellIdx].alternatives) || [];
 
         // Gather numbers used in this column
         const usedInCol = new Set();
@@ -192,7 +228,7 @@ function renderScannedGridReview() {
         // Header label
         const pickerLabel = document.createElement('div');
         pickerLabel.className = 'editor-picker-label';
-        pickerLabel.textContent = `Select ${colHeaders[col]} number (${lo}–${hi})`;
+        pickerLabel.textContent = `Select ${colHeaders[col]} number (${lo}–${hi})` + (suggested.length ? ' · maybe ' + suggested.join(' or ') : '');
         pickerEl.appendChild(pickerLabel);
 
         // 15 number buttons
@@ -207,7 +243,8 @@ function renderScannedGridReview() {
             btn.className = [
                 'editor-pick-btn',
                 isUsed ? 'used' : '',
-                isCurrent ? 'current' : ''
+                isCurrent ? 'current' : '',
+                !isUsed && suggested.includes(n) ? 'suggested' : ''
             ].filter(Boolean).join(' ');
             btn.type = 'button';
             btn.textContent = n;
@@ -218,6 +255,7 @@ function renderScannedGridReview() {
             if (!isUsed) {
                 btn.addEventListener('click', () => {
                     scannedGridData[cellIdx] = n;
+                    markCellEdited(cellIdx);
                     activeScannedPickerIdx = -1;
                     renderScannedGridReview();
                 });
@@ -237,6 +275,8 @@ function renderScannedGridReview() {
             clearBtn.textContent = '✕ Clear Cell';
             clearBtn.addEventListener('click', () => {
                 scannedGridData[cellIdx] = null;
+                // A cell cleared by hand is empty on purpose, so it is no longer flagged as missing
+                markCellEdited(cellIdx);
                 activeScannedPickerIdx = -1;
                 renderScannedGridReview();
             });

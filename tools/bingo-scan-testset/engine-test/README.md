@@ -26,6 +26,13 @@ labeled photos, checks that the windows are found automatically, reads the numbe
 picture with no card. It needs the same dev server as above plus the photos in `../photos/`
 (`node e2e-scan-test.js <repo root> <output folder>`). `e2e-last-result.json` is the last passing run (35 checks, including a photo the decoder improves from 17 to 22 correct).
 
+## Guided capture and review screen (steps 1.7 and 1.8)
+`live-capture-test.js <repo root> <fake camera folder>` runs the Scan page with Chrome's fake camera playing a video file and checks the outline, the hint line, auto-capture of a steady card (about 1 s), no capture for a moving, wobbling or windowless picture, the Auto-capture switch, the cooldown after Reset, and the manual shutter. Make the four videos first with `python make-fake-camera.py <photo> <out.y4m> steady|moving|shaky` (steady, moving and shaky from `20260721_195125.jpg`, plus a steady one named `paper.y4m` from `20251109_162316_a.jpg`). Last passing run: `live-capture-last-result.json` (27 checks).
+
+`review-ui-test.js <repo root> <output folder>` runs the review screen in a phone-sized window: cell states and the summary line against a real photo, settling cells, the profile chip and its two overrides, covered cells, picker suggestions, and Retake / Adjust corners for a photo with no card. Last passing run: `review-ui-last-result.json` (28 checks).
+
+Both need the same dev server as above. These tests use a fresh browser profile folder per run; delete it between runs if the engine card must show again (`e2e-scan-test.js` and `engine-test.js` expect a first visit).
+
 ## Phone-speed estimate
 `throttle-bench.js <port> <rate> <output folder>` runs the benchmark page under Chrome's CPU throttling (a bench
 server that writes `result.json`, like the one used for the baselines, must be listening). Chrome's throttle slows

@@ -41,3 +41,11 @@ Node-only tests with synthetic images; no browser needed.
 
 The canvas helpers (warp, overlay, crops) need a browser and are covered by `../engine-test/` and by the
 detection-only benchmark (`bench.html?auto=1&geometry=1`, add `&sheet=1` for the crop sheets).
+
+- `review-test.js` checks `htdocs/Bingo/scan/review.js`: the state of each cell (confident, check, missing, covered), the summary line, and, on the saved real readings, how many wrong readings the amber "check" state catches.
+
+      node tools/bingo-scan-testset/imaging-test/review-test.js .
+
+- `capture-test.js` checks the pure rules in `htdocs/Bingo/scan/capture.js`: frame difference, the auto-shutter (steady time, window count, stale detections, cooldown, switch off) and the outline geometry.
+
+      node tools/bingo-scan-testset/imaging-test/capture-test.js .

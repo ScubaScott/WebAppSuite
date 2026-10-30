@@ -493,70 +493,6 @@
             background: #111;
         }
 
-        /* Camera viewfinder guide overlay */
-        .camera-grid-overlay {
-            position: absolute;
-            inset: 16px;
-            border: 2px dashed rgba(255, 255, 255, 0.75);
-            border-radius: 12px;
-            pointer-events: none;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
-        }
-
-        .overlay-grid-inner {
-            position: absolute;
-            inset: 0;
-        }
-
-        .grid-line {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.4);
-        }
-
-        .grid-line.v {
-            width: 1px;
-            top: 0;
-            bottom: 0;
-        }
-
-        .grid-line.v.v1 {
-            left: 20%;
-        }
-
-        .grid-line.v.v2 {
-            left: 40%;
-        }
-
-        .grid-line.v.v3 {
-            left: 60%;
-        }
-
-        .grid-line.v.v4 {
-            left: 80%;
-        }
-
-        .grid-line.h {
-            height: 1px;
-            left: 0;
-            right: 0;
-        }
-
-        .grid-line.h.h1 {
-            top: 20%;
-        }
-
-        .grid-line.h.h2 {
-            top: 40%;
-        }
-
-        .grid-line.h.h3 {
-            top: 60%;
-        }
-
-        .grid-line.h.h4 {
-            top: 80%;
-        }
-
         /* Auto-crop toggle switch */
         .crop-toggle-wrap {
             display: flex;
@@ -837,6 +773,8 @@
     <link rel="stylesheet" href="engine-loader.css">
     <link rel="stylesheet" href="detection.css">
     <link rel="stylesheet" href="training.css">
+    <link rel="stylesheet" href="review.css">
+    <link rel="stylesheet" href="capture.css">
     <script src="engine-loader.js"></script>
 
     <!-- Suite Profile & Bingo Sync engine -->
@@ -848,6 +786,8 @@
     <script src="utils.js"></script>
     <script src="readers/tesseract-reader.js"></script>
     <script src="decoder.js"></script>
+    <script src="review.js"></script>
+    <script src="capture.js"></script>
     <script src="training-store.js"></script>
     <script src="ocr.js"></script>
 </head>
@@ -958,8 +898,15 @@
             <section class="scan-card">
                 <div class="card-title">
                     <span id="scanCardHeaderTitle">Camera Feed</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="scan-toggles">
                         <span id="cropStatusBadge" class="crop-status-badge" style="display: none;">Raw Photo</span>
+                        <div class="crop-toggle-wrap">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoCaptureToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="crop-toggle-label">Auto-capture</span>
+                        </div>
                         <div class="crop-toggle-wrap">
                             <label class="toggle-switch">
                                 <input type="checkbox" id="autoCropToggle" checked>
@@ -994,20 +941,10 @@
                         <span style="font-size:12px; opacity:0.7;">Use Camera Roll to pick a photo</span>
                     </div>
 
-                    <!-- Viewfinder Grid Overlay (live camera only) -->
-                    <div class="camera-grid-overlay" id="cameraGridOverlay">
-                        <div class="overlay-grid-inner">
-                            <div class="grid-line v v1"></div>
-                            <div class="grid-line v v2"></div>
-                            <div class="grid-line v v3"></div>
-                            <div class="grid-line v v4"></div>
-                            <div class="grid-line h h1"></div>
-                            <div class="grid-line h h2"></div>
-                            <div class="grid-line h h3"></div>
-                            <div class="grid-line h h4"></div>
-                        </div>
-                    </div>
+                    <!-- 5x5 window outline and found windows, drawn by capture.js (live camera only) -->
+                    <canvas class="capture-overlay" id="cameraGridOverlay" aria-hidden="true"></canvas>
                 </div>
+                <p id="cameraHint" class="camera-hint">Flash off · open all windows · fill the outline</p>
 
                 <!-- Captured Image Adjust Toolbar (Rotate & Manual Crop) -->
                 <div id="capturedToolbar" class="button-group" style="display: none;">
@@ -1054,6 +991,11 @@
                 </button>
 
                 <div id="status" class="status-box">Ready to capture photo or choose from Camera Roll</div>
+                <!-- Offered when the number windows could not be found in the photo -->
+                <div id="detectFail" class="detect-fail hidden">
+                    <button id="retakeBtn" class="btn btn-secondary" type="button">Retake</button>
+                    <button id="adjustCornersBtn" class="btn btn-primary" type="button">Adjust corners</button>
+                </div>
             </section>
 
             <!-- Detection view: the photo with the number windows and fitted grid the scanner found -->
@@ -1729,6 +1671,11 @@
         const cropStatusBadge = document.getElementById('cropStatusBadge');
         const manualCropBtn = document.getElementById('manualCropBtn');
         const rotateCwBtn = document.getElementById('rotateCwBtn');
+        const detectFailBar = document.getElementById('detectFail');
+        const autoCaptureToggle = document.getElementById('autoCaptureToggle');
+        const cameraHint = document.getElementById('cameraHint');
+        // Guided capture loop (capture.js) once it is started
+        let liveCapture = null;
 
         // Crop modal elements
         const manualCropModal = document.getElementById('manualCropModal');
@@ -1764,7 +1711,7 @@
         // Camera Initialization — tries rear camera first, falls back to any camera
         function startCamera() {
             navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' }, aspectRatio: { ideal: 1.0 } },
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
                 audio: false
             }).then(stream => {
                 video.srcObject = stream;
@@ -1791,11 +1738,15 @@
             isImageCaptured = false;
             rawCapturedCanvas = null;
             currentCorners = null;
+            lastScanRead = null;
+            detectFailBar.classList.add('hidden');
+            if (liveCapture) liveCapture.cooldown();
 
             // Viewport display
             video.style.display = '';
             previewCanvas.style.display = 'none';
             cameraGridOverlay.style.display = '';
+            cameraHint.hidden = false;
             capturedToolbar.style.display = 'none';
             cropStatusBadge.style.display = 'none';
             if (scanCardHeaderTitle) scanCardHeaderTitle.textContent = 'Camera Feed';
@@ -1820,6 +1771,7 @@
             video.style.display = 'none';
             previewCanvas.style.display = 'block';
             cameraGridOverlay.style.display = 'none';
+            cameraHint.hidden = true;
             capturedToolbar.style.display = 'flex';
             cropStatusBadge.style.display = 'inline-block';
             if (scanCardHeaderTitle) scanCardHeaderTitle.textContent = 'Captured Preview';
@@ -1836,7 +1788,13 @@
                 resetToLiveCamera();
                 return;
             }
+            captureFromVideo();
+        };
 
+        // Takes the still: the center square of the camera picture at the stream's full resolution.
+        // Used by the shutter button and by auto-capture.
+        function captureFromVideo() {
+            if (isImageCaptured) return;
             if (!video.videoWidth) {
                 if (statusDiv) statusDiv.textContent = 'Waiting for camera feed...';
                 return;
@@ -1852,7 +1810,7 @@
             currentCorners = null;
             setCapturedPreviewMode();
             processCapturedImage('Live Photo');
-        };
+        }
 
         // 2. Pick photo from Camera Roll
         galleryBtn.onclick = () => fileInput.click();
@@ -1902,6 +1860,7 @@
             const isAutoCropOn = autoCropToggle.checked;
             currentGeometry = null;
             lastScanRead = null;
+            detectFailBar.classList.add('hidden');
             if (isAutoCropOn && typeof autoCrop === 'function' && typeof Geometry !== 'undefined') {
                 if (statusDiv) statusDiv.textContent = 'Finding the number windows...';
                 autoCrop(rawCapturedCanvas).then(croppedCanvas => {
@@ -1920,7 +1879,8 @@
                     } else {
                         // Windows not found: the preview uses default corner positions, so ask for manual placement
                         if (cropStatusBadge) cropStatusBadge.textContent = `${sourceName} (windows not found)`;
-                        if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the number windows. Tap Manual Crop and drag the four handles onto the corner windows, or retake the photo."; }
+                        if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the windows. Retake the photo, or adjust the corners: drag the four handles onto the corner number windows."; }
+                        detectFailBar.classList.remove('hidden');
                     }
                     if (ocrBtn) ocrBtn.disabled = false;
                 }).catch(err => {
@@ -2142,7 +2102,8 @@
             if (!currentGeometry) {
                 const found = Geometry.analyze(rawCapturedCanvas);
                 if (!found.ok) {
-                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the number windows. Tap Manual Crop and drag the four handles onto the corner windows."; }
+                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the windows. Retake the photo, or adjust the corners onto the four corner number windows."; }
+                    detectFailBar.classList.remove('hidden');
                     return;
                 }
                 currentGeometry = found;
@@ -2155,7 +2116,7 @@
                 });
                 // Kept so that confirming the card (Apply) can also record it as a training sample
                 lastScanRead = { read: result, geometry: currentGeometry, photo: rawCapturedCanvas };
-                drawBingoGrid(result.grid);
+                drawBingoGrid(result.grid, { decoded: result.decoded, profileChip: profileChipFor(currentGeometry) });
                 const seconds = (result.stats.totalMs / 1000).toFixed(1);
                 if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = `✓ Read in ${seconds} s. Verify numbers below, then click "Apply to Card Editor".`; }
 
@@ -2178,6 +2139,44 @@
         }
 
         if (ocrBtn) ocrBtn.onclick = doOCR;
+
+        // The review screen's chip naming the card format used. Tapping it overrides the choice: from the automatic
+        // finder to hand-placed corners, or from hand-placed corners back to the automatic finder.
+        function profileChipFor(geometry) {
+            const id = geometry && geometry.profileId === 'manual' ? 'manual' : 'slider';
+            const label = (CardProfiles[id] || {}).label || id;
+            if (id === 'slider') {
+                return { label, hint: 'Windows found automatically. Tap to place the corners by hand instead.', onTap: () => openManualCropper() };
+            }
+            return {
+                label,
+                hint: 'Corners placed by hand. Tap to find the windows automatically instead.',
+                onTap: () => { if (rawCapturedCanvas) processCapturedImage('Photo'); }
+            };
+        }
+
+        // Windows not found: take another photo, or place the corners by hand
+        document.getElementById('retakeBtn').addEventListener('click', () => resetToLiveCamera());
+        document.getElementById('adjustCornersBtn').addEventListener('click', () => openManualCropper());
+
+        // ---- Guided capture: outline over the camera, steadiness check and auto-shutter ----
+        // Auto-capture is on unless the user switched it off on this device
+        try { if (localStorage.getItem('bingoAutoCapture') === 'off') autoCaptureToggle.checked = false; } catch (e) { /* storage unavailable: keep the default */ }
+        autoCaptureToggle.addEventListener('change', () => {
+            try { localStorage.setItem('bingoAutoCapture', autoCaptureToggle.checked ? 'on' : 'off'); } catch (e) { /* storage unavailable */ }
+        });
+        if (typeof Capture !== 'undefined') {
+            liveCapture = Capture.start({
+                video,
+                overlay: cameraGridOverlay,
+                hintEl: cameraHint,
+                // Live only while the Scan tab is open, a camera picture is showing and no photo has been taken
+                isActive: () => !isImageCaptured && video.style.display !== 'none' && !document.getElementById('panelScan').classList.contains('hidden'),
+                isEnabled: () => autoCaptureToggle.checked && manualCropModal.classList.contains('hidden'),
+                getProfile: () => 'slider',
+                onFire: () => captureFromVideo()
+            });
+        }
 
         // ---- Detection view: shows what the window finder saw in the current photo ----
         const showDetectionToggle = document.getElementById('showDetectionToggle');
@@ -2315,7 +2314,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '2.1';
+        const SCAN_PAGE_VERSION = '2.2';
         // The training store needs the app version; it also resumes sending anything left from an earlier session
         TrainingStore.init(SCAN_PAGE_VERSION).then(refreshContribution);
         refreshContribution();
@@ -2351,7 +2350,7 @@
     </script>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">2.1</span></p>
+        <p>Version <span id="appVersion">2.2</span></p>
     </footer>
 </body>
 

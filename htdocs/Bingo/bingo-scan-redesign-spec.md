@@ -1,6 +1,6 @@
 # Bingo Card Scanner — Redesign & On-Device AI Migration Specification
-**Version:** 1.2
-**Status:** All decisions confirmed; ready for Phase 0
+**Version:** 1.3
+**Status:** Phase 1 built through step 1.8; Phase 2 (DigitNet) next. The Phase 1 card-accuracy target is not met (see §10.1).
 **Scope:** `htdocs/Bingo/scan/` capture → detection → recognition → review pipeline, engine asset caching, training-data collection and upload, migration from Tesseract to a custom-trained digit model (DigitNet) that runs in plain JavaScript.
 
 ---
@@ -129,6 +129,7 @@ Verify each limit against the current account:
 | `scan/scan.html` | 1 | Page markup and wiring (existing; tuning panel removed) |
 | `scan/style.css` | 1 | Styles, including overlay, confidence states, download progress |
 | `scan/capture.js` | 1 | Camera start/stop, overlay drawing, steadiness detection, still capture |
+| `scan/review.js`, `scan/review.css` | 1 | Cell states (confident / check / missing / covered), summary line, picker suggestions (§7.7a) |
 | `scan/imaging.js` | 1 | Grayscale, downscale, adaptive threshold, connected components, homography solve, bilinear sampling |
 | `scan/profiles.js` | 1 | Card profile definitions (§7.2) |
 | `scan/geometry.js` | 1 | Profile auto-selection, window detection, homography fit, cell extraction, shutter/glare flags |
@@ -172,6 +173,17 @@ Verify each limit against the current account:
 - Steadiness: mean absolute difference of 64×64 grayscale thumbnails between consecutive frames; steady when below a threshold for ~600 ms.
 - Still capture from the video track at full resolution (ImageCapture where supported, else a video-frame canvas draw).
 - Torch is off by default (flash causes glare on plastic windows).
+
+### 7.1a Implemented in step 1.8 (guided capture)
+`capture.js` (v1.0), `capture.css`, `geometry.js` (v1.5, `detectLive`), `profiles.js` (v1.4, `live` settings), `scan.html` (v2.2) and `sw.js` (v5.3). What it does, and where it differs from the plan above:
+
+- **Outline:** a canvas over the camera draws the 25 windows at the profile's real window shape (0.466 x 0.54 of the spacing), centered and filling 80% of the square view. The old static 5x5 line grid is gone. The hint line under the camera reads "Flash off · open all windows · fill the outline".
+- **Live window check:** every 300 ms (and only while the picture is steady or nearly so) the center square of the picture is shrunk to **320 px** and the window finder runs with its **first three mask modes**. On the 10 slider test photos (cut to their center square, as the camera view is) this found the grid on **10 of 10**, with 22-25 windows, in about 24 ms each on this desktop (a 6x slower phone would need roughly 150 ms; not measured). The 5 paper cards were all rejected (no false positive). 240 px found 10 of 10 too but with fewer windows on some; 480 and 640 px cost 2-4x more for no gain. Matched windows are drawn filled and predicted ones as outlines; the outline turns amber when the grid is found and green while holding.
+- **Steadiness:** a 64 x 64 gray thumbnail of the center square is compared with the previous one every 100 ms; mean absolute difference **at or below 5** (of 255) is steady. Measured with the fake camera: a camera on a stand with noise 0.3, a 1.5% wobble 12, a waving camera 14-60. Only new video frames count (a frozen picture is not "steady").
+- **Auto-shutter:** the photo is taken when the picture has been steady for **600 ms**, a window search made during that steady period found at least **16 windows**, and auto-capture is on. The hint shows "Found 25 of 25 windows · hold steady…" while holding. After a photo, and after "Reset to Camera", nothing fires for **1.5 s** and the 600 ms wait starts only after that, so the same card is not captured twice. The manual shutter button always works, and the **Auto-capture** switch (on by default, remembered on the device in `localStorage` key `bingoAutoCapture`) turns auto-capture off.
+- **Still:** the center square of the video at the stream's full size (the page now asks for 1920 x 1440). `ImageCapture` is not used; the video-frame draw is what the plan allows as the fallback. Torch is never turned on.
+- **Rules are pure and unit-tested** (`Capture.createShutter`, `frameDifference`, `outlineRects`): `imaging-test/capture-test.js`, 22 checks. The browser side is tested with a fake camera playing a video file (`engine-test/live-capture-test.js`, 27 checks): the outline is drawn, a steady slider card is captured by itself in about 1 s, nothing is captured for a moving or a wobbling picture, for a steady picture without windows, with the switch off, or twice for the same card, and the manual shutter still works.
+- **Not done / not verified:** only the `slider` outline exists (the outline follows the "last-used profile" once a second window profile exists). The steadiness limit of 5 was set from synthetic motion and **has not been tried hand-held on a real phone**; it is one constant (`Capture.STEADY_DIFF`) and may need adjusting. Live check timing on a real phone is also unmeasured.
 
 ### 7.2 Card Profiles (`profiles.js`) — any format
 A profile is a plain data object; the detector and overlay read it.
@@ -290,6 +302,18 @@ Readers run in a Web Worker. A **shadow reader** may run after the primary; its 
 - Reuse the existing review grid and column picker (`renderScannedGridReview`), adding Confident/Check/Missing/Covered states as CSS classes with tokens in `style.css`.
 - Summary line above the grid: "21 read · 3 to check".
 - Profile chip with override; square, centered cells; ≥ 44 px touch targets.
+
+### 7.7a Implemented in step 1.7 (review screen)
+`review.js` (v1.1, no DOM), `review.css`, `ocr.js` (v2.4) and `scan.html` (v2.2). The tuning panel itself was already removed in step 1.4 (§7.5a).
+
+- **Cell states** (from the decoder output): **confident** (normal), **check** (amber: the decoder changed or corrected the reading, the window has glare, or the reader's confidence is under **0.70**), **missing** (red outline: nothing usable read, including cells the decoder left empty as ambiguous), **covered** (hatched, "Closed": the shutter is shut; the reader skips these), and **edited** (the user picked or cleared the number; counts as read). A tooltip on each flagged cell says why. A cell that breaks the card rules (out of column range or a repeat) keeps the existing red "invalid" look.
+- **Why 0.70:** on the 9 checked slider photos the decoder returns 4 wrong numbers that it did not leave empty (reader confidences 0.62, 0.63, 0.86 and a corrected 67 read as 61); at 0.70, **3 of the 4** are flagged and 41 of 226 correct readings (18%) are flagged too (about 4.5 amber cells per card). The fourth (27 read as "21" with 0.86) cannot be separated by confidence. Lowering the limit flags fewer correct cells but misses more errors; the limit is one constant (`Review.CHECK_BELOW`).
+- **Summary line:** "21 read · 3 to check": *read* = confident or edited cells, *to check* = amber + red + hatched cells (so the two always add up to 24). It updates as the user settles cells.
+- **Settling a cell:** tapping a cell and choosing a number (the one already shown counts, to confirm it) or clearing it turns it to "edited". The picker also highlights the numbers the decoder considered next most likely ("maybe 62 or 72", buttons in amber); on the saved readings the right number is among these for **9 of the 31** wrong or empty cells.
+- **Profile chip:** beside the summary, "Slider card ▾" or "Manual ▾" (44 px tall). Tapping "Slider card" opens the corner handles (override the automatic finder); tapping "Manual" runs the automatic finder again on the same photo. Either way the user taps **Run OCR** again to read with the new geometry.
+- **Windows not found:** the status line says "Couldn't find the windows…" and **Retake** (back to the camera) and **Adjust corners** (opens the four handles) appear under it.
+- **Measured on the saved photos (reader and decoder as they are):** every error is flagged (amber, red or hatched) on **8 of the 9** headline cards, so on those cards the user only touches flagged cells; the exception is the card with the silent "27 read as 21".
+- **Tests:** `imaging-test/review-test.js` (22 checks, including the real-readings numbers above) and `engine-test/review-ui-test.js` (28 checks in a phone-sized Chrome window: states and counts shown match the summary, confirming and filling cells, the chip and both overrides, a synthetic card with a covered cell, suggestions in the picker, the failed-detection buttons, 44 px targets).
 
 ### 7.8 Debug Overlay (replaces the tuning panel)
 Behind a **Show detection** toggle in settings:
@@ -538,6 +562,17 @@ Gain: +17 correct cells on the headline (+8.8 points), +3 on the held-out photos
 
 Targets for Phase 1 are measured against the headline row. Re-run the bench after steps 1.3, 1.4 and 1.5 and add a row here.
 
+**Phase 1 targets check (after step 1.8; steps 1.6-1.8 did not change the reader, decoder or window finder, so the numbers are those of step 1.5):**
+
+| Target (§1) | Phase 1 goal | Result | Met |
+|---|---|---|---|
+| Cells correct, slider | ≥ 80% | 185 / 216 = **85.6%** (holdout photos 80.6%) | yes |
+| Cards fully correct, slider (no hand corrections) | ≥ 25% | 1 / 9 = **11%** | **no** |
+| Scan time on a mid-range phone | ≤ 5 s | 0.3-0.7 s on this desktop; 2.9 s median, 4.5 s worst under the 6x slowdown model; not measured on a phone | yes (estimate) |
+| Works offline after first use | yes | yes (engine cache, SW; §8.6) | yes |
+
+The card target is missed because most remaining errors are cells the reader returns nothing for (a single-digit number such as "4", or a number whose first digit it drops: "72" read as "2" on two photos) and the decoder cannot invent them without guessing. The review screen narrows the cost: on 8 of the 9 cards every error is flagged, so the user only fixes flagged cells (and the picker suggests the likely numbers), but that is a different measure from "fully correct" and does not replace it. Closing the gap is the job of Phase 2 (DigitNet); this is the figure to re-measure then.
+
 ## 11. Hosting Move (no longer required for Phases 1–2)
 Move hosts only if one of these happens:
 - The training uploads are blocked by host bot protection or quota.
@@ -607,8 +642,8 @@ Revisit only if DigitNet fails the Phase 2 targets on a card format for which co
 | **1.4** | `CellReader` contract + Tesseract single-sheet adapter — **done**, see §7.5a | ≤ 5 s per scan on a mid-range phone — **0.3-0.7 s on this desktop; 2.9 s median, 4.5 s worst case under a 6x slowdown model** (§10.1); not yet measured on a real phone |
 | **1.5** | `decoder.js` — **done**, see §7.6a | Measurable accuracy gain over the raw reader on bench — **+17 cells (168 to 185 of 216) on the headline, +3 on the holdout, +2 on a second card, no photo worse** (§10.1) |
 | **1.6** | Training pipeline: `training-store.js` outbox, `/api/training` endpoint + table + validation + admin routes, Contribute default on, first-scan notice, export backup — **done**, see §9.7 | Samples arrive in MySQL from a phone; admin stats endpoint works — **verified from Chrome to PHP 8.3 and MariaDB 10.11 (not yet on a phone or the production host)**, see §9.7 |
-| **1.7** | Review UI states, summary line, profile chip; tuning panel removed | — |
-| **1.8** | Guided capture overlay + auto-shutter | Phase 1 slider targets in §1 met |
+| **1.7** | Review UI states, summary line, profile chip; tuning panel removed — **done**, see §7.7a | — (no exit criteria were set; checked in Chrome at phone size) |
+| **1.8** | Guided capture overlay + auto-shutter — **done**, see §7.1a | Phase 1 slider targets in §1 met — **partly: cells correct 85.6% (target 80%), scan time 2.9 s estimated (target 5 s), offline yes; cards fully correct 1 of 9 = 11% (target 25%) is not met**, see §10.1 |
 | **2.1** | `tools/bingo-model/` pull/slice/synth/train/export/purge | First model trained; test-set report; server purged of trained samples |
 | **2.2** | `nn.js` + `digitnet-reader.js`; parity check in bench | Parity passes |
 | **2.3** | DigitNet as shadow reader in production | Field comparison data recorded |

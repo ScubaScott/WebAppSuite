@@ -1,0 +1,138 @@
+{
+ "when": "2026-10-30T01:34:43.808Z",
+ "results": [
+  {
+   "name": "24 numbered cells are drawn",
+   "ok": true,
+   "detail": "{\"total\":24,\"check\":8,\"missing\":1,\"covered\":0,\"edited\":0,\"summary\":\"15 read · 9 to check\"}"
+  },
+  {
+   "name": "the summary line reads \"N read · M to check\"",
+   "ok": true,
+   "detail": "15 read · 9 to check"
+  },
+  {
+   "name": "summary adds up to 24",
+   "ok": true,
+   "detail": "15 read · 9 to check"
+  },
+  {
+   "name": "to-check count equals the amber + red + hatched cells shown",
+   "ok": true,
+   "detail": "9 vs 8+1+0"
+  },
+  {
+   "name": "this photo has cells flagged as check or missing",
+   "ok": true,
+   "detail": "{\"total\":24,\"check\":8,\"missing\":1,\"covered\":0,\"edited\":0,\"summary\":\"15 read · 9 to check\"}"
+  },
+  {
+   "name": "the profile chip names the slider format",
+   "ok": true,
+   "detail": "Slider card ▾"
+  },
+  {
+   "name": "the profile chip is at least 44 px tall",
+   "ok": true,
+   "detail": "44 px"
+  },
+  {
+   "name": "review cells are square and at least 44 px",
+   "ok": true,
+   "detail": "59.203125x59.203125"
+  },
+  {
+   "name": "confirming a flagged cell removes its amber state",
+   "ok": true,
+   "detail": "8 -> 7"
+  },
+  {
+   "name": "the summary line updates after the user settles a cell",
+   "ok": true,
+   "detail": "15 read · 9 to check -> 16 read · 8 to check"
+  },
+  {
+   "name": "filling a missing cell by hand clears its red state",
+   "ok": true,
+   "detail": "1 -> 0"
+  },
+  {
+   "name": "tapping the chip opens the corner placement",
+   "ok": true
+  },
+  {
+   "name": "hand-placed corners become the geometry",
+   "ok": true
+  },
+  {
+   "name": "after reading with corners the chip says Manual",
+   "ok": true,
+   "detail": "Manual ▾"
+  },
+  {
+   "name": "tapping the Manual chip goes back to finding the windows automatically",
+   "ok": true
+  },
+  {
+   "name": "a closed shutter is shown as covered",
+   "ok": true,
+   "detail": "{\"total\":24,\"check\":1,\"missing\":1,\"covered\":1,\"edited\":0,\"summary\":\"21 read · 3 to check\"}"
+  },
+  {
+   "name": "a covered cell says Closed",
+   "ok": true,
+   "detail": "\"Closed\""
+  },
+  {
+   "name": "glare shows as check, empty as missing",
+   "ok": true,
+   "detail": "{\"total\":24,\"check\":1,\"missing\":1,\"covered\":1,\"edited\":0,\"summary\":\"21 read · 3 to check\"}"
+  },
+  {
+   "name": "synthetic summary: 21 read · 3 to check",
+   "ok": true,
+   "detail": "21 read · 3 to check"
+  },
+  {
+   "name": "the picker of an unread cell highlights the suggested numbers",
+   "ok": true,
+   "detail": "{\"label\":\"Select I number (16–30) · maybe 16 or 21\",\"suggested\":[\"16\",\"21\"]}"
+  },
+  {
+   "name": "a grid without scan information has no states and no summary",
+   "ok": true,
+   "detail": "{\"total\":24,\"check\":0,\"missing\":0,\"covered\":0,\"edited\":0,\"summary\":\"\"}"
+  },
+  {
+   "name": "the chip stays hidden without a profile",
+   "ok": true
+  },
+  {
+   "name": "a photo without the card says it could not find the windows",
+   "ok": true,
+   "detail": "Couldn't find the windows. Retake the photo, or adjust the corners: drag the four handles onto the corner number windows."
+  },
+  {
+   "name": "Retake and Adjust corners are offered",
+   "ok": true
+  },
+  {
+   "name": "both buttons are at least 44 px tall",
+   "ok": true,
+   "detail": "44,44"
+  },
+  {
+   "name": "Adjust corners opens the corner handles",
+   "ok": true
+  },
+  {
+   "name": "Retake goes back to the live camera and hides the buttons",
+   "ok": true
+  },
+  {
+   "name": "no page errors",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

@@ -1,0 +1,118 @@
+/* Review screen: cell states (confident / check / missing / covered), summary line and profile chip */
+:root {
+    --review-check-border: #f9ab00;
+    --review-check-bg: #fef7e0;
+    --review-check-text: #b06000;
+    --review-missing-border: #d93025;
+    --review-covered-border: #80868b;
+    --review-covered-bg: #e8eaed;
+    --review-covered-text: #5f6368;
+}
+
+/* The dark Dive Bar theme keeps the same hues with darker fills so numbers stay legible */
+[data-theme="divebar"] {
+    --review-check-bg: rgba(249, 171, 0, 0.16);
+    --review-check-text: #fdd663;
+    --review-covered-bg: rgba(128, 134, 139, 0.22);
+    --review-covered-text: #bdc1c6;
+}
+
+.review-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 44px;
+}
+
+.review-summary {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Tappable chip naming the card format; min 44px tall for touch */
+.profile-chip {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--primary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.profile-chip:hover {
+    background: var(--primary-soft);
+}
+
+.profile-chip:active {
+    transform: scale(0.97);
+}
+
+.profile-chip.hidden {
+    display: none;
+}
+
+/* Check: filled, but worth a second look */
+.editor-cell.cell-check {
+    border-color: var(--review-check-border);
+    background: var(--review-check-bg);
+    color: var(--review-check-text);
+}
+
+/* Missing: nothing usable was read */
+.editor-cell.cell-missing {
+    border-color: var(--review-missing-border);
+    border-width: 2px;
+}
+
+/* Covered: the shutter over the number is closed */
+.editor-cell.cell-covered {
+    border-color: var(--review-covered-border);
+    border-style: dashed;
+    background: var(--review-covered-bg);
+    color: var(--review-covered-text);
+}
+
+.editor-cell.cell-covered::before {
+    content: 'Closed';
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: var(--review-covered-text);
+}
+
+/* The "+" hint of an empty cell is replaced by the word above */
+.editor-cell.cell-covered.empty::before {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--review-covered-text);
+}
+
+/* Shown under the status line when the number windows could not be found */
+.detect-fail {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.detect-fail.hidden {
+    display: none;
+}
+
+.detect-fail .btn {
+    flex: 1;
+    min-height: 44px;
+}
+
+/* A number the scan thought this cell could be, highlighted in the picker */
+.editor-pick-btn.suggested {
+    border-color: var(--review-check-border);
+    background: var(--review-check-bg);
+    color: var(--review-check-text);
+}
