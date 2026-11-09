@@ -334,7 +334,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v3.7</small>
+      <small>v3.8</small>
     </footer>
   </div>
 
@@ -396,6 +396,14 @@
             </label>
           </div>
         </div>
+
+        <!-- Seen devices: shows which connected devices are unsupported, to prioritize new drivers -->
+        <div class="settings-section">
+          <div class="settings-section-label">Seen Devices</div>
+          <p class="settings-section-sub">Devices you have connected, unsupported ones first.</p>
+          <pre class="seen-devices-list" id="seenDevicesList"></pre>
+          <button class="action-pill-btn" type="button" onclick="copySeenDevices()">Copy report</button>
+        </div>
       </div>
     </div>
   </div>
@@ -439,12 +447,13 @@
 
   <!-- Shared Suite Profile and Cloud Sync Manager -->
   <script src="../media/suite-profile.js"></script>
+  <script src="known-devices.js"></script>
 
   <script>
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "3.7";
+    const APP_VERSION = "3.8";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -481,6 +490,7 @@
      */
     function openSettingsModal() {
       const modal = document.getElementById('settingsModal');
+      renderSeenDevices();
       if (modal) modal.classList.remove('hidden');
     }
 
@@ -1279,11 +1289,28 @@
      * Builds the requestDevice options: supported-brand filters by default, or every
      * nearby device when the show-all setting is enabled.
      */
-    function buildRequestOptions() {
+    function buildRequestOptions(includeKnown = true) {
       const optionalServices = getAllOptionalServices();
-      return scanAllDevices
-        ? { acceptAllDevices: true, optionalServices }
-        : { filters: getScanFilters(), optionalServices };
+      if (scanAllDevices) return { acceptAllDevices: true, optionalServices };
+      const filters = getScanFilters();
+      if (includeKnown) filters.push(...getKnownDeviceFilters());
+      return { filters, optionalServices };
+    }
+
+    /**
+     * Opens the Bluetooth chooser. If the browser rejects the large filter list,
+     * retries with only the built-in supported brands.
+     */
+    async function requestToyDevice() {
+      try {
+        return await navigator.bluetooth.requestDevice(buildRequestOptions(true));
+      } catch (err) {
+        if (err instanceof TypeError) {
+          console.warn('Extended scan filters rejected, using supported brands only:', err);
+          return await navigator.bluetooth.requestDevice(buildRequestOptions(false));
+        }
+        throw err;
+      }
     }
 
     /**
@@ -1304,6 +1331,42 @@
     }
 
     /**
+     * Adds scan filters for known-but-unsupported brands (experimental discovery).
+     * Short or common names are left out so the chooser is not flooded; they are
+     * still recognized when "Show all nearby devices" is on.
+     */
+    function getKnownDeviceFilters() {
+      const filters = [];
+      KNOWN_DEVICES.forEach(entry => {
+        entry.names.forEach(n => {
+          if (n.length > 3 && !KNOWN_GENERIC_NAMES.has(n)) filters.push({ name: n });
+        });
+        entry.prefixes.forEach(p => {
+          if (p.length > 2) filters.push({ namePrefix: p });
+        });
+      });
+      return filters;
+    }
+
+    /**
+     * Finds the known-device family matching a device's advertised name or a
+     * brand-specific service UUID. Returns the KNOWN_DEVICES entry or null.
+     */
+    function classifyKnownDevice(device, discoveredUuids) {
+      const name = ((device && device.name) || '').trim();
+      if (name) {
+        for (const entry of KNOWN_DEVICES) {
+          if (entry.names.includes(name) || entry.prefixes.some(p => p && name.startsWith(p))) return entry;
+        }
+      }
+      // Fallback on services that are specific enough to identify a family (not shared 16-bit generics)
+      for (const entry of KNOWN_DEVICES) {
+        if (entry.services.some(u => !u.endsWith('-0000-1000-8000-00805f9b34fb') && discoveredUuids.includes(u))) return entry;
+      }
+      return null;
+    }
+
+    /**
      * Aggregates all optional GATT service UUIDs required across all registered drivers.
      */
     function getAllOptionalServices() {
@@ -1311,6 +1374,8 @@
       getLovenseServices().forEach(s => set.add(s.toLowerCase()));
       // Standard BLE Battery Service so battery level can be read on any brand
       set.add(BATTERY_SERVICE_UUID);
+      // Services of known-but-unsupported brands so they can be inspected and logged
+      KNOWN_DEVICES.forEach(entry => entry.services.forEach(u => set.add(u)));
       Object.values(TOY_DRIVERS).forEach(driver => {
         if (Array.isArray(driver.serviceUuids)) {
           driver.serviceUuids.forEach(u => set.add(u.toLowerCase()));
@@ -1746,7 +1811,7 @@
       try {
         updateLog("Searching for compatible Bluetooth devices... ⏳");
 
-        const device = await navigator.bluetooth.requestDevice(buildRequestOptions());
+        const device = await requestToyDevice();
 
         updateLog(`Connecting to ${device.name || 'Bluetooth Device'}... ⏳`);
         const toyRecord = addOrUpdateManagedToy(device, device.id, null, device.name || "Bluetooth Toy", 'auto', 'auto', false);
@@ -1824,6 +1889,15 @@
           toyRecord.selected = false;
         }
         toyRecord.detectedBrand = targetDriver.id;
+
+        // Unsupported devices: identify the brand family from known identifiers and log for review
+        toyRecord.knownMatch = targetDriver.id === 'generic'
+          ? classifyKnownDevice(toyRecord.device, discoveredUuids)
+          : null;
+        if (toyRecord.knownMatch) {
+          updateLog(`Recognized ${toyRecord.knownMatch.brand} (${toyRecord.knownMatch.protocol}) - control not available yet.`);
+        }
+        recordSeenDevice(toyRecord, targetDriver.id, discoveredUuids);
         const handles = await targetDriver.setup(server, toyRecord.device);
 
         toyRecord.gatt = server;
@@ -1928,6 +2002,85 @@
         }
       }
       renderDeviceList();
+    }
+
+    const STORAGE_KEY_SEEN_DEVICES = "toys_seen_devices";
+    const SEEN_DEVICES_MAX = 100;
+
+    /**
+     * Reads the list of devices previously connected to, for prioritizing new brand support.
+     */
+    function getSeenDevices() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_SEEN_DEVICES);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    /**
+     * Records a connected device (name, matched family, driver, service prefixes) in
+     * localStorage, counting repeat sightings. Keeps the most recent entries.
+     */
+    function recordSeenDevice(toy, driverId, discoveredUuids) {
+      try {
+        const name = (toy.device && toy.device.name) || toy.originalName || 'Unnamed';
+        const list = getSeenDevices();
+        let rec = list.find(r => r.name === name);
+        if (!rec) {
+          rec = { name, count: 0 };
+          list.push(rec);
+        }
+        rec.count += 1;
+        rec.last = new Date().toISOString().slice(0, 10);
+        rec.driver = driverId;
+        rec.family = toy.knownMatch ? toy.knownMatch.brand : null;
+        rec.protocol = toy.knownMatch ? toy.knownMatch.protocol : null;
+        rec.services = discoveredUuids.map(u => u.slice(0, 8));
+        list.sort((a, b) => (b.last || '').localeCompare(a.last || ''));
+        localStorage.setItem(STORAGE_KEY_SEEN_DEVICES, JSON.stringify(list.slice(0, SEEN_DEVICES_MAX)));
+      } catch (_) { }
+    }
+
+    /**
+     * Builds a plain-text report of seen devices, unsupported ones first, most-seen first.
+     */
+    function buildSeenDevicesReport() {
+      const list = getSeenDevices().slice().sort((a, b) => {
+        const au = a.driver === 'generic' ? 0 : 1;
+        const bu = b.driver === 'generic' ? 0 : 1;
+        return au - bu || b.count - a.count;
+      });
+      if (list.length === 0) return 'No devices recorded yet.';
+      return list.map(r => {
+        const status = r.driver === 'generic'
+          ? (r.family ? `UNSUPPORTED - ${r.family} (${r.protocol})` : 'UNSUPPORTED - unknown brand')
+          : `supported (${r.driver})`;
+        return `${r.name} | ${status} | seen ${r.count}x | services: ${(r.services || []).join(',') || 'none'}`;
+      }).join('\n');
+    }
+
+    /**
+     * Renders the seen-devices summary inside the Settings modal.
+     */
+    function renderSeenDevices() {
+      const el = document.getElementById('seenDevicesList');
+      if (el) el.textContent = buildSeenDevicesReport();
+    }
+
+    /**
+     * Copies the seen-devices report to the clipboard, falling back to a prompt dialog.
+     */
+    async function copySeenDevices() {
+      const text = buildSeenDevicesReport();
+      try {
+        await navigator.clipboard.writeText(text);
+        updateLog('Device report copied to clipboard.');
+      } catch (_) {
+        window.prompt('Copy device report:', text);
+      }
     }
 
     /**
@@ -2219,7 +2372,7 @@
 
         // 1. If active BluetoothDevice instance is not present, request user gesture selection
         if (!toy.device) {
-          const device = await navigator.bluetooth.requestDevice(buildRequestOptions());
+          const device = await requestToyDevice();
 
           // Rebind acquired device to saved toy record
           const oldId = toy.id;
@@ -2237,7 +2390,7 @@
           console.warn("Direct GATT connect failed on cached device, requesting fresh pairing gesture:", gattErr);
           updateLog(`Re-selecting ${toy.customName}... ⏳`);
 
-          const freshDevice = await navigator.bluetooth.requestDevice(buildRequestOptions());
+          const freshDevice = await requestToyDevice();
 
           const oldId = toy.id;
           toy.device = freshDevice;
@@ -2322,9 +2475,13 @@
         // Resolve active brand display label & badge class
         const brandKey = (toy.brand && toy.brand !== 'auto') ? toy.brand : (toy.detectedBrand || null);
         const brandDriver = brandKey && TOY_DRIVERS[brandKey] ? TOY_DRIVERS[brandKey] : null;
-        const brandLabel = brandDriver
+        let brandLabel = brandDriver
           ? (isMusic ? brandDriver.musicName : brandDriver.name)
           : (isMusic ? "Auto Detect" : "Auto-Detect");
+        // Recognized-but-unsupported brands show their family name with an experimental tag
+        if (brandDriver && brandDriver.id === 'generic' && toy.knownMatch) {
+          brandLabel = `⚠ ${toy.knownMatch.brand} (${isMusic ? 'EXP' : 'Experimental'})`;
+        }
         const badgeClass = brandDriver ? brandDriver.id : 'unknown';
 
         // Battery badge: only shown while connected and a level is known

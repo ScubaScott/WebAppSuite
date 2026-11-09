@@ -1,0 +1,121 @@
+"""Generates htdocs/Toys/known-devices.js from the Buttplug device-config protocol files.
+
+Usage (dev only, never deployed):
+  git clone --depth 1 --filter=blob:none --sparse https://github.com/buttplugio/buttplug.git <dir>
+  git -C <dir> sparse-checkout set crates/buttplug_server_device_config/device-config
+  python -X utf8 -I tools/toys/gen_known_devices.py <dir>/crates/buttplug_server_device_config/device-config/protocols
+
+Only the Bluetooth LE advertised names and service UUIDs are read. Protocols that the app
+already drives itself, or that are not sex toys, are skipped.
+"""
+import glob
+import json
+import os
+import re
+import sys
+
+# Protocol keys that are handled by built-in drivers or are not relevant devices
+SKIP_KEYS = {"lovense", "satisfyer", "wevibe", "wevibe-8bit", "wevibe-chorus", "simulated",
+             "adrienlastic", "fluffer", "foreo", "xinput", "sdl-gamepad"}
+
+# Protocol key prefix -> display brand
+BRAND_BY_PREFIX = [
+    ("kiiroo", "Kiiroo"), ("svakom", "Svakom"), ("magic-motion", "Magic Motion"),
+    ("sexverse", "Sexverse OEM"), ("lelo", "Lelo"), ("libo", "Libo"),
+    ("mysteryvibe", "MysteryVibe"), ("hismith", "Hismith"), ("fredorch", "Fredorch"),
+    ("galaku", "Galaku/Adorime"), ("mizzzee", "Mizzzee"), ("sensee", "Sensee"),
+    ("tryfun", "TryFun"), ("thehandy", "The Handy"), ("vorze", "Vorze"),
+    ("lovehoney", "Lovehoney"), ("picobong", "Picobong"), ("youcups", "Youcups"),
+    ("vibratissimo", "Vibratissimo"), ("fmachine", "F-Machine"), ("joyhub", "JoyHub"),
+    ("honeyplaybox", "Honey Play Box"), ("cowgirl", "Cowgirl"), ("ossm", "OSSM"),
+]
+
+# Short or common words that would flood the chooser, so they are only used for
+# classification in show-all mode, not as scan filters
+GENERIC_NAMES = {"BT05", "M2", "S6", "Classic", "classic", "Wand", "Switch", "Surfer", "Diver",
+                 "Rex", "Cali", "Olis", "Boost", "Sex Toys", "Sex toys", "MAG", "LINK", "JOIN G",
+                 "RANGE", "REACH", "SPAN", "ORBIT", "GRASP", "RECEIVE", "Rey", "FOX", "Titan",
+                 "Fuse", "Curve", "Sword", "Krush", "nyx", "umi", "Wish", "Gala", "Ditto"}
+
+UUID_RE = re.compile(r"^\s*'?([0-9a-fA-F]{8}-[0-9a-fA-F-]{27})'?\s*:\s*$")
+
+
+def brand_for(key):
+    for prefix, brand in BRAND_BY_PREFIX:
+        if key.startswith(prefix):
+            return brand
+    return key.replace("_", "-").replace("-", " ").title()
+
+
+def parse(path):
+    """Reads the btle communication block of one protocol file."""
+    lines = open(path, encoding="utf-8").read().splitlines()
+    try:
+        start = lines.index("communication:")
+    except ValueError:
+        return [], []
+    names, services, mode = [], [], None
+    for line in lines[start + 1:]:
+        if line and not line.startswith(" ") and not line.startswith("-"):
+            break
+        s = line.strip()
+        if s.startswith("names:"):
+            mode = "n"; continue
+        if s.startswith("advertised_services:"):
+            mode = "a"; continue
+        if s.startswith("services:"):
+            mode = "s"; continue
+        if s.startswith("manufacturer_data:"):
+            mode = "m"; continue
+        if re.match(r"^- (serial|usb|hid|xinput|websocket|lovense)", s):
+            mode = None
+        if mode == "n" and s.startswith("- "):
+            name = re.sub(r"\s+#.*$", "", s[2:]).strip().strip("'\"")
+            if name and "\\" not in name:
+                names.append(name)
+        elif mode == "a" and s.startswith("- "):
+            services.append(s[2:].strip().strip("'\"").lower())
+        elif mode == "s":
+            m = UUID_RE.match(line)
+            if m and (len(line) - len(line.lstrip())) == 6:
+                services.append(m.group(1).lower())
+    return names, services
+
+
+def main():
+    base = sys.argv[1]
+    entries = []
+    for path in sorted(glob.glob(os.path.join(base, "*.yml"))):
+        key = os.path.basename(path)[:-4]
+        if key in SKIP_KEYS:
+            continue
+        names, services = parse(path)
+        if not names and not services:
+            continue
+        exact, prefixes = [], []
+        for n in names:
+            if "fake_name" in n or n.startswith("Placeholder"):
+                continue
+            if n.endswith("*"):
+                prefixes.append(n[:-1])
+            else:
+                exact.append(n.rstrip())
+        entries.append({
+            "protocol": key,
+            "brand": brand_for(key),
+            "names": sorted(set(exact)),
+            "prefixes": sorted(set(prefixes)),
+            "services": sorted(set(services)),
+        })
+    out = os.path.join(os.path.dirname(__file__), "..", "..", "htdocs", "Toys", "known-devices.js")
+    body = json.dumps(entries, ensure_ascii=False, separators=(",", ":"))
+    generic = json.dumps(sorted(GENERIC_NAMES), ensure_ascii=False)
+    with open(out, "w", encoding="utf-8") as f:
+        f.write("// Known Bluetooth LE toy identifiers derived from the Buttplug device config.\n")
+        f.write("// Generated by tools/toys/gen_known_devices.py - do not edit by hand.\n")
+        f.write("const KNOWN_DEVICES = " + body + ";\n")
+        f.write("const KNOWN_GENERIC_NAMES = new Set(" + generic + ");\n")
+    print(f"{len(entries)} protocol families written to {os.path.abspath(out)}")
+
+
+main()

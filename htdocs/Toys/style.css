@@ -2318,3 +2318,18 @@ input:checked + .slider-toggle:before {
 
 
 
+
+/* Seen devices report in Settings */
+.seen-devices-list {
+  max-height: 160px;
+  overflow: auto;
+  margin: 0 0 10px 0;
+  padding: 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-dark);
+}
