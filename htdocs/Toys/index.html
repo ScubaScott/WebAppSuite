@@ -325,6 +325,14 @@
             🎯 Zero Baseline (Set Tilt/Resting Level)
           </button>
           <div class="zero-status" id="zeroStatusLabel">Baseline: Resting at (0.0°, 0.0°)</div>
+          <!-- Re-captures the baseline each time tracking is switched on -->
+          <div class="toggle-row">
+            <span id="autoZeroLabel">Re-zero baseline on every start</span>
+            <label class="switch">
+              <input type="checkbox" id="autoZeroToggle" onchange="setMotionAutoZero(this.checked)">
+              <span class="slider-toggle"></span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -334,7 +342,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v3.8</small>
+      <small>v3.9</small>
     </footer>
   </div>
 
@@ -453,7 +461,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "3.8";
+    const APP_VERSION = "3.9";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -642,6 +650,10 @@
       if (motionNoiseLabel) {
         motionNoiseLabel.innerText = isMusic ? "Road / Chassis Rumble Filter" : "Noise Filter (Road & Engine)";
       }
+      const autoZeroLabel = document.getElementById('autoZeroLabel');
+      if (autoZeroLabel) {
+        autoZeroLabel.innerText = isMusic ? "Re-calibrate gyro horizon on every start" : "Re-zero baseline on every start";
+      }
       const zeroBaselineBtn = document.getElementById('zeroBaselineBtn');
       if (zeroBaselineBtn) {
         zeroBaselineBtn.innerText = isMusic ? "🎯 Calibrate Gyro Horizon (Neutral)" : "🎯 Zero Baseline (Set Tilt/Resting Level)";
@@ -774,6 +786,7 @@
       mode: 'gforce', // 'gforce' | 'vehicle'
       multiplier: 10,  // 0 to 20
       noiseFilter: 3,  // 0 to 10 road & engine vibration filter for vehicle mode
+      autoZero: false, // true re-captures the baseline every time tracking is switched on
       baseline: {
         calibrated: false,
         pitch: 0.0,
@@ -3158,6 +3171,7 @@
             if (typeof parsed.noiseFilter === 'number' && parsed.noiseFilter >= 0 && parsed.noiseFilter <= 10) {
               motionSettings.noiseFilter = Math.round(parsed.noiseFilter);
             }
+            motionSettings.autoZero = parsed.autoZero === true;
             if (parsed.baseline && typeof parsed.baseline === 'object') {
               motionSettings.baseline = {
                 calibrated: !!parsed.baseline.calibrated,
@@ -3187,8 +3201,18 @@
       if (motionNoiseFilterVal) {
         motionNoiseFilterVal.innerText = motionSettings.noiseFilter;
       }
+      const autoZeroToggle = document.getElementById('autoZeroToggle');
+      if (autoZeroToggle) autoZeroToggle.checked = motionSettings.autoZero;
       updateZeroStatusUI();
       updateAllCustomSliders();
+    }
+
+    /**
+     * Sets whether the baseline is re-captured every time motion tracking starts, and saves it.
+     */
+    function setMotionAutoZero(enabled) {
+      motionSettings.autoZero = !!enabled;
+      saveMotionSettings();
     }
 
     /**
@@ -3356,9 +3380,10 @@
         window.addEventListener('devicemotion', handleDeviceMotion, { passive: true });
         window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
 
-        // Auto-zero baseline on initial start if not yet calibrated
-        if (!motionSettings.baseline.calibrated) {
-          setTimeout(zeroMotionBaseline, 100);
+        // Zero the baseline on start when auto-zero is enabled or no baseline exists yet;
+        // the short delay lets the first sensor readings arrive after the listeners attach
+        if (motionSettings.autoZero || !motionSettings.baseline.calibrated) {
+          setTimeout(zeroMotionBaseline, 300);
         }
 
         if (!motionTimer) {
