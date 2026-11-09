@@ -37,10 +37,21 @@ The application implements an extensible driver registry (`TOY_DRIVERS`) enablin
   - Scanning: Filter prefixes (`Satisfyer`, `SF-`) and service `51361500-c5e7-47c7-8a6e-47ebc99d80e8`.
   - Command: Motor on/off byte on characteristic `51361501...` and motor speed byte (`0` to `100`) on characteristic `51361502...`.
 
+### Scan Scope & Generic (Unverified) Devices
+- **Default filters**: `getScanFilters()` limits the chooser to `LVS-`, We-Vibe family prefixes, `Satisfyer`/`SF-`, and the Satisfyer service. `buildRequestOptions()` is the single source of `requestDevice` options.
+- **Show all nearby devices**: Settings toggle persisted in `localStorage` under `toys_scan_all`. When on, `acceptAllDevices: true` is used (with the same `optionalServices`, so GATT access is still limited to declared services).
+- **Generic driver (`TOY_DRIVERS.generic`)**: fallback when no driver matches. Connects, logs discovered service UUID prefixes, reads battery if the standard service exists, and only writes Lovense-style `Vibrate:<n>;` to a writable characteristic inside a known UART service (`fff0` / Nordic UART). It never writes to arbitrary characteristics. Shown with an amber "⚠ Unverified" badge and starts unselected for broadcast commands. Can also be forced via the Config dialog.
+
 ### Brand Auto-Detection & Manual Protocol Override
 - **Auto-Detection**: During GATT connection, the driver matches broadcasted device name and discovered service UUIDs against registered driver signatures (`matches()`).
 - **Manual Brand Override**: Users can override or reassign the driver protocol at any time via the Configure dialog (`Auto-Detect`, `Lovense`, `We-Vibe`, `Satisfyer`), which persists in the device registry and immediately rebinds GATT handles if connected.
 - **Brand Badges**: Device cards render visual brand pill badges styled for both Pink and WinAmp themes.
+
+### Battery Monitoring
+- **Sources**: If the device exposes the standard BLE Battery Service (`0000180f...`, characteristic `00002a19...`), the level is read once and via notifications when supported. Otherwise Lovense toys are sent `Battery;` on the UART TX characteristic and the bare-number reply (e.g. `85;`) is parsed in the RX notification listener. Devices with neither show no battery badge.
+- **Permissions**: The Battery Service UUID is included in `getAllOptionalServices()`; toys paired before this was added may need re-pairing for standard reads.
+- **Polling**: A shared 60-second timer (`startBatteryPolling()`) re-requests the level for all connected toys; Lovense polls are skipped while a motor command is in flight.
+- **UI**: `.battery-badge` sits beside the brand badge on connected device cards (`🔋 85%`, or `PWR 85%` in Music theme). Below 20% it switches to a warning style and logs once via `updateLog()`. Level is cleared on disconnect.
 
 ### Multi-Toy Channel Mixer & Multi-Motor Splitting
 - **Multi-Track Mixer (`#channelMixerCard`)**: Direct channel strip representation for each connected and selected toy directly beneath the Master Intensity card.

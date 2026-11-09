@@ -719,6 +719,34 @@ input:checked + .slider-toggle:before {
   margin-bottom: 14px;
 }
 
+/* Brand + battery badges share one wrapping row on device cards */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Battery Badge on Device Cards */
+.battery-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-top: 3px;
+  width: fit-content;
+  background: var(--badge-online-bg);
+  color: var(--badge-online);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.battery-badge.low {
+  background: var(--badge-searching-bg);
+  color: var(--badge-searching);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
 /* Brand Badges on Device Cards */
 .brand-badge {
   display: inline-flex;
@@ -746,6 +774,12 @@ input:checked + .slider-toggle:before {
   background: #fdf2f8;
   color: #db2777;
   border: 1px solid #fbcfe8;
+}
+/* Unverified devices: amber warning that controls may not work */
+.brand-badge.generic {
+  background: #fff7e0;
+  color: #b45309;
+  border: 1px solid #fcd34d;
 }
 .brand-badge.unknown {
   background: #f3f4f6;
@@ -1945,6 +1979,20 @@ input:checked + .slider-toggle:before {
   font-family: 'Consolas', monospace;
 }
 
+/* Battery Badge in WinAmp Style */
+[data-theme="music"] .battery-badge {
+  font-family: 'Consolas', monospace;
+  border-radius: 2px;
+  background: #0b1a10;
+  color: #00ff41;
+  border: 1px solid #284432;
+}
+[data-theme="music"] .battery-badge.low {
+  background: #241a0b;
+  color: #ffb000;
+  border-color: #6b4a14;
+}
+
 /* Brand Badges in WinAmp Style */
 [data-theme="music"] .brand-badge {
   font-family: 'Consolas', monospace;
@@ -1964,6 +2012,11 @@ input:checked + .slider-toggle:before {
   background: #241421;
   color: #f472b6;
   border: 1px solid #6b2657;
+}
+[data-theme="music"] .brand-badge.generic {
+  background: #241a0b;
+  color: #ffb000;
+  border: 1px solid #6b4a14;
 }
 [data-theme="music"] .brand-badge.unknown {
   background: #14161d;

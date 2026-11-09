@@ -334,7 +334,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v3.1</small>
+      <small>v3.3</small>
     </footer>
   </div>
 
@@ -383,6 +383,19 @@
             </button>
           </div>
         </div>
+
+        <!-- Scan Scope: optionally list every nearby Bluetooth device in the chooser -->
+        <div class="settings-section">
+          <div class="settings-section-label" id="scanAllLabel">Device Scanning</div>
+          <p class="settings-section-sub" id="scanAllSub">Show every nearby Bluetooth device. Unsupported devices are added as Unverified and may not respond.</p>
+          <div class="toggle-row">
+            <span id="scanAllText">Show all nearby devices</span>
+            <label class="switch">
+              <input type="checkbox" id="scanAllToggle" onchange="setScanAll(this.checked)">
+              <span class="slider-toggle"></span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -401,6 +414,7 @@
         <option value="lovense">Lovense (Lush, Domi, Hush, Edge...)</option>
         <option value="wevibe">We-Vibe (Sync, Nova, Chorus, Rave...)</option>
         <option value="satisfyer">Satisfyer (Pro 2+, Curvy, Royal One...)</option>
+        <option value="generic">Generic (Unverified, may not respond)</option>
       </select>
       <div class="modal-hint" id="renameBrandHint">Select your hardware family or leave as Auto-Detect.</div>
 
@@ -430,7 +444,7 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "3.1";
+    const APP_VERSION = "3.3";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -440,11 +454,27 @@
     const STORAGE_KEY_PATTERN_SETTINGS = "lush_pattern_settings";
     const STORAGE_KEY_MOTION_SETTINGS = "lush_motion_settings";
     const STORAGE_KEY_THEME = "toys_theme";
+    const STORAGE_KEY_SCAN_ALL = "toys_scan_all";
 
     /**
      * Runtime theme selection ('pink' | 'music').
      */
     let currentTheme = localStorage.getItem(STORAGE_KEY_THEME) || "pink";
+
+    /**
+     * When true, the Bluetooth chooser lists every nearby device instead of only supported brands.
+     */
+    let scanAllDevices = localStorage.getItem(STORAGE_KEY_SCAN_ALL) === "true";
+
+    /**
+     * Updates the show-all-devices preference, persists it, and syncs the settings toggle.
+     */
+    function setScanAll(enabled) {
+      scanAllDevices = !!enabled;
+      localStorage.setItem(STORAGE_KEY_SCAN_ALL, scanAllDevices ? "true" : "false");
+      const toggle = document.getElementById('scanAllToggle');
+      if (toggle) toggle.checked = scanAllDevices;
+    }
 
     /**
      * Opens Settings modal dialog.
@@ -607,6 +637,13 @@
         zeroBaselineBtn.innerText = isMusic ? "🎯 Calibrate Gyro Horizon (Neutral)" : "🎯 Zero Baseline (Set Tilt/Resting Level)";
       }
 
+      const scanAllLabel = document.getElementById('scanAllLabel');
+      if (scanAllLabel) scanAllLabel.innerText = isMusic ? "Source Scanning" : "Device Scanning";
+      const scanAllText = document.getElementById('scanAllText');
+      if (scanAllText) scanAllText.innerText = isMusic ? "Scan all audio sources" : "Show all nearby devices";
+      const scanAllToggle = document.getElementById('scanAllToggle');
+      if (scanAllToggle) scanAllToggle.checked = scanAllDevices;
+
       const renameTitle = document.getElementById('renameModalTitle');
       if (renameTitle) {
         renameTitle.innerText = isMusic ? "🔊 Configure Audio Channel" : "🎀 Configure Toy";
@@ -687,6 +724,9 @@
      *   originalName: string,       // Raw broadcasted device name (e.g. LVS-Lush3-B9)
      *   status: 'connected' | 'connecting' | 'disconnected',
      *   isConnecting: boolean,      // Concurrency lock for GATT connection attempts
+     *   batteryLevel: number|null,  // Last known battery percentage (0-100), null when unavailable
+     *   batteryMode: 'standard' | 'lovense' | null, // Source used to read the battery level
+     *   batteryChar: BluetoothRemoteGATTCharacteristic|null, // Standard Battery Level characteristic
      *   selected: boolean           // Included in multi-toy broadcast commands
      * }
      */
@@ -1186,8 +1226,65 @@
         stop: async (handles) => {
           await TOY_DRIVERS.satisfyer.sendMotors(handles, 0, 0, 1);
         }
+      },
+
+      // Fallback for unrecognized devices: connects, lists services, and only writes
+      // Lovense-style ASCII commands to a UART characteristic inside a known UART service.
+      generic: {
+        id: 'generic',
+        name: '⚠ Unverified',
+        musicName: '⚠ Unknown',
+        matches: () => false,
+        setup: async (server) => {
+          const uartPrefixes = ['0000fff0', '6e400001'];
+          const services = await server.getPrimaryServices();
+          let txChar = null;
+          let rxChar = null;
+          const uuids = [];
+          for (const s of services) {
+            const uuid = s.uuid.toLowerCase();
+            uuids.push(uuid.slice(0, 8));
+            if (!uartPrefixes.some(p => uuid.startsWith(p))) continue;
+            try {
+              const chars = await s.getCharacteristics();
+              for (const c of chars) {
+                if (!txChar && (c.properties.write || c.properties.writeWithoutResponse)) txChar = c;
+                if (!rxChar && (c.properties.notify || c.properties.indicate)) rxChar = c;
+              }
+            } catch (_) {}
+          }
+          updateLog(`Unverified device services: ${uuids.join(', ') || 'none visible'}`);
+          return { tx: txChar, rx: rxChar };
+        },
+        sendMotors: async (handles, m1_20) => {
+          if (!handles || !handles.tx) return;
+          const level = Math.max(0, Math.min(20, Math.round(m1_20)));
+          const payload = new TextEncoder().encode(`Vibrate:${level};`);
+          if (handles.tx.properties.writeWithoutResponse) {
+            await handles.tx.writeValueWithoutResponse(payload);
+          } else {
+            await handles.tx.writeValue(payload);
+          }
+        },
+        sendIntensity: async (handles, intensity20) => {
+          await TOY_DRIVERS.generic.sendMotors(handles, intensity20);
+        },
+        stop: async (handles) => {
+          await TOY_DRIVERS.generic.sendMotors(handles, 0);
+        }
       }
     };
+
+    /**
+     * Builds the requestDevice options: supported-brand filters by default, or every
+     * nearby device when the show-all setting is enabled.
+     */
+    function buildRequestOptions() {
+      const optionalServices = getAllOptionalServices();
+      return scanAllDevices
+        ? { acceptAllDevices: true, optionalServices }
+        : { filters: getScanFilters(), optionalServices };
+    }
 
     /**
      * Aggregates all Bluetooth scanning name prefixes and service filters across registered drivers.
@@ -1212,6 +1309,8 @@
     function getAllOptionalServices() {
       const set = new Set();
       getLovenseServices().forEach(s => set.add(s.toLowerCase()));
+      // Standard BLE Battery Service so battery level can be read on any brand
+      set.add(BATTERY_SERVICE_UUID);
       Object.values(TOY_DRIVERS).forEach(driver => {
         if (Array.isArray(driver.serviceUuids)) {
           driver.serviceUuids.forEach(u => set.add(u.toLowerCase()));
@@ -1599,6 +1698,9 @@
           originalName: originalName || (device ? device.name : "BLE-Device"),
           status: isConnected ? 'connected' : 'disconnected',
           isConnecting: false,
+          batteryLevel: null,
+          batteryMode: null,
+          batteryChar: null,
           selected: true,
           motorsConfig: motorsConfig || 'auto',
           motor1Level: 0,
@@ -1644,10 +1746,7 @@
       try {
         updateLog("Searching for compatible Bluetooth devices... ⏳");
 
-        const device = await navigator.bluetooth.requestDevice({
-          filters: getScanFilters(),
-          optionalServices: getAllOptionalServices()
-        });
+        const device = await navigator.bluetooth.requestDevice(buildRequestOptions());
 
         updateLog(`Connecting to ${device.name || 'Bluetooth Device'}... ⏳`);
         const toyRecord = addOrUpdateManagedToy(device, device.id, null, device.name || "Bluetooth Toy", 'auto', 'auto', false);
@@ -1716,10 +1815,14 @@
             }
           }
           if (!targetDriver) {
-            targetDriver = TOY_DRIVERS.lovense;
+            targetDriver = TOY_DRIVERS.generic;
           }
         }
 
+        // Unverified devices start unselected so broadcast commands skip them until opted in
+        if (targetDriver.id === 'generic' && !toyRecord.detectedBrand) {
+          toyRecord.selected = false;
+        }
         toyRecord.detectedBrand = targetDriver.id;
         const handles = await targetDriver.setup(server, toyRecord.device);
 
@@ -1737,6 +1840,12 @@
             handles.rx.addEventListener('characteristicvaluechanged', (evt) => {
               try {
                 const str = new TextDecoder().decode(evt.target.value);
+                // Battery query reply is a bare percentage such as "85;"
+                const batteryMatch = str.trim().match(/^(\d{1,3});?$/);
+                if (batteryMatch) {
+                  setToyBattery(toyRecord, parseInt(batteryMatch[1], 10));
+                  return;
+                }
                 const match = str.match(/^([A-Za-z0-9]+)(?::(\d+))?:/);
                 if (match && match[1]) {
                   toyRecord.modelCode = match[1].toUpperCase();
@@ -1761,6 +1870,9 @@
             console.warn("Lovense DeviceType notification init skipped:", e);
           }
         }
+
+        // Begin battery monitoring (non-blocking; failures leave the level unknown)
+        initBatteryMonitor(toyRecord, server, discoveredUuids, targetDriver.id, handles);
 
         persistToyMetadata(toyRecord.id, toyRecord.customName, toyRecord.originalName, toyRecord.brand || 'auto', toyRecord.motorsConfig || 'auto');
 
@@ -1819,6 +1931,102 @@
     }
 
     /**
+     * Standard BLE Battery Service / Battery Level characteristic UUIDs.
+     */
+    const BATTERY_SERVICE_UUID = '0000180f-0000-1000-8000-00805f9b34fb';
+    const BATTERY_LEVEL_UUID = '00002a19-0000-1000-8000-00805f9b34fb';
+    const BATTERY_POLL_MS = 60000;
+    const BATTERY_LOW_PCT = 20;
+    let batteryPollTimer = null;
+
+    /**
+     * Stores a battery percentage on a toy, logs when it first drops low,
+     * and refreshes the device list.
+     */
+    function setToyBattery(toy, level) {
+      if (!toy || !Number.isFinite(level)) return;
+      const clamped = Math.max(0, Math.min(100, Math.round(level)));
+      const wasLow = toy.batteryLevel !== null && toy.batteryLevel < BATTERY_LOW_PCT;
+      toy.batteryLevel = clamped;
+      if (clamped < BATTERY_LOW_PCT && !wasLow) {
+        updateLog(`🪫 ${toy.customName} battery low (${clamped}%).`);
+      }
+      renderDeviceList();
+    }
+
+    /**
+     * Chooses a battery source for a freshly connected toy: the standard BLE
+     * Battery Service when present, otherwise the Lovense "Battery;" UART command.
+     * Starts the shared polling timer. Never throws.
+     */
+    async function initBatteryMonitor(toy, server, discoveredUuids, driverId, handles) {
+      toy.batteryLevel = null;
+      toy.batteryMode = null;
+      toy.batteryChar = null;
+      try {
+        if (discoveredUuids.includes(BATTERY_SERVICE_UUID)) {
+          const svc = await server.getPrimaryService(BATTERY_SERVICE_UUID);
+          const chr = await svc.getCharacteristic(BATTERY_LEVEL_UUID);
+          toy.batteryChar = chr;
+          toy.batteryMode = 'standard';
+          // Subscribe to updates when the characteristic supports notifications
+          if (chr.properties.notify) {
+            try {
+              await chr.startNotifications();
+              chr.addEventListener('characteristicvaluechanged', (evt) => {
+                setToyBattery(toy, evt.target.value.getUint8(0));
+              });
+            } catch (_) { }
+          }
+        } else if (driverId === 'lovense' && handles && handles.rx && handles.tx) {
+          toy.batteryMode = 'lovense';
+        }
+      } catch (e) {
+        console.warn('Battery service unavailable:', e);
+        toy.batteryMode = (driverId === 'lovense' && handles && handles.rx) ? 'lovense' : null;
+        toy.batteryChar = null;
+      }
+      await pollToyBattery(toy);
+      startBatteryPolling();
+    }
+
+    /**
+     * Requests one battery reading for a connected toy. Standard mode reads the
+     * characteristic directly; Lovense mode sends "Battery;" and the reply is
+     * handled by the UART notification listener. Errors are swallowed.
+     */
+    async function pollToyBattery(toy) {
+      if (!toy || toy.status !== 'connected' || !toy.batteryMode) return;
+      try {
+        if (toy.batteryMode === 'standard' && toy.batteryChar) {
+          const value = await toy.batteryChar.readValue();
+          setToyBattery(toy, value.getUint8(0));
+        } else if (toy.batteryMode === 'lovense' && toy.tx) {
+          // Skip while a motor command is in flight to avoid disturbing the write queue
+          if (isTransmitting) return;
+          const payload = new TextEncoder().encode('Battery;');
+          if (toy.tx.properties.writeWithoutResponse) {
+            await toy.tx.writeValueWithoutResponse(payload);
+          } else {
+            await toy.tx.writeValue(payload);
+          }
+        }
+      } catch (e) {
+        console.warn('Battery poll skipped:', e);
+      }
+    }
+
+    /**
+     * Starts the shared timer that refreshes battery levels of all connected toys.
+     */
+    function startBatteryPolling() {
+      if (batteryPollTimer) return;
+      batteryPollTimer = setInterval(() => {
+        managedToys.forEach(t => { pollToyBattery(t); });
+      }, BATTERY_POLL_MS);
+    }
+
+    /**
      * Starts periodic timer running auto-reconnect every 5 seconds.
      */
     function startAutoScanLoop() {
@@ -1865,6 +2073,9 @@
         toy.status = 'disconnected';
         toy.isConnecting = false;
         toy.tx = null;
+        toy.batteryLevel = null;
+        toy.batteryMode = null;
+        toy.batteryChar = null;
         if (toy.gatt) {
           try { toy.gatt.disconnect(); } catch (_) { }
         }
@@ -2008,10 +2219,7 @@
 
         // 1. If active BluetoothDevice instance is not present, request user gesture selection
         if (!toy.device) {
-          const device = await navigator.bluetooth.requestDevice({
-            filters: getScanFilters(),
-            optionalServices: getAllOptionalServices()
-          });
+          const device = await navigator.bluetooth.requestDevice(buildRequestOptions());
 
           // Rebind acquired device to saved toy record
           const oldId = toy.id;
@@ -2029,10 +2237,7 @@
           console.warn("Direct GATT connect failed on cached device, requesting fresh pairing gesture:", gattErr);
           updateLog(`Re-selecting ${toy.customName}... ⏳`);
 
-          const freshDevice = await navigator.bluetooth.requestDevice({
-            filters: getScanFilters(),
-            optionalServices: getAllOptionalServices()
-          });
+          const freshDevice = await navigator.bluetooth.requestDevice(buildRequestOptions());
 
           const oldId = toy.id;
           toy.device = freshDevice;
@@ -2122,6 +2327,14 @@
           : (isMusic ? "Auto Detect" : "Auto-Detect");
         const badgeClass = brandDriver ? brandDriver.id : 'unknown';
 
+        // Battery badge: only shown while connected and a level is known
+        let batteryHtml = '';
+        if (toy.status === 'connected' && toy.batteryLevel !== null) {
+          const lowClass = toy.batteryLevel < BATTERY_LOW_PCT ? ' low' : '';
+          const batteryText = isMusic ? `PWR ${toy.batteryLevel}%` : `${toy.batteryLevel < BATTERY_LOW_PCT ? '🪫' : '🔋'} ${toy.batteryLevel}%`;
+          batteryHtml = `<span class="battery-badge${lowClass}" title="Battery level">${batteryText}</span>`;
+        }
+
         item.innerHTML = `
         <div class="device-main-row">
           <div class="device-info" onclick="toggleSelectToy(${idx})">
@@ -2129,7 +2342,7 @@
             <div class="device-text">
               <span class="device-name">${toy.customName}</span>
               <span class="device-sub">${toy.originalName}</span>
-              <span class="brand-badge ${badgeClass}">${brandLabel}</span>
+              <span class="badge-row"><span class="brand-badge ${badgeClass}">${brandLabel}</span>${batteryHtml}</span>
             </div>
           </div>
           ${statusHtml}
