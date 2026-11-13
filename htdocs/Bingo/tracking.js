@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '4.5';
+const VERSION = '4.7';
 
 
 // ============================================================
@@ -14,9 +14,9 @@ let session = {
     gameId: null,
     inputMode: "number",
     doubleMode: false,  // double bingo: requires 2 matching patterns on one card to win
-    ballTarget: 0,      // prize-window target ball count (0 = disabled)
-    gamesPlayed: 0,     // number of times Clear Cards was used (games finished this session)
-    callCounts: {}      // times each ball (1-75) has been called this session; survives Clear Cards
+    ballTarget: 0,      // effective prize-window target (0 = disabled); derived from the two fields below
+    ballTargetEnabled: false, // Ball Target on/off toggle
+    ballTargetCount: 50       // chosen target count; remembered while the toggle is off
 };
 
 // ============================================================
@@ -82,10 +82,16 @@ function saveSession() {
         inputMode: inputMode,
         dauber: session.dauber,
         doubleMode: session.doubleMode || false,
-        ballTarget: session.ballTarget || 0,  // prize-window target ball count
-        callCounts: session.callCounts || {},
-        gamesPlayed: session.gamesPlayed || 0
+        ballTargetEnabled: !!session.ballTargetEnabled,
+        ballTargetCount: session.ballTargetCount || 50
     }));
+}
+
+// Derives the effective target (0 when the toggle is off) used by the badge and card chips.
+function syncBallTarget() {
+    const count = Math.max(1, Math.min(75, parseInt(session.ballTargetCount, 10) || 50));
+    session.ballTargetCount = count;
+    session.ballTarget = session.ballTargetEnabled ? count : 0;
 }
 
 function loadSession() {
@@ -103,9 +109,10 @@ function loadSession() {
     inputMode = obj.inputMode || "number";
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     session.doubleMode = obj.doubleMode || false;
-    session.ballTarget = obj.ballTarget || 0;  // restore prize-window target (default off)
-    session.gamesPlayed = obj.gamesPlayed || 0;
-    session.callCounts = (obj.callCounts && typeof obj.callCounts === 'object') ? obj.callCounts : {};
+    // Restore Ball Target; a legacy numeric ballTarget > 0 means enabled with that count
+    session.ballTargetCount = parseInt(obj.ballTargetCount, 10) || obj.ballTarget || 50;
+    session.ballTargetEnabled = obj.ballTargetEnabled !== undefined ? !!obj.ballTargetEnabled : (obj.ballTarget || 0) > 0;
+    syncBallTarget();
 
     // Migrate cards: ensure editMode, active, and serial fields exist
     session.cards = Array.isArray(obj.cards)
@@ -116,6 +123,100 @@ function loadSession() {
 loadSession();
 
 // ============================================================
+// STATS SESSIONS (per-location ball call tallies)
+// Stored under its own key so Clear Cards / session saves never touch it.
+// activeId === null means the "Unsaved" tally is being updated.
+// ============================================================
+
+const STATS_KEY = "bingoStatsSessions";
+let statsStore = null;
+// True when pre-existing stats were found and the user still needs to name them
+let pendingNameExistingStats = false;
+
+function emptyTally() {
+    return { callCounts: {}, gamesPlayed: 0 };
+}
+
+// Loads the store; on first run migrates any tally saved inside the old bingoSession blob
+function loadStatsStore() {
+    let store = null;
+    try {
+        const raw = localStorage.getItem(STATS_KEY);
+        if (raw) store = JSON.parse(raw);
+    } catch (e) { store = null; }
+
+    if (!store || typeof store !== "object") {
+        store = { activeId: null, locations: {}, unsaved: emptyTally() };
+        try {
+            const old = JSON.parse(localStorage.getItem("bingoSession") || "null");
+            if (old && old.callCounts && Object.keys(old.callCounts).length > 0) {
+                store.unsaved = { callCounts: old.callCounts, gamesPlayed: old.gamesPlayed || 0 };
+                pendingNameExistingStats = true;
+            }
+        } catch (e) { /* no legacy data */ }
+    }
+    if (!store.locations || typeof store.locations !== "object") store.locations = {};
+    if (!store.unsaved) store.unsaved = emptyTally();
+    if (store.activeId && !store.locations[store.activeId]) store.activeId = null;
+    statsStore = store;
+    saveStatsStore();
+}
+
+function saveStatsStore() {
+    try { localStorage.setItem(STATS_KEY, JSON.stringify(statsStore)); } catch (e) { /* storage unavailable */ }
+}
+
+// The tally currently receiving calls: the active location, or the Unsaved bucket
+function getActiveStats() {
+    return (statsStore.activeId && statsStore.locations[statsStore.activeId]) || statsStore.unsaved;
+}
+
+function getActiveStatsName() {
+    return statsStore.activeId ? statsStore.locations[statsStore.activeId].name : "Unsaved";
+}
+
+// Sums every location plus Unsaved into one read-only tally
+function getCombinedStats() {
+    const total = emptyTally();
+    [statsStore.unsaved, ...Object.values(statsStore.locations)].forEach(t => {
+        total.gamesPlayed += t.gamesPlayed || 0;
+        for (const [n, c] of Object.entries(t.callCounts || {})) {
+            total.callCounts[n] = (total.callCounts[n] || 0) + c;
+        }
+    });
+    return total;
+}
+
+// Creates a location (optionally seeded with a tally), makes it active and returns its id
+function createStatsLocation(name, seed) {
+    const id = "loc_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    statsStore.locations[id] = {
+        name,
+        callCounts: seed ? seed.callCounts : {},
+        gamesPlayed: seed ? seed.gamesPlayed : 0,
+        createdAt: new Date().toISOString()
+    };
+    statsStore.activeId = id;
+    saveStatsStore();
+    updateStatsLinkLabel();
+    return id;
+}
+
+// True if another location already uses this name (case-insensitive)
+function statsNameTaken(name, exceptId) {
+    const lower = name.toLowerCase();
+    return Object.entries(statsStore.locations).some(([id, l]) => id !== exceptId && l.name.toLowerCase() === lower);
+}
+
+// Shows the active location name on the Stats link
+function updateStatsLinkLabel() {
+    const el = document.getElementById("statsSessionName");
+    if (el) el.textContent = getActiveStatsName();
+}
+
+loadStatsStore();
+
+// ============================================================
 // MAIN UI REFRESH
 // ============================================================
 
@@ -123,6 +224,7 @@ function updateUI() {
     // 1. Total called count, floating badge, and Last Man status
     const calledCount = session.called.length;
     const target = session.ballTarget || 0;
+    updateStatsLinkLabel();
 
     if (totalCalledSpan) {
         totalCalledSpan.textContent = calledCount;
@@ -440,12 +542,13 @@ callLogLink.addEventListener("click", (e) => {
     openCallLogModal();
 });
 
-// Adds delta to a ball's session call tally (never below zero; zero entries are dropped)
+// Adds delta to a ball's tally in the active stats location (never below zero; zero entries are dropped)
 function adjustCallCount(n, delta) {
-    if (!session.callCounts) session.callCounts = {};
-    const next = Math.max(0, (session.callCounts[n] || 0) + delta);
-    if (next === 0) delete session.callCounts[n];
-    else session.callCounts[n] = next;
+    const counts = getActiveStats().callCounts;
+    const next = Math.max(0, (counts[n] || 0) + delta);
+    if (next === 0) delete counts[n];
+    else counts[n] = next;
+    saveStatsStore();
 }
 
 function openCallLogModal() {
@@ -503,7 +606,112 @@ function openCallLogModal() {
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
 }
 
-// Stats modal: bar graph of how many times each ball (1-75) was called this session
+// Inline name form (text input + Save/Cancel) rendered into `host`.
+// Trims input and rejects empty or duplicate location names.
+// opts: { initial, exceptId, saveLabel, onSave(name), onCancel() }
+function showNameForm(host, opts) {
+    host.innerHTML = "";
+    const form = document.createElement("form");
+    form.className = "stats-name-form";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "stats-name-input";
+    input.maxLength = 30;
+    input.placeholder = "Location name";
+    input.autocomplete = "off";
+    input.value = opts.initial || "";
+    input.setAttribute("aria-label", "Location name");
+
+    const err = document.createElement("div");
+    err.className = "stats-name-error";
+
+    const save = document.createElement("button");
+    save.type = "submit";
+    save.className = "stats-loc-btn active";
+    save.textContent = opts.saveLabel || "Save";
+
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "stats-loc-btn";
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", () => { host.innerHTML = ""; if (opts.onCancel) opts.onCancel(); });
+
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = input.value.trim();
+        if (!name) { err.textContent = "Enter a name."; return; }
+        if (statsNameTaken(name, opts.exceptId)) { err.textContent = "That name is already used."; return; }
+        host.innerHTML = "";
+        opts.onSave(name);
+    });
+
+    form.appendChild(input);
+    form.appendChild(save);
+    form.appendChild(cancel);
+    host.appendChild(form);
+    host.appendChild(err);
+    input.focus();
+    input.select();
+}
+
+// One-time sheet asking the user to name stats recorded before locations existed
+function openNameExistingStatsSheet() {
+    const modal = document.createElement("div");
+    modal.className = "game-picker-modal";
+    const panel = document.createElement("div");
+    panel.className = "game-picker-panel";
+    const hdr = document.createElement("div");
+    hdr.className = "game-picker-header";
+    hdr.innerHTML = '<h2 class="game-picker-title">Name your existing stats</h2>';
+    panel.appendChild(hdr);
+
+    const content = document.createElement("div");
+    content.className = "stats-body";
+    content.innerHTML = '<p class="stats-summary">Stats are now kept per location. Choose a name for the stats you already have, or discard them.</p>';
+    const host = document.createElement("div");
+    content.appendChild(host);
+    panel.appendChild(content);
+
+    function finish() { pendingNameExistingStats = false; modal.remove(); updateStatsLinkLabel(); }
+
+    const discard = document.createElement("button");
+    discard.type = "button";
+    discard.className = "stats-loc-btn danger";
+    discard.textContent = "Discard old stats";
+    discard.addEventListener("click", () => {
+        if (!confirm("Discard the existing ball call stats?")) return;
+        statsStore.unsaved = emptyTally();
+        saveStatsStore();
+        finish();
+    });
+    const keep = document.createElement("button");
+    keep.type = "button";
+    keep.className = "stats-loc-btn";
+    keep.textContent = "Keep as Unsaved";
+    keep.addEventListener("click", finish);
+
+    const nameForm = () => showNameForm(host, {
+        saveLabel: "Save",
+        onSave: (name) => {
+            createStatsLocation(name, statsStore.unsaved);
+            statsStore.unsaved = emptyTally();
+            saveStatsStore();
+            finish();
+        }
+    });
+    nameForm();
+    const row = document.createElement("div");
+    row.className = "stats-loc-actions";
+    row.appendChild(keep);
+    row.appendChild(discard);
+    content.appendChild(row);
+
+    modal.appendChild(panel);
+    document.body.appendChild(modal);
+}
+
+// Stats modal: per-location bar graph of how many times each ball (1-75) was called
 function openStatsModal() {
     const modal = document.createElement("div");
     modal.className = "game-picker-modal stats-modal";
@@ -524,31 +732,125 @@ function openStatsModal() {
     hdr.appendChild(closeBtn);
     panel.appendChild(hdr);
 
+    // true = read-only combined view of every location
+    let viewAll = false;
+
+    // Location bar: switcher, new / rename / delete / save-as, and the This/All toggle
+    const locBar = document.createElement("div");
+    locBar.className = "stats-location-bar";
+    panel.appendChild(locBar);
+
     const body = document.createElement("div");
     body.className = "stats-body";
     panel.appendChild(body);
 
+    function makeBtn(label, onClick, extraClass) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "stats-loc-btn" + (extraClass ? " " + extraClass : "");
+        b.textContent = label;
+        b.addEventListener("click", onClick);
+        return b;
+    }
+
+    // Rebuilds the location bar from the store (called after any location change)
+    function renderLocBar() {
+        locBar.innerHTML = "";
+
+        const select = document.createElement("select");
+        select.className = "stats-location-select";
+        select.setAttribute("aria-label", "Stats location");
+        const unsavedOpt = new Option("Unsaved", "");
+        select.appendChild(unsavedOpt);
+        Object.entries(statsStore.locations)
+            .sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .forEach(([id, l]) => select.appendChild(new Option(l.name, id)));
+        select.value = statsStore.activeId || "";
+        select.addEventListener("change", () => {
+            statsStore.activeId = select.value || null;
+            saveStatsStore();
+            updateStatsLinkLabel();
+            refresh();
+        });
+        locBar.appendChild(select);
+
+        // Segmented This location / All locations toggle
+        const seg = document.createElement("div");
+        seg.className = "stats-view-toggle";
+        [["This location", false], ["All locations", true]].forEach(([label, all]) => {
+            const b = makeBtn(label, () => { viewAll = all; refresh(); }, viewAll === all ? "active" : "");
+            seg.appendChild(b);
+        });
+        locBar.appendChild(seg);
+
+        // Action row
+        const actions = document.createElement("div");
+        actions.className = "stats-loc-actions";
+        const formHost = document.createElement("div");
+        formHost.className = "stats-form-host";
+
+        actions.appendChild(makeBtn("+ New", () => showNameForm(formHost, {
+            saveLabel: "Create",
+            onSave: (name) => { createStatsLocation(name); refresh(); }
+        })));
+        if (statsStore.activeId) {
+            const id = statsStore.activeId;
+            actions.appendChild(makeBtn("Rename", () => showNameForm(formHost, {
+                initial: statsStore.locations[id].name, exceptId: id, saveLabel: "Rename",
+                onSave: (name) => { statsStore.locations[id].name = name; saveStatsStore(); updateStatsLinkLabel(); refresh(); }
+            })));
+            actions.appendChild(makeBtn("Delete", () => {
+                if (!confirm(`Delete "${statsStore.locations[id].name}" and all of its stats?`)) return;
+                delete statsStore.locations[id];
+                statsStore.activeId = null;
+                saveStatsStore();
+                updateStatsLinkLabel();
+                refresh();
+            }, "danger"));
+        } else if (Object.keys(statsStore.unsaved.callCounts).length > 0) {
+            actions.appendChild(makeBtn("Save as location…", () => showNameForm(formHost, {
+                saveLabel: "Save",
+                onSave: (name) => {
+                    createStatsLocation(name, statsStore.unsaved);
+                    statsStore.unsaved = emptyTally();
+                    saveStatsStore();
+                    refresh();
+                }
+            })));
+        }
+        locBar.appendChild(actions);
+        locBar.appendChild(formHost);
+    }
+
+    // Re-renders both the location bar and the chart
+    function refresh() {
+        renderLocBar();
+        render();
+    }
+
     // Rebuilds the chart from the current tallies (also used after reset)
     function render() {
         body.innerHTML = "";
-        const counts = session.callCounts || {};
+        const tally = viewAll ? getCombinedStats() : getActiveStats();
+        const viewName = viewAll ? "All locations" : getActiveStatsName();
+        const counts = tally.callCounts || {};
         const max = Math.max(0, ...Object.values(counts));
         const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
         if (total === 0) {
-            body.innerHTML = '<p class="bingo-cards-placeholder">No balls called yet this session.</p>';
+            body.innerHTML = `<p class="bingo-cards-placeholder">No balls recorded yet for ${viewName.replace(/[<&]/g, "")}.</p>`;
             resetBtn.disabled = true;
             return;
         }
-        resetBtn.disabled = false;
+        resetBtn.disabled = viewAll;  // combined view is read-only
 
-        const games = session.gamesPlayed || 0;
+        const games = tally.gamesPlayed || 0;
 
         // Summary line: total games (Clear Cards count), calls, and repeated balls
         const summary = document.createElement("div");
         summary.className = "stats-summary";
         const repeats = Object.values(counts).filter(c => c > 1).length;
-        summary.textContent = `${games} game${games === 1 ? "" : "s"} · ${total} calls · ${repeats} repeated`;
+        summary.textContent = `${viewName} · ${games} game${games === 1 ? "" : "s"} · ${total} calls · ${repeats} repeated`;
         body.appendChild(summary);
 
         // Readout shows the ball under the finger while scrubbing the chart
@@ -656,16 +958,18 @@ function openStatsModal() {
     resetBtn.className = "stats-reset-btn";
     resetBtn.textContent = "Reset Stats";
     resetBtn.addEventListener("click", () => {
-        if (!confirm("Reset ball call stats for this session? The call log and board are not affected.")) return;
-        session.callCounts = {};
-        session.gamesPlayed = 0;
-        saveSession();
-        render();
+        if (viewAll) return;
+        if (!confirm(`Reset ball call stats for "${getActiveStatsName()}"? The call log and board are not affected.`)) return;
+        const active = getActiveStats();
+        active.callCounts = {};
+        active.gamesPlayed = 0;
+        saveStatsStore();
+        refresh();
     });
     footer.appendChild(resetBtn);
     panel.appendChild(footer);
 
-    render();
+    refresh();
     modal.appendChild(panel);
     document.body.appendChild(modal);
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
@@ -707,7 +1011,8 @@ if (clearCardsBtn) {
         session.called = [];
         session.lastBall = null;
         activeLetterIdx = -1;
-        session.gamesPlayed = (session.gamesPlayed || 0) + 1;  // each clear ends one game
+        getActiveStats().gamesPlayed = (getActiveStats().gamesPlayed || 0) + 1;  // each clear ends one game
+        saveStatsStore();
 
         saveSession();
         updateUI();
@@ -907,82 +1212,6 @@ function openGamePicker() {
     hdr.appendChild(closeBtn);
     panel.appendChild(hdr);
 
-    // ---- Ball Target stepper row ----
-    // Allows the caller to set a prize-window target ball count for special games.
-    // Setting to 0 disables the feature. Lives above the game list so it doesn't
-    // interfere with normal game selection.
-    const targetRow = document.createElement("div");
-    const isTargetSet = (session.ballTarget || 0) > 0;
-    targetRow.className = "ball-target-row" + (isTargetSet ? " target-is-set" : "");
-
-    const targetLabelWrap = document.createElement("div");
-    targetLabelWrap.className = "ball-target-label-wrap";
-    const targetLabel = document.createElement("span");
-    targetLabel.className = "ball-target-label";
-    targetLabel.textContent = "Ball Target";
-    const targetHint = document.createElement("span");
-    targetHint.className = "ball-target-hint";
-    targetHint.textContent = "Prize-window ball count  ·  0 = off";
-    targetLabelWrap.appendChild(targetLabel);
-    targetLabelWrap.appendChild(targetHint);
-
-    const targetControls = document.createElement("div");
-    targetControls.className = "ball-target-controls";
-
-    // Decrement button
-    const decBtn = document.createElement("button");
-    decBtn.className = "ball-target-step-btn";
-    decBtn.type = "button";
-    decBtn.textContent = "−";
-    decBtn.setAttribute("aria-label", "Decrease ball target");
-
-    // Number input (spinners hidden via CSS)
-    const targetInput = document.createElement("input");
-    targetInput.type = "number";
-    targetInput.className = "ball-target-input";
-    targetInput.min = "0";
-    targetInput.max = "75";
-    targetInput.step = "1";
-    targetInput.value = session.ballTarget || 0;
-    targetInput.setAttribute("aria-label", "Ball target count");
-
-    // Increment button
-    const incBtn = document.createElement("button");
-    incBtn.className = "ball-target-step-btn";
-    incBtn.type = "button";
-    incBtn.textContent = "+";
-    incBtn.setAttribute("aria-label", "Increase ball target");
-
-    // Update ballTarget on any input change and refresh the UI live
-    function applyTargetValue(val) {
-        const parsed = Math.max(0, Math.min(75, parseInt(val, 10) || 0));
-        session.ballTarget = parsed;
-        targetInput.value = parsed;
-        const active = parsed > 0;
-        targetRow.classList.toggle("target-is-set", active);
-        saveSession();
-        updateUI();  // refresh badge and card chips immediately (picker stays open)
-    }
-
-    targetInput.addEventListener("input", () => applyTargetValue(targetInput.value));
-    decBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        applyTargetValue((session.ballTarget || 0) - 1);
-    });
-    incBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        applyTargetValue((session.ballTarget || 0) + 1);
-    });
-    // Prevent stepper interactions from closing the picker
-    targetRow.addEventListener("click", (e) => e.stopPropagation());
-
-    targetControls.appendChild(decBtn);
-    targetControls.appendChild(targetInput);
-    targetControls.appendChild(incBtn);
-    targetRow.appendChild(targetLabelWrap);
-    targetRow.appendChild(targetControls);
-    panel.appendChild(targetRow);
-
     const list = document.createElement("div");
     list.className = "game-picker-list";
 
@@ -1157,6 +1386,130 @@ function renderGamePickerItem(game) {
     });
 
     return item;
+}
+
+// ============================================================
+// BALL TARGET MODAL
+// Opened by tapping the "Called" badge. A toggle enables/disables the
+// target and a scroll-snap wheel picks the count (1-75), so the count is
+// kept while the target is switched off.
+// ============================================================
+
+const WHEEL_ITEM_H = 44;  // px height of one wheel row (must match .bt-wheel-item in CSS)
+
+function closeBallTargetModal() {
+    const m = document.getElementById("ballTargetModal");
+    if (m) m.remove();
+}
+
+function openBallTargetModal() {
+    closeBallTargetModal();
+
+    const modal = document.createElement("div");
+    modal.id = "ballTargetModal";
+    modal.className = "settings-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-label", "Ball Target");
+
+    const panel = document.createElement("div");
+    panel.className = "settings-panel";
+
+    const hdr = document.createElement("div");
+    hdr.className = "settings-header";
+    hdr.innerHTML = `<h2 class="settings-title">Ball Target</h2>`;
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "settings-close-btn";
+    closeBtn.type = "button";
+    closeBtn.setAttribute("aria-label", "Close ball target");
+    closeBtn.innerHTML = "&times;";
+    closeBtn.addEventListener("click", closeBallTargetModal);
+    hdr.appendChild(closeBtn);
+
+    const body = document.createElement("div");
+    body.className = "settings-body";
+
+    // On/off toggle row
+    const toggleRow = document.createElement("label");
+    toggleRow.className = "bt-toggle-row";
+    toggleRow.innerHTML = `
+        <span class="bt-toggle-text">
+            <span class="bt-toggle-title">Use Ball Target</span>
+            <span class="bt-toggle-hint">Prize-window ball count</span>
+        </span>
+        <input type="checkbox" class="bt-switch-input" id="ballTargetToggle" role="switch">
+        <span class="bt-switch" aria-hidden="true"></span>`;
+    const toggle = toggleRow.querySelector("input");
+    toggle.checked = !!session.ballTargetEnabled;
+
+    // Wheel selector: 1..75 with scroll snap; the centered row is the value
+    const wheelWrap = document.createElement("div");
+    wheelWrap.className = "bt-wheel-wrap";
+    const band = document.createElement("div");
+    band.className = "bt-wheel-band";
+    const wheel = document.createElement("div");
+    wheel.className = "bt-wheel";
+    wheel.setAttribute("role", "listbox");
+    wheel.setAttribute("aria-label", "Ball target count");
+    wheel.tabIndex = 0;
+    for (let n = 1; n <= 75; n++) {
+        const item = document.createElement("div");
+        item.className = "bt-wheel-item";
+        item.textContent = n;
+        item.dataset.value = n;
+        item.addEventListener("click", () => wheel.scrollTo({ top: (n - 1) * WHEEL_ITEM_H, behavior: "smooth" }));
+        wheel.appendChild(item);
+    }
+    wheelWrap.appendChild(wheel);
+    wheelWrap.appendChild(band);
+
+    // Applies the current toggle/count, then refreshes badge and card chips
+    function applyChanges() {
+        session.ballTargetEnabled = toggle.checked;
+        syncBallTarget();
+        wheelWrap.classList.toggle("bt-disabled", !toggle.checked);
+        saveSession();
+        updateUI();
+    }
+
+    // Reads the centered row from the scroll position and highlights it
+    let wheelRaf = 0;
+    function onWheelScroll() {
+        cancelAnimationFrame(wheelRaf);
+        wheelRaf = requestAnimationFrame(() => {
+            const idx = Math.max(0, Math.min(74, Math.round(wheel.scrollTop / WHEEL_ITEM_H)));
+            const val = idx + 1;
+            wheel.querySelectorAll(".bt-wheel-item.selected").forEach(el => el.classList.remove("selected"));
+            wheel.children[idx].classList.add("selected");
+            if (val !== session.ballTargetCount) {
+                session.ballTargetCount = val;
+                applyChanges();
+            }
+        });
+    }
+    wheel.addEventListener("scroll", onWheelScroll);
+    toggle.addEventListener("change", applyChanges);
+
+    body.appendChild(toggleRow);
+    body.appendChild(wheelWrap);
+    panel.appendChild(hdr);
+    panel.appendChild(body);
+    modal.appendChild(panel);
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeBallTargetModal(); });
+
+    // Position the wheel on the saved count (after layout) and set initial look
+    wheelWrap.classList.toggle("bt-disabled", !toggle.checked);
+    wheel.scrollTop = (session.ballTargetCount - 1) * WHEEL_ITEM_H;
+    wheel.children[session.ballTargetCount - 1].classList.add("selected");
+}
+
+// Tapping the Called badge opens the Ball Target modal
+if (floatingTotalBadge) {
+    floatingTotalBadge.addEventListener("click", openBallTargetModal);
+    floatingTotalBadge.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openBallTargetModal(); }
+    });
 }
 
 function closeGamePicker() {
@@ -1893,3 +2246,6 @@ window.addEventListener('suite-profile-changed', (e) => {
 });
 
 initBingoSettings();
+
+// Existing pre-location stats found at startup: ask the user to name them
+if (pendingNameExistingStats) openNameExistingStatsSheet();

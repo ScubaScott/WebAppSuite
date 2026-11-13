@@ -2647,99 +2647,6 @@ body {
     border-color: rgba(229, 57, 53, 0.28);
 }
 
-/* ---- Ball Target stepper row inside the game picker panel ---- */
-
-.ball-target-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-}
-
-.ball-target-label-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.ball-target-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-main);
-}
-
-.ball-target-hint {
-    font-size: 11px;
-    color: var(--text-subtle);
-}
-
-.ball-target-controls {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* Stepper +/- buttons */
-.ball-target-step-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--text-main);
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.13s ease, border-color 0.13s ease;
-    flex-shrink: 0;
-}
-
-.ball-target-step-btn:hover {
-    background: var(--primary-soft);
-    border-color: var(--primary);
-}
-
-/* Number input in the stepper */
-.ball-target-input {
-    width: 52px;
-    text-align: center;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-main);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 6px;
-    outline: none;
-    /* Remove default number input spinners */
-    -moz-appearance: textfield;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.ball-target-input::-webkit-inner-spin-button,
-.ball-target-input::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.ball-target-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.18);
-}
-
-/* Active target state — highlight the label row in green */
-.ball-target-row.target-is-set .ball-target-label {
-    color: var(--primary);
-}
-
 /* ================================================================
    BALL TARGET — DIVE BAR THEME OVERRIDES
 ================================================================ */
@@ -3067,4 +2974,244 @@ body {
 .stats-reset-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* ================================================================
+   BALL TARGET MODAL (opened from the Called badge)
+================================================================ */
+
+/* The Called badge is tappable */
+.last-six-called-badge {
+    cursor: pointer;
+    min-height: 44px;
+}
+
+/* Toggle row */
+.bt-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    cursor: pointer;
+    position: relative;
+}
+
+.bt-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.bt-toggle-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.bt-toggle-hint {
+    font-size: 12px;
+    color: var(--text-subtle);
+}
+
+/* Switch: the real checkbox is visually hidden, the track/knob is drawn on the sibling */
+.bt-switch-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.bt-switch {
+    width: 52px;
+    height: 30px;
+    border-radius: 999px;
+    background: var(--border);
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.18s ease;
+}
+
+.bt-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.18s ease;
+}
+
+.bt-switch-input:checked + .bt-switch {
+    background: var(--primary);
+}
+
+.bt-switch-input:checked + .bt-switch::after {
+    transform: translateX(22px);
+}
+
+.bt-switch-input:focus-visible + .bt-switch {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Wheel: five visible rows, the middle one is the selection */
+.bt-wheel-wrap {
+    position: relative;
+    height: 220px; /* 5 rows x 44px */
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    overflow: hidden;
+    transition: opacity 0.18s ease;
+}
+
+.bt-wheel-wrap.bt-disabled {
+    opacity: 0.45;
+}
+
+.bt-wheel {
+    height: 100%;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    padding: 88px 0; /* 2 rows above/below so first/last values can center */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    outline: none;
+}
+
+.bt-wheel::-webkit-scrollbar {
+    display: none;
+}
+
+.bt-wheel-item {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.12s ease, font-size 0.12s ease;
+}
+
+.bt-wheel-item.selected {
+    color: var(--primary);
+    font-size: 28px;
+    font-weight: 800;
+}
+
+/* Highlight band over the centered row; ignores pointer input */
+.bt-wheel-band {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 88px;
+    height: 44px;
+    border-top: 2px solid var(--primary);
+    border-bottom: 2px solid var(--primary);
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+/* ================================================================
+   STATS LOCATIONS (per-location ball call stats)
+================================================================ */
+
+/* Stats link: label plus the active location name, truncated when long */
+.stats-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 55%;
+}
+
+.stats-session-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.stats-location-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0;
+}
+
+.stats-location-select,
+.stats-name-input {
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 12px;
+    font-size: 16px;
+    color: var(--text-main);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.stats-view-toggle,
+.stats-loc-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stats-view-toggle .stats-loc-btn {
+    flex: 1;
+}
+
+.stats-loc-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.13s ease, transform 0.08s ease;
+}
+
+.stats-loc-btn:active {
+    transform: scale(0.97);
+}
+
+.stats-loc-btn.active {
+    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.stats-loc-btn.danger {
+    color: #e53935;
+    border-color: rgba(229, 57, 53, 0.4);
+}
+
+/* Inline name form */
+.stats-name-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stats-name-form .stats-name-input {
+    flex: 1 1 100%;
+}
+
+.stats-name-error {
+    min-height: 0;
+    font-size: 12px;
+    color: #e53935;
 }

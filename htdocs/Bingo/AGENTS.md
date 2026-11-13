@@ -39,6 +39,7 @@ The Bingo suite consists of a Bingo Number Tracker, caller system, call log, gam
 
 - **Input Modes**: Support both "By Letter" (picking column first, then number) and "By Number" (direct 1–75 grid).
 - **Recent Balls**: Maintain an active "Last 6" caller display strip and a timestamped Call Log modal.
+- **Ball Stats Locations**: Ball call tallies are stored per location in `localStorage` key `bingoStatsSessions` (separate from `bingoSession`). The Stats link shows the active location, or "Unsaved" when none is chosen; the Stats modal switches, creates, renames and deletes locations and can show a read-only combined view.
 - **Game Modes**:
   - Support game modes such as Standard Line/Corners, Double Mode, Coverall/Blackout, and Last Man Standing.
   - Provide clear status badges (e.g., individual card standing/sitting badges, `#doubleModeBadge`).

@@ -43,8 +43,8 @@
                 </div>
                 <div id="lastSixList" class="last-six-list" aria-live="polite"></div>
                 <div class="last-six-footer" id="lastSixFooter">
-                    <button id="statsLink" class="link-button" type="button">Stats</button>
-                    <div class="last-six-called-badge" id="floatingTotalBadge" title="Total Numbers Called">
+                    <button id="statsLink" class="link-button stats-link" type="button" title="Ball call stats">Stats · <span id="statsSessionName" class="stats-session-name">Unsaved</span></button>
+                    <div class="last-six-called-badge" id="floatingTotalBadge" role="button" tabindex="0" title="Tap to set Ball Target">
                         <span class="ft-label" id="ftLabel">Called</span>
                         <span class="ft-num" id="totalCalled">0</span>
                         <span class="ft-sub hidden" id="ftSub"></span>
@@ -262,7 +262,7 @@
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '4.5';
+        const INDEX_VERSION = '4.7';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;
