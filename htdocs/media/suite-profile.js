@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '2.3';
+const SUITE_PROFILE_VERSION = '2.4';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -1095,6 +1095,44 @@ const SUITE_PROFILE_VERSION = '2.3';
     }
 
     /**
+     * Ends a live game from the games list (owner or admin). The game becomes final.
+     *
+     * @param {string} gameId
+     * @returns {Promise<Object>}
+     */
+    async function finalizeGame(gameId) {
+        const user = getUser();
+        if (!user || !user.token) {
+            throw new Error('You must be signed in to end games.');
+        }
+
+        const url = getApiUrl('games.php') + '?action=finalize';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ token: user.token, game_id: gameId })
+        });
+
+        if (res.status === 401) {
+            setSession(null, 'expired');
+            throw new Error('Session expired. Please sign in again.');
+        }
+        if (!res.ok) {
+            let errorData = null;
+            try { errorData = await res.json(); } catch (_) { }
+            const err = new Error((errorData && errorData.error) ? errorData.error : 'Failed to end game.');
+            if (errorData && errorData.error_code) {
+                err.error_code = errorData.error_code;
+            }
+            throw err;
+        }
+        return await res.json();
+    }
+
+    /**
      * Registers the root WebAppSuite service worker across all sub-apps and triggers an update check.
      */
     function registerSuiteServiceWorker() {
@@ -1185,7 +1223,8 @@ const SUITE_PROFILE_VERSION = '2.3';
             listMyTeams: listMyTeams,
             listAll: listAllGames,
             setVisibility: setGameVisibility,
-            remove: removeGame
+            remove: removeGame,
+            finalize: finalizeGame
         }
     };
 }));

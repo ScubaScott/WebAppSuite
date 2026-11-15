@@ -136,6 +136,23 @@ test('a conflict with a finalized game moves the console to final', async () => 
     assert.equal(ctx.sent.length, 1);
 });
 
+test('a game ended from the games list moves the console to final on a conflict', async () => {
+    const ctx = harness({ replies: [{ success: false, conflict: true, rev: 4, status: 'final' }] });
+    ctx.start();
+    await ctx.syncer.publishNow();
+    assert.equal(ctx.game.status, STATUS.FINAL);
+    assert.deepEqual(ctx.messages, ['Match was finalized on the server']);
+    assert.equal(ctx.sent.length, 1);
+});
+
+test('a game ended from the games list moves the console to final on a successful send', async () => {
+    const ctx = harness({ replies: [{ success: true, status: 'final' }] });
+    ctx.start();
+    await ctx.syncer.publishNow();
+    assert.equal(ctx.game.status, STATUS.FINAL);
+    assert.deepEqual(ctx.messages, ['Match was finalized on the server']);
+});
+
 test('a deleted game moves the console to final with a message', async () => {
     const ctx = harness({ replies: [{ success: false, error_code: 'game_deleted' }] });
     ctx.start();

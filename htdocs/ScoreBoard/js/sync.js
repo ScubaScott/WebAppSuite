@@ -42,6 +42,17 @@ export function createSyncer(deps) {
         return rev;
     }
 
+    /**
+     * When the server reports the game as final but this console is not final yet, move the console to
+     * final and tell the operator. Returns true when it did.
+     */
+    function followServerFinal(result) {
+        if (result.status !== 'final' || deps.getGame().status === STATUS.FINAL) return false;
+        deps.dispatch({ type: 'server_final', endedBy: 'user' });
+        deps.notify('Match was finalized on the server');
+        return true;
+    }
+
     /** Send the current game, handling the server's answer. A revision conflict is retried once. */
     async function transmit(isRetry) {
         const rev = nextRev();
@@ -67,6 +78,8 @@ export function createSyncer(deps) {
             if (result.stopped) {
                 deps.dispatch({ type: 'server_final', endedBy: 'user' });
                 deps.notify('Match was finalized on the server');
+            } else if (followServerFinal(result)) {
+                // The console now follows the server; nothing to resend
             } else if (!isRetry) {
                 await transmit(true);
             }
@@ -74,6 +87,8 @@ export function createSyncer(deps) {
         }
         if (result.success !== false) {
             deps.dispatch({ type: 'sync_state', lastAckRev: rev });
+            // The game was ended from the games list while this console still held it
+            if (followServerFinal(result)) return;
             // The server decides visibility for an existing game; follow it
             if (result.visibility && result.visibility !== deps.getGame().visibility) {
                 deps.dispatch({ type: 'set_visibility', visibility: result.visibility, silent: true });

@@ -240,7 +240,7 @@ Each action causes exactly one local write and at most one scheduled server sync
 
 Do not change these without updating this section, the console and the viewer together.
 
-- Actions: `sync` (POST), `list_public`, `get`, `list_mine`, `list_my_teams`, `list_all` (admin), `set_visibility`, `delete`.
+- Actions: `sync` (POST), `list_public`, `get`, `list_mine`, `list_my_teams`, `list_all` (admin), `set_visibility`, `finalize`, `delete`.
 - Admins (Admin group, profile with a password: the same gate as `api/admin.php`) also: `list_all` returns every game, paginated; `list_public` and `list_all` add `ownerName` (`guest` for unowned games) for them only; `get` returns private games to them; `delete` removes any final game. `set_visibility` stays owner-only.
 - Table `scoreboard_games` stores the snapshot as JSON plus summary columns pulled from it (names, scores, period, `timer_running`, `is_paused`, `elapsed_ms`).
 - Writes are authorized by the write token (stored as a SHA-256 hash) or by owning the row. Sessions are checked against `suite_sessions` (SHA-256 token hashes).
@@ -250,6 +250,7 @@ Do not change these without updating this section, the console and the viewer to
 - Live games with no activity for 3 hours (`GAME_TIMEOUT_HOURS`) are marked final with `ended_by: 'timeout'`.
 - Deleted games are recorded in `scoreboard_game_tombstones` for 7 days so open consoles cannot recreate them.
 - Only final games can be deleted.
+- `finalize` (POST; owner or admin, the same gate as `delete`) ends a live game from the games list when no device holds it: status `final`, `ended_by` `abandoned`, `rev` + 1, snapshot clock stopped, `last_activity_at` unchanged. Already final is a success. A console that still holds the game follows the server to `final` on its next sync (a conflict or success reply with `status: 'final'`).
 - Limits: request body 256 KB; history capped at the latest 2,000 entries; team names 60 characters.
 - `list_public` returns up to 100 public games that are live or finished in the last 24 hours. `get` returns `server_now` and `age_ms` for the viewer's clock.
 
@@ -266,8 +267,8 @@ Do not change these without updating this section, the console and the viewer to
 
 ### Games list
 - Active tab polls `list_public` every 4 s while visible. Tapping a row opens the viewer.
-- All Games is a third tab for admins only (`?tab=all`; others are redirected to Active). It lists every game, 20 per page, newest activity first, with View and Delete (final games only) in the row sheet. Rows on Active and All Games show a small `owner:<username>` tag for admins; My Games never shows it.
-- My Games is for signed-in users only; guests opening `?tab=mine` go to the launcher. Pages of 20. Row actions: View, Make Private/Public, Delete (final games only, with confirmation).
+- All Games is a third tab for admins only (`?tab=all`; others are redirected to Active). It lists every game, 20 per page, newest activity first, with View, End Game (live games only) and Delete (final games only) in the row sheet. Rows on Active and All Games show a small `owner:<username>` tag for admins; My Games never shows it.
+- My Games is for signed-in users only; guests opening `?tab=mine` go to the launcher. Pages of 20. Row actions: View, Make Private/Public, End Game (live games only, with confirmation), Delete (final games only, with confirmation).
 
 ---
 
@@ -282,7 +283,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.2, viewer 1.9, games list 1.4, help 2.3, shared 2.0).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.3, viewer 1.9, games list 1.5, help 2.4, shared 2.0).
 
 ---
 

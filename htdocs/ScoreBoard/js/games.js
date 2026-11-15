@@ -6,7 +6,7 @@
 import { deriveStatusPill, formatStartDate, normalizeRowViewModel, applySavedThemeReadOnly } from './shared.js';
 
 // Application version constant (follows suite 2-part decimal convention)
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 
 // Pagination page size for My Games archive
 const PAGE_LIMIT = 20;
@@ -69,6 +69,7 @@ const btnSheetView = document.getElementById('btn-sheet-view');
 const btnSheetVisibility = document.getElementById('btn-sheet-visibility');
 const btnSheetVisText = document.getElementById('btn-sheet-vis-text');
 const btnSheetDelete = document.getElementById('btn-sheet-delete');
+const btnSheetEnd = document.getElementById('btn-sheet-end');
 const btnSheetCancel = document.getElementById('btn-sheet-cancel');
 
 /**
@@ -542,17 +543,15 @@ function openActionSheet(game, originTab) {
     btnSheetVisText.textContent = isPublic ? 'Make Private' : 'Make Public';
     btnSheetVisibility.disabled = false;
 
-    // Configure Delete button: enabled only for final matches
+    // A live match can be ended here; Delete is offered only once the match is final
     const isFinal = (game.status === 'final');
-    if (isFinal) {
-        btnSheetDelete.disabled = false;
-        btnSheetDelete.textContent = 'Delete Match';
-        btnSheetDelete.title = 'Permanently delete this completed match';
-    } else {
-        btnSheetDelete.disabled = true;
-        btnSheetDelete.textContent = 'End game to delete';
-        btnSheetDelete.title = 'Matches must be concluded before deletion';
-    }
+    btnSheetEnd.classList.toggle('hidden', isFinal);
+    btnSheetEnd.disabled = false;
+    btnSheetEnd.textContent = 'End Game';
+    btnSheetDelete.classList.toggle('hidden', !isFinal);
+    btnSheetDelete.disabled = false;
+    btnSheetDelete.textContent = 'Delete Match';
+    btnSheetDelete.title = 'Permanently delete this completed match';
 
     actionSheetModal.classList.remove('hidden');
 }
@@ -596,6 +595,39 @@ btnSheetVisibility.addEventListener('click', async () => {
         alert('Network error updating game visibility.');
         btnSheetVisibility.disabled = false;
         btnSheetVisText.textContent = (targetGame.visibility === 'public') ? 'Make Private' : 'Make Public';
+    }
+});
+
+// End game handler from action sheet: finalizes a live match that no device is running any more
+btnSheetEnd.addEventListener('click', async () => {
+    if (!selectedMenuGame) return;
+    const targetGame = selectedMenuGame;
+    if (targetGame.status === 'final') return;
+
+    const confirmMsg = `End this match now?\n\n${targetGame.homeName} vs ${targetGame.awayName}\nScore: ${targetGame.homeScore} – ${targetGame.awayScore}\n\nIt becomes Final and cannot be resumed.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    btnSheetEnd.disabled = true;
+    btnSheetEnd.textContent = 'Ending…';
+
+    try {
+        const res = await window.SuiteProfile.games.finalize(targetGame.id);
+        if (res && res.success) {
+            closeActionSheet();
+            if (selectedMenuTab === 'all') {
+                fetchAllGames();
+            } else {
+                loadMyGames();
+            }
+        } else {
+            alert('Unable to end match.');
+            btnSheetEnd.disabled = false;
+            btnSheetEnd.textContent = 'End Game';
+        }
+    } catch (err) {
+        alert('Network error ending match.');
+        btnSheetEnd.disabled = false;
+        btnSheetEnd.textContent = 'End Game';
     }
 });
 

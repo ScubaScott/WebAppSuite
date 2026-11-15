@@ -126,6 +126,14 @@
             </div>
 
             <div>
+                <h2 class="text-lg font-semibold text-white">Ending a Game From Another Device</h2>
+                <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
+                    <li>If a live game is no longer on the device that was running it, sign in, open <strong>Games</strong> &rarr; <strong>My Games</strong>, tap the game and choose <strong>End Game</strong>.</li>
+                    <li>The game becomes Final and cannot be resumed. After that it can be deleted.</li>
+                </ul>
+            </div>
+
+            <div>
                 <h2 class="text-lg font-semibold text-white">Audio &amp; Mute</h2>
                 <ul class="list-disc list-inside space-y-2 mt-2 text-gray-300">
                     <li>A whistle sound plays when a period reaches zero.</li>
@@ -136,13 +144,13 @@
     </div>
     </div>
     <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">2.3</span></p>
+        <p>Version <span id="helpVersion">2.4</span></p>
     </footer>
     <!-- Shared Suite Profile and service worker registration -->
     <script src="../media/suite-profile.js"></script>
     <script>
         // ScoreBoard help documentation version identifier
-        const VERSION = '2.3';
+        const VERSION = '2.4';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;

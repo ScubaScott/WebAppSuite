@@ -871,5 +871,69 @@ if ($action === 'delete') {
     exit;
 }
 
+// -----------------------------------------------------------------------------
+// 7. Finalize Game (end a live game from the games list, without the original device)
+// -----------------------------------------------------------------------------
+if ($action === 'finalize') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => 'Method not allowed. Use POST.']);
+        exit;
+    }
+
+    $payload = getRequestPayload();
+    $user = authenticateUser($pdo, getAuthToken($payload));
+
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Authentication required.']);
+        exit;
+    }
+
+    $gameId = isset($payload['game_id']) ? trim($payload['game_id']) : '';
+    if (empty($gameId)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing game_id.']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare('SELECT id, owner_id, status, state_json FROM scoreboard_games WHERE game_id = ? LIMIT 1');
+    $stmt->execute([$gameId]);
+    $game = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Same gate as delete: the owner or an admin
+    if (!$game || ((int)$game['owner_id'] !== (int)$user['id'] && !isAdminUser($pdo, $user))) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Game not found or not owned by user.']);
+        exit;
+    }
+
+    // Already final: nothing to do
+    if ($game['status'] === 'final') {
+        echo json_encode(['success' => true, 'game_id' => $gameId, 'status' => 'final']);
+        exit;
+    }
+
+    // Freeze the stored snapshot so viewers see a stopped clock
+    $snapshot = json_decode($game['state_json'], true) ?: [];
+    $snapshot['timerRunning'] = false;
+    $snapshot['isPaused'] = false;
+
+    // last_activity_at is kept so the game's place in the recent-games ordering stays honest
+    $updateStmt = $pdo->prepare('UPDATE scoreboard_games SET
+        status = "final",
+        ended_by = "abandoned",
+        ended_at = last_activity_at,
+        timer_running = 0,
+        is_paused = 0,
+        rev = rev + 1,
+        state_json = ?
+        WHERE id = ?');
+    $updateStmt->execute([json_encode($snapshot, JSON_UNESCAPED_UNICODE), $game['id']]);
+
+    echo json_encode(['success' => true, 'game_id' => $gameId, 'status' => 'final']);
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['success' => false, 'error' => 'Invalid action request.']);
