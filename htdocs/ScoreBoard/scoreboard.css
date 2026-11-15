@@ -3005,3 +3005,66 @@ button.timer-elapsed:focus-visible {
     opacity: 0.55;
     pointer-events: none;
 }
+
+/* ============================================================
+   New Game / Edit Match dialog: compact so it fits one phone screen
+   ============================================================ */
+.setup-dialog {
+    max-height: 96vh;
+    max-height: 96dvh;
+}
+.setup-dialog .modal-header {
+    padding: 10px 16px 8px;
+}
+.setup-body {
+    padding: 8px 16px 10px;
+    gap: 8px;
+}
+.setup-dialog .modal-footer {
+    padding: 10px 16px 12px;
+}
+.setup-dialog .settings-section-label {
+    padding: 0 0 2px;
+}
+.setup-dialog .team-card {
+    padding: 8px;
+    gap: 5px;
+}
+.setup-dialog .team-setup-grid {
+    padding-bottom: 0;
+}
+.setup-dialog .field-stack {
+    gap: 4px;
+}
+.setup-dialog .stepper-container {
+    padding: 2px 10px;
+    gap: 10px;
+}
+.setup-dialog .stepper-btn {
+    width: 44px;
+    height: 36px;
+}
+.setup-dialog .duration-preset-btn {
+    padding: 8px 4px;
+}
+.setup-dialog .custom-duration-btn {
+    padding: 8px;
+}
+
+/* Label on the left, control on the right */
+.field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+/* Sharing toggle at the bottom of the dialog */
+.setup-share-row {
+    border-bottom: none;
+    border-top: 1px solid #1f2937;
+    padding: 8px 0 0;
+}
+.setup-share-row.hidden {
+    display: none;
+}

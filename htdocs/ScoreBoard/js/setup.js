@@ -17,12 +17,15 @@ const NEW_GAME_LENGTH_MS = 2400000;
  * @param {{
  *   onSubmit: function({mode: string, home: Object, away: Object, periodCount: number, periodLengthMs: number, theme: string}): (string|null),
  *   canChangePeriodLength: function(): boolean,
+ *   canShare: function(): boolean,
  *   onThemePreview: function(string): void,
  *   onClose: function(): void
  * }} options `onSubmit` returns an error message to keep the dialog open, or null to close it.
+ *   `onSubmit` values also carry `visibility` ('public' or 'private').
+ *   `canShare` tells whether the sharing toggle is offered (signed-in users only).
  *   `onThemePreview` shows a theme while the dialog is open; `onClose` runs when the dialog closes.
  */
-export function createSetup({ onSubmit, canChangePeriodLength, onThemePreview, onClose }) {
+export function createSetup({ onSubmit, canChangePeriodLength, canShare, onThemePreview, onClose }) {
     const el = {
         modal: byId('match-setup-modal'),
         title: byId('match-setup-title'),
@@ -47,7 +50,9 @@ export function createSetup({ onSubmit, canChangePeriodLength, onThemePreview, o
         durationNote: byId('setup-duration-note'),
         themeSection: byId('setup-theme-section'),
         themeNote: byId('setup-theme-note'),
-        teamSuggestions: byId('team-suggestions')
+        teamSuggestions: byId('team-suggestions'),
+        sharingSection: byId('setup-sharing-section'),
+        sharePublic: byId('setup-share-public')
     };
 
     let mode = 'create';
@@ -201,6 +206,10 @@ export function createSetup({ onSubmit, canChangePeriodLength, onThemePreview, o
         themeSelector.render();
         themeSelector.discover();
 
+        // Sharing belongs to the game: a new game starts public, an existing one shows its own setting
+        el.sharingSection.classList.toggle('hidden', openMode === 'overtime' || !canShare());
+        el.sharePublic.checked = openMode === 'create' ? true : game.visibility !== 'private';
+
         if (mode === 'create') {
             el.title.textContent = 'New Game Setup';
             el.submit.textContent = 'Ready';
@@ -250,7 +259,8 @@ export function createSetup({ onSubmit, canChangePeriodLength, onThemePreview, o
             away: { name: el.awayName.value, color: el.awayColor.value },
             periodCount,
             periodLengthMs: lengthLocked ? undefined : periodLengthMs,
-            theme
+            theme,
+            visibility: el.sharePublic.checked ? 'public' : 'private'
         });
         if (!error) close();
         return error;

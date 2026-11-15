@@ -18,7 +18,7 @@ import { applyThemeToBody } from './shared.js';
 import { showToast, playWhistle, playScoreSplash, playCardRaise, shareText } from './effects.js';
 
 // Page version, shown in the footer
-const APP_VERSION = '7.1';
+const APP_VERSION = '7.2';
 
 const TICK_MS = 100;
 const HEARTBEAT_MS = 20 * 1000;
@@ -220,7 +220,7 @@ function handleSetupSubmit(values) {
             ...teams,
             periodCount: values.periodCount,
             periodLengthMs: values.periodLengthMs,
-            visibility: game.visibility,
+            visibility: values.visibility,
             theme: values.theme
         }));
         if (!result.ok) return result.error;
@@ -247,13 +247,34 @@ function handleSetupSubmit(values) {
     if (!isCommitted(game) && values.theme !== game.theme) edit.theme = values.theme;
     const result = store.dispatch(edit);
     if (!result.ok) return result.error;
+    if (isSignedIn() && values.visibility !== game.visibility) changeVisibility(values.visibility);
     showToast('Match details updated');
     return null;
+}
+
+/** Change whether the current game is shared on the Active Games list. */
+async function changeVisibility(next) {
+    const game = store.getGame();
+    if (!isCommitted(game)) {
+        // Not on the server yet: the choice is sent when the first Start creates the game
+        store.dispatch({ type: 'set_visibility', visibility: next });
+        return;
+    }
+    // The server ignores visibility on ordinary syncs, so use the dedicated call
+    try {
+        const result = await profile().games.setVisibility(game.id, next);
+        if (!result || !result.success) throw new Error('rejected');
+        store.dispatch({ type: 'set_visibility', visibility: next });
+    } catch (error) {
+        showToast('Could not change sharing. Try again.');
+    }
 }
 
 const setup = createSetup({
     onSubmit: handleSetupSubmit,
     canChangePeriodLength: () => canChangePeriodLength(store.getGame()),
+    // The sharing toggle is only offered to signed-in users (guest games are always public)
+    canShare: () => isSignedIn(),
     // Picking a theme in the dialog shows it behind the dialog; closing restores the game's own theme
     onThemePreview: (theme) => applyThemeToBody(theme),
     onClose: () => applyGameTheme(true)
@@ -406,11 +427,9 @@ function wireSettings() {
         splashAway: checkbox('setting-splash-away', 'splashAway'),
         showCards: checkbox('setting-show-cards', 'showCards')
     };
-    const sharePublic = byId('setting-share-public');
 
     function openSettings() {
         Object.keys(inputs).forEach((key) => { inputs[key].checked = !!prefs[key]; });
-        sharePublic.checked = store.getGame().visibility !== 'private';
         openModal('settings-modal');
     }
     function closeSettings() {
@@ -428,28 +447,6 @@ function wireSettings() {
         history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
         openSettings();
     }
-
-    sharePublic.addEventListener('change', async () => {
-        const game = store.getGame();
-        const next = sharePublic.checked ? 'public' : 'private';
-        if (!isCommitted(game)) {
-            // Not on the server yet: the choice is sent when the first Start creates the game
-            store.dispatch({ type: 'set_visibility', visibility: next });
-            return;
-        }
-        // The server ignores visibility on ordinary syncs, so use the dedicated call
-        sharePublic.disabled = true;
-        try {
-            const result = await profile().games.setVisibility(game.id, next);
-            if (!result || !result.success) throw new Error('rejected');
-            store.dispatch({ type: 'set_visibility', visibility: next });
-        } catch (error) {
-            sharePublic.checked = store.getGame().visibility !== 'private';
-            showToast('Could not change sharing. Try again.');
-        } finally {
-            sharePublic.disabled = false;
-        }
-    });
 }
 
 /** Save the game, draw it, and schedule a server send after every change. */
@@ -537,9 +534,6 @@ function normalizeRemote(record) {
 function start() {
     if (profile()) profile().renderFooterIndicator(document.querySelector('footer p'));
     byId('appVersion').textContent = APP_VERSION;
-
-    // Links and settings that only exist for signed-in users
-    byId('settings-sharing-section').classList.toggle('hidden', !isSignedIn());
 
     wireControls();
     wireSettings();

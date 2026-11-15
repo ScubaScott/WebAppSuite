@@ -339,23 +339,6 @@
                     </label>
                 </div>
 
-                <!-- ── SHARING & PRIVACY (Signed-in only) ───────────── -->
-                <div id="settings-sharing-section" class="hidden">
-                    <div class="settings-section-label">Sharing &amp; Privacy</div>
-
-                    <div class="settings-row">
-                        <div class="settings-row-text">
-                            <strong>Share on Active Games list</strong>
-                            <span>Shows this match in the public Active Games board. Turn off to keep private in your
-                                account.</span>
-                        </div>
-                        <label class="toggle-label">
-                            <input type="checkbox" id="setting-share-public" checked>
-                            <div class="toggle-track"></div>
-                        </label>
-                    </div>
-                </div>
-
             </div><!-- end settings-body -->
 
             <!-- Sticky footer -->
@@ -370,12 +353,12 @@
          Match Setup Modal ("New Game Setup" / "Edit Match Details")
          ================================================================ -->
     <div id="match-setup-modal" class="modal-overlay hidden">
-        <div class="modal-dialog">
+        <div class="modal-dialog setup-dialog">
             <div class="modal-header">
                 <h3 id="match-setup-title">New Game Setup</h3>
                 <button type="button" id="close-match-setup-x" class="modal-close-x" title="Close">&times;</button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body setup-body">
                 <!-- Team Setup Section -->
                 <div class="settings-section-label section-label-flush">Teams</div>
                 <div class="team-setup-grid">
@@ -443,11 +426,8 @@
                 </div>
                 <p id="setup-theme-note" class="setup-note hidden">The theme is fixed once the game has started.</p>
 
-                <!-- Match Rules Section -->
-                <div class="settings-section-label">Match Rules</div>
-
                 <!-- Total Periods Stepper -->
-                <div class="field-stack">
+                <div class="field-row">
                     <label class="field-label">Total Periods</label>
                     <div class="stepper-container">
                         <button type="button" id="btn-period-minus" class="stepper-btn"
@@ -514,6 +494,17 @@
                             </div>
                         </div>
                     </div>
+                </div>
+                <!-- Sharing: applies to this game only (signed-in users; guest games are always public) -->
+                <div id="setup-sharing-section" class="settings-row setup-share-row hidden">
+                    <div class="settings-row-text">
+                        <strong>Share on Active Games list</strong>
+                        <span>Turn off to keep this game private in your account.</span>
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="setup-share-public" checked>
+                        <div class="toggle-track"></div>
+                    </label>
                 </div>
             </div>
             <div class="modal-footer">
