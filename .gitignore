@@ -1,2 +1,3 @@
-tools/bingo-scan-testset/photos/
+htdocs/Bingo/example/*
 htdocs/ScoreBoard/Change Specs/
+tools/*

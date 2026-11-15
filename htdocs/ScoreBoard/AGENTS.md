@@ -27,12 +27,12 @@ Update this table when a phase is finished. Bug and suggestion numbers refer to 
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Checklist done; fixtures still to export from a real browser |
-| 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` (pushed; console 4.9, viewer 1.5), not yet tested. `isCountingUp` still present; remove it in Phase 3 |
-| 2 | One `toSnapshot()`, one debounced save, game data out of profile app data, console uses shared helpers and one theme catalog, single beacon | Not started |
-| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | Not started |
-| 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons | Not started |
-| 5 | Planned features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Not started. Starts after Phase 4 |
+| 0 | Manual test checklist (`docs/TEST-CHECKLIST.md`) and saved-state fixtures | Done (fixtures in `docs/`) |
+| 1 | Fix high-impact bugs in place (clock reload, hidden My Games link, share toggle, rev off-by-one, viewer polling, legacy fallback, old game archived with new names, tab sync loop, stale finish, zero-length period, remove confirm) | Done on `main` and tested. `isCountingUp` removed from the snapshot in Phase 3 (the viewer still reads it for archived games) |
+| 2 | One `toSnapshot()`, one send scheduler, game and preferences stored separately, shared helpers and one theme catalog, single beacon | Done and tested on `full_refactor` (console 5.3, shared 1.6) |
+| 3 | Single `game` object + reducer, one `status` field, event log as source of truth, event-based clock (`docs/TIMING-SPEC.md`), one-time migration of old saved data | In progress; steps in `docs/PHASE3-PLAN.md`. 3.1 to 3.4 done with tests; 3.5 (console rewrite, console 6.0) and 3.6 (history display, shared 1.6, help 2.1) done; 3.8 dead-code removal done; 3.7 server migration script remains |
+| 4 | Split console into ES modules, move inline styles and `onclick` into CSS/JS, score boxes become buttons, viewer and games list become modules | Done on `full_refactor` (console 6.1, viewer 1.6, games list 1.1, shared 2.0). Every page is free of inline `style` attributes and inline handlers; `scoreboard-shared.js` is now `js/shared.js` and no longer exposes a global. Needs the browser checklist |
+| 5 | Features (section 12): "us vs them" wording, My Games grouped by our team, theme saved with each game | Done on `full_refactor` (console 7.0, games list 1.2, viewer 1.7, help 2.2, suite-profile 2.2); needs the browser checklist, and `setup.php` run once on the server for the new index | Not started. Starts after Phase 4 |
 | Later | Viewer sends its last `rev` and gets 304 when unchanged | Optional |
 
 ---
@@ -43,27 +43,27 @@ Target layout. Files marked *(planned)* do not exist yet.
 
 | File | Role |
 | --- | --- |
-| `index.html` | Console markup only. No inline styles, no inline handlers, no logic. |
+| `index.html` | Console markup only. No inline styles, no inline handlers, no logic. The score boxes, period box and elapsed-time readout are buttons. |
 | `ScoreBoardViewer.html` | Viewer markup. Sub-page: "← Back" to the games list, no "Back to Apps". |
 | `ScoreBoardGames.html` | Games list markup. Sub-page: "← Back" style navigation, no "Back to Apps". |
 | `ScoreBoardHelp.html` | Help page. |
 | `ScoreBoardActiveGames.html`, `ScoreBoardMyGames.html` | Redirect stubs for old bookmarks. Never add logic to them. |
 | `scoreboard.css` | Every style for every ScoreBoard page, themed through custom properties on `:root`. |
-| `js/console.js` *(planned)* | Console entry point: wires DOM events to `dispatch`, runs the display loop. |
-| `js/state.js` *(planned)* | `game` object, reducer, status machine, derived selectors. Pure: no DOM, no storage, no network. |
-| `js/clock.js` *(planned)* | `getPosition(events, period, t)`, effective start, adjustment validation and expiry detection, per `docs/TIMING-SPEC.md`. Pure. |
-| `js/sync.js` *(planned)* | `toSnapshot()`, local save, server sync, revision numbers, beacon. The only code that talks to `SuiteProfile.games`. |
-| `js/setup.js` *(planned)* | New Game / Edit Match / Add Overtime dialog. |
-| `js/render.js` *(planned)* | Console DOM updates from state. |
-| `js/prefs.js` *(planned)* | Operator preferences: load, save, apply theme. |
-| `js/shared.js` *(planned, replaces `scoreboard-shared.js`)* | Used by all pages: formatters, period labels, status pill, history renderer, theme catalog. |
-| `js/viewer.js`, `js/games.js` *(planned)* | Page scripts for the viewer and games list. |
+| `js/console.js` | Console entry point: loads the saved game and preferences, turns taps into actions, runs the clock loop and the stale / overrun prompts. |
+| `js/state.js`, `js/format.js`, `js/migrate.js`, `tests/state.test.mjs`, `tests/migrate.test.mjs` | `game` object, reducer, status machine, derived selectors. Pure: no DOM, no storage, no network. |
+| `js/clock.js`, `tests/clock.test.mjs` | `getPosition(events, period, t)`, effective start, adjustment validation and expiry detection, per `docs/TIMING-SPEC.md`. Pure. |
+| `js/snapshot.js`, `js/sync.js`, `js/storage.js`, with `tests/snapshot.test.mjs`, `tests/sync.test.mjs`, `tests/storage.test.mjs` | `snapshot.js`: `toSnapshot(game, now, prefs)` and the sync payload (pure). `sync.js`: when to send, revision numbers, conflict handling, beacon; the only code that talks to the games API (through `SuiteProfile.games`). `storage.js`: the saved game and preferences in localStorage, conversion of earlier records. |
+| `js/setup.js` | New Game / Edit Match / Add Overtime dialog and the minutes:seconds roller. |
+| `js/render.js`, `js/store.js`, `js/history.js`, `js/theme.js`, `js/effects.js` | `render.js`: console DOM updates from the game. `store.js`: holds the game and applies actions. `history.js`: the history entry dialog (note, share, remove). `theme.js`: the theme dropdown in Settings. `effects.js`: toast, whistle, goal and card animations, share. |
+| *(preferences)* | Loaded, saved and normalized in `storage.js`; changed through `changePrefs` in `console.js`. |
+| `js/shared.js` | Used by every page: status pill, history renderer, theme catalog and application, date formatting. Imports the clock and period-label formatters from `format.js`. |
+| `js/viewer.js`, `js/games.js` | Page scripts for the viewer and games list. |
 | `media/whistle.mp3` | Period-end whistle. |
 | `media/bgimages/` + `list.php` | Theme background images; `list.php` returns the file list as JSON. |
 | `../api/games.php` | Game API (section 8). Shared database with the rest of the suite. |
 | `../media/suite-profile.js` | Suite-wide login, app data and game sync helpers. **Used by other apps**: changes here must not break them. |
 | `../sw.js` | Service worker. Its precache list names ScoreBoard files: update it when files are added, renamed or removed. |
-| `docs/` | Design and test documents (everything except this file). Active documents live here: `TEST-CHECKLIST.md` (manual test checklist; section 11 says when to run it) and `TIMING-SPEC.md` (clock, period start, pauses and corrections; section 5). |
+| `docs/` | Design and test documents (everything except this file). Active documents live here: `TEST-CHECKLIST.md` (manual test checklist; section 11 says when to run it), `TIMING-SPEC.md` (clock, period start, pauses and corrections; section 5) and `PHASE3-PLAN.md` (the step list for the single game object). |
 | `docs/old/` | Archive of completed tasks and historical specs (the three lifecycle and viewer specs), already implemented and superseded by this file. Do not implement from them. When a task's document is finished, move it here. |
 
 All scripts are native ES modules (`<script type="module">`). No build step, no frameworks.
@@ -93,9 +93,9 @@ Stored fields (names are the target; map from the old names during migration):
 | `currentPeriod` | 1-based. |
 | `periodLengthMs` | Length of the current period. Must be > 0. |
 | `overageAcknowledged` | Per-period flag: the operator chose "Continue in Overage" (section 5). |
-| `timingVersion` | `2` for games using `docs/TIMING-SPEC.md`. Absent on old games, whose stored positions are used as they are. |
 | `events` | The event log (below). |
 | `visibility` | `'public'` or `'private'`. |
+| `theme` | Theme key chosen in the New Game dialog; changeable until the first Start, then fixed. `null` for a game from an earlier version that never had one (it adopts the operator's current theme when first loaded). |
 | `startedAt` | ISO time of the first Start. |
 | `sync` | `{ lastAckRev, lastSentRev }` (section 7). |
 
@@ -137,7 +137,7 @@ The event log is the record of truth. Each event:
 - Team names, colors and labels are looked up at render time. Do not copy them into new events.
 - Removing a `period_end` is allowed only for the most recent period end, and only when no later events exist. Removal always asks for confirmation.
 - Start, pause, resume and adjust events are always recorded, because the clock is calculated from them. The preferences only decide whether those rows are shown and sent in the snapshot history.
-- New events do not store `periodElapsedMs` or `gameTime`; positions are derived (section 5). Old games keep their stored values.
+- New events do not store `periodElapsedMs` or `gameTime`; positions are derived (section 5). Old entries keep their stored values (an entry that has one shows it; an entry without one is derived).
 
 ### Preferences (separate from the game)
 
@@ -172,7 +172,7 @@ The full design is in `docs/TIMING-SPEC.md`. Read it before touching any timing 
 
 ## 6. Snapshot Contract
 
-`toSnapshot(game)` in `sync.js` is the **only** builder of the object sent to the server, the beacon, and anything else outside the console. The server and viewer read these field names, so they must stay as they are unless `games.php`, `shared.js` and the viewer change in the same commit:
+`toSnapshot(game, now, prefs)` in `snapshot.js` is the **only** builder of the object sent to the server, the beacon, and anything else outside the console. The server and viewer read these field names, so they must stay as they are unless `games.php`, `shared.js` and the viewer change in the same commit:
 
 | Snapshot field | Read by | Source |
 | --- | --- | --- |
@@ -183,6 +183,7 @@ The full design is in `docs/TIMING-SPEC.md`. Read it before touching any timing 
 | `timerRunning`, `isPaused` | server, viewer, status pill | derived from `status` |
 | `elapsedMs`, `timeLimit` | server, viewer clock | clock formula, `periodLengthMs` |
 | `startedAt` | server | `startedAt` |
+| `theme` | viewer | `theme` (omitted when the game has none). `games.php` drops a value that is not `^[A-Za-z0-9._-]+$` or is longer than 64 characters |
 | `scoreHistory` | viewer | `events` |
 
 The shared history renderer must also display **old-format** history (entries with `teamName`, `teamColor`, `currentScore`, `gameTime`, `text`, or no `labelVersion`), because archived games in the database keep that format.
@@ -238,7 +239,8 @@ Each action causes exactly one local write and at most one scheduled server sync
 
 Do not change these without updating this section, the console and the viewer together.
 
-- Actions: `sync` (POST), `list_public`, `get`, `list_mine`, `set_visibility`, `delete`.
+- Actions: `sync` (POST), `list_public`, `get`, `list_mine`, `list_my_teams`, `list_all` (admin), `set_visibility`, `delete`.
+- Admins (Admin group, profile with a password: the same gate as `api/admin.php`) also: `list_all` returns every game, paginated; `list_public` and `list_all` add `ownerName` (`guest` for unowned games) for them only; `get` returns private games to them; `delete` removes any final game. `set_visibility` stays owner-only.
 - Table `scoreboard_games` stores the snapshot as JSON plus summary columns pulled from it (names, scores, period, `timer_running`, `is_paused`, `elapsed_ms`).
 - Writes are authorized by the write token (stored as a SHA-256 hash) or by owning the row. Sessions are checked against `suite_sessions` (SHA-256 token hashes).
 - Guest games expire 24 hours after their last update. A signed-in user who syncs a guest game with its write token claims it; owned games never expire.
@@ -263,21 +265,23 @@ Do not change these without updating this section, the console and the viewer to
 
 ### Games list
 - Active tab polls `list_public` every 4 s while visible. Tapping a row opens the viewer.
+- All Games is a third tab for admins only (`?tab=all`; others are redirected to Active). It lists every game, 20 per page, newest activity first, with View and Delete (final games only) in the row sheet. Rows on Active and All Games show a small `owner:<username>` tag for admins; My Games never shows it.
 - My Games is for signed-in users only; guests opening `?tab=mine` go to the launcher. Pages of 20. Row actions: View, Make Private/Public, Delete (final games only, with confirmation).
 
 ---
 
 ## 10. UI and Code Rules
 
-- No inline `style` attributes and no inline event handlers in any ScoreBoard page. Styles go in `scoreboard.css` using custom properties; listeners are attached in JS.
+- No inline `style` attributes and no inline event handlers in any ScoreBoard page. Styles go in `scoreboard.css` using custom properties; listeners are attached in JS. Values that come from data (team colors, theme images, animation positions) may be set from JS as properties, never written into markup.
 - Show and hide elements by toggling the `hidden` class. Never set `style.display` on an element that may carry `hidden` (it is `display: none !important`).
+- Every ScoreBoard page opens with the standard suite header (`suite-header.css`): back on the left, a one-word title, and on the right a settings gear on every page except the viewer. The console's back goes to the Apps launcher, the other pages go back one level (Games and Help to the console, the viewer to the games list). The gear on Games and Help opens the console with `?settings=1`, which opens its Settings dialog.
 - Every tappable control is a `<button>` (or link) with at least a 44×44 px target; score boxes are buttons.
 - One theme catalog, in `shared.js`, used by every page.
 - One copy of each helper (formatters, `getPeriodLabel`, `escapeHtml`, history renderer), in `shared.js`. Never redefine them in a page script.
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 4.8, viewer 1.5, games list 1.0, help 2.0, shared 1.1).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.1, viewer 1.9, games list 1.4, help 2.3, shared 2.0).
 
 ---
 
@@ -286,7 +290,7 @@ Do not change these without updating this section, the console and the viewer to
 1. Bump `APP_VERSION` on every page you changed.
 2. Update `../sw.js` if you added, renamed or removed a file.
 3. Update this file if you changed the state model, statuses, snapshot fields, sync rules or API behavior. Update the Help page if users will notice the change. Update section 2 when a phase is finished.
-4. Run the parts of `docs/TEST-CHECKLIST.md` that your change touches. At minimum:
+4. Run `node --test tests/*.mjs` from this folder (once the shell expands the pattern; otherwise name each file), then the parts of `docs/TEST-CHECKLIST.md` that your change touches. At minimum:
    - New Game → Start → goals for both teams → Pause/Resume → End Period → next period → final-period expiry → Add Overtime → Finalize
    - Reload the page while the clock is running: elapsed time continues correctly
    - Go offline mid-game, score, come back online: the server catches up with no lost update
@@ -298,9 +302,9 @@ Do not change these without updating this section, the console and the viewer to
 
 ---
 
-## 12. Planned Features (after Phase 4)
+## 12. Features Added in Phase 5
 
-Do not build these during Phases 1-4, but do not design against them. Each needs the matching change to the snapshot contract (section 6) and, where noted, `games.php`.
+These are built. This section records the rules they follow.
 
 ### 12.1 "Us vs Them" wording
 - Home is always the operator's team. Setup labels become "Our team" and "Opponent"; defaults stay "Us" / "Them".
@@ -314,7 +318,7 @@ Use case: a player is on several teams, for example 2 games as "Shakopee" and 2 
 - UI: team chips (or collapsible team headings) above the list, each with a count; "All" shows everything newest first. Remember the last choice on the device.
 - Setup dialog: suggest our-team names from the user's past games so the spelling stays identical.
 - Guests have no My Games, so nothing changes for them.
-- Open question for the owner: show all teams as headings in one scrolling list, or one team at a time with chips?
+- Decided and built: one team at a time with chips above the list ("All" plus one chip per team with its game count); the chips are hidden when there are fewer than two teams. The server side is `list_mine` with `team` and `list_my_teams`; `setup.php` adds the index `idx_scoreboard_games_owner_team` (run it once; it is safe to repeat). Matching uses the column collation, which ignores case and trailing spaces but not leading spaces or accents-versus-plain differences.
 
 ### 12.3 Theme saved with each game
 Every game remembers the theme in place when it started, and every screen showing that game uses it: the recorder, live viewers, and viewers of finished games.
@@ -324,7 +328,7 @@ Every game remembers the theme in place when it started, and every screen showin
 - `games.php` stores the value inside the snapshot JSON and caps it at 64 characters. Pages must accept only values matching `^[A-Za-z0-9._-]+$` and found in the catalog, because the value ends up in an image URL.
 - Theme keys and image file names become permanent: archived games refer to them. Never rename or delete a catalog entry; if an image is missing, fall back to the default theme.
 - Decided: the theme cannot change during a game, because Settings no longer has a theme selector. Spectators therefore see the same theme from start to finish.
-- Needs Phase 2 first: one shared theme catalog (bug 14).
+- The theme selector is the dropdown in the setup dialog (`js/setup.js` with `js/theme.js`). Picking a theme previews it behind the dialog; cancelling restores the game's own theme. After the first Start the selector is shown dimmed with a note, and `edit_match` rejects a different theme.
 
 ---
 
@@ -336,9 +340,9 @@ What is still shared: **the database, the API data and the public game lists.** 
 
 1. **Database: additive changes only.** New nullable columns, indexes, tables and API actions are fine. Never rename, drop or change the meaning of an existing column, status value or `ended_by` value; production code reads them. `setup.php` migrations must be safe to run while production is live.
 2. **Games recorded on `/dev/` are visible to production users** (public Active Games list, viewer). Keep the snapshot contract (section 6) and history entry shapes readable by the current production viewer, and add fields only as optional extras. Set test games to private or delete them.
-3. **Deployment workflow:** `.github/workflows` deploys only the branches named under `on.push.branches` (currently `main` and `Private-Games`). Add the refactor branch there, or deploy every branch except `main` to `/dev/`.
+3. **Deployment workflow:** `.github/workflows/deploy.yaml` deploys every branch: `main` to the site root, all others to `/dev/`. A push to any other branch replaces what is in `/dev/`.
 4. **Cutover (merge to `main`):** every production user's existing data is in the old format, in localStorage (`timerStateV7` and related keys) and in their `scoreboard` profile record, so the migration must convert both on first load.
    - Merge only when no games are live (the owner will ensure this).
-   - **One-time server migration script** (written in Phase 2/3 once the new format is final) converts every row in `scoreboard_games` (snapshot and history) and every `scoreboard` record in `suite_user_data` to the new format, and backfills new fields (team-grouping column; `theme` for old games = default theme). It must: be idempotent (skip rows already converted), have a dry-run mode, require a secret token or be deleted right after use, and be tested against a copy of real data after a database backup. Run it right after the merge deploys.
-   - The script cannot reach browsers, so the app still converts the local saved game (`timerStateV7` and related keys) on first launch. Keep that local converter for a release or two, and re-run the script once afterward to catch games synced late by stale pages. After the script has run, the old-format history renderer and the server-side legacy readers can be removed.
+   - **One-time server migration script**, `api/migrate_scoreboard.php` (written; procedure in `docs/CUTOVER.md`). Because the new snapshot is a superset of the old one and the viewer and games list read both, it does not rewrite history rows. It does two things: adds `theme` to every owned game's snapshot (the owner's theme from their profile record, else `saber-dark`; guest games expire and are skipped), and reduces each user's `scoreboard` profile record (a whole old game plus settings) to preferences only. The team grouping uses the existing `home_name` column, so no backfill is needed. It is a dry run unless `apply=1`, needs the key from a server-only `api/migration_key.php`, refuses to apply while any game is live, backs up every row it changes (`scoreboard_migration_backup`, with a `restore=1` mode) and is idempotent. Delete it from the server and repo when the cutover is finished.
+   - The script cannot reach browsers, so the app still converts the local saved game (`timerStateV7` and related keys) on first launch. Keep that local converter for a release or two, and re-run the script once afterward to catch games synced late by stale pages. After the script has run, the local converter and the old whole-game profile handling can be removed (list in `docs/CUTOVER.md`). The old-format history renderer **stays**: archived games keep their original history rows.
    - A rollback after the cutover would meet new-format data the old code cannot read, so test the migration with real saved states (Phase 0 fixtures) before merging.

@@ -1,24 +1,3 @@
-/* Stylesheet version identifier */
-:root {
-    --version: "3.3";
-
-    /* Flashboard Call Balls Custom Configuration */
-    --flashboard-ball-size: 27px;
-    --flashboard-font-size: 11px;
-    --flashboard-v-gap: 3px;
-    --flashboard-h-offset: 6px;
-
-    /* Bingo Cards View Layout — controlled by the Card Size slider in Settings */
-    /* --card-view-cols: 1 | 2 — number of columns in view (non-edit) mode */
-    --card-view-cols: 2;
-    /* --card-view-scale: 0.0–1.0 — scales cell font size in non-edit mode */
-    --card-view-scale: 0.75;
-}
-
-/* ================================================================
-   THEME: BASIC (default)
-   Clean, light, modern — all the original colors
-================================================================ */
 :root,
 [data-theme="basic"] {
     --surface: #f8f9fa;
@@ -63,7 +42,6 @@
    THEME: DIVE BAR
    Dingy dark interior, cheap neon-lit bingo, beer-stained bar top.
    Subdued — atmosphere only, no interference with readability.
-================================================================ */
 [data-theme="divebar"] {
     /* Dark, tobacco-stained surface */
     --surface: #8a5f37;
@@ -417,7 +395,6 @@
 
 /* ================================================================
    FLOATING GEAR BUTTON & SETTINGS CONTROLS
-================================================================ */
 #settingsGearBtn:hover {
     transform: rotate(35deg) scale(1.08);
     box-shadow: 0 4px 18px rgba(60, 64, 67, 0.2);
@@ -457,7 +434,6 @@
 
 /* ================================================================
    SETTINGS MODAL
-================================================================ */
 
 /* Backdrop overlay */
 .settings-modal {
@@ -944,7 +920,6 @@ body {
 /* ================================
    LAST 6 — bingo-square-badge tiles
    Each badge mirrors a bingo card cell in layout
-================================ */
 
 .last-six-list {
     display: flex;
@@ -1078,7 +1053,6 @@ body {
    BY-NUMBER TRACKING GRID (FLASHBOARD)
    Compact flashboard: balls are shrunk, staggered left/right,
    and tightly overlapped vertically so all 75 fit on 1 screen.
-================================ */
 
 .tracking-grid {
     display: grid;
@@ -2126,7 +2100,6 @@ body {
 
 /* ================================================================
    GAME SECTION
-================================================================ */
 
 .game-section {
     background: var(--card);
@@ -2234,7 +2207,6 @@ body {
 
 /* ================================================================
    DOUBLE MODE CHECKBOX — inside the game picker items
-================================================================ */
 
 /* Compact pill on the far right of the item row */
 .double-cb-wrap {
@@ -2280,7 +2252,6 @@ body {
 
 /* ================================================================
    GAME PICKER MODAL (bottom-sheet style)
-================================================================ */
 
 .game-picker-modal {
     position: fixed;
@@ -2432,7 +2403,6 @@ body {
 
 /* ================================================================
    WINNER CARD
-================================================================ */
 
 .card-winner {
     border-color: #f9a825 !important;
@@ -2585,7 +2555,3027 @@ body {
    When a ball target is set, the floating badge expands to show
    the called count and the remaining balls in the prize window.
    Each bingo card gets a chip showing how many balls it needs to win.
-================================================================ */
+
+/* Badge target active / reached states */
+.last-six-called-badge.target-active {
+    border-color: var(--primary);
+}
+
+.last-six-called-badge.target-reached {
+    border-color: #e53935;
+    background: rgba(229, 57, 53, 0.08);
+}
+
+.last-six-called-badge.target-reached .ft-num,
+.last-six-called-badge.target-reached .ft-sub {
+    color: #e53935;
+}
+
+/* ---- Card needs chip ---- */
+
+/* Base chip — shown in the card header when ball target is active */
+.card-needs-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Achievable: still within the prize window with balls to spare — green */
+.card-needs-chip.achievable {
+    background: rgba(67, 160, 71, 0.14);
+    color: #2e7d32;
+    border-color: rgba(67, 160, 71, 0.3);
+}
+
+/* Warning: needed equals remaining balls; must hit every number — yellow */
+.card-needs-chip.warning {
+    background: rgba(245, 158, 11, 0.18);
+    color: #b45309;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* Late: legacy fallback for amber urgency */
+.card-needs-chip.late {
+    background: rgba(251, 140, 0, 0.14);
+    color: #e65100;
+    border-color: rgba(251, 140, 0, 0.32);
+}
+
+/* Impossible: target exceeded or needed exceeds remaining balls — red */
+.card-needs-chip.impossible {
+    background: rgba(229, 57, 53, 0.12);
+    color: #c62828;
+    border-color: rgba(229, 57, 53, 0.28);
+}
+
+/* ---- Ball Target stepper row inside the game picker panel ---- */
+
+.ball-target-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.ball-target-label-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ball-target-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.ball-target-hint {
+    font-size: 11px;
+    color: var(--text-subtle);
+}
+
+.ball-target-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Stepper +/- buttons */
+.ball-target-step-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-main);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s ease, border-color 0.13s ease;
+    flex-shrink: 0;
+}
+
+.ball-target-step-btn:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
+
+/* Number input in the stepper */
+.ball-target-input {
+    width: 52px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 6px;
+    outline: none;
+    /* Remove default number input spinners */
+    -moz-appearance: textfield;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ball-target-input::-webkit-inner-spin-button,
+.ball-target-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.ball-target-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.18);
+}
+
+/* Active target state — highlight the label row in green */
+.ball-target-row.target-is-set .ball-target-label {
+    color: var(--primary);
+}
+
+/* ================================================================
+   BALL TARGET — DIVE BAR THEME OVERRIDES
+
+/* Dive bar target-reached: use the amber/warm red palette */
+[data-theme="divebar"] .last-six-called-badge.target-reached {
+    border-color: #d4241a;
+    background: rgba(212, 36, 26, 0.2);
+}
+
+[data-theme="divebar"] .last-six-called-badge.target-reached .ft-num,
+[data-theme="divebar"] .last-six-called-badge.target-reached .ft-sub {
+    color: #ff6b6b;
+}
+
+[data-theme="divebar"] .card-needs-chip.achievable {
+    background: rgba(67, 160, 71, 0.18);
+    color: #81c784;
+    border-color: rgba(67, 160, 71, 0.35);
+}
+
+[data-theme="divebar"] .card-needs-chip.warning {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.45);
+}
+
+[data-theme="divebar"] .card-needs-chip.late {
+    background: rgba(251, 140, 0, 0.18);
+    color: #ffb74d;
+    border-color: rgba(251, 140, 0, 0.35);
+}
+
+[data-theme="divebar"] .card-needs-chip.impossible {
+    background: rgba(229, 57, 53, 0.18);
+    color: #ff6b6b;
+    border-color: rgba(229, 57, 53, 0.35);
+}
+
+/* ================================================================
+   SYNC INDICATOR, OUTBOX MODAL & OFFLINE CACHE UI
+
+.bingo-sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-subtle);
+    user-select: none;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.bingo-sync-badge:hover {
+    background: var(--surface-strong);
+    color: var(--text);
+}
+
+.bingo-sync-badge .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.bingo-sync-badge.syncing .sync-dot {
+    animation: syncPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes syncPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+/* Outbox modal styles */
+.bingo-sync-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.bingo-sync-modal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.outbox-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.outbox-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.outbox-modal-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.outbox-modal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.outbox-modal-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.outbox-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+/* Cached badge in modal headers or selector */
+.cached-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+/* Favorite star button */
+.favorite-star-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--text-subtle);
+    padding: 6px;
+    border-radius: 4px;
+    transition: transform 0.15s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.favorite-star-btn:hover:not(:disabled) {
+    transform: scale(1.15);
+    color: #eab308;
+}
+
+.favorite-star-btn.favorited {
+    color: #eab308;
+}
+
+.favorite-star-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* ===== Call log footer + ball call stats modal ===== */
+
+.stats-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+}
+
+.stats-readout {
+    font-size: 14px;
+    color: var(--text-subtle);
+    min-height: 20px;
+    margin-bottom: 10px;
+}
+
+/* Chart area: 75 equal-width columns, bars grow from the bottom */
+.stats-chart {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: 1px;
+    height: 180px;
+    padding-top: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.stats-ymax {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 11px;
+    color: var(--text-subtle);
+}
+
+.stats-col {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: flex-end;
+    cursor: pointer;
+}
+
+.stats-bar {
+    display: block;
+    width: 100%;
+    background: var(--primary);
+    opacity: 0.55;
+    border-radius: 2px 2px 0 0;
+}
+
+/* Balls called more than once stand out */
+.stats-bar.repeat {
+    opacity: 1;
+}
+
+.stats-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-subtle);
+}
+
+.stats-footer {
+    padding: 12px 20px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.stats-reset-btn {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: #d93025;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.stats-reset-btn:active {
+    transform: scale(0.98);
+}
+
+.stats-reset-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+/* Stylesheet version identifier */
+:root {
+    --version: "3.3";
+
+    /* Flashboard Call Balls Custom Configuration */
+    --flashboard-ball-size: 27px;
+    --flashboard-font-size: 11px;
+    --flashboard-v-gap: 3px;
+    --flashboard-h-offset: 6px;
+
+    /* Bingo Cards View Layout — controlled by the Card Size slider in Settings */
+    /* --card-view-cols: 1 | 2 — number of columns in view (non-edit) mode */
+    --card-view-cols: 2;
+    /* --card-view-scale: 0.0–1.0 — scales cell font size in non-edit mode */
+    --card-view-scale: 0.75;
+}
+
+/* ================================================================
+   THEME: BASIC (default)
+   Clean, light, modern — all the original colors
+:root,
+[data-theme="basic"] {
+    --surface: #f8f9fa;
+    --surface-strong: #ffffff;
+    --text-main: #202124;
+    --text-subtle: #5f6368;
+    --border: #dfe1e5;
+    --primary: #1a73e8;
+    --primary-soft: rgba(26, 115, 232, 0.14);
+    --card: #ffffff;
+
+    /* Dynamic Dauber settings */
+    --daub-rgb: 26, 115, 232;
+    --daub-alpha: 0.25;
+    --daub-color: rgba(var(--daub-rgb), var(--daub-alpha));
+    --daub-color-solid: rgb(var(--daub-rgb));
+
+    /* Theme-specific extras (unused in basic, defined for override) */
+    --theme-bg-image: none;
+    --theme-topbar-extra: none;
+    --theme-noise: none;
+
+    /* Suite header theme tokens for basic theme */
+    --hdr-bg: #1e293b;
+    --hdr-fg: #f8fafc;
+    --hdr-muted: #94a3b8;
+    --hdr-accent: #1a73e8;
+    --hdr-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Bottom sync indicator bar above footer */
+.bottom-sync-bar {
+    width: 100%;
+    max-width: 1200px;
+    margin: 18px auto 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ================================================================
+   THEME: DIVE BAR
+   Dingy dark interior, cheap neon-lit bingo, beer-stained bar top.
+   Subdued — atmosphere only, no interference with readability.
+[data-theme="divebar"] {
+    /* Dark, tobacco-stained surface */
+    --surface: #8a5f37;
+    --surface-strong: #61461f;
+    --text-main: #e8dcc8;
+    --text-subtle: #9a8b76;
+    --border: #53381b;
+    --primary: #d4a017;
+    /* dim amber neon — cheap bulb yellow */
+    --primary-soft: rgba(212, 160, 23, 0.15);
+    --card: #61472a;
+    /* worn dark wood card face */
+
+    /* Suite header theme tokens for divebar theme */
+    --hdr-bg: #140f0a;
+    --hdr-fg: #e8dcc8;
+    --hdr-muted: #9a8b76;
+    --hdr-accent: #d4a017;
+    --hdr-border: #3d3328;
+
+    /* Dauber: red neon dauber for the bar vibe */
+    --daub-rgb: 200, 40, 30;
+    --daub-alpha: 0.30;
+    --daub-color: rgba(var(--daub-rgb), var(--daub-alpha));
+    --daub-color-solid: rgb(var(--daub-rgb));
+
+    /* Bar-top texture hint via CSS */
+    --theme-bg-image: repeating-linear-gradient(90deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(255, 255, 255, 0.018) 3px,
+            rgba(255, 255, 255, 0.018) 4px);
+}
+
+/* ---- Dive Bar body background — worn wood with subtle grain ---- */
+[data-theme="divebar"] body {
+    /* Layered: wood-grain stripes + dark base */
+    background:
+        repeating-linear-gradient(170deg,
+            rgba(255, 255, 255, 0.012) 0px,
+            rgba(255, 255, 255, 0.012) 1px,
+            transparent 1px,
+            transparent 28px),
+        repeating-linear-gradient(90deg,
+            rgba(0, 0, 0, 0.08) 0px,
+            rgba(0, 0, 0, 0.08) 1px,
+            transparent 1px,
+            transparent 48px),
+        #1a1510;
+}
+
+/* ---- Dive Bar topbar — darker wood trim ---- */
+[data-theme="divebar"] .topbar {
+    background: #0f0c08;
+    border-bottom: 2px solid #3d3328;
+    box-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
+/* ---- Neon glow on the H1 title in dive bar mode ---- */
+[data-theme="divebar"] .topbar h1 {
+    color: #e8dcc8;
+    text-shadow:
+        0 0 8px rgba(212, 160, 23, 0.4),
+        0 0 20px rgba(212, 160, 23, 0.18);
+    letter-spacing: 0.04em;
+}
+
+/* ---- Back link ---- */
+[data-theme="divebar"] .back-link {
+    color: var(--primary);
+}
+
+/* ---- New Session button in dive bar ---- */
+[data-theme="divebar"] .primary-btn {
+    background: #8b0e0e;
+    color: #f5d9c8;
+    border-color: #a01515;
+    box-shadow: 0 0 10px rgba(180, 20, 20, 0.35);
+}
+
+[data-theme="divebar"] .primary-btn:hover {
+    background: #a01515;
+    box-shadow: 0 0 18px rgba(200, 30, 30, 0.5);
+}
+
+/* ---- Cards / panels — beat-up dark wood surface ---- */
+[data-theme="divebar"] .last-six-card,
+[data-theme="divebar"] .number-picker,
+[data-theme="divebar"] .bingo-cards-section,
+[data-theme="divebar"] .bingo-card,
+[data-theme="divebar"] .game-section,
+[data-theme="divebar"] .card-number-picker {
+    background: var(--card);
+    border-color: var(--border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ---- Cup ring stains on .last-six-card ---- */
+[data-theme="divebar"] .last-six-card::after {
+    content: "";
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid rgba(180, 140, 60, 0.11);
+    top: 8px;
+    right: 28px;
+    pointer-events: none;
+}
+
+[data-theme="divebar"] .last-six-card::before {
+    content: "";
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(160, 120, 50, 0.09);
+    top: 18px;
+    right: 50px;
+    pointer-events: none;
+}
+
+/* Make .last-six-card relative so the ring pseudo-elements work */
+[data-theme="divebar"] .last-six-card {
+    position: relative;
+    overflow: hidden;
+}
+
+/* ---- Session word bar (BINGO letters) — neon sign feel ---- */
+[data-theme="divebar"] .session-word-bar {
+    background: #382c1a;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .session-word-bar span {
+    background: #0f0c08;
+    color: #d4a017;
+    text-shadow:
+        0 0 6px rgba(212, 160, 23, 0.7),
+        0 0 20px rgba(212, 160, 23, 0.3);
+}
+
+/* ---- Bingo cells in dive bar — worn card paper ---- */
+[data-theme="divebar"] .bingo-cell {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .bingo-cell:hover:not(.free) {
+    border-color: var(--primary);
+    background: rgba(212, 160, 23, 0.1);
+    color: var(--primary);
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.25);
+}
+
+/* ---- Toggle buttons ---- */
+[data-theme="divebar"] .input-mode-toggle {
+    background: #0f0c08;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .toggle-btn {
+    color: #9a8b76;
+}
+
+[data-theme="divebar"] .toggle-btn.active {
+    background: #8b0e0e;
+    color: #f5d9c8;
+    box-shadow: 0 0 12px rgba(180, 20, 20, 0.4);
+}
+
+[data-theme="divebar"] .toggle-btn:not(.active):hover {
+    background: rgba(212, 160, 23, 0.12);
+    color: var(--primary);
+}
+
+/* ---- Pick buttons (number grid) ---- */
+[data-theme="divebar"] .pick-btn {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .pick-btn:hover {
+    background: rgba(212, 160, 23, 0.12);
+    color: var(--primary);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.2);
+}
+
+/* ---- Last-six badges ---- */
+[data-theme="divebar"] .bingo-square-badge {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .bingo-square-badge .sq-letter {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .bingo-square-badge.newest {
+    border-color: #d4a017;
+    background: rgba(212, 160, 23, 0.14);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.3);
+}
+
+[data-theme="divebar"] .bingo-square-badge.newest .sq-letter,
+[data-theme="divebar"] .bingo-square-badge.newest .sq-num {
+    color: #d4a017;
+}
+
+/* ---- Dropdowns ---- */
+[data-theme="divebar"] .dauber-menu-dropdown,
+[data-theme="divebar"] .card-menu-dropdown {
+    background: #221d16;
+    border-color: #3d3328;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="divebar"] .card-menu-item {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .card-menu-item:hover {
+    background: rgba(212, 160, 23, 0.1);
+}
+
+/* ---- Game picker modal ---- */
+[data-theme="divebar"] .game-picker-panel {
+    background: #221d16;
+}
+
+[data-theme="divebar"] .game-picker-header {
+    border-bottom-color: #3d3328;
+}
+
+[data-theme="divebar"] .game-picker-title {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .game-picker-item {
+    background: #2a2118;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .game-picker-item:hover {
+    background: rgba(212, 160, 23, 0.1);
+    border-color: #d4a017;
+}
+
+[data-theme="divebar"] .game-picker-item.selected {
+    background: rgba(212, 160, 23, 0.12);
+    border-color: #d4a017;
+}
+
+[data-theme="divebar"] .game-picker-name {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .mini-cell {
+    background: #3d3328;
+}
+
+[data-theme="divebar"] .mini-cell.mini-pattern {
+    background: #d4a017;
+}
+
+[data-theme="divebar"] .mini-cell.mini-free {
+    background: rgba(200, 40, 30, 0.3);
+}
+
+/* ---- Link buttons ---- */
+[data-theme="divebar"] .link-button {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .link-button:hover {
+    background: rgba(212, 160, 23, 0.1);
+}
+
+/* ---- Card menu hamburger ---- */
+[data-theme="divebar"] .card-menu-btn:hover,
+[data-theme="divebar"] .card-menu-btn.open {
+    background: rgba(212, 160, 23, 0.12);
+}
+
+[data-theme="divebar"] .card-menu-btn:hover span,
+[data-theme="divebar"] .card-menu-btn.open span {
+    background: #d4a017;
+}
+
+/* ---- Bingo card in dive bar ---- */
+[data-theme="divebar"] .bingo-card {
+    background: #2a2118;
+    border: 2px solid #53381b;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="divebar"] .bingo-card:hover {
+    border-color: #d4a017;
+    box-shadow: 0 0 16px rgba(212, 160, 23, 0.25);
+}
+
+/* ---- Serial/label tags ---- */
+[data-theme="divebar"] .bingo-card-serial-tag {
+    background: rgba(212, 160, 23, 0.15);
+    color: #d4a017;
+}
+
+/* ---- Inputs in dive bar ---- */
+[data-theme="divebar"] .bingo-card-label-input,
+[data-theme="divebar"] .bingo-card-serial-input {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .bingo-card-label-input:focus,
+[data-theme="divebar"] .bingo-card-serial-input:focus {
+    border-color: #d4a017;
+    box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.2);
+}
+
+/* ---- Winner overlay in dive bar — warm gold ---- */
+[data-theme="divebar"] .card-winner-overlay {
+    background: linear-gradient(135deg, #5a3a00 0%, #8b5e00 100%);
+}
+
+/* ---- Gear button in dive bar ---- */
+[data-theme="divebar"] #settingsGearBtn {
+    background: #221d16 !important;
+    border-color: #3d3328 !important;
+    color: #d4a017 !important;
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.2) !important;
+}
+
+/* ---- Total Called badge in dive bar ---- */
+[data-theme="divebar"] .last-six-called-badge {
+    background: rgba(0, 0, 0, 0.25);
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .last-six-called-badge .ft-label {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .last-six-called-badge .ft-num {
+    color: #e8dcc8;
+}
+
+/* ================================================================
+   FLOATING GEAR BUTTON & SETTINGS CONTROLS
+#settingsGearBtn:hover {
+    transform: rotate(35deg) scale(1.08);
+    box-shadow: 0 4px 18px rgba(60, 64, 67, 0.2);
+}
+
+.setting-game-name-wrap {
+    width: 100%;
+}
+
+.setting-game-name-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.setting-game-name-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.settings-help-text {
+    display: block;
+    font-size: 11px;
+    color: var(--text-subtle);
+    margin-top: 6px;
+}
+
+/* ================================================================
+   SETTINGS MODAL
+
+/* Backdrop overlay */
+.settings-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.16s ease;
+    padding: 0;
+    overflow-y: auto;
+}
+
+/* Panel — bottom sheet with scrollable contents */
+.settings-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+}
+
+/* Header row: title + close button */
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--card);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.settings-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.settings-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--text-subtle);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.settings-close-btn:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* Section with a label */
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+}
+
+/* ---- Config Slider Groups (Settings Modal) ---- */
+.config-slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.config-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-subtle);
+}
+
+.config-slider-header span:last-child {
+    color: var(--text-main);
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.config-slider-group input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* ---- Theme picker grid ---- */
+.theme-grid {
+    display: flex;
+    gap: 12px;
+}
+
+.theme-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 8px 12px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    position: relative;
+}
+
+.theme-card[aria-pressed="true"] {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.theme-card:hover:not([aria-pressed="true"]) {
+    border-color: var(--text-subtle);
+}
+
+/* Checkmark badge (top-right) */
+.theme-card-check {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--primary);
+}
+
+/* Theme name label */
+.theme-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Mini preview box */
+.theme-preview {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top "header" stripe */
+.tp-header {
+    height: 20%;
+    background: inherit;
+    flex-shrink: 0;
+}
+
+/* Grid of mini cells */
+.tp-cells {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding: 3px;
+}
+
+.tp-cell {
+    border-radius: 2px;
+}
+
+/* ---- Basic preview colors ---- */
+.theme-preview-basic {
+    background: #f8f9fa;
+    border-color: #dfe1e5;
+}
+
+.theme-preview-basic .tp-header {
+    background: #ffffff;
+    border-bottom: 1px solid #dfe1e5;
+}
+
+.theme-preview-basic .tp-cell {
+    background: #ffffff;
+    border: 1px solid #dfe1e5;
+}
+
+.theme-preview-basic .tp-daubed {
+    background: rgba(26, 115, 232, 0.3);
+    border-color: transparent;
+    border-radius: 50%;
+}
+
+/* ---- Dive Bar preview colors ---- */
+.theme-preview-divebar {
+    background: #1a1510;
+    border-color: #3d3328;
+}
+
+.theme-preview-divebar .tp-header {
+    background: #0f0c08;
+    border-bottom: 1px solid #3d3328;
+}
+
+.theme-preview-divebar .tp-cell {
+    background: #2a2118;
+    border: 1px solid #3d3328;
+}
+
+.theme-preview-divebar .tp-daubed {
+    background: rgba(200, 40, 30, 0.55);
+    border-color: transparent;
+    border-radius: 50%;
+}
+
+/* ---- Dive Bar settings panel coloring ---- */
+[data-theme="divebar"] .settings-panel {
+    background: #221d16;
+    border-color: #3d3328;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="divebar"] .settings-header {
+    background: #221d16;
+    border-bottom-color: #3d3328;
+}
+
+[data-theme="divebar"] .theme-card {
+    background: #2a2118;
+    border-color: #3d3328;
+}
+
+[data-theme="divebar"] .theme-card[aria-pressed="true"] {
+    border-color: #d4a017;
+    box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.18);
+}
+
+[data-theme="divebar"] .theme-card-name {
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .theme-card-check {
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .settings-close-btn:hover {
+    background: rgba(212, 160, 23, 0.12);
+    color: #d4a017;
+}
+
+
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-main);
+    background: var(--surface);
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+}
+
+.topbar-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.topbar h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.back-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.btn {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 14px;
+    padding: 10px 16px;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--text-main);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(60, 64, 67, 0.12);
+}
+
+.primary-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.page-content {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 18px;
+}
+
+.stats-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 14px;
+}
+
+.last-six-card {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.link-button {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 999px;
+    transition: background 0.15s ease;
+}
+
+.link-button:hover,
+.link-button:focus {
+    background: rgba(26, 115, 232, 0.08);
+}
+
+.total-count {
+    font-size: 13px;
+    color: var(--text-subtle);
+}
+
+/* ---- Footer row inside .last-six-card ---- */
+.last-six-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+/* Stats link sits bottom-left, opposite the called count badge */
+.last-six-footer .link-button {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.last-six-called-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.last-six-called-badge .ft-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-subtle);
+}
+
+.last-six-called-badge .ft-num {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.last-six-called-badge .ft-sub {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-subtle);
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+}
+
+/* Per-card Last Man status icon (top right corner of card header) */
+.card-lastman-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    margin-left: auto;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.card-lastman-indicator.standing {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.14);
+}
+
+.card-lastman-indicator.sitting {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.14);
+}
+
+[data-theme="divebar"] .card-lastman-indicator.standing {
+    color: #66bb6a;
+    background: rgba(102, 187, 106, 0.18);
+    filter: drop-shadow(0 0 4px rgba(102, 187, 106, 0.4));
+}
+
+[data-theme="divebar"] .card-lastman-indicator.sitting {
+    color: #bcaaa4;
+    background: rgba(188, 170, 164, 0.12);
+}
+
+/* ================================
+   LAST 6 — bingo-square-badge tiles
+   Each badge mirrors a bingo card cell in layout
+
+.last-six-list {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+    width: 100%;
+}
+
+.bingo-square-badge {
+    /* Square tile — flex column with letter on top, number below */
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* Fixed size that matches a bingo cell roughly */
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-main);
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease,
+        border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+    gap: 1px;
+}
+
+.bingo-square-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(229, 57, 53, 0.22);
+    border-color: #e53935;
+    background: rgba(229, 57, 53, 0.07);
+}
+
+/* Placeholder badge when no ball or empty slot */
+.bingo-square-badge.placeholder {
+    cursor: default;
+    border-style: dashed;
+    border-color: var(--border);
+    background: var(--card);
+    opacity: 0.55;
+}
+
+.bingo-square-badge.placeholder:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border);
+    background: var(--card);
+}
+
+.bingo-square-badge.placeholder .sq-num {
+    color: var(--text-subtle);
+    font-weight: 400;
+}
+
+/* Most recently called ball — solid primary highlight */
+.bingo-square-badge.newest {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.22);
+}
+
+.bingo-square-badge .sq-letter {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.bingo-square-badge .sq-num {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.bingo-square-badge.newest .sq-letter,
+.bingo-square-badge.newest .sq-num {
+    color: var(--primary);
+}
+
+@media (max-width: 480px) {
+    .bingo-square-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+    }
+
+    .bingo-square-badge .sq-num {
+        font-size: 14px;
+    }
+}
+
+.session-word-bar {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.session-word-bar span {
+    flex: 1;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 54px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+    background: var(--surface);
+    border-radius: 14px;
+    letter-spacing: 0.16em;
+}
+
+/* ================================
+   BY-NUMBER TRACKING GRID (FLASHBOARD)
+   Compact flashboard: balls are shrunk, staggered left/right,
+   and tightly overlapped vertically so all 75 fit on 1 screen.
+
+.tracking-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    margin-bottom: 14px;
+    padding: 10px 6px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.grid-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 0 2px;
+}
+
+/* Vertical column separator lines between B, I, N, G, O columns */
+.grid-column:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 36px;
+    bottom: 8px;
+    right: -1px;
+    width: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    opacity: 0.75;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Column Letter Badge Header at top of each column */
+.grid-column .bingo-col-header {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    background: var(--surface);
+    color: var(--primary);
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    flex-shrink: 0;
+}
+
+/* Column-specific colored letter ring accents like physical flashboards */
+.grid-column:nth-child(1) .bingo-col-header {
+    border-color: #d32f2f;
+    color: #d32f2f;
+}
+.grid-column:nth-child(2) .bingo-col-header {
+    border-color: #1976d2;
+    color: #1976d2;
+}
+.grid-column:nth-child(3) .bingo-col-header {
+    border-color: #f57c00;
+    color: #f57c00;
+}
+.grid-column:nth-child(4) .bingo-col-header {
+    border-color: #388e3c;
+    color: #388e3c;
+}
+.grid-column:nth-child(5) .bingo-col-header {
+    border-color: #7b1fa2;
+    color: #7b1fa2;
+}
+
+/* Container for the 15 balls in a column */
+.grid-column-balls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    gap: var(--flashboard-v-gap, 3px);
+}
+
+/* Compact circular bingo ball buttons */
+.bingo-cell.grid-num-cell {
+    cursor: pointer;
+    width: var(--flashboard-ball-size, 27px);
+    height: var(--flashboard-ball-size, 27px);
+    min-width: var(--flashboard-ball-size, 27px);
+    min-height: var(--flashboard-ball-size, 27px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+    font-size: var(--flashboard-font-size, 11px);
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    user-select: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    margin-top: 0;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, z-index 0.15s ease;
+}
+
+/* Stagger offset: odd balls shift left, even balls shift right without touching */
+.bingo-cell.grid-num-cell.offset-left {
+    transform: translateX(calc(-1 * var(--flashboard-h-offset, 6px)));
+}
+
+.bingo-cell.grid-num-cell.offset-right {
+    transform: translateX(var(--flashboard-h-offset, 6px));
+}
+
+/* Hover effect on balls */
+.bingo-cell.grid-num-cell:hover {
+    z-index: 50 !important;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.bingo-cell.grid-num-cell.offset-left:hover {
+    transform: translateX(calc(-1 * var(--flashboard-h-offset, 6px))) scale(1.15);
+}
+
+.bingo-cell.grid-num-cell.offset-right:hover {
+    transform: translateX(var(--flashboard-h-offset, 6px)) scale(1.15);
+}
+
+/* Uncalled ball styling */
+.bingo-cell.grid-num-cell:not(.daubed) {
+    background: var(--surface);
+    color: var(--text-main);
+    border-color: var(--border);
+}
+
+/* Called / Daubed ball styling — bright solid color fill with crisp contrast */
+.bingo-cell.grid-num-cell.daubed {
+    background: var(--daub-color-solid, #1a73e8);
+    color: #ffffff !important;
+    border-color: transparent;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Suppress background pseudo dot on flashboard balls so the entire ball is colored */
+.bingo-cell.grid-num-cell.daubed::before {
+    display: none !important;
+}
+
+/* Dive Bar theme styling for flashboard */
+[data-theme="divebar"] .tracking-grid {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+[data-theme="divebar"] .grid-column:not(:last-child)::after {
+    background: #3d3328;
+}
+
+[data-theme="divebar"] .grid-column .bingo-col-header {
+    background: #0f0c08;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="divebar"] .bingo-cell.grid-num-cell:not(.daubed) {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="divebar"] .bingo-cell.grid-num-cell.daubed {
+    background: var(--daub-color-solid, #c8281e);
+    color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(200, 40, 30, 0.5);
+}
+
+@media (max-width: 480px) {
+    .tracking-grid {
+        padding: 8px 3px 10px;
+        gap: 1px;
+    }
+
+    .grid-column .bingo-col-header {
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
+        margin-bottom: 4px;
+        border-width: 1.5px;
+    }
+}
+
+
+/* --------------------------------
+   INPUT MODE TOGGLE
+-------------------------------- */
+
+.input-mode-toggle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    position: relative;
+}
+
+.input-mode-toggle {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.toggle-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-subtle);
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.toggle-btn.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.28);
+}
+
+.toggle-btn:not(.active):hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* --------------------------------
+   DAUBER COLOR SELECTOR & SLIDER
+-------------------------------- */
+
+.dauber-selector-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.dauber-color-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
+}
+
+.dauber-color-btn:hover,
+.dauber-color-btn.open {
+    transform: scale(1.06);
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.18);
+}
+
+.dauber-color-preview {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--daub-color);
+    border: 2.5px solid var(--daub-color-solid);
+    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.15);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dauber-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 200;
+    width: 220px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(60, 64, 67, 0.16);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeSlideIn 0.14s ease;
+}
+
+.dauber-menu-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.dauber-palette {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.dauber-palette-item {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0;
+    outline: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.dauber-palette-item:hover {
+    transform: scale(1.15);
+}
+
+.dauber-palette-item.active {
+    border-color: var(--text-main);
+    box-shadow: 0 0 0 2px var(--card), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dauber-palette-item.active::after {
+    content: "✓";
+    font-size: 12px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.dauber-menu-divider {
+    height: 1px;
+    background: var(--border);
+}
+
+.dauber-slider-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dauber-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-subtle);
+}
+
+.dauber-slider-header span:last-child {
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+#dauberOpacitySlider {
+    width: 100%;
+    accent-color: var(--daub-color-solid);
+    cursor: pointer;
+}
+
+/* --------------------------------
+   BY LETTER PANEL
+-------------------------------- */
+
+/* Word bar is interactive in letter mode */
+
+.word-bar-selectable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+.word-bar-selectable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(26, 115, 232, 0.16);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.word-bar-selectable.active-letter {
+    background: var(--primary);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(26, 115, 232, 0.32);
+}
+
+/* Number picker (3 rows × 5) */
+
+.number-picker {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    animation: fadeSlideIn 0.18s ease;
+}
+
+.number-picker.hidden {
+    display: none;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Circular bingo ball number input buttons */
+.pick-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 54px;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.pick-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(26, 115, 232, 0.14);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.pick-btn.called {
+    border-color: transparent;
+    position: relative;
+}
+
+.pick-btn.called::after {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    background: var(--daub-color);
+    border-radius: 50%;
+}
+
+/* --------------------------------
+   UTILITY
+-------------------------------- */
+
+.hidden {
+    display: none !important;
+}
+
+/* --------------------------------
+   BINGO CARDS SECTION
+-------------------------------- */
+
+.bingo-cards-section {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+}
+
+.bingo-cards-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+/* Header styling for combined Game Mode & Cards tile */
+.combined-tile-header {
+    gap: 12px;
+}
+
+/* Interactive game selector trigger inside the combined tile header */
+.game-selector-trigger {
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 6px 10px;
+    margin: -6px -10px;
+    transition: background 0.15s ease;
+    user-select: none;
+    min-width: 0;
+}
+
+.game-selector-trigger:hover,
+.game-selector-trigger:focus-visible {
+    background: var(--surface);
+    outline: none;
+}
+
+[data-theme="divebar"] .game-selector-trigger:hover,
+[data-theme="divebar"] .game-selector-trigger:focus-visible {
+    background: rgba(212, 160, 23, 0.08);
+}
+
+.cards-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Bottom action container for + Add Card under cards */
+.cards-bottom-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.add-card-bottom-btn {
+    width: 100%;
+    max-width: 260px;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.add-card-bottom-btn:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+}
+
+[data-theme="divebar"] .add-card-bottom-btn {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #d4a017;
+}
+
+[data-theme="divebar"] .add-card-bottom-btn:hover {
+    background: rgba(212, 160, 23, 0.14);
+    border-color: #d4a017;
+    color: #f5d9c8;
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.25);
+}
+
+/* Column count driven by --card-view-cols (set by JS Card Size slider) */
+.bingo-cards-list {
+    display: grid;
+    grid-template-columns: repeat(var(--card-view-cols, 2), minmax(0, 1fr));
+    gap: 16px;
+}
+
+/* ---- Scaled view mode — applied to non-editing cards when size is reduced ----
+   Reduces padding and font sizes so 2 cards comfortably fit side-by-side.     */
+.bingo-card.card-view-scaled {
+    padding: 6px;
+    gap: 4px;
+    border-radius: 10px;
+}
+
+/* Scaled header text */
+.card-view-scaled .bingo-card-label {
+    font-size: calc(var(--card-view-scale, 0.75) * 13px);
+    letter-spacing: 0.05em;
+}
+
+.card-view-scaled .bingo-card-serial-tag {
+    font-size: calc(var(--card-view-scale, 0.75) * 11px);
+}
+
+/* Scaled BINGO column header letters */
+.card-view-scaled .bingo-col-header {
+    height: calc(var(--card-view-scale, 0.75) * 30px);
+    font-size: calc(var(--card-view-scale, 0.75) * 15px);
+}
+
+/* Scaled cell grid gap and font */
+.card-view-scaled .bingo-card-grid {
+    gap: calc(var(--card-view-scale, 0.75) * 5px);
+}
+
+.card-view-scaled .bingo-cell {
+    font-size: calc(var(--card-view-scale, 0.75) * 14px);
+    border-radius: calc(var(--card-view-scale, 0.75) * 10px);
+    /* Prevent any individual cell from exceeding its grid track */
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Also scale down the empty-cell "+" placeholder — it has its own larger font-size */
+.card-view-scaled .bingo-cell.empty {
+    font-size: calc(var(--card-view-scale, 0.75) * 18px);
+}
+
+/* Editing cards always display at full size, ignoring the scale class */
+.bingo-card.card-editing.card-view-scaled {
+    padding: 10px;
+    gap: 8px;
+    border-radius: 14px;
+}
+
+.card-editing.card-view-scaled .bingo-card-grid {
+    gap: 5px;
+}
+
+.card-editing.card-view-scaled .bingo-cell {
+    font-size: 14px;
+    border-radius: 10px;
+    width: auto;
+    overflow: visible;
+}
+
+.card-editing.card-view-scaled .bingo-cell.empty {
+    font-size: 18px;
+}
+
+.card-editing.card-view-scaled .bingo-col-header {
+    height: 30px;
+    font-size: 15px;
+}
+
+.bingo-cards-placeholder {
+    grid-column: 1 / -1;
+    color: var(--text-subtle);
+    font-size: 14px;
+    margin: 0;
+    padding: 4px 0;
+}
+
+/* ---- Individual card ---- */
+
+.bingo-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+    /* Prevent any child content from bleeding outside the card boundary */
+    overflow: hidden;
+    min-width: 0;
+}
+
+.bingo-card:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    border-color: rgba(26, 115, 232, 0.4);
+}
+
+/* Card state variants */
+.bingo-card.card-editing {
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.bingo-card.card-inactive {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+}
+
+/* ---- Card header ---- */
+
+.bingo-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    flex-wrap: wrap;
+}
+
+.bingo-card-title-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.bingo-card-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.bingo-card-serial-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: monospace;
+}
+
+.bingo-card-label-input,
+.bingo-card-serial-input {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: 0.05em;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 8px;
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bingo-card-label-input {
+    flex: 2;
+    min-width: 100px;
+}
+
+.bingo-card-serial-input {
+    flex: 1;
+    min-width: 80px;
+    font-family: monospace;
+}
+
+.bingo-card-label-input:focus,
+.bingo-card-serial-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.18);
+}
+
+/* Status badge */
+.card-status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 999px;
+}
+
+.badge-editing {
+    background: rgba(26, 115, 232, 0.12);
+    color: var(--primary);
+}
+
+.badge-inactive {
+    background: rgba(95, 99, 104, 0.12);
+    color: var(--text-subtle);
+}
+
+/* ---- Hamburger menu button ---- */
+
+.card-menu-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 4px;
+    transition: background 0.15s ease;
+}
+
+.card-menu-btn span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: var(--text-subtle);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.card-menu-btn:hover,
+.card-menu-btn.open {
+    background: var(--primary-soft);
+}
+
+.card-menu-btn:hover span,
+.card-menu-btn.open span {
+    background: var(--primary);
+}
+
+/* ---- Dropdown menu ---- */
+
+.card-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 100;
+    min-width: 180px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(60, 64, 67, 0.14);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: fadeSlideIn 0.14s ease;
+}
+
+.card-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-main);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+}
+
+.card-menu-item:hover {
+    background: var(--surface);
+}
+
+/* ---- 5×5 card grid ---- */
+
+.bingo-card-grid {
+    display: grid;
+    /* minmax(0,1fr) prevents cells from overflowing their column track */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    /* Ensure grid never pushes outside its flex parent */
+    min-width: 0;
+    width: 100%;
+}
+
+.bingo-col-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 30px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.1em;
+}
+
+.bingo-cell {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+}
+
+.bingo-cell:hover:not(.free) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.14);
+    border-color: var(--primary);
+}
+
+.bingo-cell.empty {
+    color: var(--text-subtle);
+    font-size: 18px;
+}
+
+.bingo-cell.empty::after {
+    content: "+";
+    font-weight: 300;
+    opacity: 0.4;
+}
+
+/* Daubed = number has been called */
+.bingo-cell.daubed {
+    border-color: transparent;
+}
+
+.bingo-cell.daubed::before {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    border-radius: 50%;
+    background: var(--daub-color);
+    z-index: 0;
+}
+
+.bingo-cell.daubed span,
+.bingo-cell.daubed {
+    z-index: 1;
+    position: relative;
+}
+
+/* FREE center square */
+.bingo-cell.free {
+    cursor: default;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--daub-color-solid);
+    border-color: transparent;
+}
+
+.bingo-cell.free::before {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    border-radius: 50%;
+    background: var(--daub-color);
+    z-index: 0;
+}
+
+/* Cell being edited (picker open) */
+.bingo-cell.editing {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.28);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* Unused cell in active game mode — desaturated and rendered in grayscale */
+.bingo-cell.unused-cell {
+    filter: grayscale(1) opacity(0.65);
+}
+
+.bingo-cell.unused-cell:not(.daubed):not(.free):not(.editing) {
+    background: var(--surface);
+    color: var(--text-subtle);
+    border-color: var(--border);
+}
+
+/* Retain dauber mark in grayscale when an unused number is called */
+.bingo-cell.unused-cell.daubed::before {
+    filter: grayscale(1);
+    opacity: 0.85;
+}
+
+[data-theme="divebar"] .bingo-cell.unused-cell:not(.daubed):not(.free):not(.editing) {
+    background: #1e1914;
+    color: #6d6253;
+    border-color: #33281e;
+}
+
+/* ---- Inline column picker on a card ---- */
+
+.card-number-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    animation: fadeSlideIn 0.16s ease;
+}
+
+.card-picker-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-left: 2px;
+}
+
+.card-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+/* Numbers already placed on this card */
+.pick-btn.used-on-card {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .pick-btn {
+        aspect-ratio: 1;
+        min-height: 0;
+        font-size: 13px;
+    }
+
+    .toggle-btn {
+        padding: 7px 14px;
+        font-size: 13px;
+    }
+
+    .bingo-cell {
+        font-size: 12px;
+    }
+
+    .bingo-col-header {
+        font-size: 13px;
+    }
+}
+
+/* ================================================================
+   GAME SECTION
+
+.game-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+    user-select: none;
+}
+
+.game-section:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 14px rgba(26, 115, 232, 0.12);
+}
+
+.game-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+.game-clear-btn {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.game-clear-btn:hover {
+    background: rgba(229, 57, 53, 0.08);
+    border-color: #e53935;
+    color: #e53935;
+}
+
+[data-theme="divebar"] .game-clear-btn {
+    background: #2a2118;
+    border-color: #3d3328;
+    color: #e8dcc8;
+}
+
+[data-theme="divebar"] .game-clear-btn:hover {
+    background: rgba(200, 40, 30, 0.15);
+    border-color: #c8281e;
+    color: #ff8a80;
+}
+
+.game-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+/* Row containing the game name + Double badge side-by-side */
+.game-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.selected-game-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.selected-game-name.game-selected {
+    color: var(--primary);
+}
+
+/* Double mode badge — green pill shown next to the game name */
+.double-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    background: rgba(67, 160, 71, 0.14);
+    color: #2e7d32;
+    border: 1px solid rgba(67, 160, 71, 0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.game-menu-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* ================================================================
+   DOUBLE MODE CHECKBOX — inside the game picker items
+
+/* Compact pill on the far right of the item row */
+.double-cb-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    /* never squished by the game name */
+    margin-left: auto;
+    /* push hard to the right */
+    padding: 5px 9px;
+    border-radius: 8px;
+    background: rgba(67, 160, 71, 0.08);
+    border: 1px solid rgba(67, 160, 71, 0.2);
+    cursor: default;
+    /* cursor handled by child elements */
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.double-cb-wrap:hover {
+    background: rgba(67, 160, 71, 0.14);
+    border-color: rgba(67, 160, 71, 0.35);
+}
+
+/* Let the checkbox be a normal size but touch-friendly */
+.double-cb-input {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: #43a047;
+    cursor: pointer;
+    margin: 0;
+}
+
+.double-cb-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2e7d32;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* ================================================================
+   GAME PICKER MODAL (bottom-sheet style)
+
+.game-picker-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.38);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.game-picker-panel {
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 640px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.game-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.game-picker-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.game-picker-list {
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.game-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.13s ease, border-color 0.13s ease;
+}
+
+.game-picker-item:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
+
+.game-picker-item.selected {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
+
+.game-picker-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.game-picker-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.game-picker-meta {
+    font-size: 12px;
+    color: var(--text-subtle);
+}
+
+.game-picker-check {
+    color: var(--primary);
+    font-size: 20px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Mini card preview */
+.mini-card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    width: 58px;
+    height: 58px;
+    flex-shrink: 0;
+}
+
+.mini-cell {
+    border-radius: 2px;
+    background: var(--border);
+}
+
+.mini-cell.mini-free {
+    border-radius: 50%;
+    background: rgba(26, 115, 232, 0.18);
+}
+
+.mini-cell.mini-pattern {
+    background: var(--primary);
+}
+
+.mini-cell.mini-free.mini-pattern {
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+/* ================================================================
+   WINNER CARD
+
+.card-winner {
+    border-color: #f9a825 !important;
+    box-shadow: 0 0 0 3px rgba(249, 168, 37, 0.4),
+        0 8px 30px rgba(249, 168, 37, 0.2) !important;
+}
+
+.bingo-cell.win-cell {
+    background: linear-gradient(135deg, #ffd600, #ffab00) !important;
+    border-color: transparent !important;
+    color: #1a1a1a !important;
+    box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.4);
+    z-index: 2;
+    position: relative;
+}
+
+/* Partial win cell — shown in double mode when only 1 of 2 required patterns is matched.
+   Blue highlight instead of gold so the user knows more is needed. */
+.bingo-cell.partial-win-cell {
+    background: var(--primary-soft) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    box-shadow: inset 0 1px 3px rgba(26, 115, 232, 0.18);
+    z-index: 2;
+    position: relative;
+}
+
+/* Suppress the daub dot on partial-win cells so the number stays readable */
+.bingo-cell.partial-win-cell::before {
+    display: none !important;
+}
+
+/* Override daub dot on win cells */
+.bingo-cell.win-cell::before {
+    display: none !important;
+}
+
+/* ---- One Away — pulsating cell when exactly 1 square away from a BINGO ---- */
+
+/* Pulse animation: cycles border glow + slight text-size pop */
+@keyframes oneAwayPulse {
+    0%,
+    100% {
+        background: var(--card);
+        border-color: #ff8f00;
+        box-shadow: 0 0 0 2px rgba(255, 143, 0, 0.25);
+        font-size: 14px;
+        color: #e65100;
+    }
+
+    50% {
+        background: rgba(255, 143, 0, 0.14);
+        border-color: #ff6d00;
+        box-shadow: 0 0 0 4px rgba(255, 109, 0, 0.28),
+            0 0 14px rgba(255, 109, 0, 0.18);
+        font-size: 17px;
+        color: #bf360c;
+    }
+}
+
+.bingo-cell.one-away-cell {
+    animation: oneAwayPulse 1.4s ease-in-out infinite;
+    z-index: 2;
+    position: relative;
+    /* Prevent the daub dot from rendering over the pulse effect */
+}
+
+.bingo-cell.one-away-cell::before {
+    display: none !important;
+}
+
+/* Slightly larger pulse on bigger screens where cells have more room */
+@media (min-width: 480px) {
+    @keyframes oneAwayPulse {
+        0%,
+        100% {
+            background: var(--card);
+            border-color: #ff8f00;
+            box-shadow: 0 0 0 2px rgba(255, 143, 0, 0.25);
+            font-size: 14px;
+            color: #e65100;
+        }
+
+        50% {
+            background: rgba(255, 143, 0, 0.14);
+            border-color: #ff6d00;
+            box-shadow: 0 0 0 5px rgba(255, 109, 0, 0.28),
+                0 0 18px rgba(255, 109, 0, 0.2);
+            font-size: 18px;
+            color: #bf360c;
+        }
+    }
+}
+
+.card-winner-overlay {
+    background: linear-gradient(135deg, #1565c0 0%, #1a73e8 100%);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    animation: winnerPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes winnerPop {
+    from {
+        opacity: 0;
+        transform: scale(0.82) translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.winner-bingo-text {
+    font-size: 30px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.14em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    line-height: 1;
+}
+
+.winner-game-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    margin-top: 2px;
+}
+
+.winner-pattern-name {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 400;
+}
+
+/* Footer layout and small version text styling */
+.app-footer {
+    text-align: center;
+    padding: 16px 8px;
+    font-size: 0.75rem;
+    color: var(--text-subtle, #5f6368);
+}
+
+/* ================================================================
+   BALL TARGET FEATURE
+   When a ball target is set, the floating badge expands to show
+   the called count and the remaining balls in the prize window.
+   Each bingo card gets a chip showing how many balls it needs to win.
 
 /* Badge target active / reached states */
 .last-six-called-badge.target-active {
@@ -2649,7 +5639,6 @@ body {
 
 /* ================================================================
    BALL TARGET — DIVE BAR THEME OVERRIDES
-================================================================ */
 
 /* Dive bar target-reached: use the amber/warm red palette */
 [data-theme="divebar"] .last-six-called-badge.target-reached {
@@ -2688,7 +5677,6 @@ body {
 
 /* ================================================================
    SYNC INDICATOR, OUTBOX MODAL & OFFLINE CACHE UI
-================================================================ */
 
 .bingo-sync-badge {
     display: inline-flex;
@@ -2978,7 +5966,6 @@ body {
 
 /* ================================================================
    BALL TARGET MODAL (opened from the Called badge)
-================================================================ */
 
 /* The Called badge is tappable */
 .last-six-called-badge {
@@ -3122,7 +6109,6 @@ body {
 
 /* ================================================================
    STATS LOCATIONS (per-location ball call stats)
-================================================================ */
 
 /* Stats link: label plus the active location name, truncated when long */
 .stats-link {

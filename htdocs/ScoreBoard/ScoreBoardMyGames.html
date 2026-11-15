@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="scoreboard.css">
     <title>ScoreBoard — Redirecting to Games</title>
     <script>
         // Forward to unified Games screen preserving any incoming query parameters
@@ -11,9 +12,9 @@
         window.location.replace('ScoreBoardGames.html?' + params.toString());
     </script>
 </head>
-<body style="font-family:sans-serif;background:#0f172a;color:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;">
-    <p>Redirecting to <a href="ScoreBoardGames.html?tab=mine" style="color:#7dd3fc;">My Games</a>…</p>
-    <footer class="app-footer" style="position:fixed;bottom:12px;font-size:0.75rem;color:#64748b;">
+<body class="stub-body">
+    <p>Redirecting to <a class="stub-link" href="ScoreBoardGames.html?tab=mine">My Games</a>…</p>
+    <footer class="app-footer stub-footer">
         <small>v1.6</small>
     </footer>
 </body>

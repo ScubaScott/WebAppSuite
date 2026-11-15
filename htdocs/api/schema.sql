@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS `scoreboard_games` (
     `expires_at` DATETIME NULL,                 -- set for guest games only; NULL = keep until deleted
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_scoreboard_games_owner` (`owner_id`, `started_at`),
+    INDEX `idx_scoreboard_games_owner_team` (`owner_id`, `home_name`),
     INDEX `idx_scoreboard_games_public` (`visibility`, `status`, `last_activity_at`),
     INDEX `idx_scoreboard_games_expires` (`expires_at`),
     CONSTRAINT `fk_scoreboard_games_owner` FOREIGN KEY (`owner_id`)

@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '2.0';
+const SUITE_PROFILE_VERSION = '2.3';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -37,6 +37,8 @@ const SUITE_PROFILE_VERSION = '2.0';
         'farkle-game',
         'hdev_theme',
         'timerStateV7',
+        'scoreboardGameV8',
+        'scoreboardPrefsV1',
         'scoreBoardActiveGamesV1',
         'scoreBoardCurrentGameIdV1',
         'scoreKeeperActiveGamesV1',
@@ -879,7 +881,9 @@ const SUITE_PROFILE_VERSION = '2.0';
      */
     async function listPublicGames() {
         const url = getApiUrl('games.php') + '?action=list_public';
-        const res = await fetch(url);
+        // Signed-in callers send their token so admins also receive each game's owner
+        const user = getUser();
+        const res = await fetch(url, user && user.token ? { headers: { 'Authorization': 'Bearer ' + user.token } } : undefined);
         if (!res.ok) {
             throw new Error('Failed to load active games (' + res.status + ')');
         }
@@ -928,13 +932,46 @@ const SUITE_PROFILE_VERSION = '2.0';
      * @param {number} [offset=0]
      * @returns {Promise<Object>}
      */
-    async function listMyGames(limit = 20, offset = 0) {
+    async function listMyGames(limit = 20, offset = 0, team = '') {
         const user = getUser();
         if (!user || !user.token) {
             throw new Error('You must be signed in to view your saved games.');
         }
 
         const url = getApiUrl('games.php') + '?action=list_mine';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ token: user.token, limit, offset, team })
+        });
+
+        if (res.status === 401) {
+            setSession(null, 'expired');
+            throw new Error('Session expired. Please sign in again.');
+        }
+        if (!res.ok) {
+            throw new Error('Failed to load games archive (' + res.status + ')');
+        }
+        return await res.json();
+    }
+
+    /**
+     * Lists every game with its owner's username (admins only).
+     *
+     * @param {number} [limit=20]
+     * @param {number} [offset=0]
+     * @returns {Promise<Object>}
+     */
+    async function listAllGames(limit = 20, offset = 0) {
+        const user = getUser();
+        if (!user || !user.token) {
+            throw new Error('You must be signed in to view all games.');
+        }
+
+        const url = getApiUrl('games.php') + '?action=list_all';
         const res = await fetch(url, {
             method: 'POST',
             headers: {
@@ -949,7 +986,38 @@ const SUITE_PROFILE_VERSION = '2.0';
             throw new Error('Session expired. Please sign in again.');
         }
         if (!res.ok) {
-            throw new Error('Failed to load games archive (' + res.status + ')');
+            throw new Error('Failed to load all games (' + res.status + ')');
+        }
+        return await res.json();
+    }
+
+    /**
+     * Lists the teams (home names) in the signed-in user's saved games, with game counts.
+     *
+     * @returns {Promise<Object>}
+     */
+    async function listMyTeams() {
+        const user = getUser();
+        if (!user || !user.token) {
+            throw new Error('You must be signed in to view your teams.');
+        }
+
+        const url = getApiUrl('games.php') + '?action=list_my_teams';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ token: user.token })
+        });
+
+        if (res.status === 401) {
+            setSession(null, 'expired');
+            throw new Error('Session expired. Please sign in again.');
+        }
+        if (!res.ok) {
+            throw new Error('Failed to load teams (' + res.status + ')');
         }
         return await res.json();
     }
@@ -1114,6 +1182,8 @@ const SUITE_PROFILE_VERSION = '2.0';
             get: getGame,
             listPublic: listPublicGames,
             listMine: listMyGames,
+            listMyTeams: listMyTeams,
+            listAll: listAllGames,
             setVisibility: setGameVisibility,
             remove: removeGame
         }

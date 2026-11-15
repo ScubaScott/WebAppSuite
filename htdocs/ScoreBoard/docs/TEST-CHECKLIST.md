@@ -21,6 +21,49 @@ Test games appear on the public Active Games list. Set them to private or delete
 - [ ] Penalty cards (Settings > Show Penalty Cards): yellow and red add history rows and play the card animation only while the clock runs.
 - [ ] Pause on Score on: a goal pauses the clock. Score splash on/off works per team.
 
+## Saved data (storage split)
+
+- [ ] With the old fixture loaded into `timerStateV7` (and no `scoreboardGameV8`), open the app: the game appears as before, `scoreboardGameV8` and `scoreboardPrefsV1` now exist, and `timerStateV7` and the other old keys are gone.
+- [ ] Settings (theme, mute, pause on score, log options, splash, cards) survive a reload. Change each one and reload.
+- [ ] **(signed in)** The profile record holds preferences only: after one save, `loadAppData('scoreboard')` has no `scoreHistory` or `activeGameId`.
+- [ ] **(signed in)** Open the app on a second browser profile with the same account: it shows the same settings and no game (a game does not move between devices).
+- [ ] The viewer and games list show the saved theme.
+- [ ] Log out: the game and preferences keys are cleared.
+
+## Theme, wording and teams (Phase 5)
+
+- [ ] New Game shows a Theme dropdown (and Settings no longer has one). Picking a theme previews it behind the dialog; Cancel restores the old look.
+- [ ] After Ready, change the theme with the ⋮ button before pressing Start: it works. After Start, the ⋮ dialog shows the theme dimmed with "The theme is fixed once the game has started".
+- [ ] Start a game with theme A, then change nothing: reload, the console still shows theme A. Open the viewer on another device or profile with a different saved theme: it shows theme A. Open the same game from My Games after it finishes: theme A.
+- [ ] Start a second game with theme B; the New Game dialog offered theme A first (the last one used).
+- [ ] The labels read "Our Team" and "Opponent" in the setup dialog, "Our Team" and "Opponent" in the card tooltips, and in the Score Splash settings.
+- [ ] **(signed in)** In New Game, typing in our team's name suggests names from earlier games.
+- [ ] **(signed in)** With games for two different home teams (for example "Shakopee" and "Eden Prairie") in My Games, the chips appear with counts; tapping one shows only that team; "All" shows everything; the choice is still selected after a reload; deleting the last game of a team removes its chip.
+- [ ] **(signed in)** A team typed as "shakopee " groups with "Shakopee".
+- [ ] Run `htdocs/api/setup.php` once on the server: it reports the new index added (or already present).
+
+## Page structure (Phase 4)
+
+- [ ] The console, viewer, games list and help page look the same as before on a phone-width window: card, score boxes, period box, clocks, history table, settings and dialogs.
+- [ ] Tab to a score box and press Enter or Space: a goal is scored. The focus ring is visible. Same for the period box and the elapsed time.
+- [ ] Open the viewer for a live game, a finished game and a deleted one; the Active Games and My Games tabs, the row action sheet, and the old redirect links (`ScoreBoardActiveGames.html`, `ScoreBoardMyGames.html`) all work.
+- [ ] Go offline after one visit to each page and reload: all pages still open (the new `js/` files are cached).
+- [ ] A theme with a filter (for example Chill Night) still shows its background on the console, viewer and games list.
+
+## Clock corrections (refactor branch)
+
+- [ ] Start a period, wait about 1 minute, tap the elapsed time, press +1 min: the clock reads about 2:00, the Start row shows a time one minute earlier, and a "P1 - Clock +1:00" row appears.
+- [ ] Score a goal, then press +1 min: the goal's time in the history moves later by one minute.
+- [ ] Pause for a while, resume, then correct: the pause length is unchanged and the clock follows the new start.
+- [ ] Press -1 min right after a goal logged within the first 59 seconds: a message names the goal and nothing changes.
+- [ ] Press -5 min within the first minute: a message says the clock cannot go below 0:00.
+- [ ] Remove the "Clock +1:00" row: the clock and every time return to their earlier values.
+- [ ] Correct while paused: it works. Correct between periods: the elapsed time cannot be opened.
+- [ ] Reload after a correction: the clock and the Start row are unchanged.
+- [ ] The Start row of a corrected period shows a `*`; tapping the row shows both the corrected time and when it was pressed.
+- [ ] Pause and resume rows (with "Log Pause/Resume" on) and End rows show a position such as `13:00`; tapping one shows the position and the time of day.
+- [ ] A game finished before this version still shows the times it showed before, and the viewer shows the same rows as the console.
+
 ## History
 
 - [ ] Tap a row: Add Note, Share, Remove appear. A note saves and shows in the row.
