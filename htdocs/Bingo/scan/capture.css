@@ -1,0 +1,33 @@
+/* Guided capture: window outline over the live camera, hint line and the row of switches above the camera */
+
+/* Window outline and found windows; drawn by capture.js, sits exactly over the square camera view */
+.capture-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* One line under the camera: what to do, or what the camera sees */
+.camera-hint {
+    margin: 0;
+    min-height: 20px;
+    font-size: 13px;
+    text-align: center;
+    color: var(--text-subtle);
+}
+
+/* The switches in the camera card's title row wrap onto a second line on narrow screens */
+.scan-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px 12px;
+}
+
+/* A larger tap area for the switches: the whole row (switch plus text) is at least 44px tall */
+.scan-toggles .crop-toggle-wrap {
+    min-height: 44px;
+}

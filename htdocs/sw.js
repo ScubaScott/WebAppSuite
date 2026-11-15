@@ -1,8 +1,14 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '4.9';
+const SW_VERSION = '5.3';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
+
+// Scanner engine files (OCR/image libraries and models) live in their own cache that has no version
+// in its name, so it survives every SW_VERSION change. engine-loader.js fills it; files are never
+// re-downloaded until the engine manifest lists a differently named file.
+const ENGINE_CACHE = 'bingo-scan-engine';
+const ENGINE_PATH = '/Bingo/scan/engine/';
 
 // Static app-shell assets pre-cached on install for offline functionality.
 // Includes the root launcher and entry points for all sub-applications.
@@ -35,6 +41,21 @@ const APP_SHELL = [
   './Bingo/scan/style.css',
   './Bingo/scan/ocr.js',
   './Bingo/scan/utils.js',
+  './Bingo/scan/imaging.js',
+  './Bingo/scan/profiles.js',
+  './Bingo/scan/geometry.js',
+  './Bingo/scan/readers/tesseract-reader.js',
+  './Bingo/scan/decoder.js',
+  './Bingo/scan/review.js',
+  './Bingo/scan/review.css',
+  './Bingo/scan/capture.js',
+  './Bingo/scan/capture.css',
+  './Bingo/scan/training-store.js',
+  './Bingo/scan/training.css',
+  './Bingo/scan/detection.css',
+  './Bingo/scan/engine-loader.js',
+  './Bingo/scan/engine-loader.css',
+  './Bingo/scan/engine/manifest.json',
   './DriverScore/',
   './DriverScore/index.html',
   './DriverScore/style.css',
@@ -110,6 +131,21 @@ function isNetworkFirst(url, request) {
   return !isMedia;
 }
 
+// True for scanner engine files that are served cache-first from ENGINE_CACHE.
+// The engine manifest is excluded so it stays network-first like other app code.
+function isEngineAsset(url) {
+  return url.origin === self.location.origin &&
+    url.pathname.includes(ENGINE_PATH) && !url.pathname.endsWith('/manifest.json');
+}
+
+// Serves an engine file from ENGINE_CACHE; on a miss it goes to the network without storing the
+// result, because only engine-loader.js adds verified files to the cache.
+function engineCacheFirst(request) {
+  return caches.open(ENGINE_CACHE)
+    .then(cache => cache.match(request))
+    .then(hit => hit || fetch(request));
+}
+
 // Pre-cache the application shell across the root and all sub-apps on install
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -140,7 +176,8 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(
         keys
-          .filter(key => key !== CACHE_NAME)
+          // The engine cache is kept across versions
+          .filter(key => key !== CACHE_NAME && key !== ENGINE_CACHE)
           .map(key => caches.delete(key))
       ))
       // Take control of all open clients and tabs immediately
@@ -156,6 +193,13 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   let reqUrl;
   try { reqUrl = new URL(request.url); } catch { return; }
+
+  // Scanner engine files: cache-first from the engine cache, never cache-busted
+  if (isEngineAsset(reqUrl)) {
+    event.respondWith(engineCacheFirst(request));
+    return;
+  }
+
   if (reqUrl.origin !== self.location.origin) return;
 
   // Bypass service worker cache completely for live database API endpoints

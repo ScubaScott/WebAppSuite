@@ -1,0 +1,121 @@
+{
+ "when": "2026-10-30T01:35:38.007Z",
+ "results": [
+  {
+   "name": "camera starts at the requested size",
+   "ok": true
+  },
+  {
+   "name": "hint line tells what to do",
+   "ok": true
+  },
+  {
+   "name": "the old static grid lines are gone",
+   "ok": true
+  },
+  {
+   "name": "auto-capture switch is on by default",
+   "ok": true
+  },
+  {
+   "name": "the 5x5 outline is drawn over the camera",
+   "ok": true
+  },
+  {
+   "name": "the hint line reports the windows found while holding",
+   "ok": true,
+   "detail": "Found 25 of 25 windows · hold steady…"
+  },
+  {
+   "name": "the photo is taken by itself within 6 s of a steady card",
+   "ok": true,
+   "detail": "828 ms"
+  },
+  {
+   "name": "after the photo the page finds the windows in it",
+   "ok": true,
+   "detail": "Found 25 of 25 number windows. Click Run OCR to recognize digits, or Manual Crop to adjust."
+  },
+  {
+   "name": "the still is the center square at the stream height (480 px)",
+   "ok": true,
+   "detail": "480x480"
+  },
+  {
+   "name": "the camera hint is hidden once a photo is showing",
+   "ok": true
+  },
+  {
+   "name": "it does not take a second photo of the same card",
+   "ok": true
+  },
+  {
+   "name": "Reset to Camera shows the live camera and hint again",
+   "ok": true
+  },
+  {
+   "name": "no photo during the cooldown after Reset",
+   "ok": true
+  },
+  {
+   "name": "a new photo is taken after the cooldown on a steady card",
+   "ok": true
+  },
+  {
+   "name": "no page errors (steady scene)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "the switch choice is remembered on this device",
+   "ok": true
+  },
+  {
+   "name": "with auto-capture off no photo is taken by itself",
+   "ok": true
+  },
+  {
+   "name": "the manual shutter button still takes the photo",
+   "ok": true
+  },
+  {
+   "name": "no page errors (switch off)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "the switch stays off after reloading",
+   "ok": true
+  },
+  {
+   "name": "a moving picture never fires the shutter",
+   "ok": true
+  },
+  {
+   "name": "the hint stays on the default text while moving",
+   "ok": true
+  },
+  {
+   "name": "no page errors (moving)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "a wobbling picture does not fire",
+   "ok": true
+  },
+  {
+   "name": "a steady picture with no number windows never fires",
+   "ok": true
+  },
+  {
+   "name": "the plain outline stays (no windows found)",
+   "ok": true
+  },
+  {
+   "name": "no page errors (no card)",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

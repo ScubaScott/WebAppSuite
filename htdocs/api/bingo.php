@@ -1,13 +1,13 @@
 <?php
 // Bingo App SQL Persistence & Offline Sync Backend API
-// Provides endpoints for health check, cards CRUD, favorites, and games CRUD.
+// Provides endpoints for health check, cards CRUD, favorites, games CRUD, and scan training samples.
 
 // API endpoint version identifier
-$BINGO_API_VERSION = '1.2';
+$BINGO_API_VERSION = '1.3';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, HEAD, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/training.php';
 
 // Parse endpoint and resource ID from request
 $endpoint = isset($_GET['endpoint']) ? trim($_GET['endpoint']) : '';
@@ -24,7 +25,7 @@ $resourceId = isset($_GET['id']) ? trim($_GET['id']) : '';
 // Fallback parsing for direct paths if rewrite didn't provide GET params
 if (empty($endpoint)) {
     $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    if (preg_match('#(?:^|/)api/(health|cards|favorites|games)(?:/([^/?#]+))?#i', $requestUri, $matches)) {
+    if (preg_match('#(?:^|/)api/(health|cards|favorites|games|training)(?:/([^/?#]+))?#i', $requestUri, $matches)) {
         $endpoint = strtolower($matches[1]);
         if (!empty($matches[2])) {
             $resourceId = trim($matches[2]);
@@ -462,6 +463,14 @@ if ($endpoint === 'games') {
     exit;
 }
 
+// -----------------------------------------------------------------------------
+// Endpoint: /api/training  (scan training samples; see training.php)
+// -----------------------------------------------------------------------------
+if ($endpoint === 'training') {
+    trainingHandleRequest($pdo, $resourceId);
+    exit;
+}
+
 http_response_code(404);
 echo json_encode(['error' => 'Endpoint not found']);
 exit;
@@ -494,6 +503,9 @@ function ensureBingoTablesInitialized($pdo) {
                 INDEX `idx_bingo_favorites_user` (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
         }
+
+        // Scan training samples table (created for databases set up before it existed)
+        trainingEnsureTable($pdo);
 
         // Migrate legacy JSON files if tables are empty
         migrateLegacyJsonData($pdo);

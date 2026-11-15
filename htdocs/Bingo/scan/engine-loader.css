@@ -1,0 +1,31 @@
+/* Scanner download card shown on the Scan tab until the engine files are cached */
+.engine-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.engine-card.hidden {
+    display: none;
+}
+
+.engine-card-text {
+    font-size: 14px;
+    color: var(--text-subtle);
+    margin: 0;
+}
+
+/* Native progress element: value and max are set from script */
+.engine-progress {
+    width: 100%;
+    height: 10px;
+    border: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    accent-color: var(--primary);
+}
+
+.engine-progress.hidden,
+.engine-card .btn.hidden {
+    display: none;
+}

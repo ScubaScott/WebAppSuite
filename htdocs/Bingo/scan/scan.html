@@ -493,70 +493,6 @@
             background: #111;
         }
 
-        /* Camera viewfinder guide overlay */
-        .camera-grid-overlay {
-            position: absolute;
-            inset: 16px;
-            border: 2px dashed rgba(255, 255, 255, 0.75);
-            border-radius: 12px;
-            pointer-events: none;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
-        }
-
-        .overlay-grid-inner {
-            position: absolute;
-            inset: 0;
-        }
-
-        .grid-line {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.4);
-        }
-
-        .grid-line.v {
-            width: 1px;
-            top: 0;
-            bottom: 0;
-        }
-
-        .grid-line.v.v1 {
-            left: 20%;
-        }
-
-        .grid-line.v.v2 {
-            left: 40%;
-        }
-
-        .grid-line.v.v3 {
-            left: 60%;
-        }
-
-        .grid-line.v.v4 {
-            left: 80%;
-        }
-
-        .grid-line.h {
-            height: 1px;
-            left: 0;
-            right: 0;
-        }
-
-        .grid-line.h.h1 {
-            top: 20%;
-        }
-
-        .grid-line.h.h2 {
-            top: 40%;
-        }
-
-        .grid-line.h.h3 {
-            top: 60%;
-        }
-
-        .grid-line.h.h4 {
-            top: 80%;
-        }
-
         /* Auto-crop toggle switch */
         .crop-toggle-wrap {
             display: flex;
@@ -676,60 +612,6 @@
             border-color: #d93025;
             background: #fce8e6;
             color: #c5221f;
-        }
-
-        /* ---- Scan tab: OCR tuning ---- */
-        details.tuning-details {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 14px 18px;
-        }
-
-        details.tuning-details summary {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-subtle);
-            cursor: pointer;
-            user-select: none;
-        }
-
-        details.tuning-details summary:hover {
-            color: var(--primary);
-        }
-
-        .tuning-table-wrap {
-            margin-top: 14px;
-            overflow-x: auto;
-        }
-
-        .tuning-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .tuning-table th,
-        .tuning-table td {
-            border: 1px solid var(--border);
-            padding: 8px 10px;
-            text-align: left;
-            color: var(--text-main);
-        }
-
-        .tuning-table th {
-            background: var(--surface);
-            font-weight: 600;
-        }
-
-        .tuning-table select,
-        .tuning-table input[type='number'] {
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            font-size: 13px;
-            background: var(--card);
-            color: var(--text-main);
         }
 
         /* ---- Manual crop modal ---- */
@@ -887,16 +769,26 @@
         }
     </style>
 
-    <!-- OpenCV for auto-crop detection -->
-    <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
-
-    <!-- Tesseract.js for OCR digit recognition -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <!-- Scanner engine (Tesseract OCR) downloaded once and cached by engine-loader.js -->
+    <link rel="stylesheet" href="engine-loader.css">
+    <link rel="stylesheet" href="detection.css">
+    <link rel="stylesheet" href="training.css">
+    <link rel="stylesheet" href="review.css">
+    <link rel="stylesheet" href="capture.css">
+    <script src="engine-loader.js"></script>
 
     <!-- Suite Profile & Bingo Sync engine -->
     <script src="../../media/suite-profile.js"></script>
     <script src="../sync.js"></script>
+    <script src="imaging.js"></script>
+    <script src="profiles.js"></script>
+    <script src="geometry.js"></script>
     <script src="utils.js"></script>
+    <script src="readers/tesseract-reader.js"></script>
+    <script src="decoder.js"></script>
+    <script src="review.js"></script>
+    <script src="capture.js"></script>
+    <script src="training-store.js"></script>
     <script src="ocr.js"></script>
 </head>
 
@@ -994,18 +886,40 @@
         <!-- ===== Panel: Scan ===== -->
         <div class="editor-panel hidden" data-panel="scan" id="panelScan">
 
+            <!-- Scanner download: shown until the engine files are stored on this device -->
+            <section id="engineCard" class="scan-card engine-card hidden">
+                <div class="card-title"><span>Scanner download</span></div>
+                <p id="engineText" class="engine-card-text"></p>
+                <progress id="engineProgress" class="engine-progress hidden" value="0" max="100"></progress>
+                <button id="engineDownloadBtn" class="btn btn-primary" type="button">Download scanner</button>
+            </section>
+
             <!-- Unified Camera & Captured Preview Section -->
             <section class="scan-card">
                 <div class="card-title">
                     <span id="scanCardHeaderTitle">Camera Feed</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="scan-toggles">
                         <span id="cropStatusBadge" class="crop-status-badge" style="display: none;">Raw Photo</span>
+                        <div class="crop-toggle-wrap">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoCaptureToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="crop-toggle-label">Auto-capture</span>
+                        </div>
                         <div class="crop-toggle-wrap">
                             <label class="toggle-switch">
                                 <input type="checkbox" id="autoCropToggle" checked>
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="crop-toggle-label">Auto-Crop</span>
+                        </div>
+                        <div class="crop-toggle-wrap">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showDetectionToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="crop-toggle-label">Show detection</span>
                         </div>
                     </div>
                 </div>
@@ -1027,20 +941,10 @@
                         <span style="font-size:12px; opacity:0.7;">Use Camera Roll to pick a photo</span>
                     </div>
 
-                    <!-- Viewfinder Grid Overlay (live camera only) -->
-                    <div class="camera-grid-overlay" id="cameraGridOverlay">
-                        <div class="overlay-grid-inner">
-                            <div class="grid-line v v1"></div>
-                            <div class="grid-line v v2"></div>
-                            <div class="grid-line v v3"></div>
-                            <div class="grid-line v v4"></div>
-                            <div class="grid-line h h1"></div>
-                            <div class="grid-line h h2"></div>
-                            <div class="grid-line h h3"></div>
-                            <div class="grid-line h h4"></div>
-                        </div>
-                    </div>
+                    <!-- 5x5 window outline and found windows, drawn by capture.js (live camera only) -->
+                    <canvas class="capture-overlay" id="cameraGridOverlay" aria-hidden="true"></canvas>
                 </div>
+                <p id="cameraHint" class="camera-hint">Flash off · open all windows · fill the outline</p>
 
                 <!-- Captured Image Adjust Toolbar (Rotate & Manual Crop) -->
                 <div id="capturedToolbar" class="button-group" style="display: none;">
@@ -1087,6 +991,18 @@
                 </button>
 
                 <div id="status" class="status-box">Ready to capture photo or choose from Camera Roll</div>
+                <!-- Offered when the number windows could not be found in the photo -->
+                <div id="detectFail" class="detect-fail hidden">
+                    <button id="retakeBtn" class="btn btn-secondary" type="button">Retake</button>
+                    <button id="adjustCornersBtn" class="btn btn-primary" type="button">Adjust corners</button>
+                </div>
+            </section>
+
+            <!-- Detection view: the photo with the number windows and fitted grid the scanner found -->
+            <section id="detectionCard" class="scan-card detection-card hidden">
+                <div class="card-title"><span>Detection view</span></div>
+                <p id="detectionSummary" class="engine-card-text"></p>
+                <canvas id="detectionCanvas" class="detection-canvas"></canvas>
             </section>
 
             <!-- OCR Result Grid — review before applying to editor -->
@@ -1098,123 +1014,31 @@
                 </div>
             </section>
 
-            <!-- OCR Tuning (collapsible) -->
-            <details class="tuning-details">
-                <summary>⚙️ Advanced OCR Tuning &amp; Controls</summary>
-                <div class="tuning-table-wrap">
-                    <table class="tuning-table">
-                        <thead>
-                            <tr>
-                                <th>Setting</th>
-                                <th>Value</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><label for="threshMode">Threshold Mode</label></td>
-                                <td>
-                                    <select id="threshMode">
-                                        <option value="otsu">OTSU</option>
-                                        <option value="binary">Binary</option>
-                                        <option value="adaptive">Adaptive</option>
-                                    </select>
-                                </td>
-                                <td>Chooses how image is binarized into black-and-white.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="blurMode">Blur</label></td>
-                                <td>
-                                    <select id="blurMode">
-                                        <option value="none">None</option>
-                                        <option value="gaussian" selected>Gaussian</option>
-                                        <option value="median">Median</option>
-                                    </select>
-                                </td>
-                                <td>Softens noise before thresholding.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="zoomFactor">Zoom Factor</label></td>
-                                <td><input id="zoomFactor" type="number" value="3" min="1" max="5"></td>
-                                <td>Enlarges numbers before recognition.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="ocrEngineMode">OCR Engine Mode</label></td>
-                                <td>
-                                    <select id="ocrEngineMode">
-                                        <option value="default">Default</option>
-                                        <option value="legacy">Legacy</option>
-                                        <option value="lstm" selected>LSTM</option>
-                                    </select>
-                                </td>
-                                <td>Engine choice (LSTM recommended for digits).</td>
-                            </tr>
-                            <tr>
-                                <td><label for="pageSegMode">Page Segmentation</label></td>
-                                <td>
-                                    <select id="pageSegMode">
-                                        <option value="auto">Auto</option>
-                                        <option value="single_block" selected>Single Block</option>
-                                        <option value="single_line">Single Line</option>
-                                        <option value="single_word">Single Word</option>
-                                        <option value="single_char">Single Char</option>
-                                    </select>
-                                </td>
-                                <td>Tells Tesseract structure of target digit images.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="invertColors">Invert Colors</label></td>
-                                <td><input id="invertColors" type="checkbox"></td>
-                                <td>Use if light digits appear on dark background.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="morphMode">Morphology</label></td>
-                                <td>
-                                    <select id="morphMode">
-                                        <option value="none">None</option>
-                                        <option value="dilate">Dilate</option>
-                                        <option value="erode">Erode</option>
-                                        <option value="open">Open</option>
-                                        <option value="close">Close</option>
-                                    </select>
-                                </td>
-                                <td>Cleanup pass after thresholding.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="binaryThreshold">Binary Threshold</label></td>
-                                <td><input id="binaryThreshold" type="number" value="127" min="0" max="255"></td>
-                                <td>Cutoff threshold for Binary mode.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="adaptiveBlockSize">Adaptive Block Size</label></td>
-                                <td><input id="adaptiveBlockSize" type="number" value="11" min="3" max="31" step="2">
-                                </td>
-                                <td>Neighborhood size for Adaptive thresholding.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="adaptiveC">Adaptive C</label></td>
-                                <td><input id="adaptiveC" type="number" value="2" min="0" max="20"></td>
-                                <td>Cutoff bias for Adaptive mode.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="rowOffset">Row Shift</label></td>
-                                <td><input id="rowOffset" type="number" value="0" min="-2" max="2"></td>
-                                <td>Shifts OCR sampling up/down by row.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="colOffset">Column Shift</label></td>
-                                <td><input id="colOffset" type="number" value="0" min="-2" max="2"></td>
-                                <td>Shifts OCR sampling left/right by column.</td>
-                            </tr>
-                            <tr>
-                                <td><label for="validateColumnRanges">Validate Column Ranges</label></td>
-                                <td><input id="validateColumnRanges" type="checkbox" checked></td>
-                                <td>Validates B-I-N-G-O 75-ball ranges (1-15, 16-30, etc.).</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <!-- Help improve the scanner: what is sent when a scanned card is applied, and the sending queue -->
+            <section id="contributeCard" class="scan-card">
+                <div class="card-title"><span>Help improve the scanner</span></div>
+                <p class="engine-card-text">When you apply a scanned card, the 25 number crops and the numbers you confirmed are sent anonymously so the scanner can learn to read cards better. Samples wait on this device until they can be sent.</p>
+                <div class="contribute-row">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="contributeToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="crop-toggle-label">Contribute scans</span>
                 </div>
-            </details>
+                <div class="contribute-row">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="includePhotoToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="crop-toggle-label">Also send the full photo</span>
+                </div>
+                <p id="contributeStatus" class="contribute-status"></p>
+                <div class="button-group">
+                    <button id="contributeSendBtn" class="btn btn-secondary" type="button">Send now</button>
+                    <button id="contributeExportBtn" class="btn btn-secondary" type="button">Save waiting samples</button>
+                </div>
+            </section>
+
         </div>
 
         <!-- ===== Panel: Load from Server ===== -->
@@ -1238,7 +1062,7 @@
     <div id="manualCropModal" class="crop-modal hidden">
         <div class="crop-modal-content">
             <div class="crop-modal-header">
-                <h3>Manual Crop — Drag Corners to Frame Grid</h3>
+                <h3>Manual Crop — Drag Each Corner onto the Center of a Corner Number Window</h3>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <button id="modalRotateCwBtn" class="back-link" type="button"
                         style="font-size: 12px; padding: 4px 8px;">Rotate 90° ↻</button>
@@ -1250,7 +1074,7 @@
             </div>
             <div class="crop-modal-footer">
                 <button id="applyCropBtn" class="btn btn-primary" type="button">✓ Apply Crop</button>
-                <button id="fullPhotoCropBtn" class="btn btn-secondary" type="button">Full Photo</button>
+                <button id="fullPhotoCropBtn" class="btn btn-secondary" type="button">Reset</button>
                 <button id="cancelCropBtn" class="btn btn-secondary" type="button">Cancel</button>
             </div>
         </div>
@@ -1847,6 +1671,11 @@
         const cropStatusBadge = document.getElementById('cropStatusBadge');
         const manualCropBtn = document.getElementById('manualCropBtn');
         const rotateCwBtn = document.getElementById('rotateCwBtn');
+        const detectFailBar = document.getElementById('detectFail');
+        const autoCaptureToggle = document.getElementById('autoCaptureToggle');
+        const cameraHint = document.getElementById('cameraHint');
+        // Guided capture loop (capture.js) once it is started
+        let liveCapture = null;
 
         // Crop modal elements
         const manualCropModal = document.getElementById('manualCropModal');
@@ -1865,6 +1694,10 @@
         let cropScaleX = 1;
         let cropScaleY = 1;
         let isImageCaptured = false;
+        // Window geometry used to cut out the cells: from auto-detection, or from the manual corner handles
+        let currentGeometry = null;
+        // The last card read from a photo (reading, geometry and photo), waiting to be confirmed with Apply
+        let lastScanRead = null;
 
         // Back button — return to main bingo page without saving
         backBtn.onclick = () => { window.location.href = '../index.html'; };
@@ -1878,7 +1711,7 @@
         // Camera Initialization — tries rear camera first, falls back to any camera
         function startCamera() {
             navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' }, aspectRatio: { ideal: 1.0 } },
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
                 audio: false
             }).then(stream => {
                 video.srcObject = stream;
@@ -1905,11 +1738,15 @@
             isImageCaptured = false;
             rawCapturedCanvas = null;
             currentCorners = null;
+            lastScanRead = null;
+            detectFailBar.classList.add('hidden');
+            if (liveCapture) liveCapture.cooldown();
 
             // Viewport display
             video.style.display = '';
             previewCanvas.style.display = 'none';
             cameraGridOverlay.style.display = '';
+            cameraHint.hidden = false;
             capturedToolbar.style.display = 'none';
             cropStatusBadge.style.display = 'none';
             if (scanCardHeaderTitle) scanCardHeaderTitle.textContent = 'Camera Feed';
@@ -1934,6 +1771,7 @@
             video.style.display = 'none';
             previewCanvas.style.display = 'block';
             cameraGridOverlay.style.display = 'none';
+            cameraHint.hidden = true;
             capturedToolbar.style.display = 'flex';
             cropStatusBadge.style.display = 'inline-block';
             if (scanCardHeaderTitle) scanCardHeaderTitle.textContent = 'Captured Preview';
@@ -1950,7 +1788,13 @@
                 resetToLiveCamera();
                 return;
             }
+            captureFromVideo();
+        };
 
+        // Takes the still: the center square of the camera picture at the stream's full resolution.
+        // Used by the shutter button and by auto-capture.
+        function captureFromVideo() {
+            if (isImageCaptured) return;
             if (!video.videoWidth) {
                 if (statusDiv) statusDiv.textContent = 'Waiting for camera feed...';
                 return;
@@ -1966,7 +1810,7 @@
             currentCorners = null;
             setCapturedPreviewMode();
             processCapturedImage('Live Photo');
-        };
+        }
 
         // 2. Pick photo from Camera Roll
         galleryBtn.onclick = () => fileInput.click();
@@ -2010,37 +1854,46 @@
             openManualCropper();
         };
 
-        // Global helper for ocr.js to update preview canvas after auto-rotation
-        window.drawCanvasToPreview = function (canvasSource) {
-            previewCanvas.width = canvasSource.width;
-            previewCanvas.height = canvasSource.height;
-            previewCanvas.getContext('2d').drawImage(canvasSource, 0, 0);
-        };
 
         // Process captured image through auto-crop or show raw
         function processCapturedImage(sourceName) {
             const isAutoCropOn = autoCropToggle.checked;
-            if (isAutoCropOn && typeof autoCrop === 'function' && typeof cv !== 'undefined') {
-                if (statusDiv) statusDiv.textContent = 'Auto-cropping card grid...';
+            currentGeometry = null;
+            lastScanRead = null;
+            detectFailBar.classList.add('hidden');
+            if (isAutoCropOn && typeof autoCrop === 'function' && typeof Geometry !== 'undefined') {
+                if (statusDiv) statusDiv.textContent = 'Finding the number windows...';
                 autoCrop(rawCapturedCanvas).then(croppedCanvas => {
                     previewCanvas.width = croppedCanvas.width;
                     previewCanvas.height = croppedCanvas.height;
                     previewCanvas.getContext('2d').drawImage(croppedCanvas, 0, 0);
                     if (croppedCanvas.corners) currentCorners = croppedCanvas.corners;
-                    if (cropStatusBadge) cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
-                    if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Card isolated! Click Run OCR to recognize digits, or Manual Crop to adjust.'; }
+                    const geometry = croppedCanvas.geometry;
+                    lastGeometry = geometry || null;
+                    // When the windows were not found the default handle positions define the geometry until the user adjusts them
+                    currentGeometry = (geometry && geometry.ok) ? geometry : Geometry.fromCorners(croppedCanvas.corners);
+                    renderDetectionView();
+                    if (geometry && geometry.ok) {
+                        if (cropStatusBadge) cropStatusBadge.textContent = `Auto-Cropped (${sourceName})`;
+                        if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = `Found ${geometry.windows} of 25 number windows. Click Run OCR to recognize digits, or Manual Crop to adjust.`; }
+                    } else {
+                        // Windows not found: the preview uses default corner positions, so ask for manual placement
+                        if (cropStatusBadge) cropStatusBadge.textContent = `${sourceName} (windows not found)`;
+                        if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the windows. Retake the photo, or adjust the corners: drag the four handles onto the corner number windows."; }
+                        detectFailBar.classList.remove('hidden');
+                    }
                     if (ocrBtn) ocrBtn.disabled = false;
                 }).catch(err => {
                     console.warn('Auto-crop failed:', err);
                     drawRawPhotoToPreview();
                     if (cropStatusBadge) cropStatusBadge.textContent = sourceName;
-                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Auto-crop could not find grid. Click Manual Crop to frame card, or Run OCR.'; }
+                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Auto-crop failed. Click Manual Crop to place the corners, or retake the photo.'; }
                     if (ocrBtn) ocrBtn.disabled = false;
                 });
             } else {
                 drawRawPhotoToPreview();
                 if (cropStatusBadge) cropStatusBadge.textContent = `${sourceName} (Auto-Crop OFF)`;
-                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Photo loaded! Click Manual Crop to frame 5×5 grid, or Run OCR.'; }
+                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Photo loaded! Click Manual Crop to place the corners on the four corner windows, or Run OCR.'; }
                 if (ocrBtn) ocrBtn.disabled = false;
             }
         }
@@ -2060,12 +1913,7 @@
             const origW = rawCapturedCanvas.width;
             const origH = rawCapturedCanvas.height;
             if (!currentCorners) {
-                currentCorners = {
-                    tl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.08) },
-                    tr: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.08) },
-                    br: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.92) },
-                    bl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.92) }
-                };
+                currentCorners = defaultWindowCenters(origW, origH);
             }
             const maxW = Math.min(window.innerWidth - 44, 580);
             const maxH = Math.min(window.innerHeight * 0.55, 460);
@@ -2111,20 +1959,36 @@
             ctx.closePath(); ctx.clip();
             ctx.drawImage(rawCapturedCanvas, 0, 0, w, h);
 
-            // 5×5 guide grid lines inside the crop quad
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
-            for (let i = 1; i < 5; i++) {
-                const t = i / 5;
-                ctx.beginPath();
-                ctx.moveTo(dp.tl.x + t * (dp.tr.x - dp.tl.x), dp.tl.y + t * (dp.tr.y - dp.tl.y));
-                ctx.lineTo(dp.bl.x + t * (dp.br.x - dp.bl.x), dp.bl.y + t * (dp.br.y - dp.bl.y));
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(dp.tl.x + t * (dp.bl.x - dp.tl.x), dp.tl.y + t * (dp.bl.y - dp.tl.y));
-                ctx.lineTo(dp.tr.x + t * (dp.br.x - dp.tr.x), dp.tr.y + t * (dp.br.y - dp.tr.y));
-                ctx.stroke();
-            }
             ctx.restore();
+
+            // Guide: where the 25 window centers fall for the current handle positions (lines through them plus dots)
+            const guide = Geometry.fromCorners(currentCorners);
+            if (guide.ok) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
+                for (let k = 0; k < 5; k++) {
+                    ctx.beginPath();
+                    for (let t = 0; t < 5; t++) {
+                        const p = Geometry.cellCenter(guide, t, k);
+                        if (t === 0) ctx.moveTo(p.x * cropScaleX, p.y * cropScaleY); else ctx.lineTo(p.x * cropScaleX, p.y * cropScaleY);
+                    }
+                    ctx.stroke();
+                    ctx.beginPath();
+                    for (let t = 0; t < 5; t++) {
+                        const p = Geometry.cellCenter(guide, k, t);
+                        if (t === 0) ctx.moveTo(p.x * cropScaleX, p.y * cropScaleY); else ctx.lineTo(p.x * cropScaleX, p.y * cropScaleY);
+                    }
+                    ctx.stroke();
+                }
+                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 5; c++) {
+                        const p = Geometry.cellCenter(guide, c, r);
+                        ctx.beginPath(); ctx.arc(p.x * cropScaleX, p.y * cropScaleY, 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
 
             // Blue quad border
             ctx.save();
@@ -2199,10 +2063,15 @@
 
         applyCropBtn.onclick = () => {
             if (!rawCapturedCanvas || !currentCorners) return;
-            const croppedCanvas = warpCorners(rawCapturedCanvas, currentCorners);
+            const croppedCanvas = warpFromCenters(rawCapturedCanvas, currentCorners);
+            if (!croppedCanvas) {
+                if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'The four corners are too close together. Move them onto the four corner windows.'; }
+                return;
+            }
             previewCanvas.width = croppedCanvas.width;
             previewCanvas.height = croppedCanvas.height;
             previewCanvas.getContext('2d').drawImage(croppedCanvas, 0, 0);
+            currentGeometry = Geometry.fromCorners(currentCorners);
             manualCropModal.classList.add('hidden');
             if (cropStatusBadge) cropStatusBadge.textContent = 'Manual Cropped';
             if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = 'Card cropped! Click Run OCR to recognize digits.'; }
@@ -2211,12 +2080,8 @@
 
         fullPhotoCropBtn.onclick = () => {
             if (!rawCapturedCanvas) return;
-            currentCorners = {
-                tl: { x: 0, y: 0 },
-                tr: { x: rawCapturedCanvas.width, y: 0 },
-                br: { x: rawCapturedCanvas.width, y: rawCapturedCanvas.height },
-                bl: { x: 0, y: rawCapturedCanvas.height }
-            };
+            // Reset puts the four handles back at the default positions near the middle of the photo
+            currentCorners = defaultWindowCenters(rawCapturedCanvas.width, rawCapturedCanvas.height);
             drawCropCanvas();
         };
 
@@ -2226,12 +2091,34 @@
 
         // Run OCR — result populates the review grid in the Scan tab and scrolls smoothly to results
         async function doOCR() {
+            // The OCR and image libraries must be downloaded and loaded first
+            if (!engineReady) {
+                if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = 'Download the scanner first, then run OCR again.'; }
+                engineCard.classList.remove('hidden');
+                engineCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+            // Reading needs to know where the number windows are (auto-detected, or set with Manual Crop)
+            if (!currentGeometry) {
+                const found = Geometry.analyze(rawCapturedCanvas);
+                if (!found.ok) {
+                    if (statusDiv) { statusDiv.className = 'status-box'; statusDiv.textContent = "Couldn't find the windows. Retake the photo, or adjust the corners onto the four corner number windows."; }
+                    detectFailBar.classList.remove('hidden');
+                    return;
+                }
+                currentGeometry = found;
+            }
             if (ocrBtn) ocrBtn.disabled = true;
-            if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Running OCR digit recognition... Please wait.'; }
+            if (statusDiv) { statusDiv.className = 'status-box active'; statusDiv.textContent = 'Reading the numbers... Please wait.'; }
             try {
-                const grid = await runOCR(previewCanvas);
-                drawBingoGrid(grid);
-                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = '✓ OCR completed! Verify numbers below, then click "Apply to Card Editor".'; }
+                const result = await readCardFromPhoto(rawCapturedCanvas, currentGeometry, msg => {
+                    if (statusDiv) statusDiv.textContent = msg;
+                });
+                // Kept so that confirming the card (Apply) can also record it as a training sample
+                lastScanRead = { read: result, geometry: currentGeometry, photo: rawCapturedCanvas };
+                drawBingoGrid(result.grid, { decoded: result.decoded, profileChip: profileChipFor(currentGeometry) });
+                const seconds = (result.stats.totalMs / 1000).toFixed(1);
+                if (statusDiv) { statusDiv.className = 'status-box success'; statusDiv.textContent = `✓ Read in ${seconds} s. Verify numbers below, then click "Apply to Card Editor".`; }
 
                 // Smoothly scroll down to the OCR results grid
                 const outputSection = document.getElementById('bingoOutputSection');
@@ -2253,15 +2140,195 @@
 
         if (ocrBtn) ocrBtn.onclick = doOCR;
 
-        // Application version identifier
-        const SCAN_PAGE_VERSION = '1.5';
-        const APP_VERSION = SCAN_PAGE_VERSION;
-        const versionEl = document.getElementById('appVersion');
-        if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;
-
-        if (window.SuiteProfile) {
-            SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+        // The review screen's chip naming the card format used. Tapping it overrides the choice: from the automatic
+        // finder to hand-placed corners, or from hand-placed corners back to the automatic finder.
+        function profileChipFor(geometry) {
+            const id = geometry && geometry.profileId === 'manual' ? 'manual' : 'slider';
+            const label = (CardProfiles[id] || {}).label || id;
+            if (id === 'slider') {
+                return { label, hint: 'Windows found automatically. Tap to place the corners by hand instead.', onTap: () => openManualCropper() };
+            }
+            return {
+                label,
+                hint: 'Corners placed by hand. Tap to find the windows automatically instead.',
+                onTap: () => { if (rawCapturedCanvas) processCapturedImage('Photo'); }
+            };
         }
+
+        // Windows not found: take another photo, or place the corners by hand
+        document.getElementById('retakeBtn').addEventListener('click', () => resetToLiveCamera());
+        document.getElementById('adjustCornersBtn').addEventListener('click', () => openManualCropper());
+
+        // ---- Guided capture: outline over the camera, steadiness check and auto-shutter ----
+        // Auto-capture is on unless the user switched it off on this device
+        try { if (localStorage.getItem('bingoAutoCapture') === 'off') autoCaptureToggle.checked = false; } catch (e) { /* storage unavailable: keep the default */ }
+        autoCaptureToggle.addEventListener('change', () => {
+            try { localStorage.setItem('bingoAutoCapture', autoCaptureToggle.checked ? 'on' : 'off'); } catch (e) { /* storage unavailable */ }
+        });
+        if (typeof Capture !== 'undefined') {
+            liveCapture = Capture.start({
+                video,
+                overlay: cameraGridOverlay,
+                hintEl: cameraHint,
+                // Live only while the Scan tab is open, a camera picture is showing and no photo has been taken
+                isActive: () => !isImageCaptured && video.style.display !== 'none' && !document.getElementById('panelScan').classList.contains('hidden'),
+                isEnabled: () => autoCaptureToggle.checked && manualCropModal.classList.contains('hidden'),
+                getProfile: () => 'slider',
+                onFire: () => captureFromVideo()
+            });
+        }
+
+        // ---- Detection view: shows what the window finder saw in the current photo ----
+        const showDetectionToggle = document.getElementById('showDetectionToggle');
+        const detectionCard = document.getElementById('detectionCard');
+        const detectionCanvas = document.getElementById('detectionCanvas');
+        const detectionSummary = document.getElementById('detectionSummary');
+        let lastGeometry = null;
+
+        // Draws the photo with detected windows and the fitted grid when the toggle is on
+        function renderDetectionView() {
+            if (!showDetectionToggle.checked || !lastGeometry || !rawCapturedCanvas) {
+                detectionCard.classList.add('hidden');
+                return;
+            }
+            const overlay = Geometry.drawOverlay(rawCapturedCanvas, lastGeometry, 700);
+            detectionCanvas.width = overlay.width;
+            detectionCanvas.height = overlay.height;
+            detectionCanvas.getContext('2d').drawImage(overlay, 0, 0);
+            const g = lastGeometry;
+            detectionSummary.textContent = g.ok
+                ? `Profile ${g.profileId}: ${g.windows} of 25 windows matched, fit error ${(g.err * 100).toFixed(1)}% of the cell spacing, found in ${g.ms} ms. Green = matched window, orange = position predicted from the fit.`
+                : `Not found (${g.reason}). Gray boxes are bright shapes that were considered.`;
+            detectionCard.classList.remove('hidden');
+        }
+        showDetectionToggle.addEventListener('change', renderDetectionView);
+
+        // ---- Training samples: settings card and recording a confirmed scan ----
+        const contributeToggle = document.getElementById('contributeToggle');
+        const includePhotoToggle = document.getElementById('includePhotoToggle');
+        const contributeStatus = document.getElementById('contributeStatus');
+        const contributeSendBtn = document.getElementById('contributeSendBtn');
+        const contributeExportBtn = document.getElementById('contributeExportBtn');
+
+        // Shows the settings and how many samples are waiting or sent
+        async function refreshContribution() {
+            const s = TrainingStore.getSettings();
+            contributeToggle.checked = s.contribute;
+            includePhotoToggle.checked = s.includePhoto;
+            includePhotoToggle.disabled = !s.contribute;
+            const c = await TrainingStore.counts();
+            const parts = [`Waiting to send: ${c.queued}`, `Sent: ${c.uploaded}`];
+            if (c.failed) parts.push(`Refused by the server: ${c.failed}`);
+            let text = parts.join(' · ');
+            if (c.blocked) text += '. Sending is paused because the collection is full; samples stay on this device until the next app update.';
+            else if (c.queued && !navigator.onLine) text += '. You are offline; they will be sent when you are back online.';
+            contributeStatus.textContent = text;
+            contributeSendBtn.disabled = !c.queued;
+            contributeExportBtn.disabled = !(c.queued || c.failed);
+        }
+        contributeToggle.addEventListener('change', () => TrainingStore.setSettings({ contribute: contributeToggle.checked }));
+        includePhotoToggle.addEventListener('change', () => TrainingStore.setSettings({ includePhoto: includePhotoToggle.checked }));
+        contributeSendBtn.addEventListener('click', () => TrainingStore.drain());
+        contributeExportBtn.addEventListener('click', async () => {
+            const done = await TrainingStore.exportQueued();
+            if (done.count) contributeStatus.textContent = `Saved ${done.count} samples to ${done.name}. You can remove them from this device now.`;
+        });
+        TrainingStore.onChange(refreshContribution);
+
+        // Called when a scanned card is confirmed with Apply; grid is the 25 confirmed values
+        window.recordTrainingSample = function (grid) {
+            const last = lastScanRead;
+            lastScanRead = null;
+            if (!last) return;
+            TrainingStore.recordScan({ read: last.read, geometry: last.geometry, photoCanvas: last.photo, labels: grid, appVersion: SCAN_PAGE_VERSION })
+                .catch(err => console.warn('Could not record the scan for training:', err));
+        };
+
+        // ---- Scanner engine: one-time download, then loaded from the device cache ----
+        const engineCard = document.getElementById('engineCard');
+        const engineText = document.getElementById('engineText');
+        const engineProgress = document.getElementById('engineProgress');
+        const engineDownloadBtn = document.getElementById('engineDownloadBtn');
+        let engineReady = false;
+
+        function formatMegabytes(bytes) {
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Shows the download card with the size still to fetch (or an error message)
+        function showEngineCard(text, canDownload) {
+            engineCard.classList.remove('hidden');
+            engineText.textContent = text;
+            engineProgress.classList.add('hidden');
+            engineDownloadBtn.classList.toggle('hidden', !canDownload);
+            engineDownloadBtn.disabled = false;
+        }
+
+        // Loads the cached engine scripts and unlocks OCR
+        async function startEngine() {
+            try {
+                await EngineLoader.load();
+                engineReady = true;
+                engineCard.classList.add('hidden');
+            } catch (err) {
+                console.warn('Scanner engine failed to start:', err);
+                showEngineCard('The scanner could not start: ' + err.message, true);
+            }
+        }
+
+        // Checks the device cache on page open; downloads nothing until the user asks
+        async function initScannerEngine() {
+            try {
+                const st = await EngineLoader.status();
+                if (st.ready) {
+                    await startEngine();
+                    return;
+                }
+                const onMobileData = navigator.connection && navigator.connection.type === 'cellular';
+                showEngineCard(
+                    `The scanner needs a one-time download of ${formatMegabytes(st.missingBytes)}. ` +
+                    (onMobileData ? 'You appear to be on mobile data; Wi-Fi is recommended.' : 'Wi-Fi is recommended.'),
+                    true
+                );
+            } catch (err) {
+                showEngineCard(err.message, false);
+            }
+        }
+
+        engineDownloadBtn.addEventListener('click', async () => {
+            engineDownloadBtn.disabled = true;
+            engineProgress.classList.remove('hidden');
+            engineText.textContent = 'Downloading scanner… keep this page open.';
+            try {
+                await EngineLoader.ensure(null, (loaded, total) => {
+                    engineProgress.max = total || 1;
+                    engineProgress.value = loaded;
+                    engineText.textContent = `Downloading scanner… ${formatMegabytes(loaded)} of ${formatMegabytes(total)}`;
+                });
+                await startEngine();
+            } catch (err) {
+                showEngineCard('Download failed: ' + err.message + ' You can try again.', true);
+            }
+        });
+
+        initScannerEngine();
+
+        // Application version identifier
+        const SCAN_PAGE_VERSION = '2.2';
+        // The training store needs the app version; it also resumes sending anything left from an earlier session
+        TrainingStore.init(SCAN_PAGE_VERSION).then(refreshContribution);
+        refreshContribution();
+        const APP_VERSION = SCAN_PAGE_VERSION;
+        // The footer comes after this script in the page, so it is filled in once the page has been parsed
+        function initFooter() {
+            const versionEl = document.getElementById('appVersion');
+            if (versionEl) versionEl.textContent = SCAN_PAGE_VERSION;
+            if (window.SuiteProfile) {
+                SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer p'));
+            }
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFooter);
+        else initFooter();
 
         initCardState();
 
@@ -2283,7 +2350,7 @@
     </script>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.5</span></p>
+        <p>Version <span id="appVersion">2.2</span></p>
     </footer>
 </body>
 

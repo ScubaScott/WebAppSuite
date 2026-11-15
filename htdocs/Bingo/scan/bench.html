@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scan Benchmark</title>
+    <link rel="stylesheet" href="bench.css">
+</head>
+<body>
+    <main>
+        <h1>Scan Benchmark</h1>
+        <p class="lead">Runs the scanner pipeline on the labeled test photos and scores each cell against the labels.</p>
+
+        <!-- Photo source: pick labels.json plus the photos, or let the page fetch them from a local dev server -->
+        <section class="panel">
+            <h2>Test set</h2>
+            <div class="row">
+                <label class="file-btn" for="pickFiles">Choose labels.json + photos</label>
+                <input id="pickFiles" type="file" multiple accept=".json,image/*">
+                <button id="runBtn" type="button" disabled>Run benchmark</button>
+                <button id="copyBtn" type="button" class="secondary" disabled>Copy results JSON</button>
+            </div>
+            <p id="status" class="status">Waiting for libraries…</p>
+        </section>
+
+        <section class="panel">
+            <h2>Reader</h2>
+            <p id="readerInfo" class="status">Tesseract reads all 24 cell crops of a card in one pass on a single sheet; cells that come back empty or weak get one single-cell retry.</p>
+        </section>
+
+        <section class="panel">
+            <h2>Summary</h2>
+            <div id="summary" class="wrap"><p class="status">No results yet.</p></div>
+        </section>
+
+        <section class="panel">
+            <h2>Per photo</h2>
+            <div id="details" class="wrap"><p class="status">No results yet.</p></div>
+        </section>
+    </main>
+
+    <footer class="app-footer"><small>v<span id="appVersion"></span></small></footer>
+
+    <!-- Same scanner code and engine files the Scan page uses -->
+    <script src="engine-loader.js"></script>
+    <script src="imaging.js"></script>
+    <script src="profiles.js"></script>
+    <script src="geometry.js"></script>
+    <script src="utils.js"></script>
+    <script src="readers/tesseract-reader.js"></script>
+    <script src="decoder.js"></script>
+    <script src="ocr.js"></script>
+    <script src="bench.js"></script>
+</body>
+</html>

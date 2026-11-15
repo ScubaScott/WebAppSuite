@@ -1,0 +1,44 @@
+/* Scan contribution: the settings card and the one-time notice above the Apply button */
+.contribute-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+}
+
+.contribute-status {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-subtle);
+}
+
+.contribute-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    color: var(--text-subtle);
+}
+
+.contribute-notice.hidden {
+    display: none;
+}
+
+.contribute-notice span {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* The shared .btn rule makes buttons full width; here the button sits beside the text */
+.contribute-notice .btn {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 64px;
+    padding-left: 18px;
+    padding-right: 18px;
+}

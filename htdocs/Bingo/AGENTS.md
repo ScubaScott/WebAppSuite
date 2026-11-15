@@ -13,7 +13,7 @@ The Bingo suite consists of a Bingo Number Tracker, caller system, call log, gam
 - `tracking.js`: Core tracking state, Web Speech API audio announcements, board persistence, and game mode logic.
 - `game-creator.html`: Generator tool for customizable, printable Bingo cards.
 - `style.css`: Visual styling for numbers, caller balls, cards, and modal sheets.
-- `scan/`: QR / camera verification tools for validating cards against called balls.
+- `scan/`: camera card scanner (`scan.html`, `utils.js`, `ocr.js`) plus `bench.html` (benchmark page, not linked from the launcher). Image processing is plain JavaScript in `imaging.js` (no OpenCV). `geometry.js` finds the 5x5 number windows and fits the camera perspective using the card profiles in `profiles.js` (add a new card format as a new profile plus labeled test photos, never by special-casing the detector); `readers/tesseract-reader.js` reads the 24 cell crops on one sheet (the reader contract is in the spec, so a different reader can replace it); `decoder.js` turns the reader's guesses into the most likely valid card using the column ranges and no-repeats rule (also the home of `COLUMN_RANGES`); `ocr.js` ties detection, reader, decoder and the review grid together; `review.js` decides how each scanned cell is shown (confident / check / missing / covered) and the "N read · M to check" line; `capture.js` draws the live camera outline and takes the photo by itself when the picture is steady and the windows are in view; `training-store.js` records each confirmed scan as a training sample and uploads it in the background to `api/training.php` (on by default, switchable on the Scan tab; the server side is described in section 9 of the spec and tested in `tools/bingo-scan-testset/server-test/`); `utils.js` straightens the photo. Its OCR files are not loaded from CDNs: `engine-loader.js` downloads the files listed in `scan/engine/manifest.json` once into a dedicated cache, and the service worker serves them cache-first. To change an engine file, add the new file under a new versioned name and update the manifest (sizes and SHA-256); never edit a published engine file in place. The redesign plan is in `bingo-scan-redesign-spec.md`; labeled test photos are in `tools/bingo-scan-testset/`.
 - `php/`: Optional backend persistence/sync scripts.
 
 ---
@@ -39,6 +39,7 @@ The Bingo suite consists of a Bingo Number Tracker, caller system, call log, gam
 
 - **Input Modes**: Support both "By Letter" (picking column first, then number) and "By Number" (direct 1–75 grid).
 - **Recent Balls**: Maintain an active "Last 6" caller display strip and a timestamped Call Log modal.
+- **Ball Stats Locations**: Ball call tallies are stored per location in `localStorage` key `bingoStatsSessions` (separate from `bingoSession`). The Stats link shows the active location, or "Unsaved" when none is chosen; the Stats modal switches, creates, renames and deletes locations and can show a read-only combined view.
 - **Game Modes**:
   - Support game modes such as Standard Line/Corners, Double Mode, Coverall/Blackout, and Last Man Standing.
   - Provide clear status badges (e.g., individual card standing/sitting badges, `#doubleModeBadge`).

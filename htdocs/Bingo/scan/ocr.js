@@ -1,386 +1,74 @@
 // OCR module version identifier
-const OCR_VERSION = '1.4';
+const OCR_VERSION = '2.4';
 const VERSION = OCR_VERSION;
 
 
-// Standard 75-ball bingo column ranges (B-I-N-G-O). Used as a sanity check: if a recognized
-// number falls outside the range for its column, it's almost certainly a misread, so we retry
-// with different crop/zoom/PSM combinations rather than accepting the first guess.
-const COLUMN_RANGES = [
-    [1, 15],   // B
-    [16, 30],  // I
-    [31, 45],  // N
-    [46, 60],  // G
-    [61, 75],  // O
-];
+// Index of the FREE space in the 25-cell grid
+const FREE_CELL = 12;
 
-// Absolute valid range for any 75-ball bingo number.
-// Used by extractNumber to reject garbage OCR output before column-specific checks.
-const BINGO_MIN = 1;
-const BINGO_MAX = 75;
+// Reader used to turn cell crops into numbers (see readers/tesseract-reader.js for the reader contract)
+let activeReader = null;
 
-// A single, reused Tesseract worker.
-let ocrWorker = null;
-let ocrWorkerOem = null;
-
-async function getWorker(oem) {
-    if (ocrWorker && ocrWorkerOem !== oem) {
-        await ocrWorker.terminate();
-        ocrWorker = null;
-    }
-    if (!ocrWorker) {
-        ocrWorker = await Tesseract.createWorker();
-        await ocrWorker.loadLanguage('eng');
-        await ocrWorker.initialize('eng', oem);
-        ocrWorkerOem = oem;
-    }
-    return ocrWorker;
+function getActiveReader() {
+    if (!activeReader) activeReader = TesseractReader;
+    return activeReader;
 }
 
-// Retries for cell OCR
-const RETRY_ATTEMPTS = [
-    { paddingRatio: 0.25, zoom: 3, psm: 6 },
-    { paddingRatio: 0.25, zoom: 3, psm: 8 },
-    { paddingRatio: 0.35, zoom: 4, psm: 7 },
-    { paddingRatio: 0.15, zoom: 3, psm: 13 },
-];
+// Reads a card from the original photo and its window geometry (Geometry.analyze / Geometry.fromCorners result).
+// Returns { grid, cells, reader, stats }:
+//   grid   5x5 array of numbers (null where nothing valid was read, 'FREE' in the center)
+//   cells  per-cell info from Geometry.extractCells (covered / glare flags, whether the window was seen)
+//   stats  timings in ms (extractMs, sheetMs, recognizeMs, retryMs, totalMs) and the number of single-cell retries
+async function readCardFromPhoto(photoCanvas, geometry, onStage) {
+    const started = performance.now();
+    const reader = getActiveReader();
+    if (onStage) onStage('Cutting out the numbers…');
+    const cells = Geometry.extractCells(photoCanvas, geometry);
+    const extractMs = Math.round(performance.now() - started);
 
-// Run Tesseract over every bingo cell and return a 5x5 grid of detected numbers.
-async function runOCR(canvas) {
-    if (typeof cv === "undefined" || typeof Tesseract === "undefined") {
-        return [];
-    }
+    // The reader gets the 24 numbered cells (FREE left out), contrast-stretched. Cells hidden by a closed
+    // shutter or without a usable crop are skipped.
+    const numbered = cells.filter(c => c.index !== FREE_CELL);
+    const grays = numbered.map(c => (c.image && !c.covered ? Geometry.normalizeCrop(c.image) : null));
 
-    const oem = getOcrEngineMode();
-    const worker = await getWorker(oem);
+    if (onStage) onStage('Reading the numbers…');
+    const readings = await reader.read(grays);
 
-    // Initial pass on current orientation
-    let result = await evaluateCanvasGrid(canvas, worker);
+    // The decoder picks the most likely valid card: each number inside its column's range, none repeated in a column,
+    // look-alike digits and missing digits corrected where one reading clearly stands out
+    if (onStage) onStage('Checking the numbers against the card rules…');
+    const decodeInput = numbered.map((c, k) => ({
+        index: c.index, col: c.col, row: c.row,
+        raw: readings[k].raw, candidates: readings[k].candidates, covered: c.covered, glare: c.glare
+    }));
+    const decoded = Decoder.decode(decodeInput);
+    // What the reader's own best answers would give without the decoder, for comparison
+    const readerGrid = Decoder.baseline(decodeInput);
 
-    // Check if initial pass passed column range validation
-    if (result.validCount >= 14 || !document.getElementById("validateColumnRanges").checked) {
-        return deduplicateGrid(result.grid);
-    }
-
-    console.warn(`Initial orientation validity low (${result.validCount}/24). Testing rotations...`);
-
-    // Test 90°, 180°, 270° rotations to automatically fix sideways or upside-down photos
-    let bestResult = result;
-    let bestRotatedCanvas = canvas;
-    let currentRotatedCanvas = canvas;
-
-    for (let rot = 1; rot <= 3; rot++) {
-        currentRotatedCanvas = rotateCanvas90(currentRotatedCanvas, true);
-        const evalRes = await evaluateCanvasGrid(currentRotatedCanvas, worker);
-        if (evalRes.validCount > bestResult.validCount) {
-            bestResult = evalRes;
-            bestRotatedCanvas = currentRotatedCanvas;
-        }
-        if (bestResult.validCount >= 18) break;
-    }
-
-    if (bestResult.validCount > result.validCount) {
-        console.log(`Auto-rotated photo by ${(bestResult.rotationAngle || 90)}° for optimal OCR (${bestResult.validCount}/24 valid cells)`);
-        // Update global preview canvas to reflect the auto-rotated photo
-        if (typeof drawCanvasToPreview === "function") {
-            drawCanvasToPreview(bestRotatedCanvas);
-        } else {
-            canvas.width = bestRotatedCanvas.width;
-            canvas.height = bestRotatedCanvas.height;
-            canvas.getContext("2d").drawImage(bestRotatedCanvas, 0, 0);
-        }
-    }
-
-    bestResult.grid = deduplicateGrid(bestResult.grid);
-    return bestResult.grid;
-}
-
-// Slice canvas into 5x5 cells and run OCR
-async function evaluateCanvasGrid(canvas, worker) {
-    const w = canvas.width;
-    const h = canvas.height;
-    const cellW = Math.max(1, w / 5);
-    const cellH = Math.max(1, h / 5);
-    const rowOffset = parseInt(document.getElementById("rowOffset").value, 10) || 0;
-    const colOffset = parseInt(document.getElementById("colOffset").value, 10) || 0;
-    const zoomFactor = parseInt(document.getElementById("zoomFactor").value, 10) || 3;
-    const validateRanges = document.getElementById("validateColumnRanges").checked;
-
-    const grid = [];
-    let validCount = 0;
-
-    for (let row = 0; row < 5; row++) {
-        const rowData = [];
-
-        for (let col = 0; col < 5; col++) {
-            const sourceRow = Math.max(0, Math.min(4, row + rowOffset));
-            const sourceCol = Math.max(0, Math.min(4, col + colOffset));
-
-            // FREE space at center cell
-            if (sourceRow === 2 && sourceCol === 2) {
-                rowData.push("FREE");
-                continue;
-            }
-
-            // Trim 8% margin off cell edges to avoid grid frame lines and shutter tab borders
-            const marginW = cellW * 0.08;
-            const marginH = cellH * 0.08;
-
-            const cellCanvas = document.createElement("canvas");
-            cellCanvas.width = Math.max(1, Math.round(cellW - marginW * 2));
-            cellCanvas.height = Math.max(1, Math.round(cellH - marginH * 2));
-
-            const cellCtx = cellCanvas.getContext("2d");
-            cellCtx.drawImage(
-                canvas,
-                sourceCol * cellW + marginW, sourceRow * cellH + marginH,
-                cellCanvas.width, cellCanvas.height,
-                0, 0, cellCanvas.width, cellCanvas.height
-            );
-
-            const binaryMat = computeBinaryCell(cellCanvas);
-            const num = await ocrCellWithRetries(worker, binaryMat, sourceCol, zoomFactor, validateRanges);
-            binaryMat.delete();
-
-            rowData.push(num);
-
-            const [lo, hi] = COLUMN_RANGES[sourceCol];
-            if (num !== null && num >= lo && num <= hi) {
-                validCount++;
-            }
-        }
-
-        grid.push(rowData);
-    }
-
-    return { grid, validCount };
-}
-
-// Try the user's configured settings first, then fall back through alternate combinations
-async function ocrCellWithRetries(worker, binaryMat, sourceCol, primaryZoom, validateRanges) {
-    const userPsm = getPageSegMode();
-    const attempts = [...RETRY_ATTEMPTS, { paddingRatio: 0.20, zoom: primaryZoom, psm: userPsm }];
-
-    const [lo, hi] = COLUMN_RANGES[sourceCol];
-    const candidates = [];
-    let lastPsm = null;
-
-    for (const attempt of attempts) {
-        if (attempt.psm !== lastPsm) {
-            await worker.setParameters({
-                tessedit_char_whitelist: '0123456789',
-                tessedit_pageseg_mode: String(attempt.psm),
-                classify_bln_numeric_mode: '1'
-            });
-            lastPsm = attempt.psm;
-        }
-
-        const cropped = tightCropToInk(binaryMat, attempt.paddingRatio);
-        const zoomed = new cv.Mat();
-        cv.resize(cropped, zoomed, new cv.Size(
-            Math.max(1, cropped.cols * attempt.zoom),
-            Math.max(1, cropped.rows * attempt.zoom)
-        ));
-        cropped.delete();
-
-        const attemptCanvas = document.createElement("canvas");
-        cv.imshow(attemptCanvas, zoomed);
-        zoomed.delete();
-
-        const { data } = await worker.recognize(attemptCanvas);
-        const num = extractNumber(data.text);
-
-        if (num !== null) {
-            candidates.push(num);
-            if (!validateRanges || (num >= lo && num <= hi)) {
-                return num;
-            }
-        }
-    }
-
-    if (candidates.length === 0) return null;
-    const counts = new Map();
-    for (const c of candidates) counts.set(c, (counts.get(c) || 0) + 1);
-    let best = candidates[0], bestCount = 0;
-    for (const [val, count] of counts) {
-        if (count > bestCount) { best = val; bestCount = count; }
-    }
-    return best;
-}
-
-// Convert a single bingo cell canvas into a black-and-white (binary) OpenCV Mat
-function computeBinaryCell(cellCanvas) {
-    const threshMode = document.getElementById("threshMode").value;
-    const blurMode = document.getElementById("blurMode").value;
-    const invertColors = document.getElementById("invertColors").checked;
-    const morphMode = document.getElementById("morphMode").value;
-    const binaryThreshold = parseInt(document.getElementById("binaryThreshold").value, 10) || 127;
-    const adaptiveBlockSize = parseInt(document.getElementById("adaptiveBlockSize").value, 10) || 11;
-    const adaptiveC = parseInt(document.getElementById("adaptiveC").value, 10) || 2;
-
-    let src = cv.imread(cellCanvas);
-    let gray = new cv.Mat();
-    let blur = new cv.Mat();
-    let binary = new cv.Mat();
-    let morph = new cv.Mat();
-
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-    if (invertColors) {
-        cv.bitwise_not(gray, gray);
-    }
-
-    if (blurMode === "gaussian") {
-        cv.GaussianBlur(gray, blur, new cv.Size(3, 3), 0);
-    } else if (blurMode === "median") {
-        cv.medianBlur(gray, blur, 5);
-    } else {
-        blur = gray.clone();
-    }
-
-    if (threshMode === "otsu") {
-        cv.threshold(blur, binary, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
-    } else if (threshMode === "binary") {
-        cv.threshold(blur, binary, binaryThreshold, 255, cv.THRESH_BINARY);
-    } else if (threshMode === "adaptive") {
-        const blockSize = Math.max(3, Math.min(31, adaptiveBlockSize + (adaptiveBlockSize % 2 === 0 ? 1 : 0)));
-        cv.adaptiveThreshold(blur, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, blockSize, adaptiveC);
-    }
-
-    if (morphMode !== "none") {
-        const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
-        if (morphMode === "dilate") cv.dilate(binary, morph, kernel);
-        else if (morphMode === "erode") cv.erode(binary, morph, kernel);
-        else if (morphMode === "open") cv.morphologyEx(binary, morph, cv.MORPH_OPEN, kernel);
-        else if (morphMode === "close") cv.morphologyEx(binary, morph, cv.MORPH_CLOSE, kernel);
-        kernel.delete();
-        binary.delete();
-        binary = morph;
-    } else {
-        morph.delete();
-    }
-
-    src.delete();
-    gray.delete();
-    blur.delete();
-
-    return binary;
-}
-
-// Crop binary Mat to central ink region, ignoring outer cell frame border noise
-function tightCropToInk(binaryMat, paddingRatio) {
-    const inverted = new cv.Mat();
-    cv.bitwise_not(binaryMat, inverted); // ink (originally dark) becomes non-zero
-
-    const data = inverted.data;
-    const rows = inverted.rows;
-    const cols = inverted.cols;
-
-    // Ignore 6% outer margin when looking for central digit ink bounding box
-    const marginX = Math.floor(cols * 0.06);
-    const marginY = Math.floor(rows * 0.06);
-
-    let minX = cols;
-    let maxX = -1;
-    let minY = rows;
-    let maxY = -1;
-
-    for (let y = marginY; y < rows - marginY; y++) {
-        for (let x = marginX; x < cols - marginX; x++) {
-            const idx = y * cols + x;
-            if (data[idx] > 0) {
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-            }
-        }
-    }
-
-    inverted.delete();
-
-    // Fall back to full cell bounds if no ink was found in central region
-    if (maxX === -1) {
-        return binaryMat.clone();
-    }
-
-    const rectW = maxX - minX + 1;
-    const rectH = maxY - minY + 1;
-
-    const padX = Math.round(rectW * paddingRatio);
-    const padY = Math.round(rectH * paddingRatio);
-    const x = Math.max(0, minX - padX);
-    const y = Math.max(0, minY - padY);
-    const cropW = Math.min(cols - x, rectW + padX * 2);
-    const cropH = Math.min(rows - y, rectH + padY * 2);
-
-    const roi = binaryMat.roi(new cv.Rect(x, y, Math.max(1, cropW), Math.max(1, cropH)));
-    const result = roi.clone();
-    roi.delete();
-    return result;
-}
-
-function getPageSegMode() {
-    const mode = document.getElementById("pageSegMode").value;
-    switch (mode) {
-        case "single_block": return 6;
-        case "single_line": return 7;
-        case "single_word": return 8;
-        case "single_char": return 10;
-        default: return 3;
-    }
-}
-
-function getOcrEngineMode() {
-    const mode = document.getElementById("ocrEngineMode").value;
-    switch (mode) {
-        case "legacy": return Tesseract.OEM.TESSERACT_ONLY;
-        case "lstm": return Tesseract.OEM.LSTM_ONLY;
-        default: return Tesseract.OEM.DEFAULT;
-    }
-}
-
-// Parse OCR text to a valid bingo number (1–75). Any value outside that range is rejected.
-function extractNumber(text) {
-    if (!text) return null;
-    const digits = text.replace(/[^0-9]/g, "");
-    if (!digits) return null;
-    const num = parseInt(digits, 10);
-    if (isNaN(num)) return null;
-    // Hard-reject anything outside the legal bingo range — catches misreads like 144, 0, etc.
-    if (num < BINGO_MIN || num > BINGO_MAX) return null;
-    return num;
-}
-
-// Remove duplicate numbers from the OCR grid. Each valid bingo number should appear only once.
-// When a duplicate is found, the later occurrence is cleared to null.
-// FREE cells and null/empty cells are ignored during deduplication.
-function deduplicateGrid(grid) {
-    const seen = new Set();
-    for (let r = 0; r < grid.length; r++) {
-        for (let c = 0; c < grid[r].length; c++) {
-            const val = grid[r][c];
-            if (val === "FREE" || val === null || val === undefined) continue;
-            if (seen.has(val)) {
-                console.warn(`OCR dedup: removed duplicate ${val} at [${r},${c}]`);
-                grid[r][c] = null;
-            } else {
-                seen.add(val);
-            }
-        }
-    }
-    return grid;
+    return {
+        grid: decoded.grid, readerGrid, decoded, cells, numbered, readings,
+        reader: { id: reader.id, version: reader.version },
+        stats: { extractMs, ...readings.stats, totalMs: Math.round(performance.now() - started) }
+    };
 }
 
 // State for interactive scanned grid review
 let scannedGridData = Array(25).fill(null);
 scannedGridData[12] = 'FREE';
 let activeScannedPickerIdx = -1;
+// How each of the 25 cells is shown (Review.classify result); null when the grid did not come from a scan
+let scannedCellStates = null;
+// Profile chip on the review screen: { label, hint, onTap } or null
+let scannedProfileChip = null;
 
-// Render the scanned 5x5 bingo numbers into an interactive editable grid with headers and column picker
-function drawBingoGrid(grid) {
+// Render the scanned 5x5 bingo numbers into an interactive editable grid with headers and column picker.
+// options.decoded (the decoder result) turns on the confident / check / missing / covered states and the summary line;
+// options.profileChip adds the tappable chip naming the card format used.
+function drawBingoGrid(grid, options) {
     const container = document.getElementById("bingoOutput");
     if (!container) return;
+    scannedCellStates = (options && options.decoded && typeof Review !== 'undefined') ? Review.classify(options.decoded) : null;
+    scannedProfileChip = (options && options.profileChip) || null;
 
     // Convert 2D grid (if passed) to flat 25-element array
     if (Array.isArray(grid) && grid.length > 0 && Array.isArray(grid[0])) {
@@ -407,6 +95,11 @@ function drawBingoGrid(grid) {
     renderScannedGridReview();
 }
 
+// Marks a cell as settled by the user, so it no longer carries the scan's check / missing / covered state
+function markCellEdited(idx) {
+    if (scannedCellStates) scannedCellStates[idx] = { state: 'edited', reason: '', alternatives: [] };
+}
+
 // Render the interactive 5x5 grid and number picker inside #bingoOutput
 function renderScannedGridReview() {
     const container = document.getElementById("bingoOutput");
@@ -420,8 +113,16 @@ function renderScannedGridReview() {
                 <span>Scanned Grid Numbers</span>
                 <span style="font-size: 12px; font-weight: 400; color: var(--text-subtle);">Tap a cell to select number</span>
             </div>
+            <div class="review-summary-row">
+                <span id="reviewSummary" class="review-summary" aria-live="polite"></span>
+                <button id="profileChip" class="profile-chip hidden" type="button"></button>
+            </div>
             <div id="scannedGridElements" class="editor-grid" role="grid" aria-label="Scanned card number grid"></div>
             <div id="scannedPickerEl" class="editor-picker hidden" aria-live="polite"></div>
+            <div id="contributeNotice" class="contribute-notice hidden" role="note">
+                <span>Scans help train the scanner. When you apply a card, its number crops (not the whole photo) and the numbers you confirmed are sent anonymously. You can change this under "Help improve the scanner" below.</span>
+                <button id="contributeNoticeOk" class="btn btn-secondary" type="button">OK</button>
+            </div>
             <button id="applyOCRBtn" class="btn btn-success" type="button" style="margin-top: 10px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
@@ -463,6 +164,9 @@ function renderScannedGridReview() {
         const isDuplicate = !isFree && !isBlank && (valueCounts.get(value) > 1);
         const isInvalid = isOutOfRange || isDuplicate;
         const isSelected = (activeScannedPickerIdx === idx);
+        // The scan's verdict on this cell (amber check, red missing, hatched covered); a cell filled in by hand is trusted
+        const verdict = (!isFree && scannedCellStates) ? scannedCellStates[idx] : null;
+        const stateClass = verdict && !isInvalid ? 'cell-' + verdict.state : '';
 
         const cell = document.createElement('div');
         cell.className = [
@@ -471,14 +175,17 @@ function renderScannedGridReview() {
             !isFree && isBlank ? 'empty invalid' : '',
             !isFree && !isBlank && isInvalid ? 'filled invalid' : '',
             !isFree && !isBlank && !isInvalid ? 'filled' : '',
+            stateClass,
             isSelected ? 'selected' : ''
         ].filter(Boolean).join(' ');
 
         cell.textContent = isFree ? 'FREE' : (isBlank ? '' : value);
         cell.setAttribute('role', 'gridcell');
+        if (verdict && verdict.reason && verdict.state !== 'confident') cell.title = verdict.reason;
 
         if (!isFree) {
-            cell.setAttribute('aria-label', `${colHeaders[col]} column, ${isBlank ? 'empty (invalid)' : (isInvalid ? 'invalid value ' + value : 'value ' + value)}`);
+            const stateText = verdict && verdict.state === 'check' ? ', please check' : (verdict && verdict.state === 'covered' ? ', shutter closed' : '');
+            cell.setAttribute('aria-label', `${colHeaders[col]} column, ${isBlank ? 'empty (invalid)' : (isInvalid ? 'invalid value ' + value : 'value ' + value)}${stateText}`);
             cell.addEventListener('click', () => {
                 activeScannedPickerIdx = (activeScannedPickerIdx === idx) ? -1 : idx;
                 renderScannedGridReview();
@@ -488,6 +195,17 @@ function renderScannedGridReview() {
         gridEl.appendChild(cell);
     }
 
+    // Summary line ("21 read · 3 to check") and the profile chip
+    const summaryEl = document.getElementById('reviewSummary');
+    if (summaryEl) summaryEl.textContent = scannedCellStates ? Review.summarize(scannedCellStates).text : '';
+    const chipEl = document.getElementById('profileChip');
+    if (chipEl && scannedProfileChip) {
+        chipEl.textContent = scannedProfileChip.label + ' ▾';
+        chipEl.title = scannedProfileChip.hint || '';
+        chipEl.classList.remove('hidden');
+        chipEl.onclick = scannedProfileChip.onTap;
+    }
+
     // Render number picker dropdown if a cell is selected
     if (activeScannedPickerIdx !== -1) {
         pickerEl.classList.remove('hidden');
@@ -495,6 +213,8 @@ function renderScannedGridReview() {
         const col = cellIdx % 5;
         const [lo, hi] = COLUMN_RANGES[col];
         const currentValue = scannedGridData[cellIdx];
+        // The scan's next most likely numbers for this cell, highlighted in the picker
+        const suggested = (scannedCellStates && scannedCellStates[cellIdx] && scannedCellStates[cellIdx].alternatives) || [];
 
         // Gather numbers used in this column
         const usedInCol = new Set();
@@ -508,7 +228,7 @@ function renderScannedGridReview() {
         // Header label
         const pickerLabel = document.createElement('div');
         pickerLabel.className = 'editor-picker-label';
-        pickerLabel.textContent = `Select ${colHeaders[col]} number (${lo}–${hi})`;
+        pickerLabel.textContent = `Select ${colHeaders[col]} number (${lo}–${hi})` + (suggested.length ? ' · maybe ' + suggested.join(' or ') : '');
         pickerEl.appendChild(pickerLabel);
 
         // 15 number buttons
@@ -523,7 +243,8 @@ function renderScannedGridReview() {
             btn.className = [
                 'editor-pick-btn',
                 isUsed ? 'used' : '',
-                isCurrent ? 'current' : ''
+                isCurrent ? 'current' : '',
+                !isUsed && suggested.includes(n) ? 'suggested' : ''
             ].filter(Boolean).join(' ');
             btn.type = 'button';
             btn.textContent = n;
@@ -534,6 +255,7 @@ function renderScannedGridReview() {
             if (!isUsed) {
                 btn.addEventListener('click', () => {
                     scannedGridData[cellIdx] = n;
+                    markCellEdited(cellIdx);
                     activeScannedPickerIdx = -1;
                     renderScannedGridReview();
                 });
@@ -553,6 +275,8 @@ function renderScannedGridReview() {
             clearBtn.textContent = '✕ Clear Cell';
             clearBtn.addEventListener('click', () => {
                 scannedGridData[cellIdx] = null;
+                // A cell cleared by hand is empty on purpose, so it is no longer flagged as missing
+                markCellEdited(cellIdx);
                 activeScannedPickerIdx = -1;
                 renderScannedGridReview();
             });
@@ -560,6 +284,16 @@ function renderScannedGridReview() {
         }
     } else {
         pickerEl.classList.add('hidden');
+    }
+
+    // One-time explanation of what contributing sends, shown above the Apply button until it is dismissed
+    const notice = document.getElementById('contributeNotice');
+    if (notice && typeof TrainingStore !== 'undefined' && TrainingStore.shouldShowNotice()) {
+        notice.classList.remove('hidden');
+        document.getElementById('contributeNoticeOk').onclick = () => {
+            TrainingStore.setSettings({ noticeSeen: true });
+            notice.classList.add('hidden');
+        };
     }
 
     const applyBtn = document.getElementById('applyOCRBtn');
@@ -572,6 +306,8 @@ function renderScannedGridReview() {
                     return idx === 12 ? 'FREE' : scannedGridData[idx];
                 })
             );
+            // Confirming the card also records it as a training sample (when contributing is on)
+            if (typeof window.recordTrainingSample === 'function') window.recordTrainingSample(scannedGridData.slice());
             // Pass result to card editor
             if (typeof window.applyOCRResult === 'function') {
                 window.applyOCRResult(grid2D);

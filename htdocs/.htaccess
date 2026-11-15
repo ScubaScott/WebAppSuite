@@ -45,5 +45,7 @@
     RewriteRule ^api/favorites/([^/]+)/?$ api/bingo.php?endpoint=favorites&id=$1 [QSA,L]
     RewriteRule ^api/games/?$ api/bingo.php?endpoint=games [QSA,L]
     RewriteRule ^api/games/([^/]+)/?$ api/bingo.php?endpoint=games&id=$1 [QSA,L]
+    RewriteRule ^api/training/?$ api/bingo.php?endpoint=training [QSA,L]
+    RewriteRule ^api/training/([^/]+)/?$ api/bingo.php?endpoint=training&id=$1 [QSA,L]
 </IfModule>
 

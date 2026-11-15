@@ -432,21 +432,28 @@ input[type=range] {
 /* Master Intensity Slider - Pink Theme (Isolated for custom shaping) */
 .master-slider {
   height: 38px;
+  margin: 18px 0;
   background: #ffe3ef;
   border: 2px solid var(--card-border);
   border-radius: 16px;
   touch-action: manipulation;
 }
 
+/* Thumb: tall oval with a small pink circle with a white outline inside it, internally tangent at the oval's top center.
+   Drawn with two radial gradients in a 28x54 box: oval (14x27 radii) centered at y=27 with a white rim
+   about 2.7px thick, and a circle (r=7) centered at y=9.7 whose top edge (y=2.7) meets the rim's inner edge. */
 .master-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--accent-gradient);
+  width: 28px;
+  height: 54px;
+  border: none;
+  border-radius: 0;
+  background:
+    radial-gradient(circle 7px at 50% 9.7px, var(--accent-primary) 0 66%, #ffffff 70% 96%, transparent 100%),
+    radial-gradient(ellipse 14px 27px at 50% 27px, var(--accent-primary) 0 88%, #ffffff 90% 98%, transparent 100%);
+  background-repeat: no-repeat;
   cursor: pointer;
-  border: 3px solid #ffffff;
-  box-shadow: 0 4px 12px rgba(255, 64, 136, 0.45);
+  filter: drop-shadow(0 4px 6px rgba(255, 64, 136, 0.45));
   transition: transform 0.1s ease;
 }
 .master-slider::-webkit-slider-thumb:active {
@@ -454,13 +461,16 @@ input[type=range] {
 }
 
 .master-slider::-moz-range-thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--accent-gradient);
+  width: 28px;
+  height: 54px;
+  border: none;
+  border-radius: 0;
+  background:
+    radial-gradient(circle 7px at 50% 9.7px, var(--accent-primary) 0 66%, #ffffff 70% 96%, transparent 100%),
+    radial-gradient(ellipse 14px 27px at 50% 27px, var(--accent-primary) 0 88%, #ffffff 90% 98%, transparent 100%);
+  background-repeat: no-repeat;
   cursor: pointer;
-  border: 3px solid #ffffff;
-  box-shadow: 0 4px 12px rgba(255, 64, 136, 0.45);
+  filter: drop-shadow(0 4px 6px rgba(255, 64, 136, 0.45));
 }
 
 /* Parameter Sliders - Hidden Native Input */
@@ -719,6 +729,34 @@ input:checked + .slider-toggle:before {
   margin-bottom: 14px;
 }
 
+/* Brand + battery badges share one wrapping row on device cards */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Battery Badge on Device Cards */
+.battery-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-top: 3px;
+  width: fit-content;
+  background: var(--badge-online-bg);
+  color: var(--badge-online);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.battery-badge.low {
+  background: var(--badge-searching-bg);
+  color: var(--badge-searching);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
 /* Brand Badges on Device Cards */
 .brand-badge {
   display: inline-flex;
@@ -746,6 +784,12 @@ input:checked + .slider-toggle:before {
   background: #fdf2f8;
   color: #db2777;
   border: 1px solid #fbcfe8;
+}
+/* Unverified devices: amber warning that controls may not work */
+.brand-badge.generic {
+  background: #fff7e0;
+  color: #b45309;
+  border: 1px solid #fcd34d;
 }
 .brand-badge.unknown {
   background: #f3f4f6;
@@ -1945,6 +1989,20 @@ input:checked + .slider-toggle:before {
   font-family: 'Consolas', monospace;
 }
 
+/* Battery Badge in WinAmp Style */
+[data-theme="music"] .battery-badge {
+  font-family: 'Consolas', monospace;
+  border-radius: 2px;
+  background: #0b1a10;
+  color: #00ff41;
+  border: 1px solid #284432;
+}
+[data-theme="music"] .battery-badge.low {
+  background: #241a0b;
+  color: #ffb000;
+  border-color: #6b4a14;
+}
+
 /* Brand Badges in WinAmp Style */
 [data-theme="music"] .brand-badge {
   font-family: 'Consolas', monospace;
@@ -1964,6 +2022,11 @@ input:checked + .slider-toggle:before {
   background: #241421;
   color: #f472b6;
   border: 1px solid #6b2657;
+}
+[data-theme="music"] .brand-badge.generic {
+  background: #241a0b;
+  color: #ffb000;
+  border: 1px solid #6b4a14;
 }
 [data-theme="music"] .brand-badge.unknown {
   background: #14161d;
@@ -2255,3 +2318,18 @@ input:checked + .slider-toggle:before {
 
 
 
+
+/* Seen devices report in Settings */
+.seen-devices-list {
+  max-height: 160px;
+  overflow: auto;
+  margin: 0 0 10px 0;
+  padding: 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-dark);
+}

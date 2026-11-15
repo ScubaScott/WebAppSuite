@@ -1,0 +1,43 @@
+PASS defaults: contributing is on and the photo is not sent
+PASS settings card shows both switches in those positions
+PASS settings card shows the counts
+PASS first scan: the notice is shown above Apply
+PASS first scan: the notice says what is sent
+PASS first scan: OK hides the notice and remembers it
+PASS apply: the sample reaches the database :: rows: 1
+PASS apply: profile, reader, app version and status are recorded :: slider | tesseract@4.1.4/eng-best_int | 2.1 | new | 1 | 1 | 36305 | FFD8FF
+PASS apply: a guest sample has no username and no photo
+PASS apply: the sheet is a real JPEG of a sensible size :: 36305 bytes
+PASS apply: the 24 confirmed numbers are the card's numbers and FREE has no label
+PASS apply: nothing was corrected by the user (the reader had them all right)
+PASS apply: the window geometry and versions are recorded :: {"ocr":"2.2","geometry":"1.4","decoder":"1.0","profiles":"1.3","imaging":"1.2","store":"1.1"}
+PASS apply: the local copy is deleted after upload and the sent count goes up
+PASS apply: the settings card shows Sent: 1
+PASS second scan: the notice is not shown again
+PASS corrected scan: it arrives
+PASS corrected scan: labels are the corrected card
+PASS corrected scan: the cells the user changed are flagged corrected :: 2 flagged, 2 were wrong or empty before
+PASS photo option: switching it on is remembered
+PASS photo option: the sample arrives with a photo
+PASS photo option: it is a JPEG under 300 KB :: FFD8FF | 67458
+PASS offline: the sample waits in the queue and nothing is sent :: {"queued":1,"failed":0,"exported":0,"uploaded":3,"blocked":null,"nextTry":1793317932123}
+PASS offline: the settings card says it will be sent when back online
+PASS offline: when the connection returns the queued sample is sent
+PASS switch off: the photo option is disabled too
+PASS switch off: the notice is not shown
+PASS switch off: Apply records and sends nothing
+PASS thin scan: fewer than 8 confirmed numbers is not recorded
+PASS export: the Save waiting samples button is enabled when something waits
+PASS export: the file is named bingo-scan-samples-YYYYMMDD.json :: bingo-scan-samples-20261029.json
+PASS export: it holds the waiting sample with its crops as base64
+PASS export: the saved sample can be sent to the server as it is (201) :: 201 {"id":"99ba5ac2-8328-4d3e-93b9-ae31b9cf36bf","stored":true}
+PASS export: Clear exported removes the local copies
+PASS no script errors on the page
+PASS full server: the first sample is accepted
+PASS full server: the second is refused and pauses sending :: {"queued":1,"failed":0,"exported":0,"uploaded":1,"blocked":{"reason":"full","appVersion":"2.1"},"nextTry":null}
+PASS full server: the sample stays on the device
+PASS full server: the settings card explains the pause
+PASS full server: pressing Send now does not hammer a full server
+PASS full server: no script errors
+
+41 checks, all passed
