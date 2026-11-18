@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '4.7';
+const VERSION = '4.8';
 
 
 // ============================================================
@@ -12,6 +12,7 @@ let session = {
     lastBall: null,
     cards: [],
     gameId: null,
+    callGames: {},      // ball number -> game key its stats call was credited to
     inputMode: "number",
     doubleMode: false,  // double bingo: requires 2 matching patterns on one card to win
     ballTarget: 0,      // effective prize-window target (0 = disabled); derived from the two fields below
@@ -79,6 +80,7 @@ function saveSession() {
         lastBall: session.lastBall,
         cards: session.cards,
         gameId: session.gameId,
+        callGames: session.callGames || {},
         inputMode: inputMode,
         dauber: session.dauber,
         doubleMode: session.doubleMode || false,
@@ -106,6 +108,7 @@ function loadSession() {
     session.called = Array.isArray(obj.called) ? obj.called : [];
     session.lastBall = obj.lastBall || null;
     session.gameId = obj.gameId || null;
+    session.callGames = (obj.callGames && typeof obj.callGames === "object") ? obj.callGames : {};
     inputMode = obj.inputMode || "number";
     session.dauber = obj.dauber || { rgb: "26, 115, 232", opacity: 0.25 };
     session.doubleMode = obj.doubleMode || false;
@@ -123,21 +126,26 @@ function loadSession() {
 loadSession();
 
 // ============================================================
-// STATS SESSIONS (per-location ball call tallies)
+// STATS SESSIONS (ball call tallies per location and per game)
 // Stored under its own key so Clear Cards / session saves never touch it.
-// activeId === null means the "Unsaved" tally is being updated.
+// activeId === null means the "Unsaved" bucket is being updated.
+// Every bucket (a location or Unsaved) holds { games: { [gameKey]: tally } } where
+// tally = { name, letters, callCounts, gamesPlayed }. `letters` lists the BINGO columns (0-4)
+// the game's patterns touch, so stats can be filtered by the letters a game uses.
 // ============================================================
 
 const STATS_KEY = "bingoStatsSessions";
+const STATS_VERSION = 2;
+// Game key used while no game is selected
+const NO_GAME_KEY = "none";
+const ALL_LETTERS = [0, 1, 2, 3, 4];
 let statsStore = null;
-// True when pre-existing stats were found and the user still needs to name them
-let pendingNameExistingStats = false;
 
-function emptyTally() {
-    return { callCounts: {}, gamesPlayed: 0 };
+function emptyBucket() {
+    return { games: {} };
 }
 
-// Loads the store; on first run migrates any tally saved inside the old bingoSession blob
+// Loads the store; a store written before tallies were kept per game starts with empty tallies
 function loadStatsStore() {
     let store = null;
     try {
@@ -146,17 +154,20 @@ function loadStatsStore() {
     } catch (e) { store = null; }
 
     if (!store || typeof store !== "object") {
-        store = { activeId: null, locations: {}, unsaved: emptyTally() };
-        try {
-            const old = JSON.parse(localStorage.getItem("bingoSession") || "null");
-            if (old && old.callCounts && Object.keys(old.callCounts).length > 0) {
-                store.unsaved = { callCounts: old.callCounts, gamesPlayed: old.gamesPlayed || 0 };
-                pendingNameExistingStats = true;
-            }
-        } catch (e) { /* no legacy data */ }
+        store = { activeId: null, locations: {}, unsaved: emptyBucket() };
     }
     if (!store.locations || typeof store.locations !== "object") store.locations = {};
-    if (!store.unsaved) store.unsaved = emptyTally();
+    if (store.version !== STATS_VERSION) {
+        Object.values(store.locations).forEach(l => {
+            l.games = {};
+            delete l.callCounts;
+            delete l.gamesPlayed;
+        });
+        store.unsaved = emptyBucket();
+        store.version = STATS_VERSION;
+    }
+    Object.values(store.locations).forEach(l => { if (!l.games) l.games = {}; });
+    if (!store.unsaved || !store.unsaved.games) store.unsaved = emptyBucket();
     if (store.activeId && !store.locations[store.activeId]) store.activeId = null;
     statsStore = store;
     saveStatsStore();
@@ -166,8 +177,8 @@ function saveStatsStore() {
     try { localStorage.setItem(STATS_KEY, JSON.stringify(statsStore)); } catch (e) { /* storage unavailable */ }
 }
 
-// The tally currently receiving calls: the active location, or the Unsaved bucket
-function getActiveStats() {
+// The bucket currently receiving calls: the active location, or the Unsaved bucket
+function getLocationBucket() {
     return (statsStore.activeId && statsStore.locations[statsStore.activeId]) || statsStore.unsaved;
 }
 
@@ -175,25 +186,87 @@ function getActiveStatsName() {
     return statsStore.activeId ? statsStore.locations[statsStore.activeId].name : "Unsaved";
 }
 
-// Sums every location plus Unsaved into one read-only tally
-function getCombinedStats() {
-    const total = emptyTally();
-    [statsStore.unsaved, ...Object.values(statsStore.locations)].forEach(t => {
-        total.gamesPlayed += t.gamesPlayed || 0;
-        for (const [n, c] of Object.entries(t.callCounts || {})) {
-            total.callCounts[n] = (total.callCounts[n] || 0) + c;
-        }
+// Every bucket: Unsaved plus all locations
+function getAllBuckets() {
+    return [statsStore.unsaved, ...Object.values(statsStore.locations)];
+}
+
+// Key of the game currently selected on the board
+function currentGameKey() {
+    return session.gameId || NO_GAME_KEY;
+}
+
+// BINGO columns (0-4) touched by any pattern of a game, ignoring the free space
+function gameLetters(game) {
+    const cols = new Set();
+    ((game && game.patterns) || []).forEach(p => {
+        (p.cells || []).forEach(i => { if (i !== 12) cols.add(colForCell(i)); });
+    });
+    return ALL_LETTERS.filter(c => cols.has(c));
+}
+
+// Returns a bucket's tally for a game, creating it when missing
+function getGameTally(bucket, key) {
+    if (!bucket.games[key]) {
+        bucket.games[key] = {
+            name: key === NO_GAME_KEY ? "No game selected" : "Unknown game",
+            letters: ALL_LETTERS.slice(),
+            callCounts: {},
+            gamesPlayed: 0
+        };
+    }
+    return bucket.games[key];
+}
+
+// Copies the selected game's current name and letters onto its tally
+function refreshGameInfo(tally, key) {
+    if (key === NO_GAME_KEY) return;
+    const game = getSelectedGame();
+    if (game && game.id === key) {
+        tally.name = game.name;
+        tally.letters = gameLetters(game);
+    }
+}
+
+// Sums the tallies of the given buckets into one read-only tally.
+// `selected` is a Set of game keys, or null for every game.
+function sumTallies(buckets, selected) {
+    const total = { callCounts: {}, gamesPlayed: 0 };
+    buckets.forEach(bucket => {
+        Object.entries(bucket.games).forEach(([key, t]) => {
+            if (selected && !selected.has(key)) return;
+            total.gamesPlayed += t.gamesPlayed || 0;
+            for (const [n, c] of Object.entries(t.callCounts || {})) {
+                total.callCounts[n] = (total.callCounts[n] || 0) + c;
+            }
+        });
     });
     return total;
 }
 
-// Creates a location (optionally seeded with a tally), makes it active and returns its id
+// Games that have recorded calls or finished games in the given buckets, sorted by name
+function listStatsGames(buckets) {
+    const found = {};
+    buckets.forEach(bucket => {
+        Object.entries(bucket.games).forEach(([key, t]) => {
+            if (Object.keys(t.callCounts || {}).length === 0 && !t.gamesPlayed) return;
+            found[key] = { key, name: t.name, letters: t.letters || ALL_LETTERS };
+        });
+    });
+    return Object.values(found).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// True if a bucket has any recorded ball calls
+function bucketHasCalls(bucket) {
+    return Object.values(bucket.games).some(t => Object.keys(t.callCounts || {}).length > 0);
+}
+
+// Creates a location (optionally seeded with the games of a bucket), makes it active and returns its id
 function createStatsLocation(name, seed) {
     const id = "loc_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     statsStore.locations[id] = {
         name,
-        callCounts: seed ? seed.callCounts : {},
-        gamesPlayed: seed ? seed.gamesPlayed : 0,
+        games: seed ? seed.games : {},
         createdAt: new Date().toISOString()
     };
     statsStore.activeId = id;
@@ -542,12 +615,26 @@ callLogLink.addEventListener("click", (e) => {
     openCallLogModal();
 });
 
-// Adds delta to a ball's tally in the active stats location (never below zero; zero entries are dropped)
+// Adds delta to a ball's tally in the active location. A call is credited to the selected game;
+// an un-call is taken from the game the call was credited to (session.callGames), even if the game
+// was changed since. Never below zero; zero entries are dropped.
 function adjustCallCount(n, delta) {
-    const counts = getActiveStats().callCounts;
-    const next = Math.max(0, (counts[n] || 0) + delta);
-    if (next === 0) delete counts[n];
-    else counts[n] = next;
+    const bucket = getLocationBucket();
+    if (!session.callGames) session.callGames = {};
+    let key;
+    if (delta > 0) {
+        key = currentGameKey();
+        session.callGames[n] = key;
+    } else {
+        key = session.callGames[n] || currentGameKey();
+        delete session.callGames[n];
+        if (!bucket.games[key]) return;
+    }
+    const tally = getGameTally(bucket, key);
+    refreshGameInfo(tally, key);
+    const next = Math.max(0, (tally.callCounts[n] || 0) + delta);
+    if (next === 0) delete tally.callCounts[n];
+    else tally.callCounts[n] = next;
     saveStatsStore();
 }
 
@@ -655,62 +742,6 @@ function showNameForm(host, opts) {
     input.select();
 }
 
-// One-time sheet asking the user to name stats recorded before locations existed
-function openNameExistingStatsSheet() {
-    const modal = document.createElement("div");
-    modal.className = "game-picker-modal";
-    const panel = document.createElement("div");
-    panel.className = "game-picker-panel";
-    const hdr = document.createElement("div");
-    hdr.className = "game-picker-header";
-    hdr.innerHTML = '<h2 class="game-picker-title">Name your existing stats</h2>';
-    panel.appendChild(hdr);
-
-    const content = document.createElement("div");
-    content.className = "stats-body";
-    content.innerHTML = '<p class="stats-summary">Stats are now kept per location. Choose a name for the stats you already have, or discard them.</p>';
-    const host = document.createElement("div");
-    content.appendChild(host);
-    panel.appendChild(content);
-
-    function finish() { pendingNameExistingStats = false; modal.remove(); updateStatsLinkLabel(); }
-
-    const discard = document.createElement("button");
-    discard.type = "button";
-    discard.className = "stats-loc-btn danger";
-    discard.textContent = "Discard old stats";
-    discard.addEventListener("click", () => {
-        if (!confirm("Discard the existing ball call stats?")) return;
-        statsStore.unsaved = emptyTally();
-        saveStatsStore();
-        finish();
-    });
-    const keep = document.createElement("button");
-    keep.type = "button";
-    keep.className = "stats-loc-btn";
-    keep.textContent = "Keep as Unsaved";
-    keep.addEventListener("click", finish);
-
-    const nameForm = () => showNameForm(host, {
-        saveLabel: "Save",
-        onSave: (name) => {
-            createStatsLocation(name, statsStore.unsaved);
-            statsStore.unsaved = emptyTally();
-            saveStatsStore();
-            finish();
-        }
-    });
-    nameForm();
-    const row = document.createElement("div");
-    row.className = "stats-loc-actions";
-    row.appendChild(keep);
-    row.appendChild(discard);
-    content.appendChild(row);
-
-    modal.appendChild(panel);
-    document.body.appendChild(modal);
-}
-
 // Stats modal: per-location bar graph of how many times each ball (1-75) was called
 function openStatsModal() {
     const modal = document.createElement("div");
@@ -734,8 +765,119 @@ function openStatsModal() {
 
     // true = read-only combined view of every location
     let viewAll = false;
+    // Game filter: a Set of game keys, or null for every game. Only changes what the chart shows,
+    // never the game selected on the board.
+    let selectedGames = null;
+    let filterOpen = false;
 
-    // Location bar: switcher, new / rename / delete / save-as, and the This/All toggle
+    // Buckets the chart currently draws from
+    const scopeBuckets = () => (viewAll ? getAllBuckets() : [getLocationBucket()]);
+
+    // Drops selected games that have no stats in the current scope; an emptied selection becomes "all"
+    function normalizeSelection() {
+        if (!selectedGames || selectedGames.size === 0) return;
+        const present = new Set(listStatsGames(scopeBuckets()).map(g => g.key));
+        selectedGames = new Set([...selectedGames].filter(k => present.has(k)));
+        if (selectedGames.size === 0) selectedGames = null;
+    }
+
+    // Letters shown for a game, using the session word (for example "B I G O")
+    const lettersText = (letters) => letters.map(c => session.word[c] || "").join(" ");
+
+    // Quick picks worked out from the letters each game uses: "Uses all letters" and "No <letter>"
+    function getQuickPicks(games) {
+        const picks = [];
+        const allLetters = games.filter(g => ALL_LETTERS.every(c => g.letters.includes(c)));
+        if (allLetters.length) picks.push({ label: "Uses all letters", keys: allLetters.map(g => g.key) });
+        ALL_LETTERS.forEach(c => {
+            const missing = games.filter(g => !g.letters.includes(c));
+            if (missing.length) picks.push({ label: `No ${session.word[c] || ""}`, keys: missing.map(g => g.key) });
+        });
+        return picks;
+    }
+
+    // True if the selection is exactly the given keys
+    const selectionIs = (keys) => selectedGames !== null
+        && selectedGames.size === keys.length && keys.every(k => selectedGames.has(k));
+
+    // Short text describing the current game filter
+    function filterSummary(games) {
+        if (selectedGames === null) return "All games";
+        if (selectedGames.size === 0) return "No games selected";
+        const pick = getQuickPicks(games).find(p => selectionIs(p.keys));
+        if (pick) return pick.label;
+        if (selectedGames.size === 1) {
+            const only = games.find(g => selectedGames.has(g.key));
+            return only ? only.name : "1 game";
+        }
+        return `${selectedGames.size} games`;
+    }
+
+    // Game filter control: a summary button that opens the checklist with All / None and quick picks
+    function buildGameFilter() {
+        const games = listStatsGames(scopeBuckets());
+        const host = document.createElement("div");
+        host.className = "stats-game-filter";
+
+        const toggle = makeBtn(`Games: ${filterSummary(games)} ${filterOpen ? "▴" : "▾"}`, () => {
+            filterOpen = !filterOpen;
+            renderLocBar();
+        }, "stats-game-toggle");
+        toggle.setAttribute("aria-expanded", filterOpen ? "true" : "false");
+        host.appendChild(toggle);
+        if (!filterOpen) return host;
+
+        const filterPanel = document.createElement("div");
+        filterPanel.className = "stats-game-panel";
+        if (games.length === 0) {
+            filterPanel.innerHTML = '<p class="stats-game-empty">No games recorded here yet.</p>';
+            host.appendChild(filterPanel);
+            return host;
+        }
+
+        // A change to the selection redraws the filter and the chart
+        const apply = (next) => {
+            selectedGames = (next && next.size === games.length) ? null : next;
+            refresh();
+        };
+
+        const bulk = document.createElement("div");
+        bulk.className = "stats-loc-actions";
+        bulk.appendChild(makeBtn("All", () => apply(null), selectedGames === null ? "active" : ""));
+        bulk.appendChild(makeBtn("None", () => apply(new Set()), selectedGames && selectedGames.size === 0 ? "active" : ""));
+        getQuickPicks(games).forEach(pick => {
+            bulk.appendChild(makeBtn(pick.label, () => apply(new Set(pick.keys)), "stats-chip" + (selectionIs(pick.keys) ? " active" : "")));
+        });
+        filterPanel.appendChild(bulk);
+
+        games.forEach(g => {
+            const row = document.createElement("label");
+            row.className = "stats-game-row";
+            const box = document.createElement("input");
+            box.type = "checkbox";
+            box.checked = selectedGames === null || selectedGames.has(g.key);
+            box.addEventListener("change", () => {
+                const next = new Set(selectedGames === null ? games.map(x => x.key) : selectedGames);
+                if (box.checked) next.add(g.key);
+                else next.delete(g.key);
+                apply(next);
+            });
+            const name = document.createElement("span");
+            name.className = "stats-game-name";
+            name.textContent = g.name;
+            const letters = document.createElement("span");
+            letters.className = "stats-game-letters";
+            letters.textContent = lettersText(g.letters);
+            row.appendChild(box);
+            row.appendChild(name);
+            row.appendChild(letters);
+            filterPanel.appendChild(row);
+        });
+        host.appendChild(filterPanel);
+        return host;
+    }
+
+    // Location bar: switcher, new / rename / delete / save-as, the This/All toggle and the game filter
     const locBar = document.createElement("div");
     locBar.className = "stats-location-bar";
     panel.appendChild(locBar);
@@ -783,6 +925,8 @@ function openStatsModal() {
         });
         locBar.appendChild(seg);
 
+        locBar.appendChild(buildGameFilter());
+
         // Action row
         const actions = document.createElement("div");
         actions.className = "stats-loc-actions";
@@ -807,12 +951,12 @@ function openStatsModal() {
                 updateStatsLinkLabel();
                 refresh();
             }, "danger"));
-        } else if (Object.keys(statsStore.unsaved.callCounts).length > 0) {
+        } else if (bucketHasCalls(statsStore.unsaved)) {
             actions.appendChild(makeBtn("Save as location…", () => showNameForm(formHost, {
                 saveLabel: "Save",
                 onSave: (name) => {
                     createStatsLocation(name, statsStore.unsaved);
-                    statsStore.unsaved = emptyTally();
+                    statsStore.unsaved = emptyBucket();
                     saveStatsStore();
                     refresh();
                 }
@@ -824,6 +968,7 @@ function openStatsModal() {
 
     // Re-renders both the location bar and the chart
     function refresh() {
+        normalizeSelection();
         renderLocBar();
         render();
     }
@@ -831,14 +976,18 @@ function openStatsModal() {
     // Rebuilds the chart from the current tallies (also used after reset)
     function render() {
         body.innerHTML = "";
-        const tally = viewAll ? getCombinedStats() : getActiveStats();
+        const tally = sumTallies(scopeBuckets(), selectedGames);
         const viewName = viewAll ? "All locations" : getActiveStatsName();
+        const filterName = filterSummary(listStatsGames(scopeBuckets()));
         const counts = tally.callCounts || {};
         const max = Math.max(0, ...Object.values(counts));
         const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
         if (total === 0) {
-            body.innerHTML = `<p class="bingo-cards-placeholder">No balls recorded yet for ${viewName.replace(/[<&]/g, "")}.</p>`;
+            const placeholder = document.createElement("p");
+            placeholder.className = "bingo-cards-placeholder";
+            placeholder.textContent = `No balls recorded yet for ${viewName} · ${filterName}.`;
+            body.appendChild(placeholder);
             resetBtn.disabled = true;
             return;
         }
@@ -850,7 +999,7 @@ function openStatsModal() {
         const summary = document.createElement("div");
         summary.className = "stats-summary";
         const repeats = Object.values(counts).filter(c => c > 1).length;
-        summary.textContent = `${viewName} · ${games} game${games === 1 ? "" : "s"} · ${total} calls · ${repeats} repeated`;
+        summary.textContent = `${viewName} · ${filterName} · ${games} game${games === 1 ? "" : "s"} · ${total} calls · ${repeats} repeated`;
         body.appendChild(summary);
 
         // Readout shows the ball under the finger while scrubbing the chart
@@ -959,10 +1108,15 @@ function openStatsModal() {
     resetBtn.textContent = "Reset Stats";
     resetBtn.addEventListener("click", () => {
         if (viewAll) return;
-        if (!confirm(`Reset ball call stats for "${getActiveStatsName()}"? The call log and board are not affected.`)) return;
-        const active = getActiveStats();
-        active.callCounts = {};
-        active.gamesPlayed = 0;
+        // Reset only the games the filter shows (every game when none is filtered out)
+        const bucket = getLocationBucket();
+        const keys = selectedGames === null
+            ? Object.keys(bucket.games)
+            : [...selectedGames].filter(k => bucket.games[k]);
+        if (keys.length === 0) return;
+        const what = selectedGames === null ? "all games" : keys.map(k => bucket.games[k].name).join(", ");
+        if (!confirm(`Reset ball call stats for "${getActiveStatsName()}" (${what})? The call log and board are not affected.`)) return;
+        keys.forEach(k => { delete bucket.games[k]; });
         saveStatsStore();
         refresh();
     });
@@ -1011,7 +1165,16 @@ if (clearCardsBtn) {
         session.called = [];
         session.lastBall = null;
         activeLetterIdx = -1;
-        getActiveStats().gamesPlayed = (getActiveStats().gamesPlayed || 0) + 1;  // each clear ends one game
+        // Each clear ends one game for every game that was credited with calls (the selected game if none)
+        const endedKeys = new Set(Object.values(session.callGames || {}));
+        if (endedKeys.size === 0) endedKeys.add(currentGameKey());
+        const bucket = getLocationBucket();
+        endedKeys.forEach(key => {
+            const tally = getGameTally(bucket, key);
+            refreshGameInfo(tally, key);
+            tally.gamesPlayed = (tally.gamesPlayed || 0) + 1;
+        });
+        session.callGames = {};
         saveStatsStore();
 
         saveSession();
@@ -2246,6 +2409,3 @@ window.addEventListener('suite-profile-changed', (e) => {
 });
 
 initBingoSettings();
-
-// Existing pre-location stats found at startup: ask the user to name them
-if (pendingNameExistingStats) openNameExistingStatsSheet();
