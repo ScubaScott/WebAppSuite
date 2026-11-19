@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '2.4';
+const SUITE_PROFILE_VERSION = '2.5';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -28,6 +28,9 @@ const SUITE_PROFILE_VERSION = '2.4';
         'driver_profiles',
         'vehicle_profiles',
         'beanBagScoreState',
+        'dominoGame',
+        'dominoHistory',
+        'dominoPrefs',
         'bingoSession',
         'bingoTheme',
         'bingoFlashboardConfig',
@@ -57,6 +60,7 @@ const SUITE_PROFILE_VERSION = '2.4';
             path.indexOf('/ScoreKeeper') !== -1 ||
             path.indexOf('/Bingo') !== -1 ||
             path.indexOf('/BagScore') !== -1 ||
+            path.indexOf('/Dominoes') !== -1 ||
             path.indexOf('/DriverScore') !== -1 ||
             path.indexOf('/FarkleScore') !== -1 ||
             path.indexOf('/HarleyVinDecoder') !== -1 ||
@@ -1151,6 +1155,7 @@ const SUITE_PROFILE_VERSION = '2.4';
             path.indexOf('/ScoreKeeper') !== -1 ||
             path.indexOf('/Bingo') !== -1 ||
             path.indexOf('/BagScore') !== -1 ||
+            path.indexOf('/Dominoes') !== -1 ||
             path.indexOf('/DriverScore') !== -1 ||
             path.indexOf('/FarkleScore') !== -1 ||
             path.indexOf('/HarleyVinDecoder') !== -1 ||

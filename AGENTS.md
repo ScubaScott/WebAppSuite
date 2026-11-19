@@ -56,6 +56,7 @@ Each sub-application folder under `htdocs/` contains its own dedicated `AGENTS.m
 | :--- | :--- | :--- | :--- |
 | `htdocs/BagScore/` | Cornhole Scorekeeper | `htdocs/BagScore/AGENTS.md` | Cancellation scoring, 21-pt target, board/hole visual targets |
 | `htdocs/Bingo/` | Bingo Number Tracker | `htdocs/Bingo/AGENTS.md` | Ball caller, uniform button grids, speech synthesis, card creator |
+| `htdocs/Dominoes/` | Dominoes Score Keeper | `htdocs/Dominoes/AGENTS.md` | Low-score-wins domino rounds, 0\|0 blank value, line chart, camera pip scanner |
 | `htdocs/DriverScore/` | DriveScore Pro | `htdocs/DriverScore/AGENTS.md` | Telematics tracking, accelerometer/turn penalties, vehicle garage |
 | `htdocs/FarkleScore/` | Farkle 10,000 | `htdocs/FarkleScore/AGENTS.md` | 10k dice scoring, combo calculations, multi-player standings |
 | `htdocs/HarleyVinDecoder/` | Harley VIN Decoder | `htdocs/HarleyVinDecoder/AGENTS.md` | 17-digit VIN parsing, checksum validation, OCR image preprocessing |

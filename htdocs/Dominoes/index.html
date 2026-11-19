@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <title>Dominoes Score Keeper</title>
+    <!-- Shared suite header and profile styles, then the app styles -->
+    <link rel="stylesheet" href="../media/suite-header.css">
+    <link rel="stylesheet" href="../media/suite-profile.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- Suite header: back link, title, settings gear -->
+    <header class="suite-header">
+        <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span class="suite-header__back-label-long">Back to Apps</span>
+            <span class="suite-header__back-label-short">Apps</span>
+        </a>
+        <h1 class="suite-header__title">Dominoes</h1>
+        <button type="button" id="settingsBtn" class="suite-header__gear" aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path
+                    d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+            </svg>
+        </button>
+    </header>
+
+    <main class="page-shell">
+
+        <!-- Round navigation, engine double, starting player and undo -->
+        <section class="card status-card" aria-label="Round status">
+            <div id="finalBanner" class="final-banner" hidden></div>
+            <div class="status-row">
+                <button type="button" id="prevRoundBtn" class="icon-btn" aria-label="Previous round">&#8249;</button>
+                <div class="status-center">
+                    <div class="round-title" id="roundTitle"></div>
+                    <div class="round-sub" id="roundSub"></div>
+                </div>
+                <button type="button" id="nextRoundBtn" class="icon-btn" aria-label="Next round">&#8250;</button>
+            </div>
+            <div class="status-actions">
+                <button type="button" id="undoBtn" class="btn btn-ghost" disabled>Undo</button>
+            </div>
+        </section>
+
+        <!-- Line chart with one line per player -->
+        <section class="card chart-card" aria-label="Score chart">
+            <div class="card-head">
+                <h2>Scores</h2>
+                <div class="seg" id="chartModeSeg" role="group" aria-label="Chart mode">
+                    <button type="button" data-mode="cumulative" aria-pressed="true">Total</button>
+                    <button type="button" data-mode="perRound" aria-pressed="false">Per round</button>
+                </div>
+            </div>
+            <svg id="chart" class="chart" role="img" aria-label="Line chart of player scores by round"></svg>
+            <ul id="legend" class="legend"></ul>
+        </section>
+
+        <!-- Player list with sort control and per-player score entry -->
+        <section class="card" aria-label="Players">
+            <div class="card-head">
+                <h2>Players</h2>
+                <div class="seg" id="sortSeg" role="group" aria-label="Sort players">
+                    <button type="button" data-sort="seat" aria-pressed="true">Seat</button>
+                    <button type="button" data-sort="name" aria-pressed="false">Name</button>
+                    <button type="button" data-sort="score" aria-pressed="false">Score</button>
+                </div>
+            </div>
+            <ul id="playerList" class="player-list"></ul>
+        </section>
+
+        <!-- Paper-style score sheet; tap a cell to edit it -->
+        <details class="card sheet-card" id="sheetCard">
+            <summary>Score sheet</summary>
+            <div class="sheet-wrap">
+                <table id="sheet" class="sheet"></table>
+            </div>
+        </details>
+
+    </main>
+
+    <!-- Score entry dialog (typed score or edit) -->
+    <dialog id="scoreDlg" class="dlg">
+        <form id="scoreForm" method="dialog" novalidate>
+            <h2 id="scoreDlgTitle"></h2>
+            <p class="dlg-sub" id="scoreDlgSub"></p>
+            <label class="field">
+                <span>Points left in hand</span>
+                <input id="scoreInput" type="number" inputmode="numeric" min="0" max="9999" step="1">
+            </label>
+            <p class="field-error" id="scoreError" hidden></p>
+            <div class="dlg-actions">
+                <button type="button" id="scoreClearBtn" class="btn btn-ghost">Clear</button>
+                <button type="button" id="scoreCancelBtn" class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Settings dialog: players, set, rounds, blank value, history, new game -->
+    <dialog id="settingsDlg" class="dlg dlg-wide">
+        <form id="settingsForm" method="dialog" novalidate>
+            <h2>Settings</h2>
+
+            <h3>Players (seat order)</h3>
+            <ul id="rosterList" class="roster"></ul>
+            <div class="roster-add">
+                <input id="newPlayerInput" type="text" maxlength="20" placeholder="Add player" list="nameList"
+                    autocomplete="off" aria-label="New player name">
+                <button type="button" id="addPlayerBtn" class="btn btn-ghost">Add</button>
+            </div>
+            <datalist id="nameList"></datalist>
+
+            <h3>Game</h3>
+            <div class="field-grid">
+                <label class="field">
+                    <span>Domino set</span>
+                    <select id="setMaxSelect">
+                        <option value="6">Double-6</option>
+                        <option value="9">Double-9</option>
+                        <option value="12">Double-12</option>
+                        <option value="15">Double-15</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Rounds</span>
+                    <input id="roundsInput" type="number" inputmode="numeric" min="1" max="40" step="1">
+                </label>
+                <label class="field">
+                    <span>Engine double</span>
+                    <select id="directionSelect">
+                        <option value="down">Counts down</option>
+                        <option value="up">Counts up</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Double-blank (0|0) value</span>
+                    <input id="blankInput" type="number" inputmode="numeric" min="0" max="999" step="1">
+                </label>
+                <label class="field">
+                    <span>Scanner tile color</span>
+                    <select id="tileColorSelect">
+                        <option value="auto">Auto</option>
+                        <option value="light">Light tiles</option>
+                        <option value="dark">Dark tiles</option>
+                    </select>
+                </label>
+            </div>
+            <p class="field-error" id="settingsError" hidden></p>
+
+            <details class="history" id="historyBox">
+                <summary>Past games</summary>
+                <ul id="historyList" class="history-list"></ul>
+            </details>
+
+            <div class="dlg-actions dlg-actions-split">
+                <button type="button" id="newGameBtn" class="btn btn-danger">New game</button>
+                <span class="spacer"></span>
+                <button type="button" id="settingsCancelBtn" class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <footer class="app-footer">
+        <small>v<span id="appVersion"></span></small>
+        <small id="syncSlot"></small>
+    </footer>
+
+    <script src="../media/suite-profile.js"></script>
+    <script src="core.js"></script>
+    <script src="chart.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
