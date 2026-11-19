@@ -1,5 +1,5 @@
 // Domino tile detection version identifier
-const DOMINO_TILES_VERSION = '1.1';
+const DOMINO_TILES_VERSION = '1.3';
 
 // Finds individual domino tiles in a photo and cuts each one out as a straightened, horizontal crop.
 // Depends on the shared imaging module (htdocs/media/scan/imaging.js). Every function works on plain RGBA
@@ -28,6 +28,8 @@ const DominoTiles = (() => {
         barMargin: 3,                  // pixels beside and beyond a bar that must be tile surface
         surfaceBrightness: 100,        // tile surface: brightest channel at least this...
         surfaceWarmth: 8,              // ...and (R + G) / 2 - B at least this (ivory is warm, a gray table is not)
+        neutralBrightness: 100,        // 'neutral' surface: brightest channel at least this...
+        neutralSaturation: 0.36,       // ...and (max - min) / max at most this (ivory under any lighting; wood is 0.4-0.7)
         minDividerArea: 12,            // pixels (in the detection image)
         maxDividerFrac: 0.003,         // largest bar, as a fraction of the picture
         maxClusterFrac: 0.6,           // a blob with bars may be this large: it holds several tiles
@@ -36,6 +38,9 @@ const DominoTiles = (() => {
         maxBarRatio: 0.95,
         coverageSamples: 7,            // the model rectangle is checked on a grid of this many points per side
         minCoverage: 0.5,              // share of those points that must look like tile surface (pips are not surface)
+        barsForTrust: 3,               // this many divider bars in the picture make bar-less shapes weak evidence...
+        unsupportedWeight: 0.25,       // ...worth this much each when choosing a segmentation
+        supportedWeight: 2.5,          // a tile backed by a divider bar counts this much when choosing a segmentation (others count 1)
         minBarsForFit: 4,              // fewest bars for fitting how bar length changes across the picture
         minSideHits: 2,                // of 5 points along a bar, this many beside it on each side must be tile surface
         maxOverlap: 0.35,              // two tiles may overlap by at most this share of either one's area
@@ -189,6 +194,16 @@ const DominoTiles = (() => {
         return Imaging.gaussianBlur({ width: img.width, height: img.height, data: out }, 5);
     }
 
+    // Brightness of each pixel's weakest color channel, blurred. A tile is bright in every channel, but a warm table such
+    // as wood is nearly blue-free, so its weakest channel is dark; this separates ivory from wood when the table is
+    // warmer than the tiles and the warm-tint channel therefore points the wrong way.
+    function weakestChannel(img) {
+        const n = img.width * img.height;
+        const out = new Uint8Array(n);
+        for (let i = 0, p = 0; i < n; i++, p += 4) out[i] = Math.min(img.data[p], img.data[p + 1], img.data[p + 2]);
+        return Imaging.gaussianBlur({ width: img.width, height: img.height, data: out }, 5);
+    }
+
     // Area of a polygon given as {x, y} points in order (shoelace formula)
     function polygonArea(points) {
         let sum = 0;
@@ -199,9 +214,13 @@ const DominoTiles = (() => {
         return Math.abs(sum) / 2;
     }
 
-    // True where the picture at (x, y) looks like tile surface: bright and warm (ivory). Judged on the picture itself,
-    // not the blurred mask, whose edges are smeared several pixels wide around thin dark marks.
-    function isSurface(img, x, y) {
+    // True where the picture at (x, y) looks like tile surface. Judged on the picture itself, not the blurred mask, whose
+    // edges are smeared several pixels wide around thin dark marks. Two notions, because the camera's white balance and
+    // the shadows change how ivory looks:
+    //   'warm'    bright and warm (ivory keeps its tint). Right on a neutral gray table; wood would count as surface too.
+    //   'neutral' bright and weakly saturated. Ivory is cool white in a warm scene and gray in shadow, but never strongly
+    //             colored, while wood always is, so this keeps wood out where the warm test lets it in.
+    function isSurface(img, x, y, kind) {
         const w = img.width, h = img.height;
         const xi = Math.round(x), yi = Math.round(y);
         if (xi < 1 || yi < 1 || xi >= w - 1 || yi >= h - 1) return false;
@@ -213,7 +232,11 @@ const DominoTiles = (() => {
             }
         }
         r /= 9; g /= 9; b /= 9;
-        return Math.max(r, g, b) >= LIMITS.surfaceBrightness && (r + g) / 2 - b >= LIMITS.surfaceWarmth;
+        const peak = Math.max(r, g, b);
+        if (kind === 'neutral') {
+            return peak >= LIMITS.neutralBrightness && (peak - Math.min(r, g, b)) / peak <= LIMITS.neutralSaturation;
+        }
+        return peak >= LIMITS.surfaceBrightness && (r + g) / 2 - b >= LIMITS.surfaceWarmth;
     }
 
     // Finds the divider bars: long, thin, very dark marks (the bar between a tile's two halves). Every tile has one,
@@ -221,17 +244,17 @@ const DominoTiles = (() => {
     // picture because a bar is only a few pixels wide. A real bar has tile surface on both sides and past both ends
     // (it stops short of the tile edge) on at least one side; cables, creases between tiles and shadows do not.
     // Returns [{ cx, cy, bx, by, len, wid }] with (bx, by) the unit direction along the bar.
-    function findDividers(img, mask, debug) {
+    function findDividers(img, kind, debug) {
         const { width: w, height: h } = img;
         const dark = { width: w, height: h, data: new Uint8Array(w * h) };
         for (let i = 0, p = 0; i < w * h; i++, p += 4) {
             if (Math.max(img.data[p], img.data[p + 1], img.data[p + 2]) < LIMITS.barBrightness) dark.data[i] = 255;
         }
         const marks = Imaging.connectedComponents(dark, { connectivity: 8, labels: true });
-        const onTile = (x, y) => isSurface(img, x, y);
+        const onTile = (x, y) => isSurface(img, x, y, kind);
         const found = [];
         // When a debug list is given, every long-enough mark is recorded there with the reason it was kept or dropped
-        const note = (mark, reason, extra) => { if (debug) debug.push(Object.assign({ x: mark.x, y: mark.y, w: mark.w, h: mark.h, reason }, extra)); };
+        const note = (mark, reason, extra) => { if (debug) debug.push(Object.assign({ x: mark.x, y: mark.y, w: mark.w, h: mark.h, reason, kind }, extra)); };
         marks.forEach((mark, k) => {
             if (mark.area < LIMITS.minDividerArea || mark.area > w * h * LIMITS.maxDividerFrac) return;
             if (mark.x === 0 || mark.y === 0 || mark.x + mark.w >= w || mark.y + mark.h >= h) return;
@@ -248,14 +271,17 @@ const DominoTiles = (() => {
             const side = wid / 2 + LIMITS.barMargin, end = len / 2 + LIMITS.barMargin;
             const bx = f.ux, by = f.uy;
             let hitsA = 0, hitsB = 0;
+            const colors = [];
+            const colorAt = (x, y) => { const q = (Math.round(y) * w + Math.round(x)) * 4; return img.data[q] + ',' + img.data[q + 1] + ',' + img.data[q + 2]; };
             [-0.35, -0.175, 0, 0.175, 0.35].forEach(a => {
                 const px = cx + bx * len * a, py = cy + by * len * a;
+                if (debug) colors.push(colorAt(px + by * side, py - bx * side) + ' | ' + colorAt(px - by * side, py + bx * side));
                 if (onTile(px + by * side, py - bx * side)) hitsA++;
                 if (onTile(px - by * side, py + bx * side)) hitsB++;
             });
             const ends = [onTile(cx + bx * end, cy + by * end), onTile(cx - bx * end, cy - by * end)];
             const enclosed = hitsA >= LIMITS.minSideHits && hitsB >= LIMITS.minSideHits && (ends[0] || ends[1]);
-            note(mark, enclosed ? 'bar' : 'not-enclosed', { len: +len.toFixed(1), wid: +wid.toFixed(1), sides: hitsA + '/' + hitsB, ends: ends.join() });
+            note(mark, enclosed ? 'bar' : 'not-enclosed', { len: +len.toFixed(1), wid: +wid.toFixed(1), sides: hitsA + '/' + hitsB, ends: ends.join(), colors, at: Math.round(cx) + ',' + Math.round(cy) });
             if (enclosed) found.push({ cx, cy, bx, by, len, wid });
         });
         return found;
@@ -329,7 +355,7 @@ const DominoTiles = (() => {
     // short side), and its long side is twice that.
     // Returns a rectangle record, or { rejected: true, coverage } when the rectangle leaves the picture or does not
     // mostly cover tile surface (a false bar on something else).
-    function tileFromBar(bar, expectedLen, ratio, picture) {
+    function tileFromBar(bar, expectedLen, ratio, picture, kind) {
         const shortSide = expectedLen / ratio;
         // Frame: u along the tile's long side (perpendicular to the bar), v along the bar
         const ux = -bar.by, uy = bar.bx;
@@ -349,7 +375,7 @@ const DominoTiles = (() => {
                 const u = frame.minU + shortSide * 2 * (0.1 + 0.8 * i / (LIMITS.coverageSamples - 1));
                 const v = frame.minV + shortSide * (0.1 + 0.8 * j / (LIMITS.coverageSamples - 1));
                 total++;
-                if (isSurface(picture, u * ux + v * vx, u * uy + v * vy)) hit++;
+                if (isSurface(picture, u * ux + v * vx, u * uy + v * vy, kind)) hit++;
             }
         }
         const coverage = hit / total;
@@ -379,10 +405,12 @@ const DominoTiles = (() => {
     }
 
     // Looks for tiles in a channel image. polarity: 'light' = tiles brighter than the surface in the channel,
-    // 'dark' = darker, 'warm' = the warm-tint channel, where tiles are above the threshold.
+    // 'dark' = darker, 'warm' = the warm-tint channel and 'weak' = the weakest-channel brightness, where tiles are above
+    // the threshold.
     // picture is the RGBA detection image (used to find the divider bars).
+    // bars are the divider bars found in the picture (see findDividers); a dark-tile split does not use them.
     // Returns { tiles, uncertain, rejected, bars } in detection-image coordinates, or null when the channel has no clear split.
-    function findCandidates(channel, polarity, picture, debug) {
+    function findCandidates(channel, polarity, picture, allBars, surfaceKind) {
         const { width: w, height: h } = channel;
         const total = w * h;
         const t = Imaging.otsuThreshold(channel);
@@ -399,7 +427,7 @@ const DominoTiles = (() => {
         if (polarity === 'dark') mask = Imaging.invert(mask);
 
         mask = Imaging.fillHoles(mask, Math.round(total * LIMITS.holeFrac));
-        const bars = polarity === 'dark' ? [] : findDividers(picture, mask, debug);
+        const bars = polarity === 'dark' ? [] : allBars;
 
         const comps = Imaging.connectedComponents(mask, { connectivity: 4, labels: true });
         const barsByBlob = new Map();
@@ -432,7 +460,10 @@ const DominoTiles = (() => {
             const box = { x: comp.x, y: comp.y, w: comp.w, h: comp.h };
             const blobBars = barsByBlob.get(k);
             if (frac > (blobBars ? LIMITS.maxClusterFrac : LIMITS.maxAreaFrac)) { rejected.push({ box, reason: 'too-large' }); return; }
-            if (comp.x === 0 || comp.y === 0 || comp.x + comp.w >= w || comp.y + comp.h >= h) {
+            // A blob touching the picture edge is cut off, so its outline cannot be trusted. A blob with divider bars is
+            // judged tile by tile instead (a tile merged with stray bright patches can still reach the edge); each modeled
+            // tile is checked for leaving the picture on its own.
+            if (!blobBars && (comp.x === 0 || comp.y === 0 || comp.x + comp.w >= w || comp.y + comp.h >= h)) {
                 rejected.push({ box, reason: 'clipped' });
                 return;
             }
@@ -453,12 +484,14 @@ const DominoTiles = (() => {
             // A blob with divider bars holds exactly one tile per bar, however the tiles touch. A blob with a single bar
             // and a clean rectangular outline is just that tile, and its own outline is more exact than the bar model.
             const cleanSingle = blobBars && blobBars.length === 1 && rectangular && aspect >= LIMITS.minAspect && aspect <= LIMITS.maxAspect;
+            if (cleanSingle) info.supported = true;
             if (blobBars && !cleanSingle) {
                 blobBars.forEach(bar => {
-                    const modeled = tileFromBar(bar, barLength(bar.cx, bar.cy), ratio, picture);
+                    const modeled = tileFromBar(bar, barLength(bar.cx, bar.cy), ratio, picture, surfaceKind);
                     if (modeled.rejected) { rejected.push({ box, reason: 'bad-bar', coverage: modeled.coverage }); return; }
                     modeled.box = box;
                     modeled.split = blobBars.length > 1;
+                    modeled.supported = true;
                     singles.push(modeled);
                 });
                 return;
@@ -484,7 +517,7 @@ const DominoTiles = (() => {
         const typicalArea = median(kept.map(s => s.area));
         const tiles = kept.map(s => ({
             corners: frameCorners(s.frame, s.frame.minU, s.frame.maxU),
-            area: s.area, aspect: s.aspect, fill: s.fill, split: !!s.split,
+            area: s.area, aspect: s.aspect, fill: s.fill, split: !!s.split, supported: !!s.supported,
             confidence: Math.min(1, s.fill) * (1 - Math.min(1, Math.abs(s.aspect - 2) / 0.8) * 0.5) * (s.split ? 0.8 : 1)
         }));
 
@@ -521,21 +554,30 @@ const DominoTiles = (() => {
         const { img: small, scale } = downscaleRGBA(img, DETECT_MAX_DIM);
         const blurred = Imaging.gaussianBlur(Imaging.grayFromRGBA(small), 5);
         const warm = warmChannel(small);
+        const weakest = weakestChannel(small);
+        // Divider bars, found once for each notion of tile surface and handed to the segmentations that use it
+        const barsByKind = { warm: findDividers(small, 'warm', options && options.debug), neutral: findDividers(small, 'neutral', options && options.debug) };
+        const kindFor = { warm: 'warm', weak: 'neutral', light: 'neutral', dark: 'warm' };
+        const barsSeen = Math.max(barsByKind.warm.length, barsByKind.neutral.length);
 
         // Each way of splitting tiles from the surface; the one that yields the most tile-like shapes wins.
         // Light tiles can be white or ivory, so 'light' also tries the warm tint.
-        const polarities = tileColor === 'light' ? ['warm', 'light'] : tileColor === 'dark' ? ['dark'] : ['warm', 'light', 'dark'];
+        const polarities = tileColor === 'light' ? ['warm', 'weak', 'light'] : tileColor === 'dark' ? ['dark'] : ['warm', 'weak', 'light', 'dark'];
+        const channelFor = { warm, weak: weakest, light: blurred, dark: blurred };
         let best = null;
+        const tried = [];
         polarities.forEach(polarity => {
-            const notes = options && options.debug ? [] : null;
-            const found = findCandidates(polarity === 'warm' ? warm : blurred, polarity, small, notes);
-            if (!found) return;
-            found.notes = notes;
-            const score = found.tiles.length + 0.5 * found.tiles.reduce((s, t) => s + t.confidence, 0);
+            const found = findCandidates(channelFor[polarity], polarity, small, barsByKind[kindFor[polarity]], kindFor[polarity]);
+            if (!found) { tried.push({ polarity, skipped: true }); return; }
+            // A tile backed by a divider bar is strong evidence; a rectangle alone (pips, patches) is weak, and counts for
+            // much less once the picture clearly has bars (tiles without a visible bar, such as a dark set, still count in full
+            // when no bars are found anywhere)
+            const unsupported = barsSeen >= LIMITS.barsForTrust ? LIMITS.unsupportedWeight : 1;
+            const score = found.tiles.reduce((s, t) => s + (t.supported ? LIMITS.supportedWeight : unsupported) + 0.5 * t.confidence, 0);
+            tried.push({ polarity, tiles: found.tiles.length, bars: found.bars.length, score: +score.toFixed(2) });
             if (!best || score > best.score) best = Object.assign({ polarity, score }, found);
         });
         if (!best) best = { polarity: polarities[0], score: 0, tiles: [], uncertain: [], rejected: [], bars: [] };
-        if (options && options.debug && best.notes) best.notes.forEach(n => options.debug.push(n));
 
         // Back to full-photo coordinates, then reading order (rows top to bottom, left to right within a row)
         const inv = 1 / scale;
@@ -552,6 +594,7 @@ const DominoTiles = (() => {
             rejected: best.rejected.map(r => Object.assign({}, r, { box: box(r.box) })),
             bars: best.bars.map(b => Object.assign({}, b, { cx: b.cx * inv, cy: b.cy * inv, len: b.len * inv, wid: b.wid * inv })),
             polarity: best.polarity,
+            tried,
             scale
         };
     }
