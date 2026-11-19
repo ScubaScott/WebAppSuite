@@ -1,0 +1,172 @@
+/* Dominoes scanner page styles (builds on ../styles.css). Version: 1.1 */
+
+/* ── Top bar ────────────────────────────────────────────────────────────── */
+.scan-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 56px;
+  padding: env(safe-area-inset-top, 0px) 12px 0;
+  background: var(--hdr-bg);
+  border-bottom: 1px solid var(--hdr-border);
+}
+
+.scan-bar__back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--hdr-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.scan-bar__back:hover { color: var(--hdr-fg); }
+.scan-bar__back svg { width: 18px; height: 18px; }
+.scan-bar__who { display: flex; flex-direction: column; align-items: center; color: var(--hdr-fg); }
+.scan-bar__who strong { font-size: 1.05rem; }
+.scan-bar__who small { color: var(--hdr-muted); font-size: 0.78rem; }
+.scan-bar__spacer { width: 44px; height: 44px; justify-self: end; }
+
+/* ── Shared bits ────────────────────────────────────────────────────────── */
+.muted { color: var(--muted); font-size: 0.9rem; margin: 6px 0; }
+.warn { color: var(--accent); font-size: 0.88rem; margin: 6px 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.actions .btn { flex: 1 1 140px; }
+.file-btn { cursor: pointer; }
+
+.tips { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+
+.inline-field { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; }
+
+.inline-field select {
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+/* ── Outline step ───────────────────────────────────────────────────────── */
+.photo-stage { margin-top: 8px; border-radius: 10px; overflow: hidden; background: #000; }
+.photo-stage canvas { display: block; width: 100%; height: auto; cursor: pointer; }
+
+/* ── Review grid ────────────────────────────────────────────────────────── */
+.tile-grid {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.tile-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.tile-card:active { transform: scale(0.98); }
+.tile-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tile-card.flagged { border-color: var(--accent); }
+
+.tile-stage { position: relative; display: block; width: 100%; aspect-ratio: 2 / 1; }
+.tile-stage canvas { display: block; width: 100%; height: 100%; border-radius: 6px; }
+.pip-layer { position: absolute; inset: 0; }
+.pip-layer.interactive { cursor: crosshair; touch-action: manipulation; }
+
+/* Ring drawn over every counted pip; the pip underneath stays visible inside it */
+.pip-marker {
+  position: absolute;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  border: 2px solid #1fd18a;
+  border-radius: 50%;
+}
+
+.pip-marker.merged { border-color: #ff9f1a; border-style: dashed; }
+.pip-marker.manual { border-color: #4da3ff; }
+.tile-card .pip-marker { border-width: 1.5px; }
+.pip-layer.interactive .pip-marker { cursor: pointer; }
+
+.tile-readout { font-size: 1.05rem; font-weight: 800; }
+
+.tile-flag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+/* ── Sticky total bar ───────────────────────────────────────────────────── */
+.review-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.review-bar[hidden] { display: none; }
+.review-total { flex: 1; display: flex; flex-direction: column; }
+.review-total strong { font-size: 1.7rem; line-height: 1; }
+.review-total small { color: var(--muted); font-size: 0.8rem; }
+
+/* ── Tile editor ────────────────────────────────────────────────────────── */
+.tile-editor { padding: 16px; }
+
+.tile-editor__head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.tile-editor__title { display: flex; flex-direction: column; align-items: center; }
+.tile-editor__title strong { font-size: 1.05rem; }
+.tile-editor__title small { color: var(--muted); font-size: 1rem; font-weight: 700; }
+.tile-editor__stage { margin-top: 12px; }
+.tile-editor__stage .tile-stage { border-radius: 8px; }
+.tile-editor__hint { text-align: center; margin: 8px 0; }
+
+/* minmax(0, 1fr) lets each half shrink to the dialog width instead of overflowing it on narrow phones */
+.halves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+.half { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; border-radius: 12px; background: var(--surface-2); }
+.half__label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.half__row { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+.half__count { flex: 1; min-width: 24px; text-align: center; font-size: 1.8rem; }
+.half__blank { width: 100%; padding: 0 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-card { transition: none; }
+}

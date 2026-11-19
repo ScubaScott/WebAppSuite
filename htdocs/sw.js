@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '5.4';
+const SW_VERSION = '5.6';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Scanner engine files (OCR/image libraries and models) live in their own cache that has no version
@@ -41,7 +41,7 @@ const APP_SHELL = [
   './Bingo/scan/style.css',
   './Bingo/scan/ocr.js',
   './Bingo/scan/utils.js',
-  './Bingo/scan/imaging.js',
+  './media/scan/imaging.js',
   './Bingo/scan/profiles.js',
   './Bingo/scan/geometry.js',
   './Bingo/scan/readers/tesseract-reader.js',
@@ -62,6 +62,12 @@ const APP_SHELL = [
   './Dominoes/core.js',
   './Dominoes/chart.js',
   './Dominoes/app.js',
+  './Dominoes/scan/scan.html',
+  './Dominoes/scan/scan.css',
+  './Dominoes/scan/scan.js',
+  './Dominoes/scan/tiles.js',
+  './Dominoes/scan/pips.js',
+  './Dominoes/scan/review.js',
   './DriverScore/',
   './DriverScore/index.html',
   './DriverScore/style.css',

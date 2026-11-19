@@ -8,7 +8,7 @@ const dir = process.argv[2];
 const ctx = vm.createContext({ Math, Uint8Array, Uint8ClampedArray, Float32Array, Float64Array, Int32Array, Map, Set, Array, Object, Promise, isFinite, parseInt, isNaN, performance, console });
 
 // The reader needs these globals: the imaging module, the engine loader and Tesseract itself
-vm.runInContext(fs.readFileSync(path.join(dir, 'imaging.js'), 'utf8'), ctx, { filename: 'imaging.js' });
+vm.runInContext(fs.readFileSync(path.join(dir, '..', '..', 'media', 'scan', 'imaging.js'), 'utf8'), ctx, { filename: 'imaging.js' });
 let worker;                       // replaced per test
 vm.runInContext(`
   Imaging.grayToCanvas = (gray, scale) => ({ gray, scale });          // no DOM here: pass the sheet through

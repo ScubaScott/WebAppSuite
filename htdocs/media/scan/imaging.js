@@ -1,7 +1,7 @@
 // Imaging module version identifier
-const IMAGING_VERSION = '1.2';
+const IMAGING_VERSION = '1.3';
 
-// Small plain-JavaScript image toolkit used by the scanner (no external libraries).
+// Small plain-JavaScript image toolkit shared by the Bingo and Dominoes scanners (no external libraries).
 // Gray images are objects { width, height, data } where data is a Uint8Array of 0-255 values.
 // Color images are standard ImageData (RGBA). Only the canvas helpers at the bottom touch the DOM,
 // so the numeric functions can run anywhere JavaScript runs.

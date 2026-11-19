@@ -1,16 +1,17 @@
 // Dominoes score keeper: page controller (state, rendering, dialogs, persistence and cloud sync).
 // Scoring rules live in core.js and the line chart in chart.js.
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.3";
 
 const Core = DominoCore;
 
 const SYNC_APP_ID = 'dominoes';
-const STORAGE = { game: 'dominoGame', history: 'dominoHistory', prefs: 'dominoPrefs' };
+const STORAGE = { game: 'dominoGame', history: 'dominoHistory', prefs: 'dominoPrefs', pendingScan: 'dominoPendingScan' };
 const UNDO_LIMIT = 20;
 const CLOUD_TIMEOUT_MS = 3000;
+const PENDING_SCAN_MAX_AGE_MS = 60 * 60 * 1000;
 
-// Shows the per-player Scan button; the scanner page is added in a later phase
-const SCAN_ENABLED = false;
+// Shows the per-player Scan button that opens scan/scan.html
+const SCAN_ENABLED = true;
 
 // Player line/swatch colors, assigned by seat position
 const PLAYER_COLORS = [
@@ -95,6 +96,8 @@ function loadLocal() {
     if (!game) {
         game = Core.newGame();
         game.updatedAt = 0;
+        // Saved right away (not synced) so the scanner page, which reads the saved game, works before any score is entered
+        writeJSON(STORAGE.game, game);
     }
     const savedHistory = readJSON(STORAGE.history, []);
     history = Array.isArray(savedHistory) ? savedHistory : [];
@@ -242,10 +245,32 @@ function afterScoreChange(ri, advance, scorerId) {
     renderAll();
 }
 
-function applyScore(pid, ri, points, source, advance) {
+function applyScore(pid, ri, points, source, advance, tiles) {
     pushUndo();
-    Core.setScore(game, ri, pid, { points, source });
+    Core.setScore(game, ri, pid, { points, source, tiles });
     afterScoreChange(ri, advance, pid);
+}
+
+// Records the score handed over by the scanner page (scan/scan.js) as a scanned entry that keeps its tiles,
+// so it is re-scored if the double-blank value changes. A result for another game or player is dropped.
+function consumePendingScan() {
+    const pending = readJSON(STORAGE.pendingScan, null);
+    if (!pending) return;
+    try { localStorage.removeItem(STORAGE.pendingScan); } catch (e) { /* storage blocked: nothing to clear */ }
+
+    const valid = pending.gameId === game.id &&
+        Date.now() - Number(pending.at) < PENDING_SCAN_MAX_AGE_MS &&
+        game.players.some(p => p.id === pending.playerId) &&
+        Number.isInteger(pending.round) && game.rounds[pending.round] &&
+        Number.isInteger(pending.points) && Array.isArray(pending.tiles);
+    if (!valid) {
+        toast('The scan could not be added to this game');
+        return;
+    }
+    viewRound = pending.round;
+    const tiles = pending.tiles.map(t => [Number(t[0]) | 0, Number(t[1]) | 0]);
+    applyScore(pending.playerId, pending.round, Core.tilesScore(tiles, game.settings.doubleBlankValue), 'scan', true, tiles);
+    toast('Scanned ' + tiles.length + (tiles.length === 1 ? ' tile' : ' tiles'));
 }
 
 function clearScoreFor(pid, ri) {
@@ -352,7 +377,8 @@ function renderPlayers() {
         }
 
         const roundText = entry
-            ? 'R' + (viewRound + 1) + ': ' + entry.points + ' pts' + (entry.source === 'out' ? ' · out' : '')
+            ? 'R' + (viewRound + 1) + ': ' + entry.points + ' pts' + (entry.source === 'out' ? ' · out' : '') +
+                (entry.source === 'scan' ? ' · scanned' : '')
             : 'R' + (viewRound + 1) + ': not scored';
 
         const actions = h('div', { class: 'pc-actions' });
@@ -716,6 +742,7 @@ function init() {
     initView();
     bindEvents();
     renderAll();
+    consumePendingScan();
     if (window.SuiteProfile) SuiteProfile.renderFooterIndicator($('syncSlot'));
     requestWakeLock();
     pullFromCloud();

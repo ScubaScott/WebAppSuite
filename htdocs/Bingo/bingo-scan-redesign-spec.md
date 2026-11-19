@@ -130,7 +130,7 @@ Verify each limit against the current account:
 | `scan/style.css` | 1 | Styles, including overlay, confidence states, download progress |
 | `scan/capture.js` | 1 | Camera start/stop, overlay drawing, steadiness detection, still capture |
 | `scan/review.js`, `scan/review.css` | 1 | Cell states (confident / check / missing / covered), summary line, picker suggestions (§7.7a) |
-| `scan/imaging.js` | 1 | Grayscale, downscale, adaptive threshold, connected components, homography solve, bilinear sampling |
+| `../media/scan/imaging.js` (shared with Dominoes) | 1 | Grayscale, downscale, adaptive threshold, connected components, homography solve, bilinear sampling |
 | `scan/profiles.js` | 1 | Card profile definitions (§7.2) |
 | `scan/geometry.js` | 1 | Profile auto-selection, window detection, homography fit, cell extraction, shutter/glare flags |
 | `scan/readers/tesseract-reader.js` | 1 | `CellReader` adapter for Tesseract |

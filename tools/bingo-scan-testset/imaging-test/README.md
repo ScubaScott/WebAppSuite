@@ -2,10 +2,10 @@
 
 Node-only tests with synthetic images; no browser needed.
 
-- `imaging-test.js` checks the numeric functions in `htdocs/Bingo/scan/imaging.js` (grayscale, blur, thresholds,
+- `imaging-test.js` checks the numeric functions in `htdocs/media/scan/imaging.js` (grayscale, blur, thresholds,
   morphology, connected regions, hole filling, color masks, homography solving and fitting, perspective warp).
 
-      node tools/bingo-scan-testset/imaging-test/imaging-test.js htdocs/Bingo/scan/imaging.js
+      node tools/bingo-scan-testset/imaging-test/imaging-test.js htdocs/media/scan/imaging.js
 
 - `geometry-test.js` checks the window finder in `htdocs/Bingo/scan/geometry.js` on rendered slider cards: upright,
   tilted with perspective, closed shutters, clutter (a bright screen and loose squares), too few windows, a whole

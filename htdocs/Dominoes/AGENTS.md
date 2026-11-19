@@ -6,7 +6,7 @@ This document defines the agent parameters, scoring rules and architecture speci
 
 ## 1. Sub-App Overview
 
-Dominoes keeps score for n players in games such as Mexican Train and Chickenfoot. Each round a player scores the pips left in their hand, and the **lowest total wins**. A camera scanner (planned, see section 5) counts the pips on the tiles left in a hand.
+Dominoes keeps score for n players in games such as Mexican Train and Chickenfoot. Each round a player scores the pips left in their hand, and the **lowest total wins**. A photo scanner (section 5) counts the pips on the tiles left in a hand.
 
 ### Primary Files
 - `index.html`: Main screen (round status strip, line chart, player cards, score sheet) plus the score-entry and settings dialogs.
@@ -15,6 +15,7 @@ Dominoes keeps score for n players in games such as Mexican Train and Chickenfoo
 - `app.js`: Page controller: state, rendering, dialogs, persistence, cloud sync, wake lock.
 - `styles.css`: Dark theme tokens and layout.
 - `tests/core.test.js`: Node unit tests for `core.js` (`node htdocs/Dominoes/tests/core.test.js`).
+- `scan/`: the scanner (section 5): `scan.html`, `scan.css`, `scan.js`, `tiles.js`, `pips.js`, `review.js`.
 
 ---
 
@@ -60,9 +61,30 @@ A round entry is `{ points, source: 'type' | 'out' | 'scan', tiles? }`. Entries 
 
 ---
 
-## 5. Camera Scanner (planned)
+## 5. Photo Scanner
 
-`scan/` will hold the scanner page (tile detection, perspective straightening, per-half pip counting and an editable review grid). `SCAN_ENABLED` in `app.js` shows the per-player Scan button once the page ships. It reuses `Imaging` from `htdocs/media/scan/imaging.js` (moved out of `Bingo/scan/`). Test photos and labels live in `tools/domino-scan-testset/`, which is never deployed.
+The selected player's **Scan** button opens `scan/scan.html?player=<id>&round=<index>`. Everything runs on the device in plain JavaScript on top of the shared `Imaging` module (`htdocs/media/scan/imaging.js`, also used by Bingo; keep its API stable).
+
+Flow: **photo** (file input with `capture`, or "Enter tiles by hand") -> **outlines** (detected tiles drawn on the photo; tap one to leave it out; Auto/Light/Dark tile color) -> **review** (grid of straightened tiles with a ring over every counted pip; tap a tile to open the editor) -> **Use score**.
+
+| File | Role |
+| :--- | :--- |
+| `tiles.js` (`DominoTiles`) | Detects tiles on an 800px copy of the photo. Three ways of splitting tiles from the surface are tried and the one yielding the most tile-shaped results wins: **warm tint** (ivory is yellowish, a gray table is neutral; the tint is divided by brightness so shadow does not hide it), plain light, plain dark. Holes are filled so pips do not break a tile. **Divider bars** (long thin very dark marks with tile surface on both sides) anchor tiles that touch: each bar is one tile, centered on its bar, perpendicular to it, sized from the bar length as fitted over the picture (a plane fit, so tiles nearer the camera come out larger). A blob with one bar and a clean rectangular outline uses its own outline instead. Tiles lying end to end with no bars are cut apart by length; tiles side by side with no bars are reported as `uncertain`. Overlapping false tiles are dropped. Crops are cut from the full photo into 240x120 horizontal tiles. |
+| `pips.js` (`DominoPips`) | Counts pips per half on a crop. A pip is a pixel whose color differs from the tile body: each half's body color is its dominant color (smoothed histogram, so a tight pip color cannot outvote shaded ivory), compared by the part of the color that is not along the body color's own RGB direction (shading only scales the body color, so shading does not count) plus rules for black pips and for pale pips that are only darker than their surroundings. Highlights next to a pip are joined to it. Finds the divider bar as a run of unbroken full-height columns, ignores the center rivet, estimates typical pip size **per half** (an oblique photo makes one half's pips much larger) and splits touching pips by size. Flags `over-max`, `duplicate`, `merged` and `uneven` per tile. Pip layouts are not used (they differ by manufacturer above 9). |
+| `review.js` (`DominoReview`) | Review grid and tile editor: plus/minus/Blank per half, tap a ring to remove a pip, tap the tile to add one, delete a tile, add a tile by hand, previous/next. |
+| `scan.js` | Page flow. Writes `dominoPendingScan` (`gameId`, `playerId`, `round`, `points`, `tiles`, `at`) and returns to the game. |
+
+**Hand-off:** only `app.js` writes game state. On load it runs `consumePendingScan()`, which records a `source: 'scan'` entry that keeps its tiles (so a changed 0|0 value re-scores it) and selects the next open seat. A hand-off for a different game, an unknown player or older than an hour is discarded.
+
+The scanner page reads the saved game from `localStorage`, so `app.js` saves the default game on first load.
+
+**Tuning:** thresholds live in `LIMITS` in `tiles.js` and `pips.js`. After any change run both:
+- `node tools/domino-scan-testset/scan-test.js` (synthetic scenes; guards against regressions, says little about real accuracy).
+- `node tools/domino-scan-testset/real-test.js` (real photos in `photos/`, true tiles in `labels.json`; needs `puppeteer-core` on `NODE_PATH`). Saved results are in `baselines/`.
+
+`detect(img, { debug: [] })` and `analyze(crop, { debug: [] })` fill the list with every candidate divider mark / pip blob and why it was kept or dropped. Read the true counts off the large straightened crops, not the photo: that is how `labels.json` was made.
+
+**Current accuracy (first tuning pass, 3 photos of a double-12 colored-pip ivory set on a gray table):** all 13 labeled tiles were found and 10 read exactly (23 of 26 halves). Tile detection recall on the three photos is roughly 8 of 10, 7 of 8 and 8 of 10; the heavily overlapping, very oblique photo has not been labeled yet. Known weak spots: very pale gray pips in a bright corner, crops that cut off part of a tile when the camera is low and oblique (the bar and the tile's long side are not perpendicular in the image), dense tiles of dark teal pips as detected tiles, and tiles that are piled on each other.
 
 ---
 

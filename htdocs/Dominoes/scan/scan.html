@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <title>Scan Dominoes</title>
+    <!-- Shared Dominoes tokens and controls, then the scanner styles -->
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="scan.css">
+</head>
+
+<body>
+
+    <!-- Scanner top bar: back to the game, whose hand this is, and the round -->
+    <header class="scan-bar">
+        <a href="../index.html" class="scan-bar__back" aria-label="Back to the game">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Game</span>
+        </a>
+        <div class="scan-bar__who">
+            <strong id="scanWho">Scan</strong>
+            <small id="scanWhat"></small>
+        </div>
+        <span class="scan-bar__spacer" aria-hidden="true"></span>
+    </header>
+
+    <main class="page-shell">
+
+        <!-- Shown when the page was opened without a valid player and round -->
+        <section id="stepError" class="card" hidden>
+            <h2>Nothing to scan for</h2>
+            <p class="muted">Open the scanner from a player's Scan button in the game.</p>
+            <a class="btn btn-primary" href="../index.html">Back to the game</a>
+        </section>
+
+        <!-- Step 1: get a photo -->
+        <section id="stepPhoto" class="card">
+            <h2>Photograph the tiles left in hand</h2>
+            <ul class="tips">
+                <li>Spread the tiles out in one layer with a small gap between them.</li>
+                <li>Pips face up, on a plain surface that contrasts with the tiles.</li>
+                <li>Even light, no glare, camera held straight above.</li>
+            </ul>
+            <div class="actions">
+                <label class="btn btn-primary file-btn">
+                    Take or choose photo
+                    <input id="photoInput" type="file" accept="image/*" capture="environment" hidden>
+                </label>
+                <button type="button" id="manualBtn" class="btn btn-ghost">Enter tiles by hand</button>
+            </div>
+            <p id="photoStatus" class="muted" aria-live="polite" hidden></p>
+        </section>
+
+        <!-- Step 2: check the outlines -->
+        <section id="stepOutline" class="card" hidden>
+            <div class="card-head">
+                <h2>Check the outlines</h2>
+                <label class="inline-field">
+                    <span>Tiles</span>
+                    <select id="tileColorSelect">
+                        <option value="auto">Auto</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+            </div>
+            <div class="photo-stage">
+                <canvas id="photoCanvas" aria-label="Photo with outlined tiles"></canvas>
+            </div>
+            <p id="outlineSummary" class="muted" aria-live="polite"></p>
+            <p id="outlineWarn" class="warn" hidden></p>
+            <div class="actions">
+                <button type="button" id="retakeBtn" class="btn btn-ghost">Retake</button>
+                <button type="button" id="useTilesBtn" class="btn btn-primary">Use these tiles</button>
+            </div>
+        </section>
+
+        <!-- Step 3: review and correct the pip counts -->
+        <section id="stepReview" class="card" hidden>
+            <div class="card-head">
+                <h2>Review pips</h2>
+                <button type="button" id="addTileBtn" class="btn btn-ghost">+ Tile</button>
+            </div>
+            <p class="muted">Tap a tile to correct it. Outlined tiles need a second look.</p>
+            <ul id="tileGrid" class="tile-grid"></ul>
+            <p id="reviewEmpty" class="muted" hidden>No tiles yet. Use + Tile to add one.</p>
+        </section>
+
+    </main>
+
+    <!-- Sticky total and the final actions, shown on the review step -->
+    <div id="reviewBar" class="review-bar" hidden>
+        <div class="review-total">
+            <strong id="handPoints">0</strong>
+            <small id="handInfo"></small>
+        </div>
+        <button type="button" id="reviewRetakeBtn" class="btn btn-ghost">Retake</button>
+        <button type="button" id="useScoreBtn" class="btn btn-primary">Use score</button>
+    </div>
+
+    <!-- Tile editor -->
+    <dialog id="tileDlg" class="dlg dlg-wide">
+        <div class="tile-editor">
+            <div class="tile-editor__head">
+                <button type="button" id="edPrev" class="icon-btn" aria-label="Previous tile">&#8249;</button>
+                <div class="tile-editor__title">
+                    <strong id="edTitle"></strong>
+                    <small id="edReadout"></small>
+                </div>
+                <button type="button" id="edNext" class="icon-btn" aria-label="Next tile">&#8250;</button>
+            </div>
+            <div id="edStage" class="tile-editor__stage"></div>
+            <p class="muted tile-editor__hint">Tap a ring to remove that pip. Tap the tile to add one.</p>
+            <p id="edFlags" class="warn" hidden></p>
+            <div class="halves">
+                <div class="half">
+                    <span class="half__label">Left</span>
+                    <div class="half__row">
+                        <button type="button" id="edLeftMinus" class="icon-btn" aria-label="Remove a pip from the left half">&minus;</button>
+                        <strong id="edLeftCount" class="half__count">0</strong>
+                        <button type="button" id="edLeftPlus" class="icon-btn" aria-label="Add a pip to the left half">+</button>
+                    </div>
+                    <button type="button" id="edLeftBlank" class="btn btn-ghost half__blank">Blank</button>
+                </div>
+                <div class="half">
+                    <span class="half__label">Right</span>
+                    <div class="half__row">
+                        <button type="button" id="edRightMinus" class="icon-btn" aria-label="Remove a pip from the right half">&minus;</button>
+                        <strong id="edRightCount" class="half__count">0</strong>
+                        <button type="button" id="edRightPlus" class="icon-btn" aria-label="Add a pip to the right half">+</button>
+                    </div>
+                    <button type="button" id="edRightBlank" class="btn btn-ghost half__blank">Blank</button>
+                </div>
+            </div>
+            <div class="dlg-actions dlg-actions-split">
+                <button type="button" id="edRemove" class="btn btn-danger">Delete tile</button>
+                <span class="spacer"></span>
+                <button type="button" id="edDone" class="btn btn-primary">Done</button>
+            </div>
+        </div>
+    </dialog>
+
+    <footer class="app-footer">
+        <small>v<span id="scanVersion"></span></small>
+    </footer>
+
+    <script src="../core.js"></script>
+    <script src="../../media/scan/imaging.js"></script>
+    <script src="tiles.js"></script>
+    <script src="pips.js"></script>
+    <script src="review.js"></script>
+    <script src="scan.js"></script>
+</body>
+
+</html>

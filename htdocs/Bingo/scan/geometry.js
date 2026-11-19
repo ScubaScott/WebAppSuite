@@ -1,9 +1,9 @@
 // Geometry module version identifier
-const GEOMETRY_VERSION = '1.5';
+const GEOMETRY_VERSION = '1.6';
 
 // Finds the 5x5 grid of number windows in a card photo, fits the camera perspective to it, and cuts one
 // standard-size crop per cell. Works from the windows themselves (not the card outline or slider tabs).
-// Depends on imaging.js and profiles.js. The numeric detection functions take ImageData and run anywhere;
+// Depends on the shared imaging module (htdocs/media/scan/imaging.js) and profiles.js. The numeric detection functions take ImageData and run anywhere;
 // the canvas wrappers (analyze, extractCells, rectifiedGrid, drawOverlay) need a browser.
 const Geometry = (() => {
     const N = 5;                       // grid is N x N

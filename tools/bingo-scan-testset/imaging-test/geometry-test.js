@@ -6,7 +6,9 @@ const path = require('path');
 
 const dir = process.argv[2];
 const ctx = vm.createContext({ Math, Uint8Array, Uint8ClampedArray, Float32Array, Float64Array, Int32Array, Map, Set, Array, Object, isFinite, console });
-for (const f of ['imaging.js', 'profiles.js', 'geometry.js']) vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
+// The imaging module is shared and lives in htdocs/media/scan; the other modules are in the scan folder given as dir
+const modules = [path.join(dir, '..', '..', 'media', 'scan', 'imaging.js'), path.join(dir, 'profiles.js'), path.join(dir, 'geometry.js')];
+for (const f of modules) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: path.basename(f) });
 vm.runInContext('globalThis.Imaging = Imaging; globalThis.Geometry = Geometry; globalThis.CardProfiles = CardProfiles;', ctx);
 const { Imaging: I, Geometry: G, CardProfiles: P } = ctx;
 

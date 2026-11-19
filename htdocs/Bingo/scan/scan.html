@@ -780,7 +780,7 @@
     <!-- Suite Profile & Bingo Sync engine -->
     <script src="../../media/suite-profile.js"></script>
     <script src="../sync.js"></script>
-    <script src="imaging.js"></script>
+    <script src="../../media/scan/imaging.js"></script>
     <script src="profiles.js"></script>
     <script src="geometry.js"></script>
     <script src="utils.js"></script>
@@ -2314,7 +2314,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '2.2';
+        const SCAN_PAGE_VERSION = '2.3';
         // The training store needs the app version; it also resumes sending anything left from an earlier session
         TrainingStore.init(SCAN_PAGE_VERSION).then(refreshContribution);
         refreshContribution();
