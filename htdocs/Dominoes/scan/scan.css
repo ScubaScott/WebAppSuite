@@ -1,4 +1,4 @@
-/* Dominoes scanner page styles (builds on ../styles.css). Version: 1.4 */
+/* Dominoes scanner page styles (builds on ../styles.css). Version: 1.5 */
 
 /* ── Top bar ────────────────────────────────────────────────────────────── */
 .scan-bar {
@@ -38,6 +38,8 @@
 .warn { color: var(--accent); font-size: 0.88rem; margin: 6px 0; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .actions .btn { flex: 1 1 140px; }
+/* A lead button sits on its own full-width row above the others */
+.actions .actions-lead { flex-basis: 100%; }
 .file-btn { cursor: pointer; }
 
 .tips { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: 0.92rem; line-height: 1.5; }

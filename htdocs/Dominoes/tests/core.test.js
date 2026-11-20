@@ -136,4 +136,39 @@ test('upsertHistory replaces by id and caps the list', () => {
     assert.strictEqual(C.removeHistory(h, 'g39').some(r => r.id === 'g39'), false);
 });
 
+test('every player gets a distinct preset color, a full table of 10 included', () => {
+    const g = C.newGame(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
+    assert.strictEqual(g.players.length, 10);
+    assert.strictEqual(new Set(g.players.map(p => p.color)).size, 10);
+    assert.ok(g.players.every(p => C.isPresetColor(p.color)));
+    assert.strictEqual(C.PLAYER_COLORS.length, C.MAX_PLAYERS);
+    const names = C.PLAYER_COLORS.map(c => c.name);
+    assert.ok(names.includes('Pink') && names.includes('Purple'));
+    assert.strictEqual(new Set(C.PLAYER_COLORS.map(c => c.hex)).size, C.PLAYER_COLORS.length);
+});
+
+test('a chosen color is kept, duplicates and unknown colors are replaced with free presets', () => {
+    const pink = C.PLAYER_COLORS.find(c => c.id === 'pink').hex;
+    const g = C.newGame([{ name: 'A', color: pink }, { name: 'B', color: pink }, { name: 'C', color: '#123456' }, 'D']);
+    assert.strictEqual(g.players[0].color, pink);
+    assert.strictEqual(new Set(g.players.map(p => p.color)).size, 4);
+    assert.ok(g.players.every(p => C.isPresetColor(p.color)));
+});
+
+test('games saved without colors get the colors seats used to have, in seat order', () => {
+    const raw = { id: 'x', players: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }], rounds: [{ scores: {} }] };
+    const g = C.normalizeGame(raw);
+    assert.deepStrictEqual(g.players.map(p => p.color), C.PLAYER_COLORS.slice(0, 3).map(c => c.hex));
+    assert.strictEqual(C.freeColor(g.players), C.PLAYER_COLORS[3].hex);
+    assert.strictEqual(C.freeColor(C.newGame(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']).players), null);
+});
+
+test('colors survive a normalize round trip and a repeated color from the server is fixed', () => {
+    const g = C.newGame(['A', 'B']);
+    g.players[1].color = g.players[0].color;
+    const fixed = C.normalizeGame(JSON.parse(JSON.stringify(g)));
+    assert.notStrictEqual(fixed.players[0].color, fixed.players[1].color);
+    assert.strictEqual(fixed.players[0].color, g.players[0].color);
+});
+
 console.log('\n' + passed + ' tests passed');

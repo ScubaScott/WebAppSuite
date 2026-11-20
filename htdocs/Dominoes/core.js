@@ -1,6 +1,6 @@
 // Dominoes scoring core: pure game-state functions with no DOM access.
 // Used by app.js in the browser and by tests/core.test.js in Node.
-const DOMINO_CORE_VERSION = "1.0";
+const DOMINO_CORE_VERSION = "1.1";
 
 const DominoCore = (() => {
     // Values a new game starts with; the user can change all of them in Settings
@@ -15,6 +15,51 @@ const DominoCore = (() => {
     const MAX_PLAYERS = 10;
     const MAX_ROUNDS = 40;
     const MAX_HISTORY = 30;
+
+    // Player colors: one preset per player, so no two players in a game share a color. The list is as long as the
+    // largest game (MAX_PLAYERS), so every player can always have a color of their own.
+    const PLAYER_COLORS = Object.freeze([
+        { id: 'blue', name: 'Blue', hex: '#4da3ff' },
+        { id: 'amber', name: 'Amber', hex: '#ffb000' },
+        { id: 'green', name: 'Green', hex: '#2ecc9a' },
+        { id: 'pink', name: 'Pink', hex: '#ff6f91' },
+        { id: 'purple', name: 'Purple', hex: '#b388ff' },
+        { id: 'orange', name: 'Orange', hex: '#ff7a2f' },
+        { id: 'yellow', name: 'Yellow', hex: '#e6e64d' },
+        { id: 'cyan', name: 'Cyan', hex: '#4dd8ff' },
+        { id: 'lime', name: 'Lime', hex: '#a3e635' },
+        { id: 'red', name: 'Red', hex: '#ff4d4d' }
+    ]);
+
+    // True when value is the hex of one of the preset colors
+    function isPresetColor(value) {
+        return PLAYER_COLORS.some(c => c.hex === value);
+    }
+
+    // The first preset hex that no player in the list uses; null when every preset is taken
+    function freeColor(players) {
+        const used = new Set(players.map(p => p.color));
+        const free = PLAYER_COLORS.find(c => !used.has(c.hex));
+        return free ? free.hex : null;
+    }
+
+    // Gives every player a preset color that no earlier player has. A player keeps the color they have when it is a
+    // preset nobody before them uses; anyone else (no color, an unknown color, a repeat) gets the first free preset,
+    // so games saved before colors existed come out in the order their seats used to be colored. Changes the players in place.
+    function ensureColors(players) {
+        const taken = new Set();
+        players.forEach(p => {
+            if (isPresetColor(p.color) && !taken.has(p.color)) taken.add(p.color);
+            else p.color = null;
+        });
+        players.forEach(p => {
+            if (p.color) return;
+            const free = PLAYER_COLORS.find(c => !taken.has(c.hex));
+            p.color = free ? free.hex : PLAYER_COLORS[0].hex;
+            taken.add(p.color);
+        });
+        return players;
+    }
 
     // Returns a unique id; falls back to a random string where crypto.randomUUID is unavailable (non-secure contexts)
     function uuid() {
@@ -47,7 +92,7 @@ const DominoCore = (() => {
         game.rounds.length = game.settings.rounds;
     }
 
-    // Creates a new game for the given player names
+    // Creates a new game. players is a list of names or of { name, color } (colors are kept when they are valid presets)
     function newGame(names, settings) {
         const list = names && names.length ? names : ['Player 1', 'Player 2'];
         const game = {
@@ -55,9 +100,10 @@ const DominoCore = (() => {
             createdAt: Date.now(),
             updatedAt: Date.now(),
             settings: normalizeSettings(settings),
-            players: list.slice(0, MAX_PLAYERS).map(name => ({ id: uuid(), name })),
+            players: list.slice(0, MAX_PLAYERS).map(entry => ({ id: uuid(), name: typeof entry === 'string' ? entry : entry.name, color: typeof entry === 'string' ? null : entry.color })),
             rounds: []
         };
+        ensureColors(game.players);
         ensureRounds(game);
         return game;
     }
@@ -73,9 +119,10 @@ const DominoCore = (() => {
             players: raw.players
                 .filter(p => p && typeof p.id === 'string')
                 .slice(0, MAX_PLAYERS)
-                .map(p => ({ id: p.id, name: String(p.name || 'Player').slice(0, 20) })),
+                .map(p => ({ id: p.id, name: String(p.name || 'Player').slice(0, 20), color: p.color })),
             rounds: raw.rounds.map(r => ({ scores: (r && typeof r.scores === 'object' && r.scores) || {} }))
         };
+        ensureColors(game.players);
         ensureRounds(game);
         return game;
     }
@@ -277,7 +324,8 @@ const DominoCore = (() => {
 
     return {
         VERSION: DOMINO_CORE_VERSION,
-        DEFAULT_SETTINGS, SET_MAXES, MAX_PLAYERS, MAX_ROUNDS,
+        DEFAULT_SETTINGS, SET_MAXES, MAX_PLAYERS, MAX_ROUNDS, PLAYER_COLORS,
+        isPresetColor, freeColor, ensureColors,
         uuid, clampInt, normalizeSettings, normalizeGame, newGame, ensureRounds,
         tileScore, tilesScore, roundDouble,
         setScore, clearScore, removePlayer, rescore,

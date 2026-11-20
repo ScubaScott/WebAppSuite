@@ -1,23 +1,17 @@
 // Dominoes score keeper: page controller (state, rendering, dialogs, persistence and cloud sync).
 // Scoring rules live in core.js and the line chart in chart.js.
-const APP_VERSION = "1.4";
+const APP_VERSION = "1.6";
 
 const Core = DominoCore;
 
 const SYNC_APP_ID = 'dominoes';
-const STORAGE = { game: 'dominoGame', history: 'dominoHistory', prefs: 'dominoPrefs', pendingScan: 'dominoPendingScan' };
+const STORAGE = { game: 'dominoGame', history: 'dominoHistory', prefs: 'dominoPrefs', pendingScan: 'dominoPendingScan', scanPrefs: 'dominoScanPrefs' };
 const UNDO_LIMIT = 20;
 const CLOUD_TIMEOUT_MS = 3000;
 const PENDING_SCAN_MAX_AGE_MS = 60 * 60 * 1000;
 
 // Shows the per-player Scan button that opens scan/scan.html
 const SCAN_ENABLED = true;
-
-// Player line/swatch colors, assigned by seat position
-const PLAYER_COLORS = [
-    '#4da3ff', '#ffb000', '#2ecc9a', '#ff6f91', '#b388ff',
-    '#ff7a2f', '#e6e64d', '#4dd8ff', '#a3e635', '#f472b6'
-];
 
 let game;                 // the current game (see DominoCore.newGame)
 let history = [];         // finished and abandoned games, newest first
@@ -26,7 +20,8 @@ let viewRound = 0;        // round shown in the status strip and used by the pla
 let selectedId = null;    // player whose scoring buttons are shown; everyone else is a compact row
 const undoStack = [];     // { game: JSON string, view: round index, sel: player id } snapshots, most recent last
 let scoreCtx = null;      // { pid, ri, advance } while the score dialog is open
-let draftPlayers = [];    // roster being edited in the settings dialog
+let draftPlayers = [];    // roster being edited in the settings dialog: { id, name, color }
+let colorPickerId = null; // id of the draft player whose color choices are open in the roster
 let wakeLock = null;
 
 const $ = id => document.getElementById(id);
@@ -69,9 +64,10 @@ function toast(message) {
     toastTimer = setTimeout(() => node.classList.remove('show'), 2600);
 }
 
-// Color for the player sitting at a seat index
+// Color of the player sitting at a seat index (each player has their own preset color, see DominoCore.PLAYER_COLORS)
 function colorFor(seat) {
-    return PLAYER_COLORS[seat % PLAYER_COLORS.length];
+    const player = game.players[seat];
+    return player ? player.color : Core.PLAYER_COLORS[0].hex;
 }
 
 // ───────────────────────── Persistence and sync ─────────────────────────
@@ -499,12 +495,15 @@ function submitScoreDialog(event) {
 // ───────────────────────── Settings dialog ─────────────────────────
 
 function openSettings() {
-    draftPlayers = game.players.map(p => ({ id: p.id, name: p.name }));
+    draftPlayers = game.players.map(p => ({ id: p.id, name: p.name, color: p.color }));
+    colorPickerId = null;
     $('setMaxSelect').value = String(game.settings.setMax);
     $('roundsInput').value = String(game.settings.rounds);
     $('directionSelect').value = game.settings.direction;
     $('blankInput').value = String(game.settings.doubleBlankValue);
-    $('tileColorSelect').value = game.settings.tileColor;
+    // The scanner's last choice on this device, when it has one, is what Settings shows
+    const scanChoice = readJSON(STORAGE.scanPrefs, {}).tileColor;
+    $('tileColorSelect').value = ['auto', 'light', 'dark'].includes(scanChoice) ? scanChoice : game.settings.tileColor;
     $('settingsError').hidden = true;
     $('newPlayerInput').value = '';
     renderRoster();
@@ -513,31 +512,131 @@ function openSettings() {
     openDialog($('settingsDlg'));
 }
 
-// Roster rows with rename, reorder and remove controls
+// Roster rows: drag handle, seat number, color, name and remove. The handle reorders by dragging (or the arrow keys when
+// it has focus); the color button opens the preset colors, where a color another player has is disabled.
 function renderRoster() {
     const list = $('rosterList');
     list.replaceChildren();
     draftPlayers.forEach((d, i) => {
-        list.append(h('li', { class: 'roster-row' },
+        const label = d.name.trim() || 'Player ' + (i + 1);
+        const colorName = presetName(d.color);
+        const open = colorPickerId === d.id;
+        const dot = h('span', { class: 'color-dot' });
+        dot.style.setProperty('--pc', d.color);
+        const row = h('li', { class: 'roster-row', 'data-id': d.id },
+            h('button', {
+                type: 'button', class: 'drag-handle', text: '≡',
+                'aria-label': 'Move ' + label + '. Drag, or press the up and down arrow keys.',
+                onpointerdown: e => startRosterDrag(e, e.currentTarget.closest('li')),
+                onkeydown: e => onHandleKey(e, d.id)
+            }),
             h('span', { class: 'roster-seat', text: String(i + 1) }),
+            h('button', {
+                type: 'button', class: 'color-btn', 'aria-label': label + ' color: ' + colorName + '. Change color.',
+                'aria-expanded': String(open),
+                onclick: () => { colorPickerId = open ? null : d.id; renderRoster(); }
+            }, dot),
             h('input', {
                 type: 'text', maxlength: '20', value: d.name, 'aria-label': 'Player ' + (i + 1) + ' name',
                 oninput: e => { d.name = e.target.value; }
             }),
             h('button', {
-                type: 'button', class: 'icon-btn', 'aria-label': 'Move up', text: '↑', disabled: i === 0,
-                onclick: () => moveDraft(i, -1)
-            }),
-            h('button', {
-                type: 'button', class: 'icon-btn', 'aria-label': 'Move down', text: '↓', disabled: i === draftPlayers.length - 1,
-                onclick: () => moveDraft(i, 1)
-            }),
-            h('button', {
                 type: 'button', class: 'icon-btn danger', 'aria-label': 'Remove ' + d.name, text: '✕',
                 disabled: draftPlayers.length <= 1,
-                onclick: () => removeDraft(i)
-            })));
+                onclick: () => removeDraft(draftPlayers.indexOf(d))
+            }));
+        if (open) row.append(colorGrid(d));
+        list.append(row);
     });
+}
+
+// Display name of a preset color hex
+function presetName(hex) {
+    const found = Core.PLAYER_COLORS.find(c => c.hex === hex);
+    return found ? found.name : 'Custom';
+}
+
+// The preset colors for one draft player; a color that another player has is disabled, so no two share one
+function colorGrid(d) {
+    const grid = h('div', { class: 'color-grid', role: 'group', 'aria-label': 'Choose a color' });
+    Core.PLAYER_COLORS.forEach(c => {
+        const owner = draftPlayers.find(p => p !== d && p.color === c.hex);
+        const swatch = h('button', {
+            type: 'button', class: 'color-swatch', title: c.name,
+            'aria-label': c.name + (owner ? ', used by ' + (owner.name.trim() || 'another player') : ''),
+            'aria-pressed': String(d.color === c.hex),
+            disabled: !!owner,
+            onclick: () => { d.color = c.hex; colorPickerId = null; renderRoster(); }
+        });
+        swatch.style.setProperty('--pc', c.hex);
+        grid.append(swatch);
+    });
+    return grid;
+}
+
+// Starts dragging a roster row by its handle. The row follows the pointer and swaps places with the rows it passes; the
+// new order is read back from the list when the pointer is released.
+function startRosterDrag(e, row) {
+    if (e.button) return;
+    e.preventDefault();
+    const handle = e.currentTarget;
+    const list = row.parentElement;
+    colorPickerId = null;
+    list.querySelectorAll('.color-grid').forEach(g => g.remove());
+    list.querySelectorAll('.color-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    try { handle.setPointerCapture(e.pointerId); } catch (err) { /* the move events still arrive on the handle without capture */ }
+    const grabOffset = e.clientY - row.getBoundingClientRect().top;
+    row.classList.add('dragging');
+    let finished = false;
+
+    // Swaps the row past neighbors whose middle the pointer has crossed, then offsets it to sit under the pointer
+    const follow = clientY => {
+        row.style.transform = '';
+        let moved = true;
+        while (moved) {
+            moved = false;
+            const prev = row.previousElementSibling;
+            const next = row.nextElementSibling;
+            if (prev) {
+                const r = prev.getBoundingClientRect();
+                if (clientY < r.top + r.height / 2) { list.insertBefore(row, prev); moved = true; continue; }
+            }
+            if (next) {
+                const r = next.getBoundingClientRect();
+                if (clientY > r.top + r.height / 2) { list.insertBefore(next, row); moved = true; }
+            }
+        }
+        row.style.transform = 'translateY(' + (clientY - grabOffset - row.getBoundingClientRect().top) + 'px)';
+        [...list.children].forEach((li, n) => { li.querySelector('.roster-seat').textContent = String(n + 1); });
+    };
+
+    const onMove = ev => follow(ev.clientY);
+    const finish = () => {
+        if (finished) return;
+        finished = true;
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', finish);
+        handle.removeEventListener('pointercancel', finish);
+        handle.removeEventListener('lostpointercapture', finish);
+        row.classList.remove('dragging');
+        row.style.transform = '';
+        const order = [...list.children].map(li => li.dataset.id);
+        draftPlayers = order.map(id => draftPlayers.find(d => d.id === id));
+        renderRoster();
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+    handle.addEventListener('lostpointercapture', finish);
+}
+
+// Arrow keys on a focused handle move that player up or down one seat
+function onHandleKey(e, id) {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    moveDraft(draftPlayers.findIndex(d => d.id === id), e.key === 'ArrowUp' ? -1 : 1);
+    const handle = $('rosterList').querySelector('[data-id="' + id + '"] .drag-handle');
+    if (handle) handle.focus();
 }
 
 function moveDraft(index, delta) {
@@ -568,7 +667,7 @@ function addDraftPlayer() {
         return;
     }
     const name = input.value.trim() || 'Player ' + (draftPlayers.length + 1);
-    draftPlayers.push({ id: Core.uuid(), name: name.slice(0, 20) });
+    draftPlayers.push({ id: Core.uuid(), name: name.slice(0, 20), color: Core.freeColor(draftPlayers) || Core.PLAYER_COLORS[0].hex });
     input.value = '';
     renderRoster();
 }
@@ -627,7 +726,7 @@ function submitSettings(event) {
     pushUndo();
     const keep = new Set(draftPlayers.map(d => d.id));
     game.players.filter(p => !keep.has(p.id)).forEach(p => Core.removePlayer(game, p.id));
-    game.players = draftPlayers.map((d, i) => ({ id: d.id, name: (d.name.trim() || 'Player ' + (i + 1)).slice(0, 20) }));
+    game.players = Core.ensureColors(draftPlayers.map((d, i) => ({ id: d.id, name: (d.name.trim() || 'Player ' + (i + 1)).slice(0, 20), color: d.color })));
     game.settings = Core.normalizeSettings({
         setMax: Number($('setMaxSelect').value),
         rounds,
@@ -637,6 +736,10 @@ function submitSettings(event) {
     });
     Core.ensureRounds(game);
     Core.rescore(game);
+    // The scanner remembers its own tile color choice; choosing one here sets that too
+    const scanPrefs = readJSON(STORAGE.scanPrefs, {});
+    scanPrefs.tileColor = game.settings.tileColor;
+    writeJSON(STORAGE.scanPrefs, scanPrefs);
 
     prefs.lastRoster = game.players.map(p => p.name);
     savePrefs();
@@ -656,7 +759,7 @@ async function confirmNewGame() {
     if (Core.hasScores(game) && !Core.isFinal(game)) {
         history = Core.upsertHistory(history, Core.historyRecord(game, false));
     }
-    game = Core.newGame(game.players.map(p => p.name), game.settings);
+    game = Core.newGame(game.players.map(p => ({ name: p.name, color: p.color })), game.settings);
     undoStack.length = 0;
     initView();
     persist();

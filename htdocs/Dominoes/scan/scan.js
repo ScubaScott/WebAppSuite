@@ -1,5 +1,5 @@
 // Domino scanner page controller version identifier
-const SCAN_PAGE_VERSION = '1.5';
+const SCAN_PAGE_VERSION = '1.6';
 
 // Photo to score: gets a photo (live camera, or a file the user picks), shows the detected tile outlines for the
 // user to confirm, straightens and counts each tile, lets the user correct the result in the review grid, then hands the hand's score back to the
@@ -102,6 +102,19 @@ function readPrefs() {
 
 function writePrefs(patch) {
     try { localStorage.setItem(SCAN_STORAGE.prefs, JSON.stringify(Object.assign(readPrefs(), patch))); } catch (err) { /* kept for this visit only */ }
+}
+
+// The tile color choice (auto, light or dark) last made on this device; the game's setting is the starting value
+function savedTileColor() {
+    const saved = readPrefs().tileColor;
+    return ['auto', 'light', 'dark'].includes(saved) ? saved : scanGame.settings.tileColor;
+}
+
+// Keeps a tile color choice on this device and shows it in both color selectors (camera and outline step)
+function rememberTileColor(value) {
+    writePrefs({ tileColor: value });
+    scanEl('tileColorSelect').value = value;
+    scanEl('liveColorSelect').value = value;
 }
 
 // Opens the camera; on failure the reason is shown on the photo step, where choosing a photo still works
@@ -332,7 +345,7 @@ function initScan() {
     const double = DominoCore.roundDouble(scanGame.settings, scanRound);
     scanEl('scanWho').textContent = scanPlayer.name;
     scanEl('scanWhat').textContent = 'Round ' + (scanRound + 1) + ' · Engine ' + double + '|' + double;
-    scanEl('tileColorSelect').value = scanGame.settings.tileColor;
+    scanEl('tileColorSelect').value = savedTileColor();
 
     review = DominoReview.create({
         grid: scanEl('tileGrid'),
@@ -376,7 +389,8 @@ function initScan() {
         showStep('stepReview');
         review.addManual();
     });
-    scanEl('tileColorSelect').addEventListener('change', runDetection);
+    scanEl('tileColorSelect').addEventListener('change', e => { rememberTileColor(e.target.value); runDetection(); });
+    scanEl('liveColorSelect').addEventListener('change', e => rememberTileColor(e.target.value));
     scanEl('photoCanvas').addEventListener('click', onOutlineTap);
     scanEl('retakeBtn').addEventListener('click', startOver);
     scanEl('reviewRetakeBtn').addEventListener('click', startOver);
