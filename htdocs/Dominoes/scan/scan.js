@@ -1,11 +1,11 @@
 // Domino scanner page controller version identifier
-const SCAN_PAGE_VERSION = '1.1';
+const SCAN_PAGE_VERSION = '1.2';
 
-// Photo to score: loads a photo, shows the detected tile outlines for the user to confirm, straightens and
-// counts each tile, lets the user correct the result in the review grid, then hands the hand's score back to the
+// Photo to score: gets a photo (live camera, or a file the user picks), shows the detected tile outlines for the
+// user to confirm, straightens and counts each tile, lets the user correct the result in the review grid, then hands the hand's score back to the
 // game. The game page records it (see consumePendingScan in ../app.js), so there is one writer of game state.
 
-const SCAN_STORAGE = { game: 'dominoGame', pending: 'dominoPendingScan' };
+const SCAN_STORAGE = { game: 'dominoGame', pending: 'dominoPendingScan', prefs: 'dominoScanPrefs' };
 const MAX_PHOTO_DIM = 3000;          // photos are reduced to this size before analysis
 const OUTLINE_MAX_WIDTH = 1200;      // width of the picture shown on the outline step
 
@@ -18,12 +18,15 @@ let photo = null;                    // { canvas, img } the loaded photo and its
 let detection = null;                // result of DominoTiles.detect for the current photo
 const excluded = new Set();          // detected tiles the user tapped to leave out
 let review = null;                   // DominoReview controller
+let live = null;                     // DominoLive controller
 
 // ───────────────────────── Steps ─────────────────────────
 
 // Shows one step section (and the sticky review bar only on the review step)
 function showStep(name) {
-    ['stepError', 'stepPhoto', 'stepOutline', 'stepReview'].forEach(id => {
+    // Leaving the live step always turns the camera off
+    if (name !== 'stepLive' && live && live.isRunning()) live.stop();
+    ['stepError', 'stepPhoto', 'stepLive', 'stepOutline', 'stepReview'].forEach(id => {
         scanEl(id).hidden = id !== name;
     });
     scanEl('reviewBar').hidden = name !== 'stepReview';
@@ -64,10 +67,12 @@ async function readPhoto(file) {
     return { canvas, img: ctx.getImageData(0, 0, canvas.width, canvas.height) };
 }
 
+// A file picked from either file input (the photo step's or the live step's)
 async function onPhotoChosen(event) {
     const file = event.target.files && event.target.files[0];
     event.target.value = '';
     if (!file) return;
+    showStep('stepPhoto');
     setPhotoStatus('Reading photo...');
     try {
         photo = await readPhoto(file);
@@ -76,9 +81,65 @@ async function onPhotoChosen(event) {
         return;
     }
     setPhotoStatus('');
+    openOutlineStep();
+}
+
+// Shows the outline step for the current photo
+function openOutlineStep() {
     showStep('stepOutline');
+    // Clear the previous photo's summary until this photo's tiles are found
+    scanEl('outlineSummary').textContent = 'Finding tiles...';
+    scanEl('outlineWarn').hidden = true;
     // Let the outline step paint before the (brief) detection work starts
     setTimeout(runDetection, 30);
+}
+
+// ───────────────────────── Live camera ─────────────────────────
+
+function readPrefs() {
+    try { return JSON.parse(localStorage.getItem(SCAN_STORAGE.prefs)) || {}; } catch (err) { return {}; }
+}
+
+function writePrefs(patch) {
+    try { localStorage.setItem(SCAN_STORAGE.prefs, JSON.stringify(Object.assign(readPrefs(), patch))); } catch (err) { /* kept for this visit only */ }
+}
+
+// Opens the camera; on failure the reason is shown on the photo step, where choosing a photo still works
+async function startLive() {
+    scanEl('liveColorSelect').value = scanEl('tileColorSelect').value;
+    scanEl('autoShutter').checked = readPrefs().auto !== false;
+    showStep('stepLive');
+    scanEl('liveStatus').textContent = 'Starting the camera...';
+    try {
+        await live.start();
+    } catch (err) {
+        showStep('stepPhoto');
+        setPhotoStatus(err.message);
+    }
+}
+
+// The live camera took the picture: use the frame exactly like a chosen photo
+function onLiveCaptured(canvas) {
+    photo = { canvas, img: canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height) };
+    scanEl('tileColorSelect').value = scanEl('liveColorSelect').value;
+    setPhotoStatus('');
+    openOutlineStep();
+}
+
+// Downloads the current photo as a JPEG, so it can be kept for tuning the scanner
+function savePhoto() {
+    if (!photo) return;
+    photo.canvas.toBlob(blob => {
+        if (!blob) return;
+        const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'dominoes-' + stamp + '.jpg';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+    }, 'image/jpeg', 0.92);
 }
 
 // Finds the tiles in the current photo and draws the outlines
@@ -286,7 +347,23 @@ function initScan() {
         }
     });
 
+    live = DominoLive.create({
+        video: scanEl('liveVideo'),
+        overlay: scanEl('liveOverlay'),
+        status: scanEl('liveStatus'),
+        getTileColor: () => scanEl('liveColorSelect').value,
+        isAuto: () => scanEl('autoShutter').checked,
+        onCapture: onLiveCaptured
+    });
+
     scanEl('photoInput').addEventListener('change', onPhotoChosen);
+    scanEl('liveFileInput').addEventListener('change', onPhotoChosen);
+    scanEl('cameraBtn').addEventListener('click', startLive);
+    scanEl('shutterBtn').addEventListener('click', () => live.capture());
+    scanEl('liveCancelBtn').addEventListener('click', () => showStep('stepPhoto'));
+    scanEl('autoShutter').addEventListener('change', e => writePrefs({ auto: e.target.checked }));
+    scanEl('savePhotoBtn').addEventListener('click', savePhoto);
+    window.addEventListener('pagehide', () => live.stop());
     scanEl('manualBtn').addEventListener('click', () => {
         review.setTiles([]);
         showStep('stepReview');

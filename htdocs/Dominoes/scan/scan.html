@@ -48,13 +48,47 @@
                 <li>Even light, no glare, camera held straight above.</li>
             </ul>
             <div class="actions">
-                <label class="btn btn-primary file-btn">
-                    Take or choose photo
-                    <input id="photoInput" type="file" accept="image/*" capture="environment" hidden>
+                <button type="button" id="cameraBtn" class="btn btn-primary">Scan with camera</button>
+                <label class="btn btn-ghost file-btn">
+                    Choose a photo
+                    <input id="photoInput" type="file" accept="image/*" hidden>
                 </label>
                 <button type="button" id="manualBtn" class="btn btn-ghost">Enter tiles by hand</button>
             </div>
             <p id="photoStatus" class="muted" aria-live="polite" hidden></p>
+        </section>
+
+        <!-- Step 1b: live camera with outlines drawn as you aim -->
+        <section id="stepLive" class="card" hidden>
+            <div class="card-head">
+                <h2>Aim at the tiles</h2>
+                <label class="inline-field">
+                    <span>Tiles</span>
+                    <select id="liveColorSelect">
+                        <option value="auto">Auto</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+            </div>
+            <div class="live-stage">
+                <video id="liveVideo" playsinline muted autoplay></video>
+                <canvas id="liveOverlay" aria-hidden="true"></canvas>
+            </div>
+            <p id="liveStatus" class="live-status" aria-live="polite"></p>
+            <div class="live-controls">
+                <button type="button" id="liveCancelBtn" class="btn btn-ghost">Cancel</button>
+                <button type="button" id="shutterBtn" class="shutter" aria-label="Take photo"></button>
+                <label class="auto-toggle">
+                    <input id="autoShutter" type="checkbox" checked>
+                    <span>Auto</span>
+                </label>
+            </div>
+            <p class="muted live-tip">Spread the tiles out in one layer. Auto takes the picture when everything holds still.</p>
+            <label class="btn btn-ghost file-btn live-upload">
+                Upload a photo instead
+                <input id="liveFileInput" type="file" accept="image/*" hidden>
+            </label>
         </section>
 
         <!-- Step 2: check the outlines -->
@@ -77,6 +111,7 @@
             <p id="outlineWarn" class="warn" hidden></p>
             <div class="actions">
                 <button type="button" id="retakeBtn" class="btn btn-ghost">Retake</button>
+                <button type="button" id="savePhotoBtn" class="btn btn-ghost">Save photo</button>
                 <button type="button" id="useTilesBtn" class="btn btn-primary">Use these tiles</button>
             </div>
         </section>
@@ -155,6 +190,7 @@
     <script src="tiles.js"></script>
     <script src="pips.js"></script>
     <script src="review.js"></script>
+    <script src="live.js"></script>
     <script src="scan.js"></script>
 </body>
 

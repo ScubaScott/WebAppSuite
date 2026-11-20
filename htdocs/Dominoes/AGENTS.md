@@ -15,7 +15,7 @@ Dominoes keeps score for n players in games such as Mexican Train and Chickenfoo
 - `app.js`: Page controller: state, rendering, dialogs, persistence, cloud sync, wake lock.
 - `styles.css`: Dark theme tokens and layout.
 - `tests/core.test.js`: Node unit tests for `core.js` (`node htdocs/Dominoes/tests/core.test.js`).
-- `scan/`: the scanner (section 5): `scan.html`, `scan.css`, `scan.js`, `tiles.js`, `pips.js`, `review.js`.
+- `scan/`: the scanner (section 5): `scan.html`, `scan.css`, `scan.js`, `tiles.js`, `pips.js`, `review.js`, `live.js`.
 
 ---
 
@@ -65,13 +65,14 @@ A round entry is `{ points, source: 'type' | 'out' | 'scan', tiles? }`. Entries 
 
 The selected player's **Scan** button opens `scan/scan.html?player=<id>&round=<index>`. Everything runs on the device in plain JavaScript on top of the shared `Imaging` module (`htdocs/media/scan/imaging.js`, also used by Bingo; keep its API stable).
 
-Flow: **photo** (file input with `capture`, or "Enter tiles by hand") -> **outlines** (detected tiles drawn on the photo; tap one to leave it out; Auto/Light/Dark tile color) -> **review** (grid of straightened tiles with a ring over every counted pip; tap a tile to open the editor) -> **Use score**.
+Flow: **photo** ("Scan with camera", "Choose a photo", or "Enter tiles by hand") -> **live camera** (optional) -> **outlines** (detected tiles drawn on the photo; tap one to leave it out; Auto/Light/Dark tile color) -> **review** (grid of straightened tiles with a ring over every counted pip; tap a tile to open the editor) -> **Use score**.
 
 | File | Role |
 | :--- | :--- |
 | `tiles.js` (`DominoTiles`) | Detects tiles on an 800px copy of the photo. Four ways of splitting tiles from the surface are tried and the one with the most bar-backed tiles wins (bar-less shapes count for little once bars are seen): **warm tint** (ivory is yellowish, a neutral gray table is not; divided by brightness so shadow does not hide it), **weakest channel** (a warm table such as wood has almost no blue, ivory is bright in every channel; needed because the camera's white balance turns ivory cool white on wood), plain light, plain dark. Holes are filled so pips do not break a tile. **Divider bars** (long thin very dark marks with tile surface on both sides, found once per notion of surface: 'warm' for neutral tables, 'neutral' = bright and weakly saturated for wood) anchor tiles that touch or merge with bright stray patches (a blob with bars is judged tile by tile, not rejected for touching the picture edge): each bar is one tile, centered on its bar, perpendicular to it, sized from the bar length as fitted over the picture (a plane fit, so tiles nearer the camera come out larger). A blob with one bar and a clean rectangular outline uses its own outline instead. Tiles lying end to end with no bars are cut apart by length; tiles side by side with no bars are reported as `uncertain`. Overlapping false tiles are dropped. Crops are cut from the full photo into 240x120 horizontal tiles. |
 | `pips.js` (`DominoPips`) | Counts pips per half on a crop. A pip is a pixel whose color differs from the tile body: each half's body color is its dominant color (smoothed histogram, so a tight pip color cannot outvote shaded ivory), compared by the part of the color that is not along the body color's own RGB direction (shading only scales the body color, so shading does not count) plus rules for black pips and for pale pips that are only darker than their surroundings. Highlights next to a pip are joined to it. Finds the divider bar as a run of unbroken full-height columns, ignores the center rivet, estimates typical pip size **per half** (an oblique photo makes one half's pips much larger) and splits touching pips by size. Flags `over-max`, `duplicate`, `merged` and `uneven` per tile. Pip layouts are not used (they differ by manufacturer above 9). |
 | `review.js` (`DominoReview`) | Review grid and tile editor: plus/minus/Blank per half, tap a ring to remove a pip, tap the tile to add one, delete a tile, add a tile by hand, previous/next. |
+| `live.js` (`DominoLive`) | Live camera: `getUserMedia` (rear camera, up to 4K), a 640px copy of the video is analysed with `DominoTiles.detect` about five times a second and the outlines are drawn over the preview. **Auto** takes the picture once the camera has held still (mean brightness change between detections under a limit) and the tile centers have not moved for about a second (5 detections); a moving or shaky camera never fires. The shutter button always works. The picture is a full-size video frame (at most 3000px) that goes through the same outline check and review as a chosen photo. A missing, blocked or insecure (non-https) camera is explained on the photo step, where choosing a photo still works. The camera is switched off whenever the live step is left or the page is hidden. The Auto choice is kept in `localStorage` (`dominoScanPrefs`). |
 | `scan.js` | Page flow. Writes `dominoPendingScan` (`gameId`, `playerId`, `round`, `points`, `tiles`, `at`) and returns to the game. |
 
 **Hand-off:** only `app.js` writes game state. On load it runs `consumePendingScan()`, which records a `source: 'scan'` entry that keeps its tiles (so a changed 0|0 value re-scores it) and selects the next open seat. A hand-off for a different game, an unknown player or older than an hour is discarded.
@@ -80,7 +81,10 @@ The scanner page reads the saved game from `localStorage`, so `app.js` saves the
 
 **Tuning:** thresholds live in `LIMITS` in `tiles.js` and `pips.js`. After any change run both:
 - `node tools/domino-scan-testset/scan-test.js` (synthetic scenes; guards against regressions, says little about real accuracy).
+- `node tools/domino-scan-testset/live-test.js` (browser test of the live camera with a fake camera; see its README section).
 - `node tools/domino-scan-testset/real-test.js` (real photos in `photos/`, true tiles in `labels.json`; needs `puppeteer-core` on `NODE_PATH`). Saved results are in `baselines/`.
+
+**Tuning with new photos:** on the outline step **Save photo** downloads the picture (a live capture or a chosen file) as `dominoes-<date>-<time>.jpg`; drop it into `tools/domino-scan-testset/photos/`, label it in `labels.json`, and run `real-test.js`. There is no server upload.
 
 `detect(img, { debug: [] })` and `analyze(crop, { debug: [] })` fill the list with every candidate divider mark / pip blob and why it was kept or dropped. Read the true counts off the large straightened crops, not the photo: that is how `labels.json` was made.
 
