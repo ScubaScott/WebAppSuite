@@ -1,5 +1,5 @@
 // Domino tile detection version identifier
-const DOMINO_TILES_VERSION = '1.3';
+const DOMINO_TILES_VERSION = '1.9';
 
 // Finds individual domino tiles in a photo and cuts each one out as a straightened, horizontal crop.
 // Depends on the shared imaging module (htdocs/media/scan/imaging.js). Every function works on plain RGBA
@@ -28,6 +28,24 @@ const DominoTiles = (() => {
         barMargin: 3,                  // pixels beside and beyond a bar that must be tile surface
         surfaceBrightness: 100,        // tile surface: brightest channel at least this...
         surfaceWarmth: 8,              // ...and (R + G) / 2 - B at least this (ivory is warm, a gray table is not)
+        rescueMinLen: 0.5,             // a rescued bar is at least this fraction of the trusted bars' typical length...
+        rescueMaxLen: 1.8,             // ...and at most this multiple of it
+        anchorChroma: 0.12,            // a rescued bar's surface color balance may differ this much from the trusted ivory
+        minIvorySamples: 8,            // fewest pixels beside trusted bars needed to learn the ivory color
+        ivoryMinBrightness: 45,        // learned ivory: a pixel darker than this (mean of the channels) is not tile
+        ivoryMinLum: 0.3,              // ...brightness may be this fraction of the learned brightness (deep shadow)...
+        ivoryMaxLum: 1.5,              // ...up to this multiple (a lit highlight)
+        ivoryChroma: 0.07,             // ...with a color balance (each channel's share of the total) this close to the learned one
+        minIvoryCoverage: 0.35,        // share of a modeled tile that must be learned ivory (pips and shadows are not)
+        barMinLenShare: 0.4,           // a bar is at least this fraction of the typical bar length...
+        barMaxLenShare: 2.0,           // ...and at most this multiple of it
+        minOriginalBrightness: 80,     // the brighter side of a bar is at least this bright in the original picture (0-255)
+        flatMinMarks: 2,               // ...and the picture has at least this many bar-like marks
+        flatMinVariation: 1.5,         // ...but only when the local brightness varies this much (90th / 10th percentile); evenly lit pictures are left alone
+        flatWindow: 0.15,              // lighting is evened out over a window this fraction of the picture's long side (0 = off)
+        flatMinGain: 0.8,              // ...by at most this factor darker...
+        flatMaxGain: 2,                // ...or this factor brighter,
+        flatFloor: 50,                 // ...never dividing by a surrounding brightness below this
         neutralBrightness: 100,        // 'neutral' surface: brightest channel at least this...
         neutralSaturation: 0.36,       // ...and (max - min) / max at most this (ivory under any lighting; wood is 0.4-0.7)
         minDividerArea: 12,            // pixels (in the detection image)
@@ -42,6 +60,7 @@ const DominoTiles = (() => {
         unsupportedWeight: 0.25,       // ...worth this much each when choosing a segmentation
         supportedWeight: 2.5,          // a tile backed by a divider bar counts this much when choosing a segmentation (others count 1)
         minBarsForFit: 4,              // fewest bars for fitting how bar length changes across the picture
+        minSideBalance: 0.75,          // the two sides of a bar must be at least this alike in brightness (smaller / larger)
         minSideHits: 2,                // of 5 points along a bar, this many beside it on each side must be tile surface
         maxOverlap: 0.35,              // two tiles may overlap by at most this share of either one's area
         minWarmGap: 45,                // warm-tint channel: the tiles must average this much above the surface (0-255 scale)
@@ -194,6 +213,32 @@ const DominoTiles = (() => {
         return Imaging.gaussianBlur({ width: img.width, height: img.height, data: out }, 5);
     }
 
+    // Evens out the lighting: every pixel is multiplied by (typical brightness / brightness of the surroundings), where the
+    // surroundings are a wide window much larger than a tile. Shade and shadow are slowly varying, so a tile in shadow comes
+    // out about as bright as one in the light, and the edge of a shadow across the table flattens. The gain is limited so
+    // noise and very dark objects are not blown up. Returns a new RGBA picture; the original is untouched.
+    function flattenLighting(img) {
+        const w = img.width, h = img.height;
+        const gray = Imaging.grayFromRGBA(img);
+        const window = Math.max(15, Math.round(Math.max(w, h) * LIMITS.flatWindow) | 1);
+        const local = Imaging.boxMean(gray, window);
+        const sample = [];
+        for (let i = 0; i < local.length; i += 11) sample.push(local[i]);
+        const typical = median(sample);
+        // How uneven the lighting is: bright against dim surroundings (90th over 10th percentile of the local brightness)
+        sample.sort((a, b) => a - b);
+        const variation = sample[Math.floor(sample.length * 0.9)] / Math.max(sample[Math.floor(sample.length * 0.1)], 1);
+        const out = new Uint8ClampedArray(img.data.length);
+        for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+            const gain = Math.min(LIMITS.flatMaxGain, Math.max(LIMITS.flatMinGain, typical / Math.max(local[i], LIMITS.flatFloor)));
+            out[p] = img.data[p] * gain;
+            out[p + 1] = img.data[p + 1] * gain;
+            out[p + 2] = img.data[p + 2] * gain;
+            out[p + 3] = 255;
+        }
+        return { width: w, height: h, data: out, variation };
+    }
+
     // Brightness of each pixel's weakest color channel, blurred. A tile is bright in every channel, but a warm table such
     // as wood is nearly blue-free, so its weakest channel is dark; this separates ivory from wood when the table is
     // warmer than the tiles and the warm-tint channel therefore points the wrong way.
@@ -214,16 +259,11 @@ const DominoTiles = (() => {
         return Math.abs(sum) / 2;
     }
 
-    // True where the picture at (x, y) looks like tile surface. Judged on the picture itself, not the blurred mask, whose
-    // edges are smeared several pixels wide around thin dark marks. Two notions, because the camera's white balance and
-    // the shadows change how ivory looks:
-    //   'warm'    bright and warm (ivory keeps its tint). Right on a neutral gray table; wood would count as surface too.
-    //   'neutral' bright and weakly saturated. Ivory is cool white in a warm scene and gray in shadow, but never strongly
-    //             colored, while wood always is, so this keeps wood out where the warm test lets it in.
-    function isSurface(img, x, y, kind) {
+    // Average color of the 3x3 pixels around (x, y) as [r, g, b], or null near the picture edge
+    function meanColor(img, x, y) {
         const w = img.width, h = img.height;
         const xi = Math.round(x), yi = Math.round(y);
-        if (xi < 1 || yi < 1 || xi >= w - 1 || yi >= h - 1) return false;
+        if (xi < 1 || yi < 1 || xi >= w - 1 || yi >= h - 1) return null;
         let r = 0, g = 0, b = 0;
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
@@ -231,30 +271,39 @@ const DominoTiles = (() => {
                 r += img.data[p]; g += img.data[p + 1]; b += img.data[p + 2];
             }
         }
-        r /= 9; g /= 9; b /= 9;
-        const peak = Math.max(r, g, b);
-        if (kind === 'neutral') {
-            return peak >= LIMITS.neutralBrightness && (peak - Math.min(r, g, b)) / peak <= LIMITS.neutralSaturation;
-        }
-        return peak >= LIMITS.surfaceBrightness && (r + g) / 2 - b >= LIMITS.surfaceWarmth;
+        return [r / 9, g / 9, b / 9];
     }
 
-    // Finds the divider bars: long, thin, very dark marks (the bar between a tile's two halves). Every tile has one,
-    // so the bars tell how many tiles a blob holds and where each tile is centered. They are found from the unblurred
-    // picture because a bar is only a few pixels wide. A real bar has tile surface on both sides and past both ends
-    // (it stops short of the tile edge) on at least one side; cables, creases between tiles and shadows do not.
-    // Returns [{ cx, cy, bx, by, len, wid }] with (bx, by) the unit direction along the bar.
-    function findDividers(img, kind, debug) {
+    // A test (x, y) => true where the picture looks like tile surface. Judged on the picture itself, not the blurred mask,
+    // whose edges are smeared several pixels wide around thin dark marks. Two fixed notions, because the camera's white
+    // balance and the shadows change how ivory looks:
+    //   'warm'    bright and warm (ivory keeps its tint). Right on a neutral gray table; wood would count as surface too.
+    //   'neutral' bright and weakly saturated. Ivory is cool white in a warm scene and gray in shadow, but never strongly
+    //             colored, while wood always is, so this keeps wood out where the warm test lets it in.
+    function surfaceTest(img, kind) {
+        return (x, y) => {
+            const c = meanColor(img, x, y);
+            if (!c) return false;
+            const peak = Math.max(c[0], c[1], c[2]);
+            if (kind === 'neutral') {
+                return peak >= LIMITS.neutralBrightness && (peak - Math.min(c[0], c[1], c[2])) / peak <= LIMITS.neutralSaturation;
+            }
+            return peak >= LIMITS.surfaceBrightness && (c[0] + c[1]) / 2 - c[2] >= LIMITS.surfaceWarmth;
+        };
+    }
+
+    // Finds every long, thin, very dark mark in the picture: the shape of a divider bar (the bar between a tile's two
+    // halves). Every tile has one, so the bars tell how many tiles there are and where each is centered. They are found
+    // from the unblurred picture because a bar is only a few pixels wide. Whether a mark really sits on a tile is decided
+    // afterwards (acceptBars). Returns [{ cx, cy, bx, by, len, wid, mark }] with (bx, by) the unit direction along the bar.
+    function barCandidates(img, debug) {
         const { width: w, height: h } = img;
         const dark = { width: w, height: h, data: new Uint8Array(w * h) };
         for (let i = 0, p = 0; i < w * h; i++, p += 4) {
             if (Math.max(img.data[p], img.data[p + 1], img.data[p + 2]) < LIMITS.barBrightness) dark.data[i] = 255;
         }
         const marks = Imaging.connectedComponents(dark, { connectivity: 8, labels: true });
-        const onTile = (x, y) => isSurface(img, x, y, kind);
         const found = [];
-        // When a debug list is given, every long-enough mark is recorded there with the reason it was kept or dropped
-        const note = (mark, reason, extra) => { if (debug) debug.push(Object.assign({ x: mark.x, y: mark.y, w: mark.w, h: mark.h, reason, kind }, extra)); };
         marks.forEach((mark, k) => {
             if (mark.area < LIMITS.minDividerArea || mark.area > w * h * LIMITS.maxDividerFrac) return;
             if (mark.x === 0 || mark.y === 0 || mark.x + mark.w >= w || mark.y + mark.h >= h) return;
@@ -263,28 +312,145 @@ const DominoTiles = (() => {
             if (!f) return;
             const len = f.maxU - f.minU;
             const wid = Math.max(f.maxV - f.minV, 1);
-            if (len / wid < LIMITS.dividerAspect) { if (len > 12) note(mark, 'not-thin', { aspect: +(len / wid).toFixed(2), len: +len.toFixed(1), wid: +wid.toFixed(1) }); return; }
+            if (len / wid < LIMITS.dividerAspect) {
+                if (debug && len > 12) debug.push({ x: mark.x, y: mark.y, w: mark.w, h: mark.h, reason: 'not-thin', aspect: +(len / wid).toFixed(2), len: +len.toFixed(1), wid: +wid.toFixed(1) });
+                return;
+            }
             const um = (f.minU + f.maxU) / 2, vm = (f.minV + f.maxV) / 2;
-            const cx = um * f.ux + vm * f.vx, cy = um * f.uy + vm * f.vy;
-            // Tile surface beside the bar, sampled at several points along it on each side (a pip may sit against the bar
-            // at some of them), and past at least one end
-            const side = wid / 2 + LIMITS.barMargin, end = len / 2 + LIMITS.barMargin;
-            const bx = f.ux, by = f.uy;
-            let hitsA = 0, hitsB = 0;
-            const colors = [];
-            const colorAt = (x, y) => { const q = (Math.round(y) * w + Math.round(x)) * 4; return img.data[q] + ',' + img.data[q + 1] + ',' + img.data[q + 2]; };
-            [-0.35, -0.175, 0, 0.175, 0.35].forEach(a => {
-                const px = cx + bx * len * a, py = cy + by * len * a;
-                if (debug) colors.push(colorAt(px + by * side, py - bx * side) + ' | ' + colorAt(px - by * side, py + bx * side));
-                if (onTile(px + by * side, py - bx * side)) hitsA++;
-                if (onTile(px - by * side, py + bx * side)) hitsB++;
-            });
-            const ends = [onTile(cx + bx * end, cy + by * end), onTile(cx - bx * end, cy - by * end)];
-            const enclosed = hitsA >= LIMITS.minSideHits && hitsB >= LIMITS.minSideHits && (ends[0] || ends[1]);
-            note(mark, enclosed ? 'bar' : 'not-enclosed', { len: +len.toFixed(1), wid: +wid.toFixed(1), sides: hitsA + '/' + hitsB, ends: ends.join(), colors, at: Math.round(cx) + ',' + Math.round(cy) });
-            if (enclosed) found.push({ cx, cy, bx, by, len, wid });
+            found.push({ cx: um * f.ux + vm * f.vx, cy: um * f.uy + vm * f.vy, bx: f.ux, by: f.uy, len, wid, mark: { x: mark.x, y: mark.y, w: mark.w, h: mark.h } });
         });
         return found;
+    }
+
+    // Sample points beside a bar (several along it, on each side; a pip may sit against the bar at some of them) and past
+    // each end. Returns { sides: [[x, y]...], ends: [[x, y], [x, y]] }.
+    function barProbes(bar) {
+        const side = bar.wid / 2 + LIMITS.barMargin, end = bar.len / 2 + LIMITS.barMargin;
+        const sides = [[], []];
+        [-0.35, -0.175, 0, 0.175, 0.35].forEach(a => {
+            const px = bar.cx + bar.bx * bar.len * a, py = bar.cy + bar.by * bar.len * a;
+            sides[0].push([px + bar.by * side, py - bar.bx * side]);
+            sides[1].push([px - bar.by * side, py + bar.bx * side]);
+        });
+        return { sides, ends: [[bar.cx + bar.bx * end, bar.cy + bar.by * end], [bar.cx - bar.bx * end, bar.cy - bar.by * end]] };
+    }
+
+    // Median brightness (mean of the channels) of the pixels at the given points
+    function medianBrightness(img, points) {
+        const values = points.map(p => meanColor(img, p[0], p[1])).filter(Boolean).map(c => (c[0] + c[1] + c[2]) / 3);
+        return values.length ? median(values) : 0;
+    }
+
+    // Keeps the candidates that are real bars under a surface test: tile surface on both sides, and past at least one end
+    // (a bar stops short of the tile edge), and the same material on both sides, so about equally bright. Cables, creases
+    // between tiles and shadow edges do not have that: a dark strip along the edge of a shadow has lit tile on one side and
+    // shadowed table on the other.
+    // `label` names the test in the debug list, which records every candidate with the reason it was kept or dropped.
+    function acceptBars(img, candidates, onTile, label, debug) {
+        const w = img.width;
+        const found = [];
+        candidates.forEach(bar => {
+            const probes = barProbes(bar);
+            const hitsA = probes.sides[0].filter(p => onTile(p[0], p[1])).length;
+            const hitsB = probes.sides[1].filter(p => onTile(p[0], p[1])).length;
+            const ends = probes.ends.map(p => onTile(p[0], p[1]));
+            const lumA = medianBrightness(img, probes.sides[0]), lumB = medianBrightness(img, probes.sides[1]);
+            const balance = Math.max(lumA, lumB) > 0 ? Math.min(lumA, lumB) / Math.max(lumA, lumB) : 0;
+            const enclosed = hitsA >= LIMITS.minSideHits && hitsB >= LIMITS.minSideHits && (ends[0] || ends[1]) && balance >= LIMITS.minSideBalance;
+            if (debug) {
+                const colors = probes.sides[0].map((p, i) => {
+                    const a = meanColor(img, p[0], p[1]), b = meanColor(img, probes.sides[1][i][0], probes.sides[1][i][1]);
+                    const text = c => (c ? c.map(Math.round).join(',') : 'edge');
+                    return text(a) + ' | ' + text(b);
+                });
+                debug.push(Object.assign({ reason: enclosed ? 'bar' : 'not-enclosed', kind: label, len: +bar.len.toFixed(1), wid: +bar.wid.toFixed(1),
+                    sides: hitsA + '/' + hitsB, balance: +balance.toFixed(2), ends: ends.join(), colors, at: Math.round(bar.cx) + ',' + Math.round(bar.cy) }, bar.mark));
+            }
+            if (enclosed) found.push(bar);
+        });
+        return found;
+    }
+
+    // Rescues bars the fixed surface tests rejected, mostly on tiles in shadow or under a different light. Each candidate is
+    // judged against ITS OWN surface (the pixels beside it, learned per bar), so a tile lit warm and another lit cool are
+    // both fine. What keeps cracks and cables out: its surface must have a color balance and brightness plausible next to
+    // the ivory of the trusted bars, it must be about as long as they are, both sides and one end must match its own
+    // surface, and the two sides must be about equally bright.
+    function rescueBars(img, candidates, trusted, ivory, debug) {
+        if (!trusted.length || !ivory) return [];
+        const typicalLen = median(trusted.map(b => b.len));
+        const found = [];
+        candidates.forEach(bar => {
+            if (trusted.includes(bar)) return;
+            const why = reason => { if (debug) debug.push(Object.assign({ reason, kind: 'rescue', len: +bar.len.toFixed(1), at: Math.round(bar.cx) + ',' + Math.round(bar.cy) }, bar.mark)); };
+            if (bar.len < LIMITS.rescueMinLen * typicalLen || bar.len > LIMITS.rescueMaxLen * typicalLen) { why('rescue-length'); return; }
+            const own = learnIvory(img, [bar]);
+            if (!own) { why('rescue-no-surface'); return; }
+            const chromaGap = Math.hypot(own.chroma[0] - ivory.chroma[0], own.chroma[1] - ivory.chroma[1], own.chroma[2] - ivory.chroma[2]);
+            if (chromaGap > LIMITS.anchorChroma || own.lum < LIMITS.ivoryMinLum * ivory.lum || own.lum < LIMITS.ivoryMinBrightness) { why('rescue-color'); return; }
+            const matches = similarTo(img, own);
+            const probes = barProbes(bar);
+            const hitsA = probes.sides[0].filter(p => matches(p[0], p[1])).length;
+            const hitsB = probes.sides[1].filter(p => matches(p[0], p[1])).length;
+            const ends = probes.ends.map(p => matches(p[0], p[1]));
+            const lumA = medianBrightness(img, probes.sides[0]), lumB = medianBrightness(img, probes.sides[1]);
+            const balance = Math.max(lumA, lumB) > 0 ? Math.min(lumA, lumB) / Math.max(lumA, lumB) : 0;
+            if (hitsA >= LIMITS.minSideHits && hitsB >= LIMITS.minSideHits && (ends[0] || ends[1]) && balance >= LIMITS.minSideBalance) {
+                found.push(bar);
+                why('rescued');
+            } else {
+                why('rescue-sides');
+            }
+        });
+        return found;
+    }
+
+    // Final sanity over the bars one segmentation will use. The bars of one set of tiles are alike, so:
+    //  - a bar much longer or shorter than the typical one is not a divider (a shadow edge, a crack, a fragment);
+    //  - a bar must stand on a surface that is bright in the ORIGINAL picture. Flattening the lighting is only for
+    //    comparisons; it must not turn a nearly black object into something that looks like a tile.
+    function sanityFilter(original, bars) {
+        if (!bars.length) return bars;
+        const typical = median(bars.map(b => b.len));
+        return bars.filter(bar => {
+            if (bar.len < LIMITS.barMinLenShare * typical || bar.len > LIMITS.barMaxLenShare * typical) return false;
+            const probes = barProbes(bar);
+            const brightest = Math.max(medianBrightness(original, probes.sides[0]), medianBrightness(original, probes.sides[1]));
+            return brightest >= LIMITS.minOriginalBrightness;
+        });
+    }
+
+    // Learns what tile surface looks like in THIS picture from the bars already trusted: the pixels right beside a real
+    // bar are tile. Returns { rgb, chroma, lum } (the median color, its share of each channel, and its brightness), or
+    // null when there are too few samples. Shadow only darkens ivory (its color balance stays), so the learned color
+    // recognizes shaded tiles that a fixed brightness rule would lose.
+    function learnIvory(img, bars) {
+        const channels = [[], [], []];
+        bars.forEach(bar => {
+            const probes = barProbes(bar);
+            probes.sides[0].concat(probes.sides[1]).forEach(p => {
+                const c = meanColor(img, p[0], p[1]);
+                if (c) for (let i = 0; i < 3; i++) channels[i].push(c[i]);
+            });
+        });
+        if (channels[0].length < LIMITS.minIvorySamples) return null;
+        const rgb = channels.map(median);
+        const sum = rgb[0] + rgb[1] + rgb[2];
+        return sum > 0 ? { rgb, chroma: rgb.map(v => v / sum), lum: sum / 3 } : null;
+    }
+
+    // A test (x, y) => true where the picture is the learned ivory: the same color balance (within a tolerance), at any
+    // brightness from deep shadow to a lit highlight
+    function similarTo(img, ivory) {
+        return (x, y) => {
+            const c = meanColor(img, x, y);
+            if (!c) return false;
+            const sum = c[0] + c[1] + c[2];
+            if (sum < 3 * LIMITS.ivoryMinBrightness) return false;
+            const lum = sum / 3;
+            if (lum < LIMITS.ivoryMinLum * ivory.lum || lum > LIMITS.ivoryMaxLum * ivory.lum) return false;
+            return Math.hypot(c[0] / sum - ivory.chroma[0], c[1] / sum - ivory.chroma[1], c[2] / sum - ivory.chroma[2]) <= LIMITS.ivoryChroma;
+        };
     }
 
     // Fits how long a divider bar looks at each place in the picture: a plane len = a + b*x + c*y through the bars, found by
@@ -355,7 +521,7 @@ const DominoTiles = (() => {
     // short side), and its long side is twice that.
     // Returns a rectangle record, or { rejected: true, coverage } when the rectangle leaves the picture or does not
     // mostly cover tile surface (a false bar on something else).
-    function tileFromBar(bar, expectedLen, ratio, picture, kind) {
+    function tileFromBar(bar, expectedLen, ratio, picture, coverageTest) {
         const shortSide = expectedLen / ratio;
         // Frame: u along the tile's long side (perpendicular to the bar), v along the bar
         const ux = -bar.by, uy = bar.bx;
@@ -375,11 +541,11 @@ const DominoTiles = (() => {
                 const u = frame.minU + shortSide * 2 * (0.1 + 0.8 * i / (LIMITS.coverageSamples - 1));
                 const v = frame.minV + shortSide * (0.1 + 0.8 * j / (LIMITS.coverageSamples - 1));
                 total++;
-                if (isSurface(picture, u * ux + v * vx, u * uy + v * vy, kind)) hit++;
+                if (coverageTest.test(u * ux + v * vx, u * uy + v * vy)) hit++;
             }
         }
         const coverage = hit / total;
-        if (coverage < LIMITS.minCoverage) return { rejected: true, coverage };
+        if (coverage < coverageTest.min) return { rejected: true, coverage };
         return { frame, area: 2 * shortSide * shortSide, aspect: 2, fill: coverage, solidity: 1, box: null, modeled: true };
     }
 
@@ -408,9 +574,9 @@ const DominoTiles = (() => {
     // 'dark' = darker, 'warm' = the warm-tint channel and 'weak' = the weakest-channel brightness, where tiles are above
     // the threshold.
     // picture is the RGBA detection image (used to find the divider bars).
-    // bars are the divider bars found in the picture (see findDividers); a dark-tile split does not use them.
+    // bars are the divider bars found in the picture (see barCandidates and acceptBars); a dark-tile split does not use them.
     // Returns { tiles, uncertain, rejected, bars } in detection-image coordinates, or null when the channel has no clear split.
-    function findCandidates(channel, polarity, picture, allBars, surfaceKind) {
+    function findCandidates(channel, polarity, picture, bars, coverageFor) {
         const { width: w, height: h } = channel;
         const total = w * h;
         const t = Imaging.otsuThreshold(channel);
@@ -427,10 +593,9 @@ const DominoTiles = (() => {
         if (polarity === 'dark') mask = Imaging.invert(mask);
 
         mask = Imaging.fillHoles(mask, Math.round(total * LIMITS.holeFrac));
-        const bars = polarity === 'dark' ? [] : allBars;
-
         const comps = Imaging.connectedComponents(mask, { connectivity: 4, labels: true });
         const barsByBlob = new Map();
+        const placed = new Set();
         bars.forEach(bar => {
             // The tile blob a bar belongs to: usually the blob at the bar's center, but a bar the hole filling left open
             // sits on background, so points beside it and past its ends (tile surface) are tried next
@@ -444,7 +609,7 @@ const DominoTiles = (() => {
                 const xi = Math.round(px), yi = Math.round(py);
                 if (xi < 0 || yi < 0 || xi >= w || yi >= h) continue;
                 const k = comps.index[yi * w + xi];
-                if (k >= 0) { barsByBlob.set(k, (barsByBlob.get(k) || []).concat(bar)); break; }
+                if (k >= 0) { barsByBlob.set(k, (barsByBlob.get(k) || []).concat(bar)); placed.add(bar); break; }
             }
         });
         const ratio = barRatio(comps, barsByBlob, total, w, h);
@@ -487,7 +652,7 @@ const DominoTiles = (() => {
             if (cleanSingle) info.supported = true;
             if (blobBars && !cleanSingle) {
                 blobBars.forEach(bar => {
-                    const modeled = tileFromBar(bar, barLength(bar.cx, bar.cy), ratio, picture, surfaceKind);
+                    const modeled = tileFromBar(bar, barLength(bar.cx, bar.cy), ratio, picture, coverageFor(bar));
                     if (modeled.rejected) { rejected.push({ box, reason: 'bad-bar', coverage: modeled.coverage }); return; }
                     modeled.box = box;
                     modeled.split = blobBars.length > 1;
@@ -504,6 +669,17 @@ const DominoTiles = (() => {
             else if (aspect >= LIMITS.chainMinAspect && aspect <= LIMITS.chainMaxAspect) longBlobs.push(info);
             else if (aspect >= 0.8 && aspect <= 1.3) squareBlobs.push(info);
             else rejected.push({ box, reason: 'wrong-shape', aspect });
+        });
+
+        // A bar that fell outside every segmented blob (a tile in shadow can drop out of the segmentation) still proves a
+        // tile is there: model it from the bar, subject to the same coverage check
+        bars.filter(bar => !placed.has(bar)).forEach(bar => {
+            const box = { x: bar.cx - bar.len / 2, y: bar.cy - bar.len / 2, w: bar.len, h: bar.len };
+            const modeled = tileFromBar(bar, barLength(bar.cx, bar.cy), ratio, picture, coverageFor(bar));
+            if (modeled.rejected) { rejected.push({ box, reason: 'bad-bar', coverage: modeled.coverage }); return; }
+            modeled.box = box;
+            modeled.supported = true;
+            singles.push(modeled);
         });
 
         // Two tiles cannot occupy the same place: where a modeled tile mostly overlaps a better one (a measured outline,
@@ -548,17 +724,47 @@ const DominoTiles = (() => {
 
     // Detects tiles in an RGBA photo. options.tileColor is 'auto' (try both), 'light' or 'dark'.
     // options.debug may be an array that receives a record for each candidate divider mark (detection-image coordinates).
-    // Returns { tiles, uncertain, rejected, polarity, scale }; tile corners are in full-photo pixels, in reading order.
+    // Returns { tiles, uncertain, rejected, polarity, lighting, scale }; tile corners are in full-photo pixels, in reading order.
+    // `lighting` is how uneven the lighting is (1 = even); above LIMITS.flatMinVariation it is evened out before detection.
     function detect(img, options) {
         const tileColor = (options && options.tileColor) || 'auto';
-        const { img: small, scale } = downscaleRGBA(img, DETECT_MAX_DIM);
+        const { img: scaled, scale } = downscaleRGBA(img, DETECT_MAX_DIM);
+        // Uneven lighting (shadows) is evened out, but only when the picture has bar-like marks to protect: flattening is
+        // what lets a bar on a shadowed tile be recognized, and it has nothing to offer a picture without bars (a dark set,
+        // say). An evenly lit picture is analysed as it is.
+        const flat = LIMITS.flatWindow > 0 ? flattenLighting(scaled) : null;
+        const useFlat = flat && flat.variation >= LIMITS.flatMinVariation && barCandidates(scaled).length >= LIMITS.flatMinMarks;
+        const small = useFlat ? flat : scaled;
+        const lighting = flat ? flat.variation : 1;
         const blurred = Imaging.gaussianBlur(Imaging.grayFromRGBA(small), 5);
         const warm = warmChannel(small);
         const weakest = weakestChannel(small);
-        // Divider bars, found once for each notion of tile surface and handed to the segmentations that use it
-        const barsByKind = { warm: findDividers(small, 'warm', options && options.debug), neutral: findDividers(small, 'neutral', options && options.debug) };
-        const kindFor = { warm: 'warm', weak: 'neutral', light: 'neutral', dark: 'warm' };
-        const barsSeen = Math.max(barsByKind.warm.length, barsByKind.neutral.length);
+        // Divider bars. The marks are found once; each is then judged under fixed notions of tile surface ('warm' for neutral
+        // tables, 'neutral' for warm ones), and the most trusted set teaches what ivory looks like in this picture, which
+        // rescues bars on tiles in shadow that the fixed notions reject.
+        const debug = options && options.debug;
+        const candidates = barCandidates(small, debug);
+        const barsByKind = {
+            warm: acceptBars(small, candidates, surfaceTest(small, 'warm'), 'warm', debug),
+            neutral: acceptBars(small, candidates, surfaceTest(small, 'neutral'), 'neutral', debug)
+        };
+        const trusted = barsByKind.warm.length >= barsByKind.neutral.length ? barsByKind.warm : barsByKind.neutral;
+        const ivory = learnIvory(small, trusted);
+        if (debug && ivory) debug.push({ reason: 'ivory', rgb: ivory.rgb.map(Math.round), chroma: ivory.chroma.map(v => +v.toFixed(3)), lum: Math.round(ivory.lum) });
+        const rescued = rescueBars(small, candidates, trusted, ivory, debug);
+        const withRescued = list => list.concat(rescued.filter(b => !list.some(o => Math.hypot(b.cx - o.cx, b.cy - o.cy) < 3)));
+        // One family of bars for every segmentation: the trusted set (mixing in the other notion of surface is how a metal
+        // tray edge or a dark object gets in), plus the rescued ones, then the sanity filter
+        const family = sanityFilter(scaled, withRescued(trusted));
+        const barsFor = { warm: family, weak: family, light: family, dark: [] };
+        // A modeled tile must be mostly its own surface: the pixels beside its bar are its surface, so the share of the tile
+        // that matches them is the test. (Without trusted bars to compare against, the fixed surface notions are used.)
+        const coverageFor = kind => bar => {
+            const own = ivory ? learnIvory(small, [bar]) : null;
+            return own ? { test: similarTo(small, own), min: LIMITS.minIvoryCoverage } : { test: surfaceTest(small, kind), min: LIMITS.minCoverage };
+        };
+        const coverageByPolarity = { warm: coverageFor('warm'), weak: coverageFor('neutral'), light: coverageFor('neutral'), dark: coverageFor('warm') };
+        const barsSeen = Math.max(barsFor.warm.length, barsFor.weak.length);
 
         // Each way of splitting tiles from the surface; the one that yields the most tile-like shapes wins.
         // Light tiles can be white or ivory, so 'light' also tries the warm tint.
@@ -567,7 +773,7 @@ const DominoTiles = (() => {
         let best = null;
         const tried = [];
         polarities.forEach(polarity => {
-            const found = findCandidates(channelFor[polarity], polarity, small, barsByKind[kindFor[polarity]], kindFor[polarity]);
+            const found = findCandidates(channelFor[polarity], polarity, small, barsFor[polarity], coverageByPolarity[polarity]);
             if (!found) { tried.push({ polarity, skipped: true }); return; }
             // A tile backed by a divider bar is strong evidence; a rectangle alone (pips, patches) is weak, and counts for
             // much less once the picture clearly has bars (tiles without a visible bar, such as a dark set, still count in full
@@ -595,6 +801,7 @@ const DominoTiles = (() => {
             bars: best.bars.map(b => Object.assign({}, b, { cx: b.cx * inv, cy: b.cy * inv, len: b.len * inv, wid: b.wid * inv })),
             polarity: best.polarity,
             tried,
+            lighting,
             scale
         };
     }
