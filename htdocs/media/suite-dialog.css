@@ -1,0 +1,104 @@
+/**
+ * Suite Dialog Stylesheet
+ * Themed message, confirmation and prompt dialogs shared by every WebAppSuite sub-application (see suite-dialog.js).
+ * The colors come from the host page's own custom properties when it defines them, so a dialog matches the app it opens
+ * in; override the --sd-* tokens on :root or on a [data-theme] to restyle it.
+ * Version: 1.0
+ */
+
+:root {
+  /* Defaults follow the page's tokens (--surface, --text, ...) and fall back to the suite's dark look */
+  --sd-bg: var(--surface, #161d27);
+  --sd-fg: var(--text, #e9eef5);
+  --sd-muted: var(--muted, #93a1b3);
+  --sd-border: var(--border, rgba(255, 255, 255, 0.12));
+  --sd-field: var(--bg, #0d1117);
+  --sd-button: var(--surface-2, #1f2937);
+  --sd-accent: var(--accent, #f0b429);
+  --sd-on-accent: var(--on-accent, #1b1403);
+  --sd-danger: var(--danger, #ff6b6b);
+  --sd-on-danger: #1b0505;
+}
+
+dialog.suite-dialog {
+  box-sizing: border-box;
+  width: min(92vw, 420px);
+  max-width: 92vw;
+  max-height: 90vh;
+  padding: 0;
+  border: 1px solid var(--sd-border);
+  border-radius: 16px;
+  background: var(--sd-bg);
+  color: var(--sd-fg);
+  font: inherit;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  overflow: auto;
+}
+
+dialog.suite-dialog:not([open]) { display: none; }
+
+/* Browsers without <dialog> support get the same box, centered over a dimmed page */
+dialog.suite-dialog[open]:not(:modal) {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100000;
+}
+
+dialog.suite-dialog::backdrop { background: rgba(0, 0, 0, 0.65); }
+
+.sd-body { padding: 22px 22px 18px; }
+.sd-title { margin: 0 0 10px; font-size: 1.15rem; font-weight: 800; line-height: 1.25; }
+.sd-message { margin: 0 0 8px; color: var(--sd-muted); font-size: 0.98rem; line-height: 1.5; overflow-wrap: anywhere; }
+.sd-message:last-of-type { margin-bottom: 0; }
+
+.sd-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--sd-border);
+  border-radius: 10px;
+  background: var(--sd-field);
+  color: var(--sd-fg);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.sd-input:focus { outline: 2px solid var(--sd-accent); outline-offset: 1px; }
+
+.sd-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+.sd-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--sd-border);
+  border-radius: 10px;
+  background: var(--sd-button);
+  color: var(--sd-fg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.sd-btn:active { transform: scale(0.97); }
+.sd-btn:hover { filter: brightness(1.12); }
+.sd-btn:focus-visible { outline: 2px solid var(--sd-accent); outline-offset: 2px; }
+
+.sd-btn.sd-confirm { background: var(--sd-accent); border-color: var(--sd-accent); color: var(--sd-on-accent); }
+.sd-btn.sd-confirm.sd-danger { background: var(--sd-danger); border-color: var(--sd-danger); color: var(--sd-on-danger); }
+
+@media (max-width: 420px) {
+  /* Stack the buttons full width on a narrow phone so each is easy to hit */
+  .sd-actions { flex-direction: column-reverse; }
+  .sd-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-btn { transition: none; }
+}

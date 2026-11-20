@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '5.7';
+const SW_VERSION = '5.8';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Scanner engine files (OCR/image libraries and models) live in their own cache that has no version
@@ -24,6 +24,8 @@ const APP_SHELL = [
   './media/suite-header.css',
   './media/suite-profile.css',
   './media/suite-profile.js',
+  './media/suite-dialog.css',
+  './media/suite-dialog.js',
   './media/scuba.png',
   './media/scuba-192.png',
   './media/scuba-512.png',

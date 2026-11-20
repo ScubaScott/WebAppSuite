@@ -1,6 +1,6 @@
 // Dominoes score keeper: page controller (state, rendering, dialogs, persistence and cloud sync).
 // Scoring rules live in core.js and the line chart in chart.js.
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 
 const Core = DominoCore;
 
@@ -547,11 +547,17 @@ function moveDraft(index, delta) {
     renderRoster();
 }
 
-function removeDraft(index) {
+async function removeDraft(index) {
     const d = draftPlayers[index];
     const hasScores = game.rounds.some(r => r.scores[d.id]);
-    if (hasScores && !confirm('Remove ' + (d.name || 'this player') + ' and all of their scores?')) return;
-    draftPlayers.splice(index, 1);
+    if (hasScores) {
+        const remove = await SuiteDialog.confirm('Every score they have in every round is deleted too.', {
+            title: 'Remove ' + (d.name || 'this player') + '?', confirmLabel: 'Remove player', cancelLabel: 'Keep player', danger: true
+        });
+        if (!remove) return;
+    }
+    const at = draftPlayers.indexOf(d);
+    if (at >= 0) draftPlayers.splice(at, 1);
     renderRoster();
 }
 
@@ -641,8 +647,12 @@ function submitSettings(event) {
 }
 
 // Starts a fresh game with the same players and settings; an unfinished game is kept in Past games
-function confirmNewGame() {
-    if (!confirm('Start a new game with the same players and settings?')) return;
+async function confirmNewGame() {
+    const saved = Core.hasScores(game) && !Core.isFinal(game);
+    const start = await SuiteDialog.confirm(
+        'Everyone keeps their seat and the settings stay the same.' + (saved ? '\nThis game is kept under Past games.' : ''),
+        { title: 'Start a new game?', confirmLabel: 'Start new game', cancelLabel: 'Keep playing' });
+    if (!start) return;
     if (Core.hasScores(game) && !Core.isFinal(game)) {
         history = Core.upsertHistory(history, Core.historyRecord(game, false));
     }

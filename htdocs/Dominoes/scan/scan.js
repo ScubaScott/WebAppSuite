@@ -1,5 +1,5 @@
 // Domino scanner page controller version identifier
-const SCAN_PAGE_VERSION = '1.3';
+const SCAN_PAGE_VERSION = '1.4';
 
 // Photo to score: gets a photo (live camera, or a file the user picks), shows the detected tile outlines for the
 // user to confirm, straightens and counts each tile, lets the user correct the result in the review grid, then hands the hand's score back to the
@@ -270,10 +270,16 @@ function onReviewChange(summary) {
 }
 
 // Hands the score to the game page, which records it for the player and round
-function useScore() {
+async function useScore() {
     const summary = review.summary();
     if (!summary.tiles) return;
-    if (summary.flagged && !confirm(summary.flagged + ' tile(s) still need a second look. Use this score anyway?')) return;
+    // Tiles still flagged were not corrected (correcting a tile clears its flag): warn before using their counts as they are
+    if (summary.flagged) {
+        const useAnyway = await SuiteDialog.confirm(
+            (summary.flagged === 1 ? 'One tile has' : summary.flagged + ' tiles have') + ' not been checked, so the count may be wrong.\nTap a tile marked "Check count" or "Duplicate" to correct it.',
+            { title: 'Use the score as scanned?', confirmLabel: 'Use score anyway', cancelLabel: 'Go back and check', defaultCancel: true });
+        if (!useAnyway) return;
+    }
     try {
         localStorage.setItem(SCAN_STORAGE.pending, JSON.stringify({
             gameId: scanGame.id,
@@ -284,7 +290,7 @@ function useScore() {
             at: Date.now()
         }));
     } catch (err) {
-        alert('The score could not be saved on this device.');
+        await SuiteDialog.alert('This device would not let the scanner save the score. Check that its storage is not full or blocked, then try again.', { title: 'Score not saved' });
         return;
     }
     window.location.href = '../index.html';

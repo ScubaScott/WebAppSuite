@@ -1,5 +1,5 @@
 // Domino review grid version identifier
-const DOMINO_REVIEW_VERSION = '1.2';
+const DOMINO_REVIEW_VERSION = '1.3';
 
 // The review step of the scanner: a grid of straightened tiles with a marker over every counted pip, and an
 // editor dialog for correcting a tile (add or remove pips, mark a half blank, delete the tile, add a missed tile).
@@ -46,6 +46,14 @@ const DominoReview = (() => {
                 flagged,
                 items: tiles.map(counts)
             };
+        }
+
+        // A tile the user has corrected has been looked at, so the scanner's own doubts about its counts (touching pips split by
+        // size, uneven pip sizes) no longer apply. Flags that follow from the counts themselves (a duplicate tile, too many
+        // pips) are recomputed on every refresh and so clear on their own once the counts are right.
+        function markReviewed(tile) {
+            tile.left.flags = [];
+            tile.right.flags = [];
         }
 
         // Recomputes flags and redraws everything that shows counts
@@ -205,6 +213,7 @@ const DominoReview = (() => {
             const marker = event.target.closest('.pip-marker');
             if (marker) {
                 tile[marker.dataset.side].pips.splice(Number(marker.dataset.index), 1);
+                markReviewed(tile);
                 refresh();
                 return;
             }
@@ -213,6 +222,7 @@ const DominoReview = (() => {
             const y = (event.clientY - rect.top) / rect.height * CROP_H;
             if (Math.abs(x - tile.dividerX) < 8) return;
             addPip(tile, x < tile.dividerX ? 'left' : 'right', { x, y });
+            markReviewed(tile);
             refresh();
         }
 
@@ -233,9 +243,9 @@ const DominoReview = (() => {
         }
 
         ['left', 'right'].forEach(side => {
-            ed[side].minus.addEventListener('click', () => { removeLikelyWrong(tiles[current], side); refresh(); });
-            ed[side].plus.addEventListener('click', () => { addPip(tiles[current], side); refresh(); });
-            ed[side].blank.addEventListener('click', () => { tiles[current][side].pips = []; refresh(); });
+            ed[side].minus.addEventListener('click', () => { removeLikelyWrong(tiles[current], side); markReviewed(tiles[current]); refresh(); });
+            ed[side].plus.addEventListener('click', () => { addPip(tiles[current], side); markReviewed(tiles[current]); refresh(); });
+            ed[side].blank.addEventListener('click', () => { tiles[current][side].pips = []; markReviewed(tiles[current]); refresh(); });
         });
         ed.prev.addEventListener('click', () => { if (current > 0) openEditor(current - 1); });
         ed.next.addEventListener('click', () => { if (current < tiles.length - 1) openEditor(current + 1); });
