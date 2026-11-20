@@ -1,5 +1,5 @@
 // Domino pip counting version identifier
-const DOMINO_PIPS_VERSION = '1.7';
+const DOMINO_PIPS_VERSION = '1.8';
 
 // Counts the pips on each half of a straightened 240x120 tile crop (see DominoTiles.extractTile).
 // A pip is anything whose color differs from the tile body, so pale pips on a dark tile, dark pips on a light tile
@@ -14,7 +14,7 @@ const DominoPips = (() => {
     const MARGIN_Y = 10;
 
     const LIMITS = {
-        minColorDistance: 48,          // a pip's color differs from the body color's direction by at least this (RGB units, 0-441)
+        minColorDistance: 34,          // a pip's color differs from the body color's direction by at least this (RGB units, 0-441); pale gray pips on ivory differ by about 36
         darkRatio: 0.3,                // a pixel darker than this fraction of the body's brightness is a pip regardless of color
         surroundBlock: 31,             // pale pips: compared with the average brightness of this many pixels around
         surroundRatio: 0.88,           // ...a pip is darker than this fraction of its surroundings...
@@ -32,6 +32,9 @@ const DominoPips = (() => {
         noiseRatio: 0.35,              // blobs below this fraction of the typical pip area are dropped
         mergeRatio: 1.6,               // blobs above this multiple of the typical pip area are touching pips
         minReferenceArea: 45,          // typical pip area below this means only noise was found
+        singlePipFloor: 200,           // a half's typical pip area is never taken as smaller than this (a pip is about 18 px across in the 240x120 crop), so fragments of pale pips cannot shrink it
+        bodyShare: 0.35,               // a color covering at least this share of the most common color's area can be the tile body...
+        bodyBrighter: 35,              // ...when it is this much brighter (0-255): pips cover more of a crowded half than the body does
         referenceQuantile: 0.4,        // typical pip size: this quantile (0 = smallest, 1 = largest) of the round blobs
         dividerFrom: 90,               // the divider bar is searched for between these columns
         dividerTo: 150,
@@ -83,7 +86,7 @@ const DominoPips = (() => {
                 cell.n++; cell.sr += crop.data[p]; cell.sg += crop.data[p + 1]; cell.sb += crop.data[p + 2];
             }
         }
-        let best = null;
+        const scored = [];
         cells.forEach(cell => {
             let n = 0, sr = 0, sg = 0, sb = 0;
             for (let dr = -1; dr <= 1; dr++) {
@@ -94,9 +97,15 @@ const DominoPips = (() => {
                     }
                 }
             }
-            if (!best || n > best.n) best = { n, sr, sg, sb };
+            scored.push({ n, sr, sg, sb, lum: (sr + sg + sb) / (3 * n) });
         });
-        return best ? [best.sr / best.n, best.sg / best.n, best.sb / best.n] : [128, 128, 128];
+        if (!scored.length) return [128, 128, 128];
+        let best = scored.reduce((a, b) => (b.n > a.n ? b : a));
+        // A half packed with dark pips (a 12 of dark purple covers more of the half than the ivory does) has the pip color
+        // as its most common color. A clearly brighter color that still covers a good share of the half is the body.
+        const floor = LIMITS.bodyShare * best.n;
+        scored.forEach(c => { if (c.n >= floor && c.lum > best.lum + LIMITS.bodyBrighter && c.lum > scored.filter(o => o.n >= floor).reduce((m, o) => Math.max(m, o.lum), 0) - 1e-9) best = c; });
+        return [best.sr / best.n, best.sg / best.n, best.sb / best.n];
     }
 
     // Mask (255 where a pixel is a pip candidate). For a light tile a pixel is a pip when its color differs from the
@@ -205,7 +214,8 @@ const DominoPips = (() => {
     }
 
     // Counts the pips on both halves of a crop. options.tileColor ('auto', 'light', 'dark') only labels the result's
-    // polarity; counting does not depend on it. Returns { polarity, dividerX, hasDivider, pipArea,
+    // polarity; counting does not depend on it. options.setMax (the set's highest pip count) makes a half whose split count
+    // would pass it fall back to one pip per blob. Returns { polarity, dividerX, hasDivider, pipArea,
     // left: { pips, flags }, right: { pips, flags } } where each pip is { x, y, r, merged } in crop pixels.
     function analyze(crop, options) {
         const tileColor = (options && options.tileColor) || 'auto';
@@ -253,35 +263,50 @@ const DominoPips = (() => {
         result.pipArea = allReference;
         if (allReference < LIMITS.minReferenceArea) return result;
 
+        const setMax = options && options.setMax;
         ['left', 'right'].forEach(side => {
             const mine = candidates.filter(c => (c.cx < dividerX) === (side === 'left'));
             if (!mine.length) return;
             const half = result[side];
             // The half's own size, even from one or two blobs: the other half can be photographed at a very different scale
             const own = referenceSize(mine.filter(isRound), mine);
-            const reference = own >= LIMITS.minReferenceArea ? own : allReference;
-            mine.forEach(c => {
-                const ratio = c.area / reference;
-                if (ratio < LIMITS.noiseRatio) return;
-                if (ratio >= LIMITS.mergeRatio) {
-                    // Touching pips form one blob: place one marker per pip along its long side
-                    const count = Math.min(4, Math.round(ratio));
-                    for (let i = 0; i < count; i++) {
-                        const f = (i + 0.5) / count;
-                        half.pips.push({
-                            x: c.w >= c.h ? c.x + c.w * f : c.cx,
-                            y: c.w >= c.h ? c.cy : c.y + c.h * f,
-                            r: Math.sqrt(reference / Math.PI), merged: true
-                        });
-                    }
-                    if (!half.flags.includes('merged')) half.flags.push('merged');
-                } else {
-                    half.pips.push({ x: c.cx, y: c.cy, r: Math.sqrt(c.area / Math.PI), merged: false });
-                    if ((ratio < LIMITS.unevenLow || ratio > LIMITS.unevenHigh) && !half.flags.includes('uneven')) half.flags.push('uneven');
-                }
-            });
+            const reference = Math.max(own >= LIMITS.minReferenceArea ? own : allReference, LIMITS.singlePipFloor);
+            let counted = countHalf(mine, reference, true);
+            // A set has at most setMax pips on a half. When splitting touching pips pushes the count past that, the blobs
+            // were whole pips and the size estimate was too small: count one pip per blob instead.
+            if (setMax && counted.pips.length > setMax && counted.merged) counted = countHalf(mine, reference, false);
+            half.pips = counted.pips;
+            half.flags = counted.flags;
         });
         return result;
+    }
+
+    // Turns one half's blobs into pips. A blob much larger than the typical pip is touching pips (one marker per pip along
+    // its long side) when allowMerge is set; otherwise every blob is one pip. Returns { pips, flags, merged }.
+    function countHalf(blobs, reference, allowMerge) {
+        const pips = [], flags = [];
+        let merged = false;
+        blobs.forEach(c => {
+            const ratio = c.area / reference;
+            if (ratio < LIMITS.noiseRatio) return;
+            if (allowMerge && ratio >= LIMITS.mergeRatio) {
+                const count = Math.min(4, Math.round(ratio));
+                for (let i = 0; i < count; i++) {
+                    const f = (i + 0.5) / count;
+                    pips.push({
+                        x: c.w >= c.h ? c.x + c.w * f : c.cx,
+                        y: c.w >= c.h ? c.cy : c.y + c.h * f,
+                        r: Math.sqrt(reference / Math.PI), merged: true
+                    });
+                }
+                merged = true;
+                if (!flags.includes('merged')) flags.push('merged');
+            } else {
+                pips.push({ x: c.cx, y: c.cy, r: Math.sqrt(c.area / Math.PI), merged: false });
+                if ((ratio < LIMITS.unevenLow || ratio > LIMITS.unevenHigh) && !flags.includes('uneven')) flags.push('uneven');
+            }
+        });
+        return { pips, flags, merged };
     }
 
     // A typical single-pip area from a list of blobs: a lower quantile of the round ones (or of all of them when none is

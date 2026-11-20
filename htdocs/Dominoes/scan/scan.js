@@ -1,5 +1,5 @@
 // Domino scanner page controller version identifier
-const SCAN_PAGE_VERSION = '1.4';
+const SCAN_PAGE_VERSION = '1.5';
 
 // Photo to score: gets a photo (live camera, or a file the user picks), shows the detected tile outlines for the
 // user to confirm, straightens and counts each tile, lets the user correct the result in the review grid, then hands the hand's score back to the
@@ -248,7 +248,7 @@ function useTiles() {
         if (excluded.has(i)) return;
         const crop = DominoTiles.extractTile(photo.img, tile);
         if (!crop) return;
-        const result = DominoPips.analyze(crop, { tileColor });
+        const result = DominoPips.analyze(crop, { tileColor, setMax: scanGame.settings.setMax });
         const canvas = document.createElement('canvas');
         canvas.width = crop.width;
         canvas.height = crop.height;
