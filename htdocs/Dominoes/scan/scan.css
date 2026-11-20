@@ -1,4 +1,4 @@
-/* Dominoes scanner page styles (builds on ../styles.css). Version: 1.2 */
+/* Dominoes scanner page styles (builds on ../styles.css). Version: 1.3 */
 
 /* ── Top bar ────────────────────────────────────────────────────────────── */
 .scan-bar {
@@ -94,19 +94,17 @@
 .pip-layer { position: absolute; inset: 0; }
 .pip-layer.interactive { cursor: crosshair; touch-action: manipulation; }
 
-/* Ring drawn over every counted pip; the pip underneath stays visible inside it */
+/* Disc over every counted pip: 80% transparent, so the pip underneath shows through and the marker is still easy to see */
 .pip-marker {
   position: absolute;
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
-  box-sizing: border-box;
-  border: 2px solid #1fd18a;
   border-radius: 50%;
+  background: rgba(31, 209, 138, 0.2);
 }
 
-.pip-marker.merged { border-color: #ff9f1a; border-style: dashed; }
-.pip-marker.manual { border-color: #4da3ff; }
-.tile-card .pip-marker { border-width: 1.5px; }
+.pip-marker.merged { background: rgba(255, 159, 26, 0.2); }
+.pip-marker.manual { background: rgba(77, 163, 255, 0.2); }
 .pip-layer.interactive .pip-marker { cursor: pointer; }
 
 .tile-readout { font-size: 1.05rem; font-weight: 800; }

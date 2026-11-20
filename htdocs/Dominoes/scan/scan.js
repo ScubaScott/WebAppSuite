@@ -1,5 +1,5 @@
 // Domino scanner page controller version identifier
-const SCAN_PAGE_VERSION = '1.2';
+const SCAN_PAGE_VERSION = '1.3';
 
 // Photo to score: gets a photo (live camera, or a file the user picks), shows the detected tile outlines for the
 // user to confirm, straightens and counts each tile, lets the user correct the result in the review grid, then hands the hand's score back to the
@@ -290,12 +290,13 @@ function useScore() {
     window.location.href = '../index.html';
 }
 
+// Throws the current photo away and returns to the camera (the camera step offers choosing a photo instead)
 function startOver() {
     photo = null;
     detection = null;
     excluded.clear();
     setPhotoStatus('');
-    showStep('stepPhoto');
+    startLive();
 }
 
 // ───────────────────────── Start-up ─────────────────────────
@@ -376,7 +377,9 @@ function initScan() {
     scanEl('useTilesBtn').addEventListener('click', useTiles);
     scanEl('addTileBtn').addEventListener('click', () => review.addManual());
     scanEl('useScoreBtn').addEventListener('click', useScore);
-    showStep('stepPhoto');
+    // The Scan button on the game screen goes straight to the camera. Cancel there leads to the photo step, which has the
+    // upload option; a camera that cannot start lands on the same step with the reason.
+    startLive();
 }
 
 initScan();

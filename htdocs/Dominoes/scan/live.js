@@ -1,5 +1,5 @@
 // Domino live camera version identifier
-const DOMINO_LIVE_VERSION = '1.0';
+const DOMINO_LIVE_VERSION = '1.1';
 
 // Live camera for the scanner: shows the camera, outlines the tiles it finds a few times a second, and takes the picture
 // either when the shutter is pressed or by itself once the camera and the tiles have held still for about a second.
@@ -7,7 +7,8 @@ const DOMINO_LIVE_VERSION = '1.0';
 // outline check and review as an uploaded photo. Depends on DominoTiles (tiles.js).
 const DominoLive = (() => {
 
-    const DETECT_DIM = 640;            // frames are analysed at this size (long side), which keeps detection near five per second
+    const DETECT_DIM = 800;            // frames are analysed at this size (long side): the size the detector itself works at,
+                                       // so a portrait phone frame keeps enough width to see the thin divider bars
     const DETECT_EVERY_MS = 200;       // pause between one detection finishing and the next starting
     const STEADY_TICKS = 5;            // consecutive steady detections needed before the picture is taken by itself
     const DIFF_LIMIT = 5;              // mean brightness change between two frames (0-255) that still counts as held still
@@ -74,6 +75,7 @@ const DominoLive = (() => {
             stream = null;
             video.srcObject = null;
             const ctx = overlay.getContext('2d');
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.clearRect(0, 0, overlay.width, overlay.height);
         }
 
@@ -103,19 +105,26 @@ const DominoLive = (() => {
             return centers.every(c => previousCenters.some(p => Math.hypot(c.x - p.x, c.y - p.y) <= MOVE_LIMIT * width));
         }
 
-        // Draws the tile outlines over the video; (frameW, frameH) is the size of the analysed frame
+        // Draws the tile outlines over the video; (frameW, frameH) is the size of the analysed frame.
+        // The video element letterboxes the picture (object-fit: contain), so on a phone held upright the picture is
+        // narrower than the element and centered in it. Outlines are drawn in picture coordinates through a transform
+        // that places the picture exactly where the video draws it, not stretched over the whole element.
         function draw(result, frameW, frameH) {
             const dpr = window.devicePixelRatio || 1;
-            const w = Math.round(video.clientWidth * dpr), h = Math.round(video.clientHeight * dpr);
+            const boxW = video.clientWidth, boxH = video.clientHeight;
+            const w = Math.round(boxW * dpr), h = Math.round(boxH * dpr);
             if (overlay.width !== w || overlay.height !== h) { overlay.width = w; overlay.height = h; }
             const ctx = overlay.getContext('2d');
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.clearRect(0, 0, w, h);
-            const k = w / frameW;
-            ctx.lineWidth = Math.max(2, w / 220);
+            const scale = Math.min(boxW / frameW, boxH / frameH);                 // picture pixels to screen pixels
+            const offsetX = (boxW - frameW * scale) / 2, offsetY = (boxH - frameH * scale) / 2;
+            ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * offsetX, dpr * offsetY);
+            ctx.lineWidth = 3 / scale;                                             // a 3 px line on screen
             result.tiles.forEach(t => {
                 const c = t.corners;
                 ctx.beginPath();
-                [c.tl, c.tr, c.br, c.bl].forEach((p, i) => (i ? ctx.lineTo(p.x * k, p.y * k) : ctx.moveTo(p.x * k, p.y * k)));
+                [c.tl, c.tr, c.br, c.bl].forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
                 ctx.closePath();
                 ctx.fillStyle = 'rgba(240,180,41,0.16)';
                 ctx.fill();
@@ -125,7 +134,7 @@ const DominoLive = (() => {
             result.uncertain.forEach(u => {
                 ctx.setLineDash([ctx.lineWidth * 3, ctx.lineWidth * 2]);
                 ctx.strokeStyle = '#ff6b6b';
-                ctx.strokeRect(u.box.x * k, u.box.y * k, u.box.w * k, u.box.h * k);
+                ctx.strokeRect(u.box.x, u.box.y, u.box.w, u.box.h);
                 ctx.setLineDash([]);
             });
         }

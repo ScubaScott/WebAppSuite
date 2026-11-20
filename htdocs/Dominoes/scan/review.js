@@ -1,5 +1,5 @@
 // Domino review grid version identifier
-const DOMINO_REVIEW_VERSION = '1.0';
+const DOMINO_REVIEW_VERSION = '1.1';
 
 // The review step of the scanner: a grid of straightened tiles with a marker over every counted pip, and an
 // editor dialog for correcting a tile (add or remove pips, mark a half blank, delete the tile, add a missed tile).
@@ -141,7 +141,7 @@ const DominoReview = (() => {
                     m.dataset.index = String(i);
                     m.style.left = (p.x / CROP_W * 100) + '%';
                     m.style.top = (p.y / CROP_H * 100) + '%';
-                    m.style.width = (Math.max(p.r, 4) * 2.6 / CROP_W * 100) + '%';
+                    m.style.width = (Math.max(p.r, 4) * 2.3 / CROP_W * 100) + '%';
                     layer.appendChild(m);
                 });
             });
