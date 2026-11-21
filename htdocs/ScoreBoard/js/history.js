@@ -113,7 +113,7 @@ export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, s
     }
 
     /** Ask for confirmation, then remove. Cancelling keeps this dialog open. */
-    function removeCurrent() {
+    async function removeCurrent() {
         const row = activeRow();
         if (!row) return;
         let message = 'Remove this entry from the history?';
@@ -124,7 +124,8 @@ export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, s
         } else if (row.eventType === 'clock_adjust') {
             message = 'Remove this clock correction? Times in this period move back.';
         }
-        if (!window.confirm(message)) return;
+        const ok = await SuiteDialog.confirm(message, { title: 'Remove entry?', confirmLabel: 'Remove', danger: true, defaultCancel: true });
+        if (!ok) return;
         const id = activeId;
         close();
         removeEntry(id);

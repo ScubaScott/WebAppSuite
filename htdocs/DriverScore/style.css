@@ -508,3 +508,13 @@ button:disabled {
 .btn-modal-confirm:hover {
     background: #1976d2;
 }
+
+/* SuiteDialog colors follow the DriverScore dark theme */
+:root {
+    --sd-bg: var(--card-bg);
+    --sd-fg: var(--text-color);
+    --sd-field: var(--bg-color);
+    --sd-accent: var(--accent);
+    --sd-on-accent: #1b1403;
+    --sd-danger: var(--danger);
+}

@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '6.1';
+const SW_VERSION = '6.2';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Scanner engine files (OCR/image libraries and models) live in their own cache that has no version
@@ -38,6 +38,10 @@ const APP_SHELL = [
   './Bingo/index.html',
   './Bingo/style.css',
   './Bingo/tracking.js',
+  './Bingo/stats-store.js',
+  './Bingo/stats.html',
+  './Bingo/stats.css',
+  './Bingo/stats.js',
   './Bingo/game-creator.html',
   './Bingo/scan/scan.html',
   './Bingo/scan/style.css',

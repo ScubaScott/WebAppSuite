@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="style.css">
     <!-- Suite profile styles for footer sync indicator -->
     <link rel="stylesheet" href="../media/suite-profile.css">
+    <link rel="stylesheet" href="../media/suite-dialog.css">
 </head>
 <body>
 
@@ -144,11 +145,12 @@
 
 <!-- Footer displaying application version and profile sync status -->
 <footer class="app-footer">
-    <p>Version <span id="appVersion">1.9</span></p>
+    <p>Version <span id="appVersion">2.0</span></p>
 </footer>
 
 <!-- Suite profile cloud sync library — must load before main script block -->
 <script src="../media/suite-profile.js"></script>
+<script src="../media/suite-dialog.js"></script>
 
 <script>
     // Penalty indicator heat levels — 0.0 (idle) to 1.0 (max red); decay over time
@@ -546,7 +548,7 @@
     // Validates driver/vehicle selection and requests motion permissions before initializing sensors
     async function startEngine() {
         if (!ddlDriver.value || ddlDriver.value === "__ADD_NEW__" || !ddlVehicle.value || ddlVehicle.value === "__MANAGE_VEHICLES__") {
-            alert("Ensure an active Driver and Vehicle are selected before starting a trip.");
+            SuiteDialog.alert("Ensure an active Driver and Vehicle are selected before starting a trip.", { title: "Select driver and vehicle" });
             return;
         }
 
@@ -813,7 +815,7 @@
     });
 
     // DriveScore application version identifier
-    const VERSION = '1.9';
+    const VERSION = '2.0';
     const APP_VERSION = VERSION;
     const versionEl = document.getElementById('appVersion');
     if (versionEl) {

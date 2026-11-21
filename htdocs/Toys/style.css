@@ -2333,3 +2333,21 @@ input:checked + .slider-toggle:before {
   word-break: break-word;
   color: var(--text-dark);
 }
+
+/* SuiteDialog colors follow the Toys themes */
+:root {
+  --sd-bg: var(--accent-subtle);
+  --sd-fg: var(--text-dark);
+  --sd-muted: var(--text-muted);
+  --sd-border: var(--accent-border);
+  --sd-field: var(--accent-light);
+  --sd-button: var(--accent-light);
+  --sd-accent: var(--accent-primary);
+  --sd-on-accent: #ffffff;
+  --sd-danger: #e63946;
+  --sd-on-danger: #ffffff;
+}
+
+[data-theme="music"] {
+  --sd-on-accent: #111216;
+}

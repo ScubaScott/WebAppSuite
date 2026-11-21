@@ -8,7 +8,10 @@
     <link rel="stylesheet" href="../media/suite-header.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="../media/suite-profile.css">
+    <link rel="stylesheet" href="../media/suite-dialog.css">
     <script src="../media/suite-profile.js" defer></script>
+    <script src="../media/suite-dialog.js" defer></script>
+    <script src="stats-store.js" defer></script>
     <script src="sync.js" defer></script>
     <script src="tracking.js" defer></script>
 </head>
@@ -262,7 +265,7 @@
 
     <script>
         // Page version identifier
-        const INDEX_VERSION = '4.8';
+        const INDEX_VERSION = '4.9';
         document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('appVersion');
             if (el) el.textContent = typeof VERSION !== 'undefined' ? VERSION : INDEX_VERSION;

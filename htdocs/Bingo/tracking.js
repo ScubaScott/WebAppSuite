@@ -1,5 +1,5 @@
 // Tracking module version identifier
-const VERSION = '4.8';
+const VERSION = '4.9';
 
 
 // ============================================================
@@ -126,70 +126,10 @@ function loadSession() {
 loadSession();
 
 // ============================================================
-// STATS SESSIONS (ball call tallies per location and per game)
-// Stored under its own key so Clear Cards / session saves never touch it.
-// activeId === null means the "Unsaved" bucket is being updated.
-// Every bucket (a location or Unsaved) holds { games: { [gameKey]: tally } } where
-// tally = { name, letters, callCounts, gamesPlayed }. `letters` lists the BINGO columns (0-4)
-// the game's patterns touch, so stats can be filtered by the letters a game uses.
+// STATS HELPERS (board-side)
+// The stats data layer (tallies, locations, load/save) lives in stats-store.js.
+// These helpers tie it to the game currently selected on the board.
 // ============================================================
-
-const STATS_KEY = "bingoStatsSessions";
-const STATS_VERSION = 2;
-// Game key used while no game is selected
-const NO_GAME_KEY = "none";
-const ALL_LETTERS = [0, 1, 2, 3, 4];
-let statsStore = null;
-
-function emptyBucket() {
-    return { games: {} };
-}
-
-// Loads the store; a store written before tallies were kept per game starts with empty tallies
-function loadStatsStore() {
-    let store = null;
-    try {
-        const raw = localStorage.getItem(STATS_KEY);
-        if (raw) store = JSON.parse(raw);
-    } catch (e) { store = null; }
-
-    if (!store || typeof store !== "object") {
-        store = { activeId: null, locations: {}, unsaved: emptyBucket() };
-    }
-    if (!store.locations || typeof store.locations !== "object") store.locations = {};
-    if (store.version !== STATS_VERSION) {
-        Object.values(store.locations).forEach(l => {
-            l.games = {};
-            delete l.callCounts;
-            delete l.gamesPlayed;
-        });
-        store.unsaved = emptyBucket();
-        store.version = STATS_VERSION;
-    }
-    Object.values(store.locations).forEach(l => { if (!l.games) l.games = {}; });
-    if (!store.unsaved || !store.unsaved.games) store.unsaved = emptyBucket();
-    if (store.activeId && !store.locations[store.activeId]) store.activeId = null;
-    statsStore = store;
-    saveStatsStore();
-}
-
-function saveStatsStore() {
-    try { localStorage.setItem(STATS_KEY, JSON.stringify(statsStore)); } catch (e) { /* storage unavailable */ }
-}
-
-// The bucket currently receiving calls: the active location, or the Unsaved bucket
-function getLocationBucket() {
-    return (statsStore.activeId && statsStore.locations[statsStore.activeId]) || statsStore.unsaved;
-}
-
-function getActiveStatsName() {
-    return statsStore.activeId ? statsStore.locations[statsStore.activeId].name : "Unsaved";
-}
-
-// Every bucket: Unsaved plus all locations
-function getAllBuckets() {
-    return [statsStore.unsaved, ...Object.values(statsStore.locations)];
-}
 
 // Key of the game currently selected on the board
 function currentGameKey() {
@@ -205,19 +145,6 @@ function gameLetters(game) {
     return ALL_LETTERS.filter(c => cols.has(c));
 }
 
-// Returns a bucket's tally for a game, creating it when missing
-function getGameTally(bucket, key) {
-    if (!bucket.games[key]) {
-        bucket.games[key] = {
-            name: key === NO_GAME_KEY ? "No game selected" : "Unknown game",
-            letters: ALL_LETTERS.slice(),
-            callCounts: {},
-            gamesPlayed: 0
-        };
-    }
-    return bucket.games[key];
-}
-
 // Copies the selected game's current name and letters onto its tally
 function refreshGameInfo(tally, key) {
     if (key === NO_GAME_KEY) return;
@@ -228,66 +155,19 @@ function refreshGameInfo(tally, key) {
     }
 }
 
-// Sums the tallies of the given buckets into one read-only tally.
-// `selected` is a Set of game keys, or null for every game.
-function sumTallies(buckets, selected) {
-    const total = { callCounts: {}, gamesPlayed: 0 };
-    buckets.forEach(bucket => {
-        Object.entries(bucket.games).forEach(([key, t]) => {
-            if (selected && !selected.has(key)) return;
-            total.gamesPlayed += t.gamesPlayed || 0;
-            for (const [n, c] of Object.entries(t.callCounts || {})) {
-                total.callCounts[n] = (total.callCounts[n] || 0) + c;
-            }
-        });
-    });
-    return total;
-}
-
-// Games that have recorded calls or finished games in the given buckets, sorted by name
-function listStatsGames(buckets) {
-    const found = {};
-    buckets.forEach(bucket => {
-        Object.entries(bucket.games).forEach(([key, t]) => {
-            if (Object.keys(t.callCounts || {}).length === 0 && !t.gamesPlayed) return;
-            found[key] = { key, name: t.name, letters: t.letters || ALL_LETTERS };
-        });
-    });
-    return Object.values(found).sort((a, b) => a.name.localeCompare(b.name));
-}
-
-// True if a bucket has any recorded ball calls
-function bucketHasCalls(bucket) {
-    return Object.values(bucket.games).some(t => Object.keys(t.callCounts || {}).length > 0);
-}
-
-// Creates a location (optionally seeded with the games of a bucket), makes it active and returns its id
-function createStatsLocation(name, seed) {
-    const id = "loc_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    statsStore.locations[id] = {
-        name,
-        games: seed ? seed.games : {},
-        createdAt: new Date().toISOString()
-    };
-    statsStore.activeId = id;
-    saveStatsStore();
-    updateStatsLinkLabel();
-    return id;
-}
-
-// True if another location already uses this name (case-insensitive)
-function statsNameTaken(name, exceptId) {
-    const lower = name.toLowerCase();
-    return Object.entries(statsStore.locations).some(([id, l]) => id !== exceptId && l.name.toLowerCase() === lower);
-}
-
 // Shows the active location name on the Stats link
 function updateStatsLinkLabel() {
     const el = document.getElementById("statsSessionName");
     if (el) el.textContent = getActiveStatsName();
 }
 
-loadStatsStore();
+// The Stats page can change the active location or its data, so re-read the store when
+// returning to this page (including from the back/forward cache)
+window.addEventListener("pageshow", () => {
+    loadStatsStore();
+    updateStatsLinkLabel();
+});
+
 
 // ============================================================
 // MAIN UI REFRESH
@@ -507,14 +387,17 @@ function buildNumberPicker(colIdx) {
     }
 }
 
-function onNumberPick(n) {
+async function onNumberPick(n) {
     // Use isTrueWin so double mode is respected for scroll-to-winner tracking
     const prevWinnerExists = session.cards.some(card => isTrueWin(card, getSelectedGame()));
     const letter = session.word[Math.floor((n - 1) / 15)] || "";
 
     if (session.called.includes(n)) {
         // Prompt before un-calling a number
-        if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
+        const ok = await SuiteDialog.confirm("This will remove it from the called list.", {
+            title: `Un-call ${letter}${n}?`, confirmLabel: `Un-call ${letter}${n}`, danger: true
+        });
+        if (!ok) return;
         session.called = session.called.filter(x => x !== n);
         adjustCallCount(n, -1);
         if (session.lastBall === n) {
@@ -577,14 +460,17 @@ function buildTrackingGrid() {
     }
 }
 
-function onNumberGridClick(n) {
+async function onNumberGridClick(n) {
     // Use isTrueWin so double mode is respected for scroll-to-winner tracking
     const prevWinnerExists = session.cards.some(card => isTrueWin(card, getSelectedGame()));
     const letter = session.word[Math.floor((n - 1) / 15)] || "";
 
     if (session.called.includes(n)) {
         // Prompt before un-calling a number
-        if (!confirm(`Un-call ${letter}${n}? This will remove it from the called list.`)) return;
+        const ok = await SuiteDialog.confirm("This will remove it from the called list.", {
+            title: `Un-call ${letter}${n}?`, confirmLabel: `Un-call ${letter}${n}`, danger: true
+        });
+        if (!ok) return;
         session.called = session.called.filter(x => x !== n);
         adjustCallCount(n, -1);
         if (session.lastBall === n) {
@@ -606,9 +492,9 @@ function onNumberGridClick(n) {
 // CALL LOG MODAL & NEW SESSION
 // ============================================================
 
-// Stats link in the Last 6 footer opens the per-ball call statistics modal
+// Stats link in the Last 6 footer opens the per-ball call statistics page
 const statsLink = document.getElementById("statsLink");
-if (statsLink) statsLink.addEventListener("click", () => openStatsModal());
+if (statsLink) statsLink.addEventListener("click", () => { window.location.href = "stats.html"; });
 
 callLogLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -619,6 +505,9 @@ callLogLink.addEventListener("click", (e) => {
 // an un-call is taken from the game the call was credited to (session.callGames), even if the game
 // was changed since. Never below zero; zero entries are dropped.
 function adjustCallCount(n, delta) {
+    // Re-read the store so changes made on the Stats page (active location, resets) are not overwritten
+    loadStatsStore();
+    updateStatsLinkLabel();
     const bucket = getLocationBucket();
     if (!session.callGames) session.callGames = {};
     let key;
@@ -693,442 +582,6 @@ function openCallLogModal() {
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
 }
 
-// Inline name form (text input + Save/Cancel) rendered into `host`.
-// Trims input and rejects empty or duplicate location names.
-// opts: { initial, exceptId, saveLabel, onSave(name), onCancel() }
-function showNameForm(host, opts) {
-    host.innerHTML = "";
-    const form = document.createElement("form");
-    form.className = "stats-name-form";
-
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "stats-name-input";
-    input.maxLength = 30;
-    input.placeholder = "Location name";
-    input.autocomplete = "off";
-    input.value = opts.initial || "";
-    input.setAttribute("aria-label", "Location name");
-
-    const err = document.createElement("div");
-    err.className = "stats-name-error";
-
-    const save = document.createElement("button");
-    save.type = "submit";
-    save.className = "stats-loc-btn active";
-    save.textContent = opts.saveLabel || "Save";
-
-    const cancel = document.createElement("button");
-    cancel.type = "button";
-    cancel.className = "stats-loc-btn";
-    cancel.textContent = "Cancel";
-    cancel.addEventListener("click", () => { host.innerHTML = ""; if (opts.onCancel) opts.onCancel(); });
-
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const name = input.value.trim();
-        if (!name) { err.textContent = "Enter a name."; return; }
-        if (statsNameTaken(name, opts.exceptId)) { err.textContent = "That name is already used."; return; }
-        host.innerHTML = "";
-        opts.onSave(name);
-    });
-
-    form.appendChild(input);
-    form.appendChild(save);
-    form.appendChild(cancel);
-    host.appendChild(form);
-    host.appendChild(err);
-    input.focus();
-    input.select();
-}
-
-// Stats modal: per-location bar graph of how many times each ball (1-75) was called
-function openStatsModal() {
-    const modal = document.createElement("div");
-    modal.className = "game-picker-modal stats-modal";
-
-    const panel = document.createElement("div");
-    panel.className = "game-picker-panel";
-
-    const hdr = document.createElement("div");
-    hdr.className = "game-picker-header";
-    const title = document.createElement("h2");
-    title.className = "game-picker-title";
-    title.textContent = "Ball Call Stats";
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "link-button";
-    closeBtn.textContent = "✕ Close";
-    closeBtn.addEventListener("click", () => modal.remove());
-    hdr.appendChild(title);
-    hdr.appendChild(closeBtn);
-    panel.appendChild(hdr);
-
-    // true = read-only combined view of every location
-    let viewAll = false;
-    // Game filter: a Set of game keys, or null for every game. Only changes what the chart shows,
-    // never the game selected on the board.
-    let selectedGames = null;
-    let filterOpen = false;
-
-    // Buckets the chart currently draws from
-    const scopeBuckets = () => (viewAll ? getAllBuckets() : [getLocationBucket()]);
-
-    // Drops selected games that have no stats in the current scope; an emptied selection becomes "all"
-    function normalizeSelection() {
-        if (!selectedGames || selectedGames.size === 0) return;
-        const present = new Set(listStatsGames(scopeBuckets()).map(g => g.key));
-        selectedGames = new Set([...selectedGames].filter(k => present.has(k)));
-        if (selectedGames.size === 0) selectedGames = null;
-    }
-
-    // Letters shown for a game, using the session word (for example "B I G O")
-    const lettersText = (letters) => letters.map(c => session.word[c] || "").join(" ");
-
-    // Quick picks worked out from the letters each game uses: "Uses all letters" and "No <letter>"
-    function getQuickPicks(games) {
-        const picks = [];
-        const allLetters = games.filter(g => ALL_LETTERS.every(c => g.letters.includes(c)));
-        if (allLetters.length) picks.push({ label: "Uses all letters", keys: allLetters.map(g => g.key) });
-        ALL_LETTERS.forEach(c => {
-            const missing = games.filter(g => !g.letters.includes(c));
-            if (missing.length) picks.push({ label: `No ${session.word[c] || ""}`, keys: missing.map(g => g.key) });
-        });
-        return picks;
-    }
-
-    // True if the selection is exactly the given keys
-    const selectionIs = (keys) => selectedGames !== null
-        && selectedGames.size === keys.length && keys.every(k => selectedGames.has(k));
-
-    // Short text describing the current game filter
-    function filterSummary(games) {
-        if (selectedGames === null) return "All games";
-        if (selectedGames.size === 0) return "No games selected";
-        const pick = getQuickPicks(games).find(p => selectionIs(p.keys));
-        if (pick) return pick.label;
-        if (selectedGames.size === 1) {
-            const only = games.find(g => selectedGames.has(g.key));
-            return only ? only.name : "1 game";
-        }
-        return `${selectedGames.size} games`;
-    }
-
-    // Game filter control: a summary button that opens the checklist with All / None and quick picks
-    function buildGameFilter() {
-        const games = listStatsGames(scopeBuckets());
-        const host = document.createElement("div");
-        host.className = "stats-game-filter";
-
-        const toggle = makeBtn(`Games: ${filterSummary(games)} ${filterOpen ? "▴" : "▾"}`, () => {
-            filterOpen = !filterOpen;
-            renderLocBar();
-        }, "stats-game-toggle");
-        toggle.setAttribute("aria-expanded", filterOpen ? "true" : "false");
-        host.appendChild(toggle);
-        if (!filterOpen) return host;
-
-        const filterPanel = document.createElement("div");
-        filterPanel.className = "stats-game-panel";
-        if (games.length === 0) {
-            filterPanel.innerHTML = '<p class="stats-game-empty">No games recorded here yet.</p>';
-            host.appendChild(filterPanel);
-            return host;
-        }
-
-        // A change to the selection redraws the filter and the chart
-        const apply = (next) => {
-            selectedGames = (next && next.size === games.length) ? null : next;
-            refresh();
-        };
-
-        const bulk = document.createElement("div");
-        bulk.className = "stats-loc-actions";
-        bulk.appendChild(makeBtn("All", () => apply(null), selectedGames === null ? "active" : ""));
-        bulk.appendChild(makeBtn("None", () => apply(new Set()), selectedGames && selectedGames.size === 0 ? "active" : ""));
-        getQuickPicks(games).forEach(pick => {
-            bulk.appendChild(makeBtn(pick.label, () => apply(new Set(pick.keys)), "stats-chip" + (selectionIs(pick.keys) ? " active" : "")));
-        });
-        filterPanel.appendChild(bulk);
-
-        games.forEach(g => {
-            const row = document.createElement("label");
-            row.className = "stats-game-row";
-            const box = document.createElement("input");
-            box.type = "checkbox";
-            box.checked = selectedGames === null || selectedGames.has(g.key);
-            box.addEventListener("change", () => {
-                const next = new Set(selectedGames === null ? games.map(x => x.key) : selectedGames);
-                if (box.checked) next.add(g.key);
-                else next.delete(g.key);
-                apply(next);
-            });
-            const name = document.createElement("span");
-            name.className = "stats-game-name";
-            name.textContent = g.name;
-            const letters = document.createElement("span");
-            letters.className = "stats-game-letters";
-            letters.textContent = lettersText(g.letters);
-            row.appendChild(box);
-            row.appendChild(name);
-            row.appendChild(letters);
-            filterPanel.appendChild(row);
-        });
-        host.appendChild(filterPanel);
-        return host;
-    }
-
-    // Location bar: switcher, new / rename / delete / save-as, the This/All toggle and the game filter
-    const locBar = document.createElement("div");
-    locBar.className = "stats-location-bar";
-    panel.appendChild(locBar);
-
-    const body = document.createElement("div");
-    body.className = "stats-body";
-    panel.appendChild(body);
-
-    function makeBtn(label, onClick, extraClass) {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "stats-loc-btn" + (extraClass ? " " + extraClass : "");
-        b.textContent = label;
-        b.addEventListener("click", onClick);
-        return b;
-    }
-
-    // Rebuilds the location bar from the store (called after any location change)
-    function renderLocBar() {
-        locBar.innerHTML = "";
-
-        const select = document.createElement("select");
-        select.className = "stats-location-select";
-        select.setAttribute("aria-label", "Stats location");
-        const unsavedOpt = new Option("Unsaved", "");
-        select.appendChild(unsavedOpt);
-        Object.entries(statsStore.locations)
-            .sort((a, b) => a[1].name.localeCompare(b[1].name))
-            .forEach(([id, l]) => select.appendChild(new Option(l.name, id)));
-        select.value = statsStore.activeId || "";
-        select.addEventListener("change", () => {
-            statsStore.activeId = select.value || null;
-            saveStatsStore();
-            updateStatsLinkLabel();
-            refresh();
-        });
-        locBar.appendChild(select);
-
-        // Segmented This location / All locations toggle
-        const seg = document.createElement("div");
-        seg.className = "stats-view-toggle";
-        [["This location", false], ["All locations", true]].forEach(([label, all]) => {
-            const b = makeBtn(label, () => { viewAll = all; refresh(); }, viewAll === all ? "active" : "");
-            seg.appendChild(b);
-        });
-        locBar.appendChild(seg);
-
-        locBar.appendChild(buildGameFilter());
-
-        // Action row
-        const actions = document.createElement("div");
-        actions.className = "stats-loc-actions";
-        const formHost = document.createElement("div");
-        formHost.className = "stats-form-host";
-
-        actions.appendChild(makeBtn("+ New", () => showNameForm(formHost, {
-            saveLabel: "Create",
-            onSave: (name) => { createStatsLocation(name); refresh(); }
-        })));
-        if (statsStore.activeId) {
-            const id = statsStore.activeId;
-            actions.appendChild(makeBtn("Rename", () => showNameForm(formHost, {
-                initial: statsStore.locations[id].name, exceptId: id, saveLabel: "Rename",
-                onSave: (name) => { statsStore.locations[id].name = name; saveStatsStore(); updateStatsLinkLabel(); refresh(); }
-            })));
-            actions.appendChild(makeBtn("Delete", () => {
-                if (!confirm(`Delete "${statsStore.locations[id].name}" and all of its stats?`)) return;
-                delete statsStore.locations[id];
-                statsStore.activeId = null;
-                saveStatsStore();
-                updateStatsLinkLabel();
-                refresh();
-            }, "danger"));
-        } else if (bucketHasCalls(statsStore.unsaved)) {
-            actions.appendChild(makeBtn("Save as location…", () => showNameForm(formHost, {
-                saveLabel: "Save",
-                onSave: (name) => {
-                    createStatsLocation(name, statsStore.unsaved);
-                    statsStore.unsaved = emptyBucket();
-                    saveStatsStore();
-                    refresh();
-                }
-            })));
-        }
-        locBar.appendChild(actions);
-        locBar.appendChild(formHost);
-    }
-
-    // Re-renders both the location bar and the chart
-    function refresh() {
-        normalizeSelection();
-        renderLocBar();
-        render();
-    }
-
-    // Rebuilds the chart from the current tallies (also used after reset)
-    function render() {
-        body.innerHTML = "";
-        const tally = sumTallies(scopeBuckets(), selectedGames);
-        const viewName = viewAll ? "All locations" : getActiveStatsName();
-        const filterName = filterSummary(listStatsGames(scopeBuckets()));
-        const counts = tally.callCounts || {};
-        const max = Math.max(0, ...Object.values(counts));
-        const total = Object.values(counts).reduce((a, b) => a + b, 0);
-
-        if (total === 0) {
-            const placeholder = document.createElement("p");
-            placeholder.className = "bingo-cards-placeholder";
-            placeholder.textContent = `No balls recorded yet for ${viewName} · ${filterName}.`;
-            body.appendChild(placeholder);
-            resetBtn.disabled = true;
-            return;
-        }
-        resetBtn.disabled = viewAll;  // combined view is read-only
-
-        const games = tally.gamesPlayed || 0;
-
-        // Summary line: total games (Clear Cards count), calls, and repeated balls
-        const summary = document.createElement("div");
-        summary.className = "stats-summary";
-        const repeats = Object.values(counts).filter(c => c > 1).length;
-        summary.textContent = `${viewName} · ${filterName} · ${games} game${games === 1 ? "" : "s"} · ${total} calls · ${repeats} repeated`;
-        body.appendChild(summary);
-
-        // Readout shows the ball under the finger while scrubbing the chart
-        const readout = document.createElement("div");
-        readout.className = "stats-readout";
-        const defaultText = "Slide a finger across the graph";
-        readout.textContent = defaultText;
-        body.appendChild(readout);
-
-        const chart = document.createElement("div");
-        chart.className = "stats-chart";
-        chart.setAttribute("role", "img");
-        chart.setAttribute("aria-label", "Bar graph of times each ball was called");
-
-        // Y-axis guide showing the tallest bar's count
-        const yMax = document.createElement("span");
-        yMax.className = "stats-ymax";
-        yMax.textContent = max;
-        chart.appendChild(yMax);
-
-        const cols = [];
-        for (let n = 1; n <= 75; n++) {
-            const c = counts[n] || 0;
-            const col = document.createElement("div");
-            col.className = "stats-col";
-
-            const bar = document.createElement("span");
-            bar.className = "stats-bar" + (c > 1 ? " repeat" : "");
-            bar.style.height = `${(c / max) * 100}%`;
-            col.appendChild(bar);
-
-            chart.appendChild(col);
-            cols.push(col);
-        }
-
-        // Magnified bubble that follows the finger above the chart
-        const bubble = document.createElement("div");
-        bubble.className = "stats-bubble hidden";
-        chart.appendChild(bubble);
-
-        // Highlights the bar at a pointer X position and shows its count
-        let activeIdx = -1;
-        function selectAt(clientX) {
-            const first = cols[0].getBoundingClientRect();
-            const last = cols[74].getBoundingClientRect();
-            const span = last.right - first.left;
-            const idx = Math.min(74, Math.max(0, Math.floor(((clientX - first.left) / span) * 75)));
-            if (idx === activeIdx) return;
-            if (activeIdx >= 0) cols[activeIdx].classList.remove("active");
-            activeIdx = idx;
-            cols[idx].classList.add("active");
-
-            const n = idx + 1;
-            const c = counts[n] || 0;
-            const letter = session.word[Math.floor((n - 1) / 15)] || "";
-            readout.textContent = `${letter}${n}: called ${c} time${c === 1 ? "" : "s"}`;
-            bubble.textContent = `${letter}${n} × ${c}`;
-            bubble.classList.remove("hidden");
-
-            // Center the bubble over the bar, clamped inside the chart
-            const chartRect = chart.getBoundingClientRect();
-            const center = cols[idx].getBoundingClientRect().left + cols[idx].offsetWidth / 2 - chartRect.left;
-            const half = bubble.offsetWidth / 2;
-            bubble.style.left = `${Math.min(chartRect.width - half, Math.max(half, center))}px`;
-        }
-        function clearSelection() {
-            if (activeIdx >= 0) cols[activeIdx].classList.remove("active");
-            activeIdx = -1;
-            bubble.classList.add("hidden");
-        }
-
-        // Pointer capture keeps the scrub going even if the finger drifts off the chart
-        chart.addEventListener("pointerdown", (e) => {
-            chart.setPointerCapture(e.pointerId);
-            selectAt(e.clientX);
-        });
-        chart.addEventListener("pointermove", (e) => {
-            if (chart.hasPointerCapture(e.pointerId)) selectAt(e.clientX);
-        });
-        // Mouse hover also previews bars on desktop
-        chart.addEventListener("mousemove", (e) => {
-            if (e.buttons === 0) selectAt(e.clientX);
-        });
-        const endScrub = () => { clearSelection(); };
-        chart.addEventListener("pointerup", endScrub);
-        chart.addEventListener("pointercancel", endScrub);
-        chart.addEventListener("mouseleave", endScrub);
-        body.appendChild(chart);
-
-        // X-axis markers at the start of each letter range
-        const axis = document.createElement("div");
-        axis.className = "stats-axis";
-        for (let i = 0; i < 5; i++) {
-            const tick = document.createElement("span");
-            tick.textContent = `${session.word[i] || ""} ${i * 15 + 1}-${i * 15 + 15}`;
-            axis.appendChild(tick);
-        }
-        body.appendChild(axis);
-    }
-
-    const footer = document.createElement("div");
-    footer.className = "stats-footer";
-    const resetBtn = document.createElement("button");
-    resetBtn.type = "button";
-    resetBtn.className = "stats-reset-btn";
-    resetBtn.textContent = "Reset Stats";
-    resetBtn.addEventListener("click", () => {
-        if (viewAll) return;
-        // Reset only the games the filter shows (every game when none is filtered out)
-        const bucket = getLocationBucket();
-        const keys = selectedGames === null
-            ? Object.keys(bucket.games)
-            : [...selectedGames].filter(k => bucket.games[k]);
-        if (keys.length === 0) return;
-        const what = selectedGames === null ? "all games" : keys.map(k => bucket.games[k].name).join(", ");
-        if (!confirm(`Reset ball call stats for "${getActiveStatsName()}" (${what})? The call log and board are not affected.`)) return;
-        keys.forEach(k => { delete bucket.games[k]; });
-        saveStatsStore();
-        refresh();
-    });
-    footer.appendChild(resetBtn);
-    panel.appendChild(footer);
-
-    refresh();
-    modal.appendChild(panel);
-    document.body.appendChild(modal);
-    modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
-}
-
 // Settings Game Name / Session Word input (updates column headers across board and cards)
 if (settingGameNameInput) {
     settingGameNameInput.value = session.word || "BINGO";
@@ -1158,9 +611,12 @@ if (settingGameNameInput) {
 
 // Clear Cards button (resets all called numbers, keeping the game name and active cards intact)
 if (clearCardsBtn) {
-    clearCardsBtn.addEventListener("click", () => {
+    clearCardsBtn.addEventListener("click", async () => {
         if (session.called.length === 0) return;
-        if (!confirm("Clear all called numbers? Active cards and game mode will be preserved.")) return;
+        const ok = await SuiteDialog.confirm("Active cards and game mode will be preserved.", {
+            title: "Clear all called numbers?", confirmLabel: "Clear cards", danger: true
+        });
+        if (!ok) return;
 
         session.called = [];
         session.lastBall = null;
@@ -1168,6 +624,8 @@ if (clearCardsBtn) {
         // Each clear ends one game for every game that was credited with calls (the selected game if none)
         const endedKeys = new Set(Object.values(session.callGames || {}));
         if (endedKeys.size === 0) endedKeys.add(currentGameKey());
+        loadStatsStore();
+        updateStatsLinkLabel();
         const bucket = getLocationBucket();
         endedKeys.forEach(key => {
             const tally = getGameTally(bucket, key);
@@ -1687,7 +1145,7 @@ function closeGamePicker() {
 function openGameCreator() {
     const w = window.open("./game-creator.html", "bingoGameCreator",
         "width=500,height=740,top=60,left=120,resizable=yes");
-    if (!w) alert("Please allow popups for this site to open the game creator.");
+    if (!w) SuiteDialog.alert("Please allow popups for this site to open the game creator.", { title: "Popup blocked" });
 }
 
 window.addEventListener("message", (e) => {
@@ -1804,7 +1262,7 @@ function addCard() {
 // BINGO CARDS — tap menu actions (Edit and Remove only)
 // ============================================================
 
-function menuAction(cardId, action) {
+async function menuAction(cardId, action) {
     const card = session.cards.find(c => c.id === cardId);
     if (!card) return;
 
@@ -1816,7 +1274,10 @@ function menuAction(cardId, action) {
             window.location.href = `./scan/scan.html?mode=edit&cardId=${cardId}`;
             return;
         case "remove":
-            if (!confirm("Remove this card from session?")) { renderAllCards(); return; }
+            const ok = await SuiteDialog.confirm("This card will be removed from the session.", {
+                title: "Remove card?", confirmLabel: "Remove card", danger: true
+            });
+            if (!ok) { renderAllCards(); return; }
             session.cards = session.cards.filter(c => c.id !== cardId);
             saveSession();
             renderAllCards();

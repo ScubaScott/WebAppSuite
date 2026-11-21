@@ -886,3 +886,17 @@ main {
 .app-footer-version {
     font-size: 12px;
 }
+
+/* SuiteDialog colors follow the admin theme */
+:root {
+    --sd-bg: var(--md-card-bg);
+    --sd-fg: var(--md-text-main);
+    --sd-muted: var(--md-text-sub);
+    --sd-border: var(--md-border);
+    --sd-field: var(--md-surface);
+    --sd-button: var(--md-surface);
+    --sd-accent: var(--md-primary);
+    --sd-on-accent: #ffffff;
+    --sd-danger: var(--md-danger);
+    --sd-on-danger: #ffffff;
+}

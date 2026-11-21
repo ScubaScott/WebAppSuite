@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="style.css">
   <!-- Suite Profile stylesheet for footer sync indicator -->
   <link rel="stylesheet" href="../media/suite-profile.css">
+  <link rel="stylesheet" href="../media/suite-dialog.css">
 </head>
 
 <body>
@@ -342,7 +343,7 @@
 
     <!-- Mandatory Version Footer -->
     <footer class="app-footer">
-      <small>v3.9</small>
+      <small>v4.0</small>
     </footer>
   </div>
 
@@ -455,13 +456,14 @@
 
   <!-- Shared Suite Profile and Cloud Sync Manager -->
   <script src="../media/suite-profile.js"></script>
+  <script src="../media/suite-dialog.js"></script>
   <script src="known-devices.js"></script>
 
   <script>
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "3.9";
+    const APP_VERSION = "4.0";
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.
@@ -1817,7 +1819,7 @@
      */
     async function scanAndAddNewToy() {
       if (!navigator.bluetooth) {
-        alert("Web Bluetooth is not available in this browser. Please use Chrome, Edge, or Bluefy.");
+        SuiteDialog.alert("Please use Chrome, Edge, or Bluefy.", { title: "Web Bluetooth is not available" });
         return;
       }
 
@@ -2092,7 +2094,7 @@
         await navigator.clipboard.writeText(text);
         updateLog('Device report copied to clipboard.');
       } catch (_) {
-        window.prompt('Copy device report:', text);
+        SuiteDialog.prompt('Select the report below and copy it.', { title: 'Copy device report', value: text, confirmLabel: 'Done' });
       }
     }
 
@@ -2350,7 +2352,10 @@
       if (idx === -1) return;
 
       const toy = managedToys[idx];
-      if (confirm(`Forget "${toy.customName}"? The toy will be removed from your saved list.`)) {
+      const forgetOk = await SuiteDialog.confirm(`"${toy.customName}" will be removed from your saved list.`, {
+        title: 'Forget toy?', confirmLabel: 'Forget toy', danger: true, defaultCancel: true
+      });
+      if (forgetOk) {
         if (toy.device && toy.device.gatt && toy.device.gatt.connected) {
           toy.device.gatt.disconnect();
         }

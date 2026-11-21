@@ -1,6 +1,6 @@
 /* Stylesheet version identifier */
 :root {
-    --version: "3.3";
+    --version: "3.4";
 
     /* Flashboard Call Balls Custom Configuration */
     --flashboard-ball-size: 27px;
@@ -13,6 +13,22 @@
     --card-view-cols: 2;
     /* --card-view-scale: 0.0–1.0 — scales cell font size in non-edit mode */
     --card-view-scale: 0.75;
+}
+
+/* SuiteDialog colors follow the active Bingo theme */
+:root,
+[data-theme="basic"],
+[data-theme="divebar"] {
+    --sd-bg: var(--surface-strong, var(--surface));
+    --sd-fg: var(--text-main);
+    --sd-muted: var(--text-subtle);
+    --sd-border: var(--border);
+    --sd-field: var(--surface);
+    --sd-button: var(--surface);
+    --sd-accent: var(--primary);
+    --sd-on-accent: #ffffff;
+    --sd-danger: #d93025;
+    --sd-on-danger: #ffffff;
 }
 
 /* ================================================================
@@ -2848,134 +2864,6 @@ body {
     cursor: not-allowed;
 }
 
-/* ===== Call log footer + ball call stats modal ===== */
-
-.stats-body {
-    padding: 16px 20px;
-    overflow-y: auto;
-}
-
-.stats-summary {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-main);
-    margin-bottom: 4px;
-}
-
-.stats-readout {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--primary);
-    min-height: 26px;
-    margin-bottom: 10px;
-}
-
-/* Chart area: 75 equal-width columns, bars grow from the bottom */
-.stats-chart {
-    position: relative;
-    display: flex;
-    align-items: stretch;
-    gap: 1px;
-    height: 180px;
-    padding-top: 14px;
-    border-bottom: 1px solid var(--border);
-    touch-action: none; /* finger scrubs the chart instead of scrolling the page */
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.stats-ymax {
-    position: absolute;
-    top: 0;
-    left: 0;
-    font-size: 11px;
-    color: var(--text-subtle);
-}
-
-.stats-col {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 0;
-    display: flex;
-    align-items: flex-end;
-}
-
-/* Bar under the finger */
-.stats-col.active {
-    background: var(--primary-soft);
-}
-
-.stats-col.active .stats-bar {
-    opacity: 1;
-}
-
-/* Enlarged label that follows the finger, drawn above the bars */
-.stats-bubble {
-    position: absolute;
-    top: -34px;
-    transform: translateX(-50%);
-    padding: 6px 12px;
-    border-radius: 10px;
-    background: var(--primary);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    white-space: nowrap;
-    pointer-events: none;
-}
-
-.stats-bubble.hidden {
-    display: none;
-}
-
-.stats-bar {
-    display: block;
-    width: 100%;
-    background: var(--primary);
-    opacity: 0.55;
-    border-radius: 2px 2px 0 0;
-}
-
-/* Balls called more than once stand out */
-.stats-bar.repeat {
-    opacity: 1;
-}
-
-.stats-axis {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 6px;
-    font-size: 11px;
-    color: var(--text-subtle);
-}
-
-.stats-footer {
-    padding: 12px 20px 20px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-}
-
-.stats-reset-btn {
-    width: 100%;
-    min-height: 44px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--surface);
-    color: #d93025;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.stats-reset-btn:active {
-    transform: scale(0.98);
-}
-
-.stats-reset-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
 /* ================================================================
    BALL TARGET MODAL (opened from the Called badge)
 ================================================================ */
@@ -3137,146 +3025,4 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 700;
-}
-
-.stats-location-bar {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 0;
-}
-
-.stats-location-select,
-.stats-name-input {
-    min-height: 44px;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 6px 12px;
-    font-size: 16px;
-    color: var(--text-main);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-}
-
-.stats-view-toggle,
-.stats-loc-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.stats-view-toggle .stats-loc-btn {
-    flex: 1;
-}
-
-.stats-loc-btn {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 6px 14px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-main);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.13s ease, transform 0.08s ease;
-}
-
-.stats-loc-btn:active {
-    transform: scale(0.97);
-}
-
-.stats-loc-btn.active {
-    color: #fff;
-    background: var(--primary);
-    border-color: var(--primary);
-}
-
-.stats-loc-btn.danger {
-    color: #e53935;
-    border-color: rgba(229, 57, 53, 0.4);
-}
-
-/* Inline name form */
-.stats-name-form {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.stats-name-form .stats-name-input {
-    flex: 1 1 100%;
-}
-
-.stats-name-error {
-    min-height: 0;
-    font-size: 12px;
-    color: #e53935;
-}
-
-/* Stats game filter: summary button, checklist panel, quick-pick chips */
-.stats-game-filter {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.stats-game-toggle {
-    width: 100%;
-    text-align: left;
-}
-
-.stats-game-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 40vh;
-    overflow-y: auto;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-}
-
-.stats-game-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    cursor: pointer;
-}
-
-.stats-game-row input[type="checkbox"] {
-    width: 22px;
-    height: 22px;
-    flex-shrink: 0;
-}
-
-.stats-game-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 15px;
-    color: var(--text-main);
-}
-
-.stats-game-letters {
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    color: var(--text-muted, #6b7280);
-}
-
-.stats-game-empty {
-    margin: 0;
-    font-size: 14px;
-    color: var(--text-muted, #6b7280);
-}
-
-.stats-chip {
-    font-size: 13px;
-    border-radius: 999px;
 }

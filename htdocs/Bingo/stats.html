@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Bingo Ball Stats</title>
+    <link rel="stylesheet" href="../media/suite-header.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../media/suite-profile.css">
+    <link rel="stylesheet" href="../media/suite-dialog.css">
+    <link rel="stylesheet" href="stats.css">
+    <script>
+        // Apply the saved Bingo theme before first paint so the page never flashes the wrong colors
+        (function () {
+            try {
+                var saved = localStorage.getItem('bingoTheme');
+                if (saved && saved !== 'basic') document.documentElement.setAttribute('data-theme', saved);
+            } catch (e) { /* storage unavailable: default theme */ }
+        })();
+    </script>
+    <script src="../media/suite-profile.js" defer></script>
+    <script src="../media/suite-dialog.js" defer></script>
+    <script src="stats-store.js" defer></script>
+    <script src="stats.js" defer></script>
+</head>
+
+<body class="stats-body-page">
+
+    <!-- Suite Header: back to the Bingo board, page title, landscape toggle -->
+    <header class="suite-header">
+        <a href="index.html" class="suite-header__back" aria-label="Back to Bingo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span class="suite-header__back-label-long">Back to Bingo</span>
+            <span class="suite-header__back-label-short">Bingo</span>
+        </a>
+        <h1 class="suite-header__title">Stats</h1>
+        <button id="rotateBtn" class="suite-header__gear stats-rotate-btn" type="button" aria-pressed="false" aria-label="Landscape view" title="Landscape view">
+            <!-- Phone outline with rotation arrow -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="7" y="3" width="10" height="18" rx="2"></rect>
+                <path d="M3 9a9 9 0 0 1 3-4"></path>
+                <path d="M21 15a9 9 0 0 1-3 4"></path>
+            </svg>
+        </button>
+    </header>
+
+    <main class="stats-page">
+        <div class="stats-top">
+            <!-- Filter chips: each opens a sheet that overlays the page so the graph never shifts -->
+            <div class="stats-toolbar" role="toolbar" aria-label="Stats filters">
+                <button id="locBtn" class="stats-chip-btn" type="button" aria-haspopup="dialog">
+                    <span class="stats-chip-label">Location</span>
+                    <span id="locBtnValue" class="stats-chip-value">Unsaved</span>
+                    <span class="stats-chip-caret" aria-hidden="true">▾</span>
+                </button>
+                <div class="stats-seg" role="group" aria-label="Locations shown">
+                    <button id="scopeThis" class="stats-seg-btn" type="button">This</button>
+                    <button id="scopeAll" class="stats-seg-btn" type="button">All</button>
+                </div>
+                <button id="gamesBtn" class="stats-chip-btn" type="button" aria-haspopup="dialog">
+                    <span class="stats-chip-label">Games</span>
+                    <span id="gamesBtnValue" class="stats-chip-value">All games</span>
+                    <span class="stats-chip-caret" aria-hidden="true">▾</span>
+                </button>
+            </div>
+
+            <div class="stats-info">
+                <div id="statsSummary" class="stats-summary"></div>
+                <div id="statsReadout" class="stats-readout" aria-live="polite"></div>
+            </div>
+        </div>
+
+        <!-- Bar graph: 75 columns, one per ball -->
+        <section class="stats-plot" id="statsPlot" aria-label="Bar graph of times each ball was called">
+            <div class="stats-grid" aria-hidden="true">
+                <span class="stats-gridline stats-gridline-top"><span id="yMaxLabel">0</span></span>
+                <span class="stats-gridline stats-gridline-mid"><span id="yMidLabel"></span></span>
+            </div>
+            <div id="statsBars" class="stats-bars"></div>
+            <div id="statsLens" class="stats-lens hidden" aria-hidden="true"></div>
+            <p id="statsEmpty" class="stats-empty hidden"></p>
+        </section>
+
+        <div id="statsAxis" class="stats-axis" aria-hidden="true"></div>
+    </main>
+
+    <!-- Location sheet: switch, create, rename, delete, save, reset -->
+    <dialog id="locSheet" class="stats-sheet" aria-label="Stats location">
+        <div class="stats-sheet-panel">
+            <div class="stats-sheet-head">
+                <h2 class="stats-sheet-title">Location</h2>
+                <button type="button" class="stats-sheet-done" data-close>Done</button>
+            </div>
+            <div id="locSheetBody" class="stats-sheet-body"></div>
+        </div>
+    </dialog>
+
+    <!-- Games sheet: choose which games the graph counts -->
+    <dialog id="gamesSheet" class="stats-sheet" aria-label="Games filter">
+        <div class="stats-sheet-panel">
+            <div class="stats-sheet-head">
+                <h2 class="stats-sheet-title">Games</h2>
+                <button type="button" class="stats-sheet-done" data-close>Done</button>
+            </div>
+            <div id="gamesSheetBody" class="stats-sheet-body"></div>
+        </div>
+    </dialog>
+
+    <footer class="app-footer">
+        <p>Version <span id="appVersion">1.0</span></p>
+    </footer>
+
+</body>
+
+</html>

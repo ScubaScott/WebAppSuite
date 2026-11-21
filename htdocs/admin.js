@@ -1,5 +1,5 @@
 // Admin page application version identifier
-const APP_VERSION = "1.4";
+const APP_VERSION = "1.5";
 
 // Admin page logic: loads all profiles from admin.php, toggles Special group membership, manages user passwords, and renders system stats.
 (function () {
@@ -268,7 +268,9 @@ const APP_VERSION = "1.4";
         if (!activeUser || removePasswordBtn.disabled) return;
 
         const targetUsername = activeUser.username;
-        const confirmed = window.confirm('Remove password protection for "' + targetUsername + '"? Anyone will be able to access this profile without a password.');
+        const confirmed = await SuiteDialog.confirm('Anyone will be able to access the profile "' + targetUsername + '" without a password.', {
+            title: 'Remove password?', confirmLabel: 'Remove password', danger: true, defaultCancel: true
+        });
         if (!confirmed) return;
 
         removePasswordBtn.disabled = true;

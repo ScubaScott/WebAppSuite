@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="style.css">
     <!-- Suite profile styles for footer sync indicator -->
     <link rel="stylesheet" href="../media/suite-profile.css">
+    <link rel="stylesheet" href="../media/suite-dialog.css">
 </head>
 <body data-theme="grass">
 
@@ -142,12 +143,13 @@
 
     <!-- Footer displaying application version and profile sync status -->
     <footer class="app-footer">
-        <p>Version <span id="appVersion">1.8</span></p>
+        <p>Version <span id="appVersion">1.9</span></p>
     </footer>
 
     <!-- Application JavaScript Logic -->
     <!-- Suite profile cloud sync library for user preferences -->
     <script src="../media/suite-profile.js"></script>
+    <script src="../media/suite-dialog.js"></script>
     <script>
         // Centralized Application Game State
         let gameState = {
@@ -457,8 +459,11 @@
         }
 
         // Reset entire game session back to zero scores
-        function resetGame() {
-            if (confirm("Are you sure you want to reset the entire game?")) {
+        async function resetGame() {
+            const ok = await SuiteDialog.confirm("Both scores and all bags will be cleared.", {
+                title: "Reset the entire game?", confirmLabel: "Reset game", danger: true, defaultCancel: true
+            });
+            if (ok) {
                 gameState.redTotal = 0;
                 gameState.blueTotal = 0;
                 gameState.redBags = [];
@@ -573,7 +578,7 @@
         });
 
         // Application version identifier
-        const VERSION = '1.8';
+        const VERSION = '1.9';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('appVersion');
         if (versionEl) {

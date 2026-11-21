@@ -6,7 +6,7 @@
 import { deriveStatusPill, formatStartDate, normalizeRowViewModel, applySavedThemeReadOnly } from './shared.js';
 
 // Application version constant (follows suite 2-part decimal convention)
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 
 // Pagination page size for My Games archive
 const PAGE_LIMIT = 20;
@@ -587,12 +587,12 @@ btnSheetVisibility.addEventListener('click', async () => {
             closeActionSheet();
             fetchMyGames();
         } else {
-            alert('Unable to update game visibility.');
+            await SuiteDialog.alert('Unable to update game visibility.');
             btnSheetVisibility.disabled = false;
             btnSheetVisText.textContent = (targetGame.visibility === 'public') ? 'Make Private' : 'Make Public';
         }
     } catch (err) {
-        alert('Network error updating game visibility.');
+        await SuiteDialog.alert('Network error updating game visibility.');
         btnSheetVisibility.disabled = false;
         btnSheetVisText.textContent = (targetGame.visibility === 'public') ? 'Make Private' : 'Make Public';
     }
@@ -605,7 +605,7 @@ btnSheetEnd.addEventListener('click', async () => {
     if (targetGame.status === 'final') return;
 
     const confirmMsg = `End this match now?\n\n${targetGame.homeName} vs ${targetGame.awayName}\nScore: ${targetGame.homeScore} – ${targetGame.awayScore}\n\nIt becomes Final and cannot be resumed.`;
-    if (!window.confirm(confirmMsg)) return;
+    if (!(await SuiteDialog.confirm(confirmMsg, { title: 'End match?', confirmLabel: 'End match', danger: true, defaultCancel: true }))) return;
 
     btnSheetEnd.disabled = true;
     btnSheetEnd.textContent = 'Ending…';
@@ -620,12 +620,12 @@ btnSheetEnd.addEventListener('click', async () => {
                 loadMyGames();
             }
         } else {
-            alert('Unable to end match.');
+            await SuiteDialog.alert('Unable to end match.');
             btnSheetEnd.disabled = false;
             btnSheetEnd.textContent = 'End Game';
         }
     } catch (err) {
-        alert('Network error ending match.');
+        await SuiteDialog.alert('Network error ending match.');
         btnSheetEnd.disabled = false;
         btnSheetEnd.textContent = 'End Game';
     }
@@ -636,12 +636,12 @@ btnSheetDelete.addEventListener('click', async () => {
     if (!selectedMenuGame) return;
     const targetGame = selectedMenuGame;
     if (targetGame.status !== 'final') {
-        alert('This match is still active. Please finalize it before deleting.');
+        await SuiteDialog.alert('This match is still active. Please finalize it before deleting.');
         return;
     }
 
     const confirmMsg = `Permanently delete this match record?\n\n${targetGame.homeName} vs ${targetGame.awayName}\nScore: ${targetGame.homeScore} – ${targetGame.awayScore}\nDate: ${formatStartDate(targetGame.startedAt)}`;
-    if (!window.confirm(confirmMsg)) return;
+    if (!(await SuiteDialog.confirm(confirmMsg, { title: 'Delete match?', confirmLabel: 'Delete match', danger: true, defaultCancel: true }))) return;
 
     btnSheetDelete.disabled = true;
     btnSheetDelete.textContent = 'Deleting…';
@@ -656,15 +656,15 @@ btnSheetDelete.addEventListener('click', async () => {
                 loadMyGames();
             }
         } else {
-            alert('Unable to delete match record.');
+            await SuiteDialog.alert('Unable to delete match record.');
             btnSheetDelete.disabled = false;
             btnSheetDelete.textContent = 'Delete Match';
         }
     } catch (err) {
         if (err && (err.error_code === 'game_live' || (err.message && err.message.toLowerCase().includes('live')))) {
-            alert('Game is still active on server. End it before deleting.');
+            await SuiteDialog.alert('Game is still active on server. End it before deleting.');
         } else {
-            alert('Network error deleting match record.');
+            await SuiteDialog.alert('Network error deleting match record.');
         }
         btnSheetDelete.disabled = false;
         btnSheetDelete.textContent = 'Delete Match';

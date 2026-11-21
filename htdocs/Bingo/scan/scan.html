@@ -12,6 +12,7 @@
 
     <!-- Shared Bingo stylesheet for theme variables and base components -->
     <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../../media/suite-dialog.css">
 
     <style>
         /* Card editor page layout — version 1.5 */
@@ -779,6 +780,7 @@
 
     <!-- Suite Profile & Bingo Sync engine -->
     <script src="../../media/suite-profile.js"></script>
+    <script src="../../media/suite-dialog.js"></script>
     <script src="../sync.js"></script>
     <script src="../../media/scan/imaging.js"></script>
     <script src="profiles.js"></script>
@@ -1408,7 +1410,7 @@
                     card.serial = serial;
                     card.editMode = false;
                 } else {
-                    alert('Card not found in session. It may have been removed.');
+                    SuiteDialog.alert('It may have been removed.', { title: 'Card not found in session' });
                     return;
                 }
             } else {
@@ -1461,10 +1463,10 @@
 
                 BingoSync.queueCardUpsert(cardPayload);
                 serverCardsLoaded = false;
-                alert(`✓ Card "${name}" saved! (Syncing with library)`);
+                SuiteDialog.alert('Syncing with library.', { title: `Card "${name}" saved` });
             } catch (err) {
                 console.error(err);
-                alert('Error saving to server: ' + err.message);
+                SuiteDialog.alert(err.message, { title: 'Error saving to server' });
             } finally {
                 if (saveServerBtn) saveServerBtn.disabled = false;
             }
@@ -1604,7 +1606,7 @@
                         // Re-sort and render immediately so favorited cards float to the top
                         sortAndRenderServerCards(currentServerCards, currentServerFromCache);
                     } catch (err) {
-                        alert(err.message);
+                        SuiteDialog.alert(err.message, { title: 'Could not update favorite' });
                         favBtn.disabled = false;
                     }
                 };
@@ -1633,8 +1635,11 @@
             deleteBtn.style.cssText = 'padding: 8px 10px; font-size: 13px; width: auto;';
             deleteBtn.title = 'Delete from library';
             deleteBtn.textContent = '🗑';
-            deleteBtn.onclick = () => {
-                if (!confirm(`Delete "${savedCard.label || savedCard.name}" from library?`)) return;
+            deleteBtn.onclick = async () => {
+                const ok = await SuiteDialog.confirm(`"${savedCard.label || savedCard.name}" will be removed from the library.`, {
+                    title: 'Delete card?', confirmLabel: 'Delete card', danger: true, defaultCancel: true
+                });
+                if (!ok) return;
                 BingoSync.queueCardDelete(savedCard.id);
                 const idx = currentServerCards.findIndex(c => String(c.id) === String(savedCard.id));
                 if (idx !== -1) currentServerCards.splice(idx, 1);
@@ -2314,7 +2319,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '2.3';
+        const SCAN_PAGE_VERSION = '2.4';
         // The training store needs the app version; it also resumes sending anything left from an earlier session
         TrainingStore.init(SCAN_PAGE_VERSION).then(refreshContribution);
         refreshContribution();

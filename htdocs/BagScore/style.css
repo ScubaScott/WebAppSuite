@@ -661,3 +661,17 @@ button.action-btn:active {
     font-size: 0.75rem;
     color: var(--text-subtle, #64748b);
 }
+
+/* SuiteDialog colors follow the active BagScore theme (declared on body, where the theme tokens live) */
+body {
+    --sd-bg: var(--card-bg);
+    --sd-fg: var(--text-main);
+    --sd-muted: var(--text-subtle);
+    --sd-border: var(--input-border);
+    --sd-field: var(--input-field-bg);
+    --sd-button: var(--input-bg);
+    --sd-accent: var(--text-main);
+    --sd-on-accent: var(--card-bg);
+    --sd-danger: #dc2626;
+    --sd-on-danger: #ffffff;
+}

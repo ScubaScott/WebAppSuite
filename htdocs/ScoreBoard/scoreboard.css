@@ -3068,3 +3068,9 @@ button.timer-elapsed:focus-visible {
 .setup-share-row.hidden {
     display: none;
 }
+
+/* SuiteDialog accent follows the ScoreBoard theme color */
+:root {
+    --sd-accent: var(--theme-accent, #f0b429);
+    --sd-on-accent: #ffffff;
+}

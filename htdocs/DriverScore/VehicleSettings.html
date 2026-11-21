@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <!-- Suite profile styles for footer sync indicator -->
     <link rel="stylesheet" href="../media/suite-profile.css">
+    <link rel="stylesheet" href="../media/suite-dialog.css">
 </head>
 <body>
 
@@ -112,6 +113,7 @@
 
 <!-- Suite profile cloud sync library — must load before main script block -->
 <script src="../media/suite-profile.js"></script>
+<script src="../media/suite-dialog.js"></script>
 
 <script>
     // System Config Modules & Calibration State Mechanics
@@ -333,7 +335,7 @@
         const nextThreshold = parseFloat(numThreshold.value);
         const nextAlpha = parseFloat(numAlpha.value);
 
-        if (!newName) { alert("Profile tag name cannot be blank."); return; }
+        if (!newName) { SuiteDialog.alert("Profile tag name cannot be blank.", { title: "Name required" }); return; }
 
         const template = {
             threshold: nextThreshold,
@@ -395,7 +397,9 @@
             return;
         }
 
-        const proceed = confirm("Begin standalone vehicle profile calibration routine? This captures environmental accelerometer data for exactly 3 minutes.");
+        const proceed = await SuiteDialog.confirm("This captures environmental accelerometer data for exactly 3 minutes.", {
+            title: "Begin calibration?", confirmLabel: "Begin calibration"
+        });
         if (!proceed) return;
 
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -538,7 +542,7 @@
     btnCalibrate.addEventListener('click', toggleCalibration);
 
     // Garage settings page version identifier
-    const VERSION = '1.5';
+    const VERSION = '1.6';
     const APP_VERSION = VERSION;
     const versionEl = document.getElementById('appVersion');
     if (versionEl) {
