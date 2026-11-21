@@ -1,5 +1,5 @@
 // Bingo Stats page: bar graph of how many times each ball (1-75) was called, with filters in sheets
-const STATS_PAGE_VERSION = "1.0";
+const STATS_PAGE_VERSION = "1.1";
 
 // Balls shown in the zoom lens, centered on the held ball
 const LENS_BALLS = 11;
@@ -542,8 +542,6 @@ scopeAll.addEventListener("click", () => { viewAll = true; refresh(); });
 // LANDSCAPE (fullscreen + orientation lock)
 // ============================================================
 
-const ROTATE_TIP = "Turn your phone sideways to see the graph wider.\nIf it does not rotate, turn on auto-rotate, or open this page in the browser instead of the installed app.";
-
 // Releases the orientation lock when it exists
 function unlockOrientation() {
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* not locked */ }
@@ -559,9 +557,8 @@ async function toggleLandscape() {
         await document.documentElement.requestFullscreen();
         await screen.orientation.lock("landscape");
     } catch (e) {
-        // Fullscreen or the lock is unsupported or refused: undo and explain
+        // Fullscreen or the lock is unsupported or refused: leave fullscreen and stay as-is
         try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (err) { /* already out */ }
-        SuiteDialog.alert(ROTATE_TIP, { title: "Rotate your phone" });
     }
 }
 

@@ -2,8 +2,9 @@
 
 /* ---------- Page frame: header, controls, graph (fills the rest), axis, footer ---------- */
 .stats-body-page {
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
@@ -191,18 +192,17 @@
 }
 
 .stats-bars {
-    position: relative;
+    position: absolute;
+    inset: 18px 0 0 0;
     display: flex;
     gap: 1px;
-    height: 100%;
 }
 
 /* One column per ball; alternate letter groups get a faint band */
 .stats-col {
+    position: relative;
     flex: 1 1 0;
     min-width: 0;
-    display: flex;
-    align-items: flex-end;
 }
 
 .stats-col.band {
@@ -216,8 +216,11 @@
 }
 
 .stats-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: block;
-    width: 100%;
     background: var(--primary);
     opacity: 0.5;
     border-radius: 2px 2px 0 0;
@@ -301,14 +304,15 @@
 }
 
 .stats-lens-track {
+    position: relative;
     flex: 1;
-    display: flex;
-    align-items: flex-end;
-    padding: 0 4px;
 }
 
 .stats-lens-bar {
-    width: 100%;
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    bottom: 0;
     background: var(--primary);
     border-radius: 4px 4px 0 0;
     min-height: 2px;
