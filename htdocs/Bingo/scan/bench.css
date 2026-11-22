@@ -22,7 +22,7 @@ body {
     line-height: 1.45;
 }
 
-main { max-width: 980px; margin: 0 auto; }
+main { width: 100%; max-width: 980px; margin: 0 auto; }
 h1 { font-size: 1.4rem; margin: 20px 0 4px; }
 h2 { font-size: 1.05rem; margin: 0 0 10px; }
 p.lead { color: var(--muted); margin: 0 0 16px; }

@@ -1,6 +1,6 @@
 // Dominoes score keeper: page controller (state, rendering, dialogs, persistence and cloud sync).
 // Scoring rules live in core.js and the line chart in chart.js.
-const APP_VERSION = "1.6";
+const APP_VERSION = "1.7";
 
 const Core = DominoCore;
 

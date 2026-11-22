@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
     <!-- Shared Bingo stylesheet for theme variables and base components -->
+    <link rel="stylesheet" href="../../media/suite-footer.css">
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="../../media/suite-dialog.css">
 
@@ -2319,7 +2320,7 @@
         initScannerEngine();
 
         // Application version identifier
-        const SCAN_PAGE_VERSION = '2.4';
+        const SCAN_PAGE_VERSION = '2.5';
         // The training store needs the app version; it also resumes sending anything left from an earlier session
         TrainingStore.init(SCAN_PAGE_VERSION).then(refreshContribution);
         refreshContribution();
@@ -2355,7 +2356,7 @@
     </script>
 
     <footer class="app-footer">
-        <p>Version <span id="appVersion">2.2</span></p>
+        <p>Version <span id="appVersion">2.5</span></p>
     </footer>
 </body>
 

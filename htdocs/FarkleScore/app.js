@@ -1,5 +1,5 @@
 // Farkle application version identifier
-const VERSION = '1.4';
+const VERSION = '1.5';
 
 // ─── Storage keys ────────────────────────────────────────────────────────────
 const STORAGE_KEYS = {

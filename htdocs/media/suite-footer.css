@@ -1,0 +1,28 @@
+/* Suite footer v1.0
+   The page is at least one viewport tall. The footer rests at the bottom edge when the
+   content is short and follows the content when it is long (it is never fixed). */
+body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;           /* mobile: the visible viewport, not the area behind browser bars */
+    box-sizing: border-box;       /* body padding counts inside the min-height */
+    display: flex;
+    flex-direction: column;
+}
+
+/* body > .app-footer (specificity 0,1,1) beats each app's own .app-footer rule, so
+   margin-top: auto always wins over app margins such as margin-top: 32px. */
+body > .app-footer {
+    margin-top: auto;
+    flex-shrink: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    text-align: center;
+    font-size: 0.75rem;
+    opacity: 0.6;                 /* subdued on every theme without new color tokens */
+}
+
+body > .app-footer p {
+    margin: 0;
+}

@@ -8,10 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../media/suite-footer.css">
     <link rel="stylesheet" href="../media/suite-header.css">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-black text-white min-h-screen">
+<body class="bg-black text-white">
 
     <!-- Suite Header: back to the parent page, page title, settings -->
     <header class="suite-header">
@@ -143,14 +144,14 @@
         </div>
     </div>
     </div>
-    <footer class="text-center py-4 text-xs text-gray-500">
-        <p>Version <span id="helpVersion">2.4</span></p>
+    <footer class="app-footer py-4 text-gray-500">
+        <p>Version <span id="helpVersion">2.5</span></p>
     </footer>
     <!-- Shared Suite Profile and service worker registration -->
     <script src="../media/suite-profile.js"></script>
     <script>
         // ScoreBoard help documentation version identifier
-        const VERSION = '2.4';
+        const VERSION = '2.5';
         const APP_VERSION = VERSION;
         const versionEl = document.getElementById('helpVersion');
         if (versionEl) versionEl.textContent = VERSION;

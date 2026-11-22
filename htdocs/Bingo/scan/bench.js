@@ -1,5 +1,5 @@
 // Benchmark runner version identifier
-const BENCH_VERSION = '1.5';
+const BENCH_VERSION = '1.6';
 const APP_VERSION = BENCH_VERSION;
 
 // Cells compared per card: the 24 numbered squares (index 12 is the FREE space)

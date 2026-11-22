@@ -1,5 +1,5 @@
 // Domino scanner page controller version identifier
-const SCAN_PAGE_VERSION = '1.6';
+const SCAN_PAGE_VERSION = '1.7';
 
 // Photo to score: gets a photo (live camera, or a file the user picks), shows the detected tile outlines for the
 // user to confirm, straightens and counts each tile, lets the user correct the result in the review grid, then hands the hand's score back to the

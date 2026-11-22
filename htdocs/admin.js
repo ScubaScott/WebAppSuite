@@ -1,5 +1,5 @@
 // Admin page application version identifier
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.6";
 
 // Admin page logic: loads all profiles from admin.php, toggles Special group membership, manages user passwords, and renders system stats.
 (function () {

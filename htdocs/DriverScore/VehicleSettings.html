@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DriveScore Pro - Garage Settings</title>
     <!-- External stylesheet reference for UI components and theme styling -->
+    <link rel="stylesheet" href="../media/suite-footer.css">
     <link rel="stylesheet" href="style.css">
     <!-- Suite profile styles for footer sync indicator -->
     <link rel="stylesheet" href="../media/suite-profile.css">
@@ -108,7 +109,7 @@
 
 <!-- Footer displaying application version and profile sync status -->
 <footer class="app-footer">
-    <p>Version <span id="appVersion">1.6</span></p>
+    <p>Version <span id="appVersion">1.7</span></p>
 </footer>
 
 <!-- Suite profile cloud sync library — must load before main script block -->
@@ -542,7 +543,7 @@
     btnCalibrate.addEventListener('click', toggleCalibration);
 
     // Garage settings page version identifier
-    const VERSION = '1.6';
+    const VERSION = '1.7';
     const APP_VERSION = VERSION;
     const versionEl = document.getElementById('appVersion');
     if (versionEl) {

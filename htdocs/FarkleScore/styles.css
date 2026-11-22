@@ -42,7 +42,9 @@ body {
 
 /* ── Page shell ─────────────────────────────────────────────────────────── */
 .page-shell {
-  min-height: calc(100vh - 56px);
+  /* Grows to fill the page so the footer rests at the bottom edge. */
+  flex: 1 0 auto;
+  width: 100%;
   padding: 20px 20px 40px;
   max-width: 900px;
   margin: 0 auto;

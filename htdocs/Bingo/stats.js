@@ -1,5 +1,5 @@
 // Bingo Stats page: bar graph of how many times each ball (1-75) was called, with filters in sheets
-const STATS_PAGE_VERSION = "1.2";
+const STATS_PAGE_VERSION = "1.3";
 
 // Balls shown in the zoom lens, centered on the held ball
 const LENS_BALLS = 11;

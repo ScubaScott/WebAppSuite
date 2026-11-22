@@ -283,7 +283,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.5, viewer 1.9, games list 1.5, help 2.4, shared 2.0).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.6, viewer 2.0, games list 1.7, help 2.5, shared 2.0).
 
 ---
 

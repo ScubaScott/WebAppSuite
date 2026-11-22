@@ -7,7 +7,7 @@ import { formatClock, getPeriodLabel } from './format.js';
 import { STALL_THRESHOLD_MS, deriveStatusPill, formatAgeMinutes, renderHistoryRows, applySavedThemeReadOnly, applyThemeToBody } from './shared.js';
 
 // Viewer tool version constant
-const APP_VERSION = '1.9';
+const APP_VERSION = '2.0';
 
 // Polling configuration
 const BASE_POLL_INTERVAL_MS = 4000;

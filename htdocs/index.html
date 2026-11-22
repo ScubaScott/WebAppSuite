@@ -276,8 +276,7 @@
             flex-direction: column;
             align-items: center;
             gap: 12px;
-            border-top: 1px solid var(--md-border);
-            background-color: var(--md-card-bg);
+            background-color: transparent;
         }
 
         .refresh-btn {
@@ -341,7 +340,7 @@
             <a href="./about.html" class="icon-btn about-btn" aria-label="About App Suite" title="About App Suite">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 .88-.36 1.68-.93 2.25z" />
+                        d="M4 7c0-1.1.9-2 2-2 .5-1.2 1.6-2 3-2 .9 0 1.7.4 2.3 1 .5-.6 1.3-1 2.2-1 1.2 0 2.2.6 2.8 1.5.9.1 1.7.9 1.7 1.9v1H4V7zm1 3h11v9c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2v-9zm11 1h2c1.66 0 3 1.34 3 3v2c0 1.66-1.34 3-3 3h-2v-2h2c.55 0 1-.45 1-1v-2c0-.55-.45-1-1-1h-2v-2zM8 12v7h2v-7H8zm3.5 0v7h2v-7h-2z" />
                 </svg>
             </a>
             <button id="shareAppBtn" class="icon-btn share-btn" type="button" aria-label="Share App Suite"
@@ -502,7 +501,7 @@
         </button>
         <div id="refreshStatus" class="refresh-status" aria-live="polite"></div>
         <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span
-                id="footerVersion">2.5</span></p>
+                id="footerVersion">2.7</span></p>
     </footer>
 
     <!-- Feedback toast for link copying -->
@@ -513,7 +512,7 @@
 
     <script>
         // Main application suite version identifier
-        const VERSION = '2.5';
+        const VERSION = '2.7';
         document.getElementById('footerVersion').textContent = VERSION;
 
         // Share button interaction using Web Share API with clipboard fallback

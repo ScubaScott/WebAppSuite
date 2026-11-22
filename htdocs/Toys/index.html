@@ -13,6 +13,7 @@
   <!-- Shared Suite Header Stylesheet -->
   <link rel="stylesheet" href="../media/suite-header.css">
   <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="../media/suite-footer.css">
   <link rel="stylesheet" href="style.css">
   <!-- Suite Profile stylesheet for footer sync indicator -->
   <link rel="stylesheet" href="../media/suite-profile.css">
@@ -341,11 +342,12 @@
     <!-- Activity Status Log -->
     <div id="log">Ready. Checking remembered devices...</div>
 
-    <!-- Mandatory Version Footer -->
-    <footer class="app-footer">
-      <small>v4.0</small>
-    </footer>
   </div>
+
+  <!-- Mandatory Version Footer (direct child of body so it rests at the page bottom) -->
+  <footer class="app-footer">
+    <small>v<span id="appVersion"></span></small>
+  </footer>
 
   <!-- Settings Modal (Theme Selection) -->
   <div id="settingsModal" class="settings-modal hidden" role="dialog" aria-modal="true" aria-label="Settings">
@@ -463,7 +465,9 @@
     /**
      * Version constant tracking application updates.
      */
-    const APP_VERSION = "4.0";
+    const APP_VERSION = "4.1";
+    // Show the version in the page footer.
+    document.getElementById('appVersion').textContent = APP_VERSION;
 
     /**
      * Local storage keys for toy nicknames, preferences, pattern generator, motion engine, and theme.

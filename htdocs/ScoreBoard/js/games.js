@@ -6,7 +6,7 @@
 import { deriveStatusPill, formatStartDate, normalizeRowViewModel, applySavedThemeReadOnly } from './shared.js';
 
 // Application version constant (follows suite 2-part decimal convention)
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 
 // Pagination page size for My Games archive
 const PAGE_LIMIT = 20;

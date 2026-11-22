@@ -30,6 +30,7 @@ This is the overarching AI agent configuration for the entire `WebAppSuite` repo
 - **Version Constant**: Every application script or page must define a 2-part version constant (e.g., `const APP_VERSION = "1.1";`).
 - **Increment Rule**: Every change must increment that pages decimal portion by `0.1` (e.g., `1.0` -> `1.1` -> `1.2`).
 - **Footer Display**: Every rendered page (`.html`, etc.) must display this version number in a footer at the bottom of the page in a small font (e.g., `<footer class="app-footer"><small>v1.1</small></footer>`).
+  - **Anchored to the bottom**: the footer is a direct child of `<body>`, subdued and transparent. Link `media/suite-footer.css` (before the page's own stylesheet, and listed in `APP_SHELL` in `sw.js`): it makes `<body>` a full-height flex column and pushes the footer to the bottom edge when the content is short; when the content is long the footer simply follows it. The page's main wrapper must not use `min-height: calc(100vh - ...)`; use `flex: 1 0 auto` (and `width: 100%` if it has a `max-width` and `margin: 0 auto`).
 
 ### UI & Styling Guidelines
 - **Visual Excellence**: Modern, polished dark-mode aesthetics with high contrast, legible typography, and clean layout cards.
