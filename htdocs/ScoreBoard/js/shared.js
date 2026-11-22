@@ -4,9 +4,10 @@
  */
 
 import { getPeriodLabel } from './format.js';
+import { getPhotoUrl } from './custom-photos.js';
 
 // Shared module version constant
-export const SCOREBOARD_SHARED_VERSION = '2.0';
+export const SCOREBOARD_SHARED_VERSION = '2.1';
 
 // Inactivity threshold (30 minutes in ms) after which an active game is considered stalled
 export const STALL_THRESHOLD_MS = 30 * 60 * 1000;
@@ -52,6 +53,78 @@ export const SCOREBOARD_THEMES = {
         filter: 'hue-rotate(200deg) brightness(0.55) saturate(1.4)'
     }
 };
+
+// Custom theme: a color (drawn as a gradient) with an optional photo kept on the operator's device.
+// It is saved in the same single theme string as a catalog theme:
+//   custom-rrggbb             color only
+//   custom-rrggbb-pXXXXXXXX   color plus the id of a photo (8 lowercase hex characters)
+// The "custom-" prefix is reserved: never use it for a catalog key.
+const CUSTOM_THEME_PATTERN = /^custom-([0-9a-f]{6})(?:-p([0-9a-f]{8}))?$/;
+
+/**
+ * Builds a custom theme key.
+ *
+ * @param {string} color '#rrggbb' or 'rrggbb' (any case).
+ * @param {string} [photoId] 8 lowercase hex characters.
+ * @returns {string|null} The key, or null when the color or the photo id is not valid.
+ */
+export function customThemeKey(color, photoId) {
+    const hex = String(color || '').trim().replace(/^#/, '').toLowerCase();
+    if (!/^[0-9a-f]{6}$/.test(hex)) return null;
+    if (!photoId) return `custom-${hex}`;
+    return /^[0-9a-f]{8}$/.test(photoId) ? `custom-${hex}-p${photoId}` : null;
+}
+
+/**
+ * Reads a custom theme key.
+ *
+ * @param {string} key
+ * @returns {{color: string, photoId: (string|null)}|null} The color as '#rrggbb', or null when the
+ *   value is not a custom theme key.
+ */
+export function parseCustomTheme(key) {
+    const match = CUSTOM_THEME_PATTERN.exec(typeof key === 'string' ? key : '');
+    return match ? { color: `#${match[1]}`, photoId: match[2] || null } : null;
+}
+
+/**
+ * The CSS background for a custom theme color: a lit corner, a dark corner, faint diagonal
+ * stripes and a base gradient, so the page is never a flat fill. The lightness is held between
+ * 18% and 38% so the white scoreboard text stays readable whatever color was chosen.
+ *
+ * @param {string} color '#rrggbb'
+ * @returns {{image: string, color: string}} `image` for background-image, `color` (the darkest
+ *   stop) for background-color.
+ */
+export function customBackground(color) {
+    const red = parseInt(color.slice(1, 3), 16) / 255;
+    const green = parseInt(color.slice(3, 5), 16) / 255;
+    const blue = parseInt(color.slice(5, 7), 16) / 255;
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    const delta = max - min;
+
+    // RGB to hue (degrees) and saturation (percent)
+    let hue = 0;
+    if (delta > 0) {
+        if (max === red) hue = ((green - blue) / delta) % 6;
+        else if (max === green) hue = (blue - red) / delta + 2;
+        else hue = (red - green) / delta + 4;
+        hue = Math.round((hue * 60 + 360) % 360);
+    }
+    const lightness = (max + min) / 2;
+    const saturation = delta === 0 ? 0 : Math.round((delta / (1 - Math.abs(2 * lightness - 1))) * 100);
+
+    const base = Math.min(38, Math.max(18, Math.round(lightness * 100)));
+    const tone = (offset) => `hsl(${hue} ${saturation}% ${base + offset}%)`;
+    const stops = [
+        `radial-gradient(ellipse at 18% 12%, ${tone(16)} 0%, transparent 60%)`,
+        `radial-gradient(ellipse at 85% 95%, ${tone(-12)} 0%, transparent 55%)`,
+        'repeating-linear-gradient(135deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 16px)',
+        `linear-gradient(160deg, ${tone(0)} 0%, ${tone(-14)} 100%)`
+    ];
+    return { image: stops.join(', '), color: tone(-14) };
+}
 
 /**
  * Safely escapes characters for HTML insertion.
@@ -378,13 +451,38 @@ export function renderHistoryRows(tbodyEl, historyList, options = {}) {
     });
 }
 
+// Identifies the latest applyThemeToBody call, so a slow photo lookup cannot replace a newer theme
+let themeCallId = 0;
+
 /**
- * Applies a theme to the page background: a catalog key or a bare image file name.
- * Unknown values fall back to the default image. Only touches the document body, never storage.
+ * Applies a theme to the page background: a catalog key, a custom theme key or a bare image file
+ * name. Unknown values fall back to the default image. Only touches the document body, never storage.
+ * A custom theme shows its color gradient at once and adds its photo as soon as this device's
+ * photo store returns it (a device without that photo keeps the gradient).
  *
  * @param {string} themeName
  */
 export function applyThemeToBody(themeName) {
+    const callId = ++themeCallId;
+    const custom = parseCustomTheme(themeName);
+    if (custom) {
+        const look = customBackground(custom.color);
+        document.body.style.backgroundColor = look.color;
+        document.body.style.backgroundImage = look.image;
+        // A custom theme has no filter overlay
+        delete document.body.dataset.themeFilter;
+        const staleOverlay = document.getElementById('theme-filter-overlay');
+        if (staleOverlay) staleOverlay.remove();
+        if (custom.photoId) {
+            getPhotoUrl(custom.photoId).then((url) => {
+                if (url && callId === themeCallId) {
+                    document.body.style.backgroundImage = `url("${url}"), ${look.image}`;
+                }
+            });
+        }
+        return;
+    }
+
     let imageName = 'saber.png';
     let bgColor = '#111827';
     let filter = null;

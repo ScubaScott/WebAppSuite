@@ -5,6 +5,8 @@
 
 import { formatClock } from './format.js';
 import { createThemeSelector } from './theme.js';
+import { customThemeKey, parseCustomTheme } from './shared.js';
+import { savePhoto, photosSupported } from './custom-photos.js';
 
 const byId = (id) => document.getElementById(id);
 const ROLLER_ITEM_HEIGHT = 40;
@@ -50,6 +52,13 @@ export function createSetup({ onSubmit, canChangePeriodLength, canShare, onTheme
         durationNote: byId('setup-duration-note'),
         themeSection: byId('setup-theme-section'),
         themeNote: byId('setup-theme-note'),
+        customPanel: byId('setup-custom-theme'),
+        customColor: byId('setup-custom-color'),
+        customTeamColor: byId('btn-custom-team-color'),
+        customPhotoBlock: byId('setup-custom-photo-block'),
+        customPhotoAdd: byId('btn-custom-photo-add'),
+        customPhotoClear: byId('btn-custom-photo-clear'),
+        customPhotoInput: byId('setup-custom-photo-input'),
         teamSuggestions: byId('team-suggestions'),
         sharingSection: byId('setup-sharing-section'),
         sharePublic: byId('setup-share-public')
@@ -61,14 +70,60 @@ export function createSetup({ onSubmit, canChangePeriodLength, canShare, onTheme
     let lengthLocked = false;
     let theme = null;
 
-    // The theme dropdown lives in this dialog; choosing a theme previews it behind the dialog
+    // The theme dropdown lives in this dialog; choosing a theme previews it behind the dialog.
+    // A new custom theme starts with our team's color.
     const themeSelector = createThemeSelector({
         getTheme: () => theme,
         setTheme: (chosen) => {
             theme = chosen;
+            syncCustomPanel();
             onThemePreview(chosen);
-        }
+        },
+        getSeedColor: () => el.homeColor.value
     });
+
+    // ---- custom theme panel ---------------------------------------------
+
+    /** Show the color and photo controls only while the chosen theme is a custom one. */
+    function syncCustomPanel() {
+        const custom = parseCustomTheme(theme);
+        el.customPanel.classList.toggle('hidden', !custom);
+        if (!custom) return;
+        el.customColor.value = custom.color;
+        // Photos need browser storage; without it only the color is offered
+        el.customPhotoBlock.classList.toggle('hidden', !photosSupported());
+        el.customPhotoAdd.textContent = custom.photoId ? 'Change photo' : 'Add photo';
+        el.customPhotoClear.classList.toggle('hidden', !custom.photoId);
+    }
+
+    /** Make the theme a custom one with this color and (optional) photo, and preview it. */
+    function setCustomTheme(color, photoId) {
+        const key = customThemeKey(color, photoId);
+        if (!key) return;
+        theme = key;
+        syncCustomPanel();
+        themeSelector.update();
+        onThemePreview(theme);
+    }
+
+    /** The photo id of the current custom theme, or null. */
+    function currentPhotoId() {
+        const custom = parseCustomTheme(theme);
+        return custom ? custom.photoId : null;
+    }
+
+    /** Store the picture the user chose and use it as the background. */
+    async function addPhoto(file) {
+        const custom = parseCustomTheme(theme);
+        const color = custom ? custom.color : el.customColor.value;
+        try {
+            const saved = await savePhoto(file, color);
+            setCustomTheme(color, saved.id);
+            themeSelector.render();
+        } catch (error) {
+            SuiteDialog.alert(error.message, { title: 'Photo not added' });
+        }
+    }
 
     // ---- roller ---------------------------------------------------------
 
@@ -203,6 +258,7 @@ export function createSetup({ onSubmit, canChangePeriodLength, canShare, onTheme
         el.themeSection.classList.toggle('hidden', openMode === 'overtime');
         el.themeNote.classList.toggle('hidden', !(openMode === 'edit' && themeLocked));
         el.themeSection.classList.toggle('is-locked', themeLocked);
+        syncCustomPanel();
         themeSelector.render();
         themeSelector.discover();
 
@@ -304,6 +360,18 @@ export function createSetup({ onSubmit, canChangePeriodLength, canShare, onTheme
     // The "+" and "-" buttons above and below the roller wheels
     document.querySelectorAll('[data-roller-step]').forEach((button) => {
         button.addEventListener('click', () => stepRoller(button.dataset.rollerUnit, Number(button.dataset.rollerStep)));
+    });
+
+    // Custom theme controls: the color previews live as it is dragged
+    el.customColor.addEventListener('input', () => setCustomTheme(el.customColor.value, currentPhotoId()));
+    el.customTeamColor.addEventListener('click', () => setCustomTheme(el.homeColor.value, currentPhotoId()));
+    el.customPhotoAdd.addEventListener('click', () => el.customPhotoInput.click());
+    el.customPhotoClear.addEventListener('click', () => setCustomTheme(el.customColor.value, null));
+    el.customPhotoInput.addEventListener('change', () => {
+        const file = el.customPhotoInput.files && el.customPhotoInput.files[0];
+        // Clear the input so choosing the same picture again still fires a change
+        el.customPhotoInput.value = '';
+        if (file) addPhoto(file);
     });
 
     el.homeColor.addEventListener('change', () => { el.homeSwatch.style.background = el.homeColor.value; });

@@ -425,6 +425,23 @@
                         <!-- Populated dynamically with available background images -->
                     </div>
                 </div>
+
+                <!-- Custom theme: a color (drawn as a gradient) and an optional photo kept on this device -->
+                <div id="setup-custom-theme" class="custom-theme-panel hidden">
+                    <div class="custom-theme-row">
+                        <label class="field-label" for="setup-custom-color">Background color</label>
+                        <input type="color" id="setup-custom-color" class="custom-color-input" value="#1e3a8a">
+                        <button type="button" id="btn-custom-team-color" class="custom-theme-btn">Use our team color</button>
+                    </div>
+                    <div id="setup-custom-photo-block" class="custom-theme-photo">
+                        <div class="custom-theme-row">
+                            <button type="button" id="btn-custom-photo-add" class="custom-theme-btn">Add photo</button>
+                            <button type="button" id="btn-custom-photo-clear" class="custom-theme-btn hidden">Use color only</button>
+                            <input type="file" id="setup-custom-photo-input" class="hidden" accept="image/*">
+                        </div>
+                        <p class="setup-note">The photo shows only on this device. Everyone else sees the color.</p>
+                    </div>
+                </div>
                 </div>
                 <p id="setup-theme-note" class="setup-note hidden">The theme is fixed once the game has started.</p>
 

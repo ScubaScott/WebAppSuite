@@ -54,7 +54,7 @@ Target layout. Files marked *(planned)* do not exist yet.
 | `js/clock.js`, `tests/clock.test.mjs` | `getPosition(events, period, t)`, effective start, adjustment validation and expiry detection, per `docs/TIMING-SPEC.md`. Pure. |
 | `js/snapshot.js`, `js/sync.js`, `js/storage.js`, with `tests/snapshot.test.mjs`, `tests/sync.test.mjs`, `tests/storage.test.mjs` | `snapshot.js`: `toSnapshot(game, now, prefs)` and the sync payload (pure). `sync.js`: when to send, revision numbers, conflict handling, beacon; the only code that talks to the games API (through `SuiteProfile.games`). `storage.js`: the saved game and preferences in localStorage, conversion of earlier records. |
 | `js/setup.js` | New Game / Edit Match / Add Overtime dialog and the minutes:seconds roller. |
-| `js/render.js`, `js/store.js`, `js/history.js`, `js/theme.js`, `js/effects.js` | `render.js`: console DOM updates from the game. `store.js`: holds the game and applies actions. `history.js`: the history entry dialog (note, share, remove). `theme.js`: the theme dropdown in Settings. `effects.js`: toast, whistle, goal and card animations, share. |
+| `js/render.js`, `js/store.js`, `js/history.js`, `js/theme.js`, `js/custom-photos.js`, `js/effects.js`, `tests/theme.test.mjs` | `render.js`: console DOM updates from the game. `store.js`: holds the game and applies actions. `history.js`: the history entry dialog (note, share, remove). `theme.js`: the theme dropdown in the setup dialog (built-in images, Custom color, saved photos). `custom-photos.js`: custom background photos stored in this browser's IndexedDB (section 12.4). `effects.js`: toast, whistle, goal and card animations, share. `theme.test.mjs`: custom theme keys and generated CSS. |
 | *(preferences)* | Loaded, saved and normalized in `storage.js`; changed through `changePrefs` in `console.js`. |
 | `js/shared.js` | Used by every page: status pill, history renderer, theme catalog and application, date formatting. Imports the clock and period-label formatters from `format.js`. |
 | `js/viewer.js`, `js/games.js` | Page scripts for the viewer and games list. |
@@ -283,7 +283,7 @@ Do not change these without updating this section, the console and the viewer to
 - Insert user or server text with `textContent`. If HTML must be built, escape every value with `escapeHtml`, including file names from `list.php`. Use `encodeURIComponent` for ids in URLs.
 - Pages never contain login forms; sign-in happens in the root launcher. On login or logout (`suite-profile-changed`), the console reloads.
 - Scores and clock must stay readable from across a field and must not wrap or shift when digits change.
-- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.6, viewer 2.0, games list 1.7, help 2.5, shared 2.0).
+- Each page has one `APP_VERSION` constant and its footer reads it from there; do not also hard-code the number in the HTML. Bump it by 0.1 for every change to that page (current: console 7.7, viewer 2.1, games list 1.8, help 2.6, shared 2.1).
 
 ---
 
@@ -327,10 +327,18 @@ Every game remembers the theme in place when it started, and every screen showin
 - Add `theme` to the game and the snapshot contract. The theme is chosen in the **New Game dialog** (the theme selector moves there and is removed from Settings, so it is clear the theme belongs to the game). It is saved when the clock first starts, and is fixed from then on; until the first Start it can still be changed in the dialog. The value is the theme key from the single shared catalog.
 - Viewer: apply the game's `theme`; fall back to the viewer's own saved theme only for older games that have none. The viewer stops using the viewer's own preference whenever the game carries a theme.
 - Console: when it loads a game it applies that game's theme. The New Game dialog preselects the theme used by the operator's previous game (kept in preferences as `theme`, only as the default for the next game).
-- `games.php` stores the value inside the snapshot JSON and caps it at 64 characters. Pages must accept only values matching `^[A-Za-z0-9._-]+$` and found in the catalog, because the value ends up in an image URL.
+- `games.php` stores the value inside the snapshot JSON and caps it at 64 characters. Pages must accept only values matching `^[A-Za-z0-9._-]+$` and found in the catalog or valid as a custom key (12.4), because the value ends up in an image URL.
 - Theme keys and image file names become permanent: archived games refer to them. Never rename or delete a catalog entry; if an image is missing, fall back to the default theme.
 - Decided: the theme cannot change during a game, because Settings no longer has a theme selector. Spectators therefore see the same theme from start to finish.
 - The theme selector is the dropdown in the setup dialog (`js/setup.js` with `js/theme.js`). Picking a theme previews it behind the dialog; cancelling restores the game's own theme. After the first Start the selector is shown dimmed with a note, and `edit_match` rejects a different theme.
+
+### 12.4 Custom theme (color and optional photo)
+For a team with no built-in background. It is one more kind of theme value, saved exactly like a catalog theme (game `theme`, snapshot `theme`, archived games, the same `games.php` check), so the server, `state.js`, `snapshot.js`, `storage.js` and the viewer's data handling need no special case.
+- **Key format** (built by `customThemeKey`, read by `parseCustomTheme`, both in `shared.js`): `custom-rrggbb` (color only) or `custom-rrggbb-pXXXXXXXX` (color plus a photo id of 8 lowercase hex characters). Lowercase only; at most 23 characters. The `custom-` prefix is reserved: no catalog key may start with it.
+- **Look**: `customBackground(color)` builds the CSS (a lit corner, a dark corner, faint diagonal stripes and a base gradient). Lightness is held between 18% and 38% so white scoreboard text stays readable. `applyThemeToBody` applies it, so the console, the viewer and the games list all show it; it never uses a filter overlay.
+- **Photo is device-only**: photos are stored in this browser's IndexedDB (`js/custom-photos.js`, database `scoreboardCustomPhotos`), shrunk to 1920 px on the longest side. A device that does not have the photo shows the color gradient, so spectators on other devices see the color. `applyThemeToBody` shows the gradient first and adds the photo when the store returns it. Every photo function fails quietly when storage is unavailable, and the photo controls are hidden then; the color always works.
+- **UI**: the theme dropdown lists "Custom color" first, then the photos saved on this device ("My background: <name>", each with a delete button that asks first), then the built-in images. While the theme is custom, the setup dialog shows a color picker, "Use our team color", "Add photo / Change photo" and "Use color only". Changes preview live behind the dialog. The theme is fixed after the first Start, like any theme.
+- **Later: viewable photos.** To let spectators see a photo, upload it and let the id in the key name the uploaded file; keep the gradient as the placeholder and the fallback. The key format does not need to change.
 
 ---
 

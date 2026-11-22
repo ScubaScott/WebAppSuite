@@ -628,6 +628,77 @@ body {
     display: block;
 }
 
+/* Delete button on a saved custom photo in the theme list */
+.theme-item-remove {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -6px -4px -6px 0;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 1.05rem;
+    cursor: pointer;
+}
+.theme-item-remove:hover,
+.theme-item-remove:focus-visible {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+    outline: none;
+}
+.theme-item-remove:active {
+    transform: scale(0.94);
+}
+
+/* Custom theme controls under the theme dropdown in the setup dialog */
+.custom-theme-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.custom-theme-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.custom-theme-photo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.custom-color-input {
+    width: 52px;
+    height: 44px;
+    padding: 2px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.custom-theme-btn {
+    min-height: 44px;
+    padding: 8px 14px;
+    background: #1f2937;
+    color: #d1d5db;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+.custom-theme-btn:hover {
+    background: #374151;
+    color: #ffffff;
+}
+.custom-theme-btn:active {
+    transform: scale(0.97);
+}
+
 /* ============================================================
    Floating Action Buttons (Mute & Settings)
    ============================================================ */

@@ -327,3 +327,13 @@ test('a theme that is not a safe name is dropped', () => {
     assert.equal(run(createGame(), newGame({ theme: 'x'.repeat(65) })).theme, null);
     assert.equal(run(createGame(), newGame({})).theme, null);
 });
+
+test('a custom theme key is kept and can change until the first Start', () => {
+    const withPhoto = 'custom-1e3a8a-p7f3c9a2b';
+    let game = run(createGame(), newGame({ theme: withPhoto }));
+    assert.equal(game.theme, withPhoto);
+    game = run(game, edit({ theme: 'custom-ffaa00' }));
+    assert.equal(game.theme, 'custom-ffaa00');
+    game = run(game, start(1), pause(2));
+    assert.equal(explain(game, edit({ theme: withPhoto })), 'The theme is fixed once the game has started');
+});
