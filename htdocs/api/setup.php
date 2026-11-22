@@ -3,7 +3,7 @@
 // Executes schema.sql and migrations to create or rename needed tables in the configured MySQL database.
 
 // Setup utility version identifier
-$SETUP_VERSION = '1.7';
+$SETUP_VERSION = '1.8';
 
 require_once __DIR__ . '/config.php';
 
@@ -121,11 +121,13 @@ header('Content-Type: text/html; charset=utf-8');
                     echo '<div class="error"><strong>Migration Warning:</strong> Unable to verify <code>scoreboard_game_tombstones</code> table: ' . htmlspecialchars($tombEx->getMessage()) . '</div>';
                 }
 
-                // Idempotent seed: Ensure suite_app_access records access rules for toys
+                // Idempotent seed: Ensure suite_app_access records access rules for the special-group apps
                 try {
-                    $appAccessStmt = $pdo->prepare("INSERT IGNORE INTO suite_app_access (app_id, min_group_id) SELECT 'toys', id FROM suite_groups WHERE slug = 'special'");
-                    $appAccessStmt->execute();
-                    echo '<div class="success"><strong>App Access Seeded:</strong> <code>toys</code> access rule verified (Special group and above).</div>';
+                    $appAccessStmt = $pdo->prepare("INSERT IGNORE INTO suite_app_access (app_id, min_group_id) SELECT :app_id, id FROM suite_groups WHERE slug = 'special'");
+                    foreach (['toys', 'period'] as $specialAppId) {
+                        $appAccessStmt->execute([':app_id' => $specialAppId]);
+                        echo '<div class="success"><strong>App Access Seeded:</strong> <code>' . $specialAppId . '</code> access rule verified (Special group and above).</div>';
+                    }
                 } catch (PDOException $accessEx) {
                     echo '<div class="error"><strong>App Access Warning:</strong> ' . htmlspecialchars($accessEx->getMessage()) . '</div>';
                 }

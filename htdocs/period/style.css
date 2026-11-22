@@ -1,0 +1,382 @@
+/* Period Tracker stylesheet.
+   All colors come from the tokens below so the calendar's semantic roles
+   (logged, predicted, phases, markers) stay consistent everywhere they appear. */
+
+:root {
+  --bg: #16121d;
+  --surface: #211b2b;
+  --surface-2: #2c2439;
+  --text: #f3eef8;
+  --muted: #a99fb8;
+  --border: rgba(255, 255, 255, 0.12);
+  --accent: #ec6a9c;
+  --on-accent: #26101a;
+  --danger: #ff6b6b;
+
+  /* Calendar semantic roles */
+  --logged: #d6336c;
+  --on-logged: #ffffff;
+  --predicted: #ec6a9c;
+  --phase-menstrual: rgba(214, 51, 108, 0.28);
+  --phase-follicular: rgba(64, 192, 170, 0.16);
+  --phase-ovulatory: rgba(245, 183, 49, 0.22);
+  --phase-luteal: rgba(139, 112, 224, 0.2);
+  --pphase-menstrual: rgba(214, 51, 108, 0.12);
+  --pphase-follicular: rgba(64, 192, 170, 0.07);
+  --pphase-ovulatory: rgba(245, 183, 49, 0.1);
+  --pphase-luteal: rgba(139, 112, 224, 0.09);
+  --ovulation: #f5b731;
+  --fertile: #40c0aa;
+  --today: #ffffff;
+  --late: #ffb454;
+  --note: #8bb8ff;
+
+  /* Suite header tokens */
+  --hdr-bg: #1b1524;
+  --hdr-fg: #f3eef8;
+  --hdr-muted: #a99fb8;
+  --hdr-accent: #ec6a9c;
+  --hdr-border: rgba(255, 255, 255, 0.1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h2, h3, p { margin-top: 0; }
+
+/* Page wrapper grows to fill the page so the footer rests at the bottom */
+.app-main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+}
+
+[hidden] { display: none !important; }
+
+/* ---------- Buttons and controls ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn--danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn--block { width: 100%; }
+.btn--big { min-height: 54px; font-size: 1.05rem; }
+
+.link-btn {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-btn:active { background: var(--surface-2); }
+
+input[type="date"], input[type="number"], input[type="text"], select, textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  color-scheme: dark;
+}
+textarea { min-height: 80px; resize: vertical; }
+
+label.field { display: block; margin: 0 0 14px; }
+label.field > span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 0.85rem; }
+
+/* Checkbox / switch row with a 44px touch target */
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  margin: 0 0 6px;
+  cursor: pointer;
+}
+label.check input { width: 22px; height: 22px; accent-color: var(--accent); flex-shrink: 0; }
+
+/* Two or three exclusive choices shown as one control */
+.segmented { display: flex; gap: 6px; margin: 0 0 14px; }
+.segmented .seg {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.segmented .seg.is-on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+
+/* ---------- Cards ---------- */
+
+.card {
+  margin: 0 0 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.card--warn { border-color: var(--late); color: var(--late); }
+.card h2 { margin-bottom: 6px; font-size: 1.05rem; }
+.muted { color: var(--muted); font-size: 0.9rem; }
+.error-text { color: var(--danger); font-size: 0.9rem; min-height: 1.2em; }
+
+/* ---------- Tabs ---------- */
+
+.tabs { display: flex; gap: 6px; margin: 0 0 14px; }
+.tab {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab.is-active { background: var(--surface-2); color: var(--text); border-color: var(--accent); }
+
+/* ---------- Summary and notices ---------- */
+
+.summary .cycle-line { font-size: 1.35rem; font-weight: 700; margin-bottom: 4px; }
+.summary .next-line { margin-bottom: 8px; }
+.late-notice { color: var(--late); font-weight: 700; margin-bottom: 6px; }
+.confidence-label {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.notice { border-left: 4px solid var(--accent); }
+.notice--health { border-left-color: var(--note); }
+.notice h3 { margin-bottom: 4px; font-size: 1rem; }
+.notice .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+.actions .btn--big { flex: 1 1 180px; }
+
+/* ---------- Calendar ---------- */
+
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-title-wrap { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.cal-title { margin: 0; font-size: 1.1rem; }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-dow { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 4px 0; }
+
+.day {
+  position: relative;
+  min-height: 44px;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+.day:disabled { cursor: default; }
+.day.is-blank { visibility: hidden; }
+.day .num { position: relative; z-index: 2; }
+
+/* Phase tints: lowest layer. Predicted cycles use the softer variants. */
+.day.ph-menstrual { background: var(--phase-menstrual); }
+.day.ph-follicular { background: var(--phase-follicular); }
+.day.ph-ovulatory { background: var(--phase-ovulatory); }
+.day.ph-luteal { background: var(--phase-luteal); }
+.day.pred.ph-menstrual { background: var(--pphase-menstrual); }
+.day.pred.ph-follicular { background: var(--pphase-follicular); }
+.day.pred.ph-ovulatory { background: var(--pphase-ovulatory); }
+.day.pred.ph-luteal { background: var(--pphase-luteal); }
+
+/* Predicted period overlay: intensity follows the day's probability (--p) */
+.day.pp-band::before,
+.day.pp-likely::before,
+.day.pp-end::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--predicted);
+  opacity: calc(var(--p, 0.3) * 0.7);
+}
+.day.pp-likely { box-shadow: inset 0 0 0 2px var(--predicted); }
+.day.pp-likely::before { opacity: 0.4; }
+.day.pp-end::before { opacity: 0.35; }
+.day.pp-end { box-shadow: inset 0 0 0 2px rgba(236, 106, 156, 0.55); }
+
+/* Logged period: solid */
+.day.logged { background: var(--logged); color: var(--on-logged); font-weight: 700; }
+
+/* Fertile window overlay, ovulation markers, today ring */
+.day.fertile { box-shadow: inset 0 -4px 0 var(--fertile); }
+.day.pp-likely.fertile { box-shadow: inset 0 0 0 2px var(--predicted), inset 0 -4px 0 var(--fertile); }
+.mk {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 2;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.mk-ov { background: var(--ovulation); }
+.mk-pov { border: 2px solid var(--ovulation); }
+.day.today { outline: 2px solid var(--today); outline-offset: -2px; }
+
+.legend { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 6px; font-size: 0.85rem; }
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend .day { width: 30px; min-height: 30px; flex-shrink: 0; pointer-events: none; aspect-ratio: 1; border-radius: 8px; }
+.legend .day .num { font-size: 0.7rem; }
+.legend-note { grid-column: 1 / -1; }
+
+/* ---------- History ---------- */
+
+.cycle-row { padding: 14px 16px; }
+.cycle-row.is-focus { border-color: var(--accent); }
+.cycle-row .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cycle-row .date { font-weight: 700; }
+.cycle-row .len { color: var(--muted); }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.badge {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.badge--flag { border-color: var(--late); color: var(--late); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.row-actions .btn { min-height: 44px; padding: 6px 12px; font-size: 0.9rem; }
+
+/* ---------- Stats ---------- */
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat { padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.stat .big { font-size: 1.8rem; font-weight: 800; }
+.stat .cap { color: var(--muted); font-size: 0.85rem; }
+.stat--wide { grid-column: 1 / -1; }
+
+.chart { width: 100%; height: auto; display: block; }
+.chart .band-normal { fill: rgba(64, 192, 170, 0.18); }
+.chart .band-reference { fill: rgba(255, 255, 255, 0.08); }
+.chart .bar { fill: var(--accent); cursor: pointer; }
+.chart .bar-excluded { fill: transparent; stroke: var(--muted); stroke-dasharray: 4 3; stroke-width: 1.5; cursor: pointer; }
+.chart .axis { stroke: var(--border); stroke-width: 1; }
+.chart text { fill: var(--muted); font-size: 10px; }
+.chart .bar-hit { fill: transparent; cursor: pointer; }
+
+/* ---------- Dialogs (sheets) ---------- */
+
+.sheet {
+  width: min(520px, 94vw);
+  max-height: 90vh;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  overflow: hidden;
+}
+.sheet[open] { display: flex; flex-direction: column; }
+.sheet::backdrop { background: rgba(0, 0, 0, 0.6); }
+.sheet-head { padding: 16px 18px 8px; }
+.sheet-head h2 { margin: 0; font-size: 1.15rem; }
+.sheet-body { padding: 4px 18px 12px; overflow-y: auto; flex: 1 1 auto; }
+.sheet-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px; border-top: 1px solid var(--border); }
+.sheet-foot .btn { flex: 1 1 auto; }
+.sheet-section { margin: 0 0 18px; }
+.sheet-section h3 { margin-bottom: 8px; font-size: 0.95rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.sheet .btn-stack { display: flex; flex-direction: column; gap: 8px; }
+.review-list { max-height: 40vh; overflow-y: auto; padding-left: 20px; }
+
+/* Backfill month list */
+.bf-month h3 { margin: 12px 0 6px; font-size: 1rem; color: var(--text); text-transform: none; letter-spacing: 0; }
+
+/* ---------- Onboarding ---------- */
+
+.onboarding .card { padding: 20px; }
+.onboarding h2 { font-size: 1.3rem; }
+.onboarding .step-count { color: var(--muted); font-size: 0.8rem; margin-bottom: 6px; }
+.onboarding .foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.onboarding .foot .btn { flex: 1 1 140px; }
+.disclaimer { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); font-size: 0.95rem; }
+
+/* ---------- Toast ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 92vw;
+  padding: 8px 8px 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%);
+}
+.toast .link-btn { padding: 0 12px; }

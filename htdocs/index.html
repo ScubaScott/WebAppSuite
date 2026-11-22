@@ -475,6 +475,19 @@
                 </div>
             </a>
 
+            <a href="./period/" class="app-card" data-app-id="period" hidden>
+                <div class="app-info">
+                    <h2>Period</h2>
+                    <p>Private cycle tracker with period logging, predictions and cycle statistics.</p>
+                </div>
+                <div class="app-action">
+                    Launch App
+                    <svg width="16" height="16" viewBox="0 0 24 24">
+                        <path d="M5 13h11.86l-5.43 5.43 1.42 1.42L21.14 12l-8.29-8.29-1.42 1.42L16.86 11H5v2z" />
+                    </svg>
+                </div>
+            </a>
+
             <a href="./Toys/" class="app-card" data-app-id="toys" hidden>
                 <div class="app-info">
                     <h2>Toys</h2>
@@ -501,7 +514,7 @@
         </button>
         <div id="refreshStatus" class="refresh-status" aria-live="polite"></div>
         <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span
-                id="footerVersion">2.7</span></p>
+                id="footerVersion">2.8</span></p>
     </footer>
 
     <!-- Feedback toast for link copying -->
@@ -512,7 +525,7 @@
 
     <script>
         // Main application suite version identifier
-        const VERSION = '2.7';
+        const VERSION = '2.8';
         document.getElementById('footerVersion').textContent = VERSION;
 
         // Share button interaction using Web Share API with clipboard fallback

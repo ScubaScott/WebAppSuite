@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#16121d">
+  <title>Period Tracker</title>
+  <!-- Shared suite components -->
+  <link rel="stylesheet" href="../media/suite-header.css">
+  <link rel="stylesheet" href="../media/suite-footer.css">
+  <!-- Application stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../media/suite-profile.css">
+  <link rel="stylesheet" href="../media/suite-dialog.css">
+</head>
+
+<body>
+
+  <!-- Suite Header: back link, page title, settings button -->
+  <header class="suite-header">
+    <a href="../index.html" class="suite-header__back" aria-label="Back to Apps">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span class="suite-header__back-label-long">Back to Apps</span>
+      <span class="suite-header__back-label-short">Apps</span>
+    </a>
+    <h1 class="suite-header__title">Period</h1>
+    <button id="settingsBtn" class="suite-header__gear" type="button" title="Settings" aria-label="Open settings">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+      </svg>
+    </button>
+  </header>
+
+  <main class="app-main">
+    <!-- Shown when IndexedDB is unavailable and data would be lost on close -->
+    <div id="storageWarning" class="card card--warn" hidden>
+      Storage isn't available in this browser, so your data will be lost when you close the page.
+    </div>
+
+    <!-- First-run setup (steps are rendered by app.js) -->
+    <section id="onboarding" class="onboarding" hidden aria-live="polite"></section>
+
+    <!-- Main app: tab bar plus three panels -->
+    <div id="appRoot" hidden>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab is-active" type="button" role="tab" data-tab="calendar" aria-selected="true">Calendar</button>
+        <button class="tab" type="button" role="tab" data-tab="history" aria-selected="false">History</button>
+        <button class="tab" type="button" role="tab" data-tab="stats" aria-selected="false">Stats</button>
+      </nav>
+
+      <!-- Calendar -->
+      <section id="panelCalendar" class="panel" role="tabpanel">
+        <div id="summary" class="card summary"></div>
+        <div id="notices"></div>
+        <div id="actions" class="actions"></div>
+
+        <div class="card calendar-card">
+          <div class="cal-nav">
+            <button id="calPrev" class="icon-btn" type="button" aria-label="Previous month">&#8249;</button>
+            <div class="cal-title-wrap">
+              <h2 id="calTitle" class="cal-title"></h2>
+              <button id="calToday" class="link-btn" type="button">Today</button>
+            </div>
+            <button id="calNext" class="icon-btn" type="button" aria-label="Next month">&#8250;</button>
+          </div>
+          <div id="calGrid" class="cal-grid-wrap"></div>
+          <button id="legendBtn" class="link-btn" type="button" aria-expanded="false">Legend</button>
+          <div id="legend" class="legend" hidden></div>
+        </div>
+      </section>
+
+      <!-- History -->
+      <section id="panelHistory" class="panel" role="tabpanel" hidden>
+        <div id="historyList"></div>
+      </section>
+
+      <!-- Stats -->
+      <section id="panelStats" class="panel" role="tabpanel" hidden>
+        <div id="statsBody"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Brief message with an optional action (for example Undo) -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Mandatory Version Footer (direct child of body so it rests at the page bottom) -->
+  <footer class="app-footer">
+    <small>v<span id="appVersion"></span></small>
+  </footer>
+
+  <script src="../media/suite-profile.js"></script>
+  <script src="../media/suite-dialog.js"></script>
+  <script src="core.js"></script>
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
