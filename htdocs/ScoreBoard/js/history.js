@@ -133,7 +133,11 @@ export function createHistoryDialog({ getGame, getRows, saveNote, removeEntry, s
 
     /** The text shared for an entry. */
     function shareText(row, game) {
-        if (row.type === 'score') return `GOAL! ${row.teamName} ${row.currentScore}`;
+        // Our goals (home) are shared with excitement; opponent goals (away) are shared plainly.
+        if (row.type === 'score') {
+            const lead = row.teamId === 'away' ? 'goal' : 'GOAL!';
+            return `${lead} ${row.teamName} ${row.currentScore}`;
+        }
         if (row.type === 'card') {
             const note = row.note ? ` (${row.note})` : '';
             return `${row.cardType === 'yellow' ? '🟨' : '🟥'} ${row.teamName}${note}`;

@@ -18,7 +18,7 @@ import { applyThemeToBody } from './shared.js';
 import { showToast, playWhistle, playScoreSplash, playCardRaise, shareText } from './effects.js';
 
 // Page version, shown in the footer
-const APP_VERSION = '7.4';
+const APP_VERSION = '7.5';
 
 const TICK_MS = 100;
 const HEARTBEAT_MS = 20 * 1000;
