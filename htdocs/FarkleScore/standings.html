@@ -31,17 +31,31 @@
           </div>
           <div id="standingsList" class="standings-list"></div>
         </section>
+
+        <!-- Line chart with one line per player -->
+        <section class="card chart-card" aria-label="Score chart">
+          <div class="card-heading">
+            <h2>Scores by round</h2>
+            <div class="seg" id="chartModeSeg" role="group" aria-label="Chart mode">
+              <button type="button" data-mode="perRound" aria-pressed="true">Per round</button>
+              <button type="button" data-mode="cumulative" aria-pressed="false">Total</button>
+            </div>
+          </div>
+          <svg id="chart" class="chart" role="img" aria-label="Line chart of player scores by round"></svg>
+          <ul id="legend" class="legend"></ul>
+        </section>
       </main>
     </div>
     <!-- Suite profile cloud sync library for user preferences -->
     <script src="../media/suite-profile.js"></script>
+    <script src="chart.js"></script>
     <script src="app.js"></script>
     <footer class="app-footer">
-      <p>Version <span id="appVersion">1.1</span></p>
+      <p>Version <span id="appVersion">1.2</span></p>
     </footer>
     <script>
       // Standings page version identifier
-      const PAGE_VERSION = '1.1';
+      const PAGE_VERSION = '1.2';
     </script>
   </body>
 </html>

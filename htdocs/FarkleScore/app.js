@@ -1,5 +1,5 @@
 // Farkle application version identifier
-const VERSION = '1.3';
+const VERSION = '1.4';
 
 // ─── Storage keys ────────────────────────────────────────────────────────────
 const STORAGE_KEYS = {
@@ -54,7 +54,8 @@ function freshGame() {
     lastRoundTriggered:   false,
     lastRoundStartIndex:  -1,
     gameOver:             false,
-    playerOpened:         []
+    playerOpened:         [],
+    history:              []    // per player: points scored each turn (0 for a farkle), in turn order
   };
 }
 
@@ -84,6 +85,8 @@ function loadState() {
       if (!Array.isArray(game.scores))        game.scores        = players.map(() => 0);
       if (!Array.isArray(game.playerOpened))  game.playerOpened  = players.map(() => false);
       if (typeof game.hotDiceBase !== 'number') game.hotDiceBase = 0;
+      if (!Array.isArray(game.history))       game.history       = [];
+      while (game.history.length < players.length) game.history.push([]);
     } else {
       game = freshGame();
       game.scores       = players.map(() => 0);
@@ -127,6 +130,15 @@ function bindEvents() {
   if (page === 'players') {
     document.getElementById('addPlayerButton').addEventListener('click',    addPlayer);
     document.getElementById('startNewGameButton').addEventListener('click', startNewGame);
+  }
+
+  if (page === 'standings') {
+    document.getElementById('chartModeSeg').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-mode]');
+      if (!btn) return;
+      chartMode = btn.dataset.mode;
+      renderStandingsChart();
+    });
   }
 
   if (page === 'settings') {
@@ -438,19 +450,24 @@ function handleBank() {
   }
 
   game.scores[idx] = (game.scores[idx] || 0) + totalToBank;
-  completeTurn();
+  completeTurn(totalToBank);
 }
 
 // ─── Farkle ───────────────────────────────────────────────────────────────────
 
 function handleFarkle() {
   if (!game.turnActive || game.gameOver) return;
-  completeTurn();
+  completeTurn(0);
 }
 
 // ─── End of turn ─────────────────────────────────────────────────────────────
 
-function completeTurn() {
+// points: what the player banked this turn (0 for a farkle); recorded for the standings chart
+function completeTurn(points) {
+  const who = game.currentPlayerIndex;
+  if (!Array.isArray(game.history[who])) game.history[who] = [];
+  game.history[who].push(points || 0);
+
   game.turnActive  = false;
   game.turnScore   = 0;
   game.hotDiceBase = 0;
@@ -611,6 +628,7 @@ function addPlayer() {
   players.push(`Player ${players.length + 1}`);
   game.scores.push(0);
   game.playerOpened.push(false);
+  if (Array.isArray(game.history)) game.history.push([]);
   saveState();
   renderPlayers();
 }
@@ -626,6 +644,7 @@ function handlePlayerAction(action, i) {
     players.splice(i, 1);
     game.scores.splice(i, 1);
     if (Array.isArray(game.playerOpened)) game.playerOpened.splice(i, 1);
+    if (Array.isArray(game.history)) game.history.splice(i, 1);
     if (game.currentPlayerIndex >= players.length) game.currentPlayerIndex = 0;
     saveState();
     renderPlayers();
@@ -634,11 +653,13 @@ function handlePlayerAction(action, i) {
   if (action === 'up' && i > 0) {
     [players[i-1], players[i]] = [players[i], players[i-1]];
     [game.scores[i-1], game.scores[i]] = [game.scores[i], game.scores[i-1]];
+    if (game.history) [game.history[i-1], game.history[i]] = [game.history[i], game.history[i-1]];
     saveState(); renderPlayers();
   }
   if (action === 'down' && i < players.length - 1) {
     [players[i], players[i+1]] = [players[i+1], players[i]];
     [game.scores[i], game.scores[i+1]] = [game.scores[i+1], game.scores[i]];
+    if (game.history) [game.history[i], game.history[i+1]] = [game.history[i+1], game.history[i]];
     saveState(); renderPlayers();
   }
 }
@@ -647,6 +668,7 @@ function startNewGame() {
   game = freshGame();
   game.scores       = players.map(() => 0);
   game.playerOpened = players.map(() => false);
+  game.history      = players.map(() => []);
   game.started      = true;
   saveState();
   window.location.href = 'index.html';
@@ -697,6 +719,7 @@ function renderStandings() {
     list.innerHTML = '<p class="subtle">No players yet.</p>';
     return;
   }
+  renderStandingsChart();
 
   list.innerHTML = rankings.map((entry, i) => {
     const pct = Math.min(100, winning > 0 ? (entry.score / winning) * 100 : 0);
@@ -711,6 +734,42 @@ function renderStandings() {
       </div>
     `;
   }).join('');
+}
+
+// Which series the chart shows: 'perRound' (points each turn) or 'cumulative' (running total)
+let chartMode = 'perRound';
+
+// Builds the per-player series for the chart from game.history and draws it with the legend
+function renderStandingsChart() {
+  const svg = document.getElementById('chart');
+  if (!svg || typeof FarkleChart === 'undefined') return;
+
+  const history = players.map((_, i) => (game.history && game.history[i]) || []);
+  const rounds  = Math.max(0, ...history.map(h => h.length));
+
+  const series = players.map((name, i) => {
+    let running = 0;
+    const values = history[i].map(pts => {
+      running += pts;
+      return chartMode === 'cumulative' ? running : pts;
+    });
+    while (values.length < rounds) values.push(null);   // players yet to take that round
+    return { name, color: FarkleChart.COLORS[i % FarkleChart.COLORS.length], values };
+  });
+
+  FarkleChart.render(svg, { rounds, series });
+
+  // Legend shows each player's color with their current total
+  const legend = document.getElementById('legend');
+  legend.innerHTML = series.map((s, i) => `
+    <li class="legend-item">
+      <span class="legend-swatch" style="background:${s.color}"></span>
+      ${escHtml(s.name)} <strong>${(game.scores[i] || 0).toLocaleString()}</strong>
+    </li>`).join('');
+
+  document.querySelectorAll('#chartModeSeg button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.mode === chartMode));
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

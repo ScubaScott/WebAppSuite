@@ -655,3 +655,42 @@ body {
   color: var(--wood-light, #a45c2b);
   opacity: 0.8;
 }
+
+/* ── Standings chart ──────────────────────────────────────────────────────── */
+.chart-card { margin-top: 20px; }
+.chart { display: block; width: 100%; height: auto; }
+.chart-grid { stroke: rgba(100,60,20,0.2); stroke-width: 1; }
+.chart-label { fill: rgba(43,26,14,0.65); font-size: 11px; }
+.chart-empty { fill: rgba(43,26,14,0.6); font-size: 14px; }
+.chart-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart-dot { stroke: #fdf0d5; stroke-width: 1.5; }
+
+/* Segmented control for chart mode */
+.seg { display: inline-flex; border: 1px solid rgba(100,60,20,0.3); border-radius: 10px; overflow: hidden; }
+.seg button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--wood-mid);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.seg button:active { background: rgba(100,60,20,0.12); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.4);
+  font-size: 0.85rem;
+  font-family: "Trebuchet MS", sans-serif;
+}
+.legend-swatch { width: 12px; height: 12px; border-radius: 50%; }
