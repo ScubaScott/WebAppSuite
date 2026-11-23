@@ -241,3 +241,34 @@ CREATE TABLE IF NOT EXISTS `bingo_scan_samples` (
     INDEX `idx_scan_samples_status` (`status`),
     INDEX `idx_scan_samples_ip` (`ip_hash`, `received_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Period tracker server backup (optional, per user). One row in period_sync_state means the user has
+-- turned backup on. period_records holds one row per record (JSON), synced last-write-wins by updated_at.
+-- change_seq is a per-user counter used as the pull cursor so device clocks never matter.
+CREATE TABLE IF NOT EXISTS `period_sync_state` (
+    `user_id` INT UNSIGNED NOT NULL PRIMARY KEY,
+    `enabled_at` DATETIME NOT NULL,
+    `last_seq` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    CONSTRAINT `fk_period_sync_state_user`
+        FOREIGN KEY (`user_id`)
+        REFERENCES `suite_users` (`id`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `period_records` (
+    `user_id` INT UNSIGNED NOT NULL,
+    `store` VARCHAR(32) NOT NULL,               -- period_entries, cycle_flags, settings, health_note_dismissals, daily_logs
+    `record_id` VARCHAR(36) NOT NULL,           -- client UUID, or 'settings'
+    `data_json` MEDIUMTEXT NOT NULL,            -- the full client record
+    `client_updated_at` CHAR(24) NOT NULL,      -- record updated_at, fixed-format ISO UTC (compares as text)
+    `deleted` TINYINT(1) NOT NULL DEFAULT 0,
+    `change_seq` BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (`user_id`, `store`, `record_id`),
+    INDEX `idx_period_records_seq` (`user_id`, `change_seq`),
+    CONSTRAINT `fk_period_records_user`
+        FOREIGN KEY (`user_id`)
+        REFERENCES `suite_users` (`id`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

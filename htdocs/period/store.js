@@ -65,21 +65,45 @@ const PeriodStore = (function () {
     return wrap(db.transaction(name, 'readonly').objectStore(name).getAll());
   }
 
+  // Listeners told about every local write (store name, record ids) so server sync can queue them.
+  // Writes made with { remote: true } (records that just came from the server) are not announced.
+  const changeListeners = [];
+
+  function onChange(fn) {
+    changeListeners.push(fn);
+  }
+
+  function announce(name, recs, opts) {
+    if (opts && opts.remote) return;
+    changeListeners.forEach(fn => fn(name, recs.map(r => r.id)));
+  }
+
   // Inserts or replaces one record
-  function put(name, rec) {
-    if (!persistent) { memory[name][rec.id] = rec; return Promise.resolve(rec); }
-    return wrap(db.transaction(name, 'readwrite').objectStore(name).put(rec)).then(() => rec);
+  function put(name, rec, opts) {
+    if (!persistent) {
+      memory[name][rec.id] = rec;
+      announce(name, [rec], opts);
+      return Promise.resolve(rec);
+    }
+    return wrap(db.transaction(name, 'readwrite').objectStore(name).put(rec)).then(() => {
+      announce(name, [rec], opts);
+      return rec;
+    });
   }
 
   // Inserts or replaces several records in one transaction
-  function putMany(name, recs) {
+  function putMany(name, recs, opts) {
     if (!recs.length) return Promise.resolve();
-    if (!persistent) { recs.forEach(r => { memory[name][r.id] = r; }); return Promise.resolve(); }
+    if (!persistent) {
+      recs.forEach(r => { memory[name][r.id] = r; });
+      announce(name, recs, opts);
+      return Promise.resolve();
+    }
     return new Promise((resolve, reject) => {
       const tx = db.transaction(name, 'readwrite');
       const os = tx.objectStore(name);
       recs.forEach(r => os.put(r));
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => { announce(name, recs, opts); resolve(); };
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
@@ -111,7 +135,7 @@ const PeriodStore = (function () {
   }
 
   return {
-    open: open, getAll: getAll, put: put, putMany: putMany, clear: clear, clearAll: clearAll,
+    open: open, getAll: getAll, put: put, putMany: putMany, clear: clear, clearAll: clearAll, onChange: onChange,
     uuid: uuid, nowIso: nowIso, isPersistent: () => persistent, storeNames: Object.keys(STORES)
   };
 })();

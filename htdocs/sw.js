@@ -1,7 +1,7 @@
 // Service Worker version identifier
 // Bump this version string with every deployment to force
 // all PWA clients to evict the old cache and start fresh.
-const SW_VERSION = '6.6';
+const SW_VERSION = '6.7';
 const CACHE_NAME = `scuba-app-suite-v${SW_VERSION}`;
 
 // Scanner engine files (OCR/image libraries and models) live in their own cache that has no version
@@ -131,6 +131,7 @@ const APP_SHELL = [
   './period/style.css',
   './period/core.js',
   './period/store.js',
+  './period/sync.js',
   './period/app.js',
   './Toys/',
   './Toys/index.html',

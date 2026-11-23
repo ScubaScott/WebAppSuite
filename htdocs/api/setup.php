@@ -3,7 +3,7 @@
 // Executes schema.sql and migrations to create or rename needed tables in the configured MySQL database.
 
 // Setup utility version identifier
-$SETUP_VERSION = '1.8';
+$SETUP_VERSION = '1.9';
 
 require_once __DIR__ . '/config.php';
 
@@ -74,7 +74,7 @@ header('Content-Type: text/html; charset=utf-8');
                 // Execute multi-query schema script
                 $pdo->exec($sql);
                 echo '<div class="success">';
-                echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, <code>suite_groups</code>, <code>suite_user_groups</code>, <code>suite_app_access</code>, <code>scoreboard_games</code>, <code>scoreboard_game_tombstones</code>, <code>bingo_cards</code>, <code>bingo_card_favorites</code>, <code>bingo_games</code>, and <code>bingo_patterns</code> have been successfully initialized or verified.';
+                echo '<strong>Success!</strong> Tables <code>suite_users</code>, <code>suite_user_data</code>, <code>suite_sessions</code>, <code>suite_groups</code>, <code>suite_user_groups</code>, <code>suite_app_access</code>, <code>scoreboard_games</code>, <code>scoreboard_game_tombstones</code>, <code>bingo_cards</code>, <code>bingo_card_favorites</code>, <code>bingo_games</code>, <code>bingo_patterns</code>, <code>period_sync_state</code>, and <code>period_records</code> have been successfully initialized or verified.';
                 echo '</div>';
 
                 // Idempotent migration: Ensure scoreboard_games.ended_by includes 'abandoned'

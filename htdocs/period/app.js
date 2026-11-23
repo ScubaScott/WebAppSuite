@@ -1,9 +1,10 @@
 /**
  * Period Tracker UI. Stores only what the user entered (period entries, unusual-cycle flags,
  * settings, dismissed notes) and derives everything else through PeriodCore on every render.
- * Persistence goes through PeriodStore (IndexedDB); nothing leaves the device.
+ * Persistence goes through PeriodStore (IndexedDB). Records leave the device only when the user turns
+ * on the optional server backup (PeriodSync).
  */
-const APP_VERSION = "1.0";
+const APP_VERSION = "1.1";
 
 (function () {
   'use strict';
@@ -39,6 +40,11 @@ const APP_VERSION = "1.0";
 
   // First-run wizard answers
   let ob = null;
+
+  // Optional server backup controller (created in init)
+  let sync = null;
+  // Container of the Settings "Server backup" section while Settings is open
+  let backupBox = null;
 
   /* =============================================================== helpers */
 
@@ -126,8 +132,10 @@ const APP_VERSION = "1.0";
     return Object.assign({ id: S.uuid(), created_at: t, updated_at: t, deleted: false }, fields);
   }
 
+  // A fresh device's default settings carry an epoch updated_at, so settings restored from a server backup
+  // always replace them; the first real change (saveSettings) stamps the current time.
   function defaultSettings() {
-    return newRecord({
+    const rec = newRecord({
       id: 'settings',
       usual_cycle_length: null,
       usual_period_length: null,
@@ -142,6 +150,8 @@ const APP_VERSION = "1.0";
       export_nudge_snoozed_until: null,
       schema_version: 1
     });
+    rec.updated_at = '1970-01-01T00:00:00.000Z';
+    return rec;
   }
 
   // Loads every record from storage into memory, creating the settings record when missing
@@ -1174,6 +1184,7 @@ const APP_VERSION = "1.0";
       el('p', { text: 'Ovulation is estimated about 14 days before the next period. The fertile window is the 5 days before through 1 day after that estimate. These are estimates, not guarantees.' }),
       el('p', { text: 'Notes suggesting you talk to a doctor are gentle prompts based on common ranges, not a diagnosis.' }));
 
+    backupBox = el('div');
     openSheet({
       title: 'Settings',
       body: [
@@ -1192,10 +1203,99 @@ const APP_VERSION = "1.0";
             el('button', { type: 'button', class: 'btn', text: 'Import data', onclick: () => fileIn.click() }),
             el('button', { type: 'button', class: 'btn btn--danger', text: 'Delete all data', onclick: deleteAllData }),
             fileIn)),
+        el('div', { class: 'sheet-section' }, el('h3', { text: 'Server backup' }), backupBox),
         el('div', { class: 'sheet-section' }, about)
       ],
       buttons: [{ label: 'Done', kind: 'primary' }]
     });
+    renderBackup();
+  }
+
+  /* ---------- optional server backup ---------- */
+
+  const sessionUser = () => (window.SuiteProfile ? SuiteProfile.getUser() : null);
+
+  // Draws the Settings "Server backup" section for the current sign-in and sync state
+  function renderBackup() {
+    if (!backupBox || !backupBox.isConnected) return;
+    clear(backupBox);
+    const st = sync.getState();
+    const user = sessionUser();
+    const signedIn = !!(user && user.token);
+    backupBox.append(el('p', {
+      class: 'muted',
+      text: 'Optional. Keep a copy of your data on the server to use the tracker on your other devices. It is stored with your profile and can be read by the site admin. It is off unless you turn it on.'
+    }));
+
+    if (!st.enabled) {
+      if (st.error) backupBox.append(el('p', { class: 'error-text', text: st.error }));
+      if (!signedIn) {
+        backupBox.append(el('p', { text: 'Sign in from the app launcher (top right) to turn this on. A profile password keeps the profile yours.' }));
+        return;
+      }
+      if (window.SuiteProfile && !SuiteProfile.canSeeApp('period')) {
+        backupBox.append(el('p', { text: 'Your profile does not have access to server backup.' }));
+        return;
+      }
+      backupBox.append(
+        el('p', { class: 'muted', text: 'Signed in as ' + user.username + '. On a new device, turn this on before entering anything to restore your data.' }),
+        el('button', { type: 'button', class: 'btn btn--block', text: 'Turn on server backup', onclick: enableBackup }));
+      return;
+    }
+
+    let line;
+    if (st.status === 'syncing') line = 'Syncing\u2026';
+    else if (st.status === 'error') line = 'Couldn\u2019t sync: ' + st.error + ' It will try again.';
+    else if (st.status === 'signed-out') line = 'You\u2019re signed out. Sign in again as ' + st.username + ' to keep syncing.';
+    else if (st.status === 'no-access') line = st.error;
+    else line = 'Backup is on' + (st.lastSyncedAt ? '. Last synced ' + new Date(st.lastSyncedAt).toLocaleString() : '') + '.';
+    if (st.pending) line += ' ' + st.pending + (st.pending === 1 ? ' change is' : ' changes are') + ' waiting to be sent.';
+    backupBox.append(
+      el('p', { class: st.status === 'error' ? 'error-text' : '', text: line }),
+      el('div', { class: 'btn-stack' },
+        el('button', { type: 'button', class: 'btn', text: 'Sync now', onclick: () => sync.syncNow() }),
+        el('button', { type: 'button', class: 'btn', text: 'Turn off backup', onclick: turnOffBackup }),
+        el('button', { type: 'button', class: 'btn btn--danger', text: 'Delete server copy', onclick: deleteServerCopy })));
+  }
+
+  // Explains what will be stored, then switches backup on and runs the first sync
+  async function enableBackup() {
+    const ok = await SuiteDialog.confirm(
+      'Your periods, flags and settings will be copied to the server, stored with your profile, and kept in sync with your other devices. The site admin can read this data.\nYou can turn this off and delete the server copy at any time.',
+      { title: 'Turn on server backup?', confirmLabel: 'Turn on backup', cancelLabel: 'Not now' });
+    if (!ok) return;
+    const result = await sync.enable();
+    if (!result.ok) {
+      await SuiteDialog.alert(result.error, { title: 'Couldn\u2019t turn on backup' });
+    } else {
+      showToast('Server backup is on');
+    }
+    renderBackup();
+  }
+
+  // Stops syncing on this device; asks whether the server copy should go too
+  async function turnOffBackup() {
+    const choice = await choose('Your data stays on this device either way.', [
+      { value: 'keep', label: 'Keep server copy' },
+      { value: 'delete', label: 'Delete server copy', kind: 'danger' }
+    ], { title: 'Turn off server backup?' });
+    if (!choice) return;
+    const result = await sync.disable({ deleteServerCopy: choice === 'delete' });
+    if (!result.ok) await SuiteDialog.alert(result.error, { title: 'Couldn\u2019t delete the server copy' });
+    else showToast(choice === 'delete' ? 'Server copy deleted. Backup is off.' : 'Backup is off.');
+    renderBackup();
+  }
+
+  // Deletes the server copy and turns backup off; data on this device is untouched
+  async function deleteServerCopy() {
+    const ok = await SuiteDialog.confirm('The copy on the server is deleted and backup is turned off. Data on this device and on your other devices stays.', {
+      title: 'Delete server copy?', confirmLabel: 'Delete server copy', danger: true, defaultCancel: true
+    });
+    if (!ok) return;
+    const result = await sync.disable({ deleteServerCopy: true });
+    if (!result.ok) await SuiteDialog.alert(result.error, { title: 'Couldn\u2019t delete the server copy' });
+    else showToast('Server copy deleted. Backup is off.');
+    renderBackup();
   }
 
   /* ========================================================= export/import */
@@ -1331,6 +1431,11 @@ const APP_VERSION = "1.0";
     if (mode === 'replace') {
       await S.clearAll();
       for (const name of IMPORT_STORES) await S.putMany(name, obj.records[name] || []);
+      // With backup on, the server copy is replaced too so the next sync doesn't bring the old records back
+      if (sync.getState().enabled) {
+        const result = await sync.replaceServerWithLocal();
+        if (!result.ok) await SuiteDialog.alert('The import worked on this device, but the server copy could not be updated: ' + result.error, { title: 'Server backup' });
+      }
     } else {
       for (const name of IMPORT_STORES) await S.putMany(name, plan[name].add.concat(plan[name].update));
     }
@@ -1380,6 +1485,19 @@ const APP_VERSION = "1.0";
       title: 'Really delete everything?', confirmLabel: 'Delete all data', danger: true, defaultCancel: true
     });
     if (!second) return;
+    // Backup on: this device stops syncing, and the server copy is kept or deleted as the user chooses
+    if (sync.getState().enabled) {
+      const keep = await choose('Server backup is on. Delete your copy on the server too?\nIf you keep it, turning backup on again restores it.', [
+        { value: 'delete', label: 'Delete server copy', kind: 'danger' },
+        { value: 'keep', label: 'Keep server copy' }
+      ], { title: 'Server backup' });
+      if (keep === null) return;
+      const result = await sync.disable({ deleteServerCopy: keep === 'delete' });
+      if (!result.ok) {
+        await SuiteDialog.alert(result.error, { title: 'Couldn\u2019t delete the server copy' });
+        return;
+      }
+    }
     await S.clearAll();
     lsDel(LS_PROMPT_SNOOZE);
     lsDel(LS_UNSURE_SEEN);
@@ -1415,10 +1533,12 @@ const APP_VERSION = "1.0";
         el('h2', { text: 'Your data stays on this device' }),
         el('p', { text: 'This is a private cycle tracker. Nothing you enter leaves your device.' }),
         el('p', { class: 'disclaimer', text: DISCLAIMER }));
-      foot.append(el('button', {
-        type: 'button', class: 'btn btn--primary btn--big', text: 'I understand',
-        onclick: async () => { await saveSettings({ disclaimer_acknowledged_at: S.nowIso() }); go(2); }
-      }));
+      foot.append(
+        el('button', {
+          type: 'button', class: 'btn btn--primary btn--big', text: 'I understand',
+          onclick: async () => { await saveSettings({ disclaimer_acknowledged_at: S.nowIso() }); go(2); }
+        }),
+        el('button', { type: 'button', class: 'btn', text: 'Restore from server backup', onclick: openSettings }));
     } else if (ob.step === 2) {
       stepNo(2);
       card.append(
@@ -1548,6 +1668,22 @@ const APP_VERSION = "1.0";
     await loadAll();
     setViewToday();
 
+    // Optional server backup: dirty-tracking starts here; nothing is sent unless the user turned it on
+    sync = PeriodSync.create({
+      store: S,
+      fetch: (url, init) => window.fetch(url, init),
+      apiUrl: '../api/period.php',
+      getSession: () => {
+        const u = sessionUser();
+        return u && u.token ? { username: u.username, token: u.token } : null;
+      },
+      storage: { getItem: lsGet, setItem: lsSet, removeItem: lsDel },
+      // Records arrived from the server: reload them, then resolve periods two devices both logged
+      onRemoteApplied: async () => { await loadAll(); recompute(); await resolveOverlaps(); },
+      onStatus: renderBackup
+    });
+    window.addEventListener('suite-profile-changed', () => { sync.sessionChanged(); renderBackup(); });
+
     document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
       switchTab(t.dataset.tab);
       if (t.dataset.tab !== 'history') view.focusCycleId = null;
@@ -1579,6 +1715,7 @@ const APP_VERSION = "1.0";
     });
 
     recompute();
+    sync.start();
     if (window.SuiteProfile) SuiteProfile.renderFooterIndicator(document.querySelector('.app-footer'));
   }
 
