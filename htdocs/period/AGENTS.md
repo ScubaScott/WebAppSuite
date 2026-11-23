@@ -37,6 +37,7 @@ A private, local-first cycle tracker. Users log periods on a calendar, see predi
 
 - Calm, never alarming, never diagnostic (§2). Health notes say "worth mentioning to a doctor".
 - The fertile window is an overlay; never call days "safe" or "unsafe".
+- Per-phase mood and libido notes (`PHASE_MOOD` in `app.js`) are general population tendencies, always shown with "Everyone is different", hidden on hormonal birth control, and never phrased as a prediction for a given day.
 - Always label defaults and early estimates (confidence label: Default / Early estimate / Personal / Established).
 
 ---

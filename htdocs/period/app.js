@@ -4,7 +4,7 @@
  * Persistence goes through PeriodStore (IndexedDB). Records leave the device only when the user turns
  * on the optional server backup (PeriodSync).
  */
-const APP_VERSION = "1.1";
+const APP_VERSION = "1.2";
 
 (function () {
   'use strict';
@@ -30,6 +30,42 @@ const APP_VERSION = "1.1";
   const PHASE_LABELS = {
     menstrual: 'Menstrual', follicular: 'Follicular', ovulatory: 'Ovulatory', luteal: 'Luteal'
   };
+
+  // General mood and libido tendencies by phase. These are broad population patterns, not a
+  // prediction for one person; the wording is shown with that caveat. `level` drives the badge style.
+  const PHASE_MOOD = {
+    menstrual: {
+      level: 'varies', label: 'Varies',
+      text: 'Energy and mood are often lower, and some people feel tired or irritable. Libido varies a lot: some feel less in the mood, others more.'
+    },
+    follicular: {
+      level: 'rising', label: 'Often rising',
+      text: 'Mood and energy usually lift as estrogen rises, and libido often builds through this phase.'
+    },
+    ovulatory: {
+      level: 'high', label: 'Often highest',
+      text: 'Often the most energetic and social days, and libido is typically at its highest. This is when many people feel most in the mood.'
+    },
+    luteal: {
+      level: 'low', label: 'Often lower, especially late',
+      text: 'Early on, mood is often steady with moderate libido. In the week before a period many people feel more irritable, tired or low, and libido is often lower.'
+    }
+  };
+
+  // Mood note for a phase; none when hormonal birth control is on (phases don't apply) or there is no phase
+  function moodFor(phase) {
+    if (!phase || bcOn()) return null;
+    return PHASE_MOOD[phase] || null;
+  }
+
+  // One mood line (badge plus text) for the summary card and day sheet
+  function moodBlock(phase) {
+    const mood = moodFor(phase);
+    if (!mood) return null;
+    return el('div', { class: 'mood-line' },
+      el('span', { class: 'mood-badge mood-' + mood.level, text: 'Mood & libido: ' + mood.label }),
+      el('p', { class: 'muted', text: mood.text + ' Everyone is different.' }));
+  }
 
   // In-memory copy of the stored records, and the model derived from them
   const state = { entries: [], flags: [], settings: null, dismissals: [] };
@@ -335,6 +371,7 @@ const APP_VERSION = "1.1";
       const ph = phaseLabel(info.phase);
       box.append(el('div', { class: 'cycle-line', text: 'Day ' + (m.today - m.L + 1) + (ph ? ' · ' + ph : '') }));
     }
+    box.append(moodBlock(info.phase));
     if (m.ongoing) {
       box.append(el('div', { class: 'muted', text: 'Period in progress · day ' + m.ongoingDay }));
     }
@@ -893,6 +930,7 @@ const APP_VERSION = "1.1";
       const ph = phaseLabel(info.phase);
       lines.append(el('p', { text: 'Cycle day ' + info.cycleDay + (ph ? ' · ' + ph + (info.phaseKind === 'predicted' ? ' (predicted)' : '') : '') }));
     }
+    lines.append(moodBlock(info.phase));
     if (info.logged) lines.append(el('p', { text: 'Period logged' }));
     else if (info.predictedEnd) lines.append(el('p', { text: 'Period expected to still be going' }));
     else if (info.likely) lines.append(el('p', { text: 'Period predicted (most likely)' }));
@@ -1182,6 +1220,7 @@ const APP_VERSION = "1.1";
       el('p', { text: 'With few cycles logged it leans on a typical 28-day cycle (or the length you entered) and says so. The more cycles you log, the more it trusts your own history.' }),
       el('p', { text: 'The shaded days around the next period show uncertainty: the further ahead, the wider and fainter the band. If your period is late, predictions move forward instead of staying stuck in the past.' }),
       el('p', { text: 'Ovulation is estimated about 14 days before the next period. The fertile window is the 5 days before through 1 day after that estimate. These are estimates, not guarantees.' }),
+      el('p', { text: 'The mood and libido notes describe general patterns across people for each phase (hormone levels rise and fall through the cycle). They are not a prediction of how you will feel on a given day, and they are hidden when hormonal birth control is on.' }),
       el('p', { text: 'Notes suggesting you talk to a doctor are gentle prompts based on common ranges, not a diagnosis.' }));
 
     backupBox = el('div');
