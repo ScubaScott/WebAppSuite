@@ -128,6 +128,9 @@ header('Content-Type: text/html; charset=utf-8');
                         $appAccessStmt->execute([':app_id' => $specialAppId]);
                         echo '<div class="success"><strong>App Access Seeded:</strong> <code>' . $specialAppId . '</code> access rule verified (Special group and above).</div>';
                     }
+
+                    // The Cycle app was first called 'period'; drop that app's access rule
+                    $pdo->exec("DELETE FROM suite_app_access WHERE app_id = 'period'");
                 } catch (PDOException $accessEx) {
                     echo '<div class="error"><strong>App Access Warning:</strong> ' . htmlspecialchars($accessEx->getMessage()) . '</div>';
                 }
