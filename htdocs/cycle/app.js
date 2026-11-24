@@ -1,16 +1,16 @@
 /**
- * Period Tracker UI. Stores only what the user entered (period entries, unusual-cycle flags,
- * settings, dismissed notes) and derives everything else through PeriodCore on every render.
- * Persistence goes through PeriodStore (IndexedDB). Records leave the device only when the user turns
- * on the optional server backup (PeriodSync).
+ * Cycle Tracker UI. Stores only what the user entered (period entries, unusual-cycle flags,
+ * settings, dismissed notes) and derives everything else through CycleCore on every render.
+ * Persistence goes through CycleStore (IndexedDB). Records leave the device only when the user turns
+ * on the optional server backup (CycleSync).
  */
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.6";
 
 (function () {
   'use strict';
 
-  const C = PeriodCore;
-  const S = PeriodStore;
+  const C = CycleCore;
+  const S = CycleStore;
 
   // Local-only UI conveniences (not part of the exported data)
   const LS_PROMPT_SNOOZE = 'period_end_prompt_snooze';
@@ -179,6 +179,7 @@ const APP_VERSION = "1.2";
       show_ovulation: true,
       show_fertile_window: true,
       show_phase_tints: true,
+      show_mood_line: true,
       week_starts_on: localeWeekStart(),
       onboarding_completed_at: null,
       disclaimer_acknowledged_at: null,
@@ -334,7 +335,6 @@ const APP_VERSION = "1.2";
     if (!done) { renderOnboarding(); return; }
     renderSummary();
     renderNotices();
-    renderActions();
     renderCalendar();
     renderHistory();
     renderStats();
@@ -360,7 +360,7 @@ const APP_VERSION = "1.2";
     if (!m.last) {
       box.append(
         el('div', { class: 'cycle-line', text: 'No periods logged yet' }),
-        el('p', { class: 'muted', text: 'Tap “Period started” when your next period begins, or add past periods in Settings to get predictions.' }),
+        el('p', { class: 'muted', text: 'Tap today’s date on the calendar to mark when your period starts, or add past periods in Settings to get predictions.' }),
         el('span', { class: 'confidence-label', text: m.confidence.label }),
         el('span', { class: 'muted', text: m.confidence.text })
       );
@@ -414,7 +414,6 @@ const APP_VERSION = "1.2";
         el('h3', { text: 'Has your period ended?' }),
         el('div', { class: 'row' },
           el('button', { type: 'button', class: 'btn btn--primary', text: 'Ended today', onclick: () => logEnd(today()) }),
-          el('button', { type: 'button', class: 'btn', text: 'Ended on…', onclick: () => pickEndDate() }),
           el('button', {
             type: 'button', class: 'btn', text: 'Still going',
             onclick: () => { lsSet(LS_PROMPT_SNOOZE, today()); renderNotices(); }
@@ -464,21 +463,6 @@ const APP_VERSION = "1.2";
     rec.deleted = false;
     await saveDismissal(rec);
     recompute();
-  }
-
-  /* ---------- primary actions ---------- */
-
-  function renderActions() {
-    const box = clear($('#actions'));
-    if (model.ongoing) {
-      box.append(
-        el('button', { type: 'button', class: 'btn btn--primary btn--big', text: 'Period ended', onclick: () => logEnd(today()) }),
-        el('button', { type: 'button', class: 'link-btn', text: 'Other date…', onclick: () => pickEndDate() }));
-    } else {
-      box.append(
-        el('button', { type: 'button', class: 'btn btn--primary btn--big', text: 'Period started', onclick: () => logStart(today(), {}) }),
-        el('button', { type: 'button', class: 'link-btn', text: 'Other date…', onclick: () => pickStartDate() }));
-    }
   }
 
   /* ---------- calendar ---------- */
@@ -542,6 +526,9 @@ const APP_VERSION = "1.2";
     $('#calTitle').textContent = new Date(Date.UTC(view.year, view.month, 1))
       .toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const wrap = clear($('#calGrid'));
+    const showMood = moodLineOn();
+    const moodDays = [];
+    wrap.classList.toggle('no-tints', state.settings.show_phase_tints === false);
     wrap.append(monthGrid(view.year, view.month, (dn, d) => {
       const info = C.dayInfo(model, dn);
       const cls = dayClasses(info);
@@ -551,9 +538,108 @@ const APP_VERSION = "1.2";
       }, el('span', { class: 'num', text: d }));
       if (info.band || info.likely) btn.style.setProperty('--p', info.prob.toFixed(2));
       if (info.ovulation) btn.append(el('i', { class: 'mk ' + (info.ovulation === 'pov' ? 'mk-pov' : 'mk-ov') }));
+      if (showMood) moodDays.push({ btn: btn, mood: C.moodLevel(model, dn), before: C.moodLevel(model, dn - 1), after: C.moodLevel(model, dn + 1) });
       return btn;
     }));
+    view.moodDays = moodDays;
+    drawMoodLine();
     renderLegend();
+  }
+
+  /* ---------- typical mood line ---------- */
+
+  // The line is a general pattern, so it is hidden on hormonal birth control, before any period is
+  // logged, and when switched off in Settings
+  function moodLineOn() {
+    return !!model.last && !bcOn() && state.settings.show_mood_line !== false;
+  }
+
+  // Catmull-Rom path through pts[i0..i1]; neighbors outside that range only shape the tangents
+  function smoothPath(pts, i0, i1) {
+    let d = 'M' + pts[i0].x.toFixed(1) + ',' + pts[i0].y.toFixed(1);
+    for (let i = i0; i < i1; i++) {
+      const p0 = pts[Math.max(i - 1, 0)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(i + 2, pts.length - 1)];
+      d += ' C' + (p1.x + (p2.x - p0.x) / 6).toFixed(1) + ',' + (p1.y + (p2.y - p0.y) / 6).toFixed(1) +
+        ' ' + (p2.x - (p3.x - p1.x) / 6).toFixed(1) + ',' + (p2.y - (p3.y - p1.y) / 6).toFixed(1) +
+        ' ' + p2.x.toFixed(1) + ',' + p2.y.toFixed(1);
+    }
+    return d;
+  }
+
+  // Draws one smooth line per calendar week over the month grid. Each day's point sits at its
+  // cell's horizontal center, higher in the cell for a higher typical mood level. Segments for
+  // predicted days are dashed.
+  function drawMoodLine() {
+    const wrap = $('#calGrid');
+    const old = wrap.querySelector('.mood-trend');
+    if (old) old.remove();
+    // Redraw when the grid is resized or becomes visible after being hidden
+    if (!view.moodObserver && window.ResizeObserver) {
+      view.moodObserver = new ResizeObserver(() => drawMoodLine());
+      view.moodObserver.observe(wrap);
+    }
+
+    const days = view.moodDays || [];
+    if (!days.length || !wrap.offsetWidth) return;
+
+    const svg = svgEl('svg', {
+      class: 'mood-trend', viewBox: '0 0 ' + wrap.offsetWidth + ' ' + wrap.offsetHeight,
+      preserveAspectRatio: 'none', 'aria-hidden': 'true'
+    });
+    // Group consecutive days into week rows by their vertical position in the grid. The line spans
+    // each day's full width: its row starts at the first day's left border and ends at the last
+    // day's right border, and its height runs from the day's bottom to the very top of its border.
+    const rows = [];
+    days.forEach(item => {
+      if (!item.mood) return;
+      const b = item.btn;
+      const bottom = b.offsetTop + b.offsetHeight - 5;
+      const top = b.offsetTop + 1;
+      const yAt = v => bottom - v * (bottom - top);
+      const left = b.offsetLeft;
+      const right = b.offsetLeft + b.offsetWidth;
+      const mid = left + b.offsetWidth / 2;
+      // Border points sit halfway between this day's level and its neighbor's so rows meet smoothly
+      const edge = (other) => (other ? (item.mood.v + other.v) / 2 : item.mood.v);
+      let row = rows[rows.length - 1];
+      if (row && row.top === b.offsetTop) {
+        // Same week: drop the previous day's right-border point; this day's center replaces it
+        row.pts.pop();
+      } else {
+        row = { top: b.offsetTop, pts: [{ x: left, y: yAt(edge(item.before)), predicted: item.mood.predicted }] };
+        rows.push(row);
+      }
+      row.pts.push({ x: mid, y: yAt(item.mood.v), predicted: item.mood.predicted });
+      row.pts.push({ x: right, y: yAt(edge(item.after)), predicted: item.mood.predicted });
+    });
+    rows.forEach(row => {
+      const pts = row.pts;
+      // Split into runs of actual and predicted days; each run extends to the next run's first point so the line stays joined
+      let start = 0;
+      for (let i = 1; i <= pts.length; i++) {
+        if (i === pts.length || pts[i].predicted !== pts[start].predicted) {
+          const end = Math.min(i, pts.length - 1);
+          if (end > start) {
+            svg.append(svgEl('path', {
+              d: smoothPath(pts, start, end),
+              class: 'mood-path' + (pts[start].predicted ? ' mood-pred' : '')
+            }));
+          }
+          start = i;
+        }
+      }
+    });
+    wrap.append(svg);
+  }
+
+  // Small sample of the mood line for the legend
+  function moodSwatch() {
+    const svg = svgEl('svg', { class: 'mood-swatch', viewBox: '0 0 30 30', 'aria-hidden': 'true' });
+    svg.append(svgEl('path', { d: 'M2,24 C10,24 12,6 16,6 C20,6 22,22 28,24', class: 'mood-path' }));
+    return svg;
   }
 
   function renderLegend() {
@@ -578,6 +664,7 @@ const APP_VERSION = "1.2";
       item(sw('', 'mk-pov'), 'Predicted ovulation'),
       item(sw('fertile'), 'Fertile window (an estimate, not “safe” or “unsafe” days)'),
       item(sw('today'), 'Today'),
+      item(moodSwatch(), 'Typical mood pattern (a general trend, not a prediction; everyone is different)'),
       el('p', { class: 'muted legend-note', text: 'Ovulation, the fertile window and phases are estimates from your past cycles.' })
     );
   }
@@ -879,47 +966,6 @@ const APP_VERSION = "1.2";
     });
   }
 
-  // Date pickers for the "Other date..." actions
-  function pickStartDate() {
-    const input = el('input', { type: 'date', value: today(), max: today() });
-    openSheet({
-      title: 'When did your period start?',
-      body: field('Start date', input),
-      buttons: [
-        { label: 'Cancel' },
-        {
-          label: 'Period started', kind: 'primary',
-          onClick: async () => {
-            if (!input.value) return false;
-            const ok = await logStart(input.value, {});
-            return ok ? undefined : false;
-          }
-        }
-      ]
-    });
-  }
-
-  function pickEndDate() {
-    const entry = model.ongoing;
-    if (!entry) return;
-    const input = el('input', { type: 'date', value: today(), min: entry.start_date, max: today() });
-    openSheet({
-      title: 'When did your period end?',
-      body: field('Last day of period', input),
-      buttons: [
-        { label: 'Cancel' },
-        {
-          label: 'Period ended', kind: 'primary',
-          onClick: async () => {
-            if (!input.value) return false;
-            const ok = await setEnd(entry, input.value);
-            return ok ? undefined : false;
-          }
-        }
-      ]
-    });
-  }
-
   /* ============================================================= day sheet */
 
   function openDaySheet(dn) {
@@ -1181,6 +1227,7 @@ const APP_VERSION = "1.2";
     const ovT = toggle('Show ovulation', 'show_ovulation');
     const fwT = toggle('Show fertile window', 'show_fertile_window');
     const phT = toggle('Show phase tints', 'show_phase_tints');
+    const mlT = toggle('Show typical mood line', 'show_mood_line');
 
     const bcSel = el('select', null,
       el('option', { value: 'yes', text: 'Yes' }), el('option', { value: 'no', text: 'No' }), el('option', { value: 'unsure', text: 'Not sure' }));
@@ -1220,7 +1267,7 @@ const APP_VERSION = "1.2";
       el('p', { text: 'With few cycles logged it leans on a typical 28-day cycle (or the length you entered) and says so. The more cycles you log, the more it trusts your own history.' }),
       el('p', { text: 'The shaded days around the next period show uncertainty: the further ahead, the wider and fainter the band. If your period is late, predictions move forward instead of staying stuck in the past.' }),
       el('p', { text: 'Ovulation is estimated about 14 days before the next period. The fertile window is the 5 days before through 1 day after that estimate. These are estimates, not guarantees.' }),
-      el('p', { text: 'The mood and libido notes describe general patterns across people for each phase (hormone levels rise and fall through the cycle). They are not a prediction of how you will feel on a given day, and they are hidden when hormonal birth control is on.' }),
+      el('p', { text: 'The mood and libido notes describe general patterns across people for each phase (hormone levels rise and fall through the cycle). They are not a prediction of how you will feel on a given day, and they are hidden when hormonal birth control is on. The typical mood line on the calendar draws the same general pattern: it rises through the follicular phase, peaks around estimated ovulation and eases down before the next period.' }),
       el('p', { text: 'Notes suggesting you talk to a doctor are gentle prompts based on common ranges, not a diagnosis.' }));
 
     backupBox = el('div');
@@ -1232,7 +1279,7 @@ const APP_VERSION = "1.2";
           intField('Usual cycle length (days)', 'usual_cycle_length', 15, 90, 'Default 28'),
           intField('Usual period length (days)', 'usual_period_length', 1, 15, 'Default 5'),
           field('Hormonal birth control', bcSel),
-          ovT.node, fwT.node, phT.node,
+          ovT.node, fwT.node, phT.node, mlT.node,
           field('Week starts on', weekSel)),
         el('div', { class: 'sheet-section' },
           el('h3', { text: 'Your data' }),
@@ -1272,7 +1319,7 @@ const APP_VERSION = "1.2";
         backupBox.append(el('p', { text: 'Sign in from the app launcher (top right) to turn this on. A profile password keeps the profile yours.' }));
         return;
       }
-      if (window.SuiteProfile && !SuiteProfile.canSeeApp('period')) {
+      if (window.SuiteProfile && !SuiteProfile.canSeeApp('cycle')) {
         backupBox.append(el('p', { text: 'Your profile does not have access to server backup.' }));
         return;
       }
@@ -1354,7 +1401,7 @@ const APP_VERSION = "1.2";
     const now = S.nowIso();
     await saveSettings({ last_export_at: now });
     const payload = {
-      app: 'period-tracker',
+      app: 'cycle-tracker',
       schema_version: 1,
       exported_at: now,
       records: {
@@ -1365,7 +1412,7 @@ const APP_VERSION = "1.2";
         daily_logs: await S.getAll('daily_logs')
       }
     };
-    downloadJson('period-backup-' + today() + '.json', payload);
+    downloadJson('cycle-backup-' + today() + '.json', payload);
     showToast('Backup saved');
   }
 
@@ -1379,7 +1426,7 @@ const APP_VERSION = "1.2";
     const errors = [];
     const bad = msg => { if (errors.length < 10) errors.push(msg); };
     if (!obj || typeof obj !== 'object') { bad('The file is not a backup.'); return errors; }
-    if (obj.app !== 'period-tracker') bad('This file is not a Period Tracker backup.');
+    if (obj.app !== 'cycle-tracker' && obj.app !== 'period-tracker') bad('This file is not a Cycle Tracker backup.');
     if (!Number.isInteger(obj.schema_version) || obj.schema_version < 1) bad('The backup has no valid version.');
     else if (obj.schema_version > 1) bad('This backup was made by a newer version of the app. Update the app and try again.');
     if (!obj.records || typeof obj.records !== 'object') { bad('The backup has no records.'); return errors; }
@@ -1708,10 +1755,10 @@ const APP_VERSION = "1.2";
     setViewToday();
 
     // Optional server backup: dirty-tracking starts here; nothing is sent unless the user turned it on
-    sync = PeriodSync.create({
+    sync = CycleSync.create({
       store: S,
       fetch: (url, init) => window.fetch(url, init),
-      apiUrl: '../api/period.php',
+      apiUrl: '../api/cycle.php',
       getSession: () => {
         const u = sessionUser();
         return u && u.token ? { username: u.username, token: u.token } : null;

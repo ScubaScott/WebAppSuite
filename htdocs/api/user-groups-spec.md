@@ -52,7 +52,7 @@ Seed with `INSERT IGNORE` using fixed ids so the FKs and seeds are stable:
 | `app_id` | VARCHAR(32) NOT NULL PK | Same ids used by `suite_user_data.app_id` (e.g. `scoreboard`, `toys`) |
 | `min_group_id` | INT UNSIGNED NOT NULL | FK → `suite_groups.id` ON DELETE CASCADE ON UPDATE CASCADE |
 
-- No seed rows today (all current apps stay open). Special-group apps each add one row: `('toys', 2)` and `('period', 2)` (seeded by `api/setup.php`).
+- No seed rows today (all current apps stay open). Special-group apps each add one row: `('toys', 2)` and `('cycle', 2)` (seeded by `api/setup.php`).
 
 All tables: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`, `CREATE TABLE IF NOT EXISTS`.
 

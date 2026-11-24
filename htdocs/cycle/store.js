@@ -1,9 +1,9 @@
 /**
- * Period store: IndexedDB persistence with one object store per record type, keyed by `id`.
+ * Cycle store: IndexedDB persistence with one object store per record type, keyed by `id`.
  * Falls back to an in-memory store (data lasts only for the session) when IndexedDB is
  * unavailable, and reports that through isPersistent() so the UI can warn the user.
  */
-const PeriodStore = (function () {
+const CycleStore = (function () {
   'use strict';
 
   const DB_NAME = 'period-tracker';

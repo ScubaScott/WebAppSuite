@@ -1,12 +1,12 @@
 /**
- * Period sync: optional per-user server backup of the tracker's records (api/period.php).
+ * Cycle sync: optional per-user server backup of the tracker's records (api/period.php).
  *
  * Records sync one by one: the version with the later updated_at wins, soft deletes travel as
  * ordinary records. The local IndexedDB stays the source the UI reads, so the app works offline;
  * changes made while offline stay in a "dirty" list and are pushed when a sync next succeeds.
  *
  * create(deps) builds a sync controller from injected parts so the same file runs in the browser
- * (global `PeriodSync`) and in Node tests (tools/period-sync-test.js):
+ * (global `CycleSync`) and in Node tests (tools/period-sync-test.js):
  *   store          { getAll(name), putMany(name, records, opts), onChange(fn) }
  *   fetch          fetch-compatible function
  *   apiUrl         URL of period.php
@@ -396,5 +396,5 @@
 
   const api = { create: create };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  else root.PeriodSync = api;
+  else root.CycleSync = api;
 })(typeof self !== 'undefined' ? self : this);

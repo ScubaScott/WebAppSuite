@@ -1,4 +1,4 @@
-/* Period Tracker stylesheet.
+/* Cycle Tracker stylesheet.
    All colors come from the tokens below so the calendar's semantic roles
    (logged, predicted, phases, markers) stay consistent everywhere they appear. */
 
@@ -30,6 +30,7 @@
   --today: #ffffff;
   --late: #ffb454;
   --note: #8bb8ff;
+  --mood-line: #ffd479;
 
   /* Suite header tokens */
   --hdr-bg: #1b1524;
@@ -219,8 +220,6 @@ label.check input { width: 22px; height: 22px; accent-color: var(--accent); flex
 .notice h3 { margin-bottom: 4px; font-size: 1rem; }
 .notice .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
-.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
-.actions .btn--big { flex: 1 1 180px; }
 
 /* ---------- Calendar ---------- */
 
@@ -396,3 +395,32 @@ label.check input { width: 22px; height: 22px; accent-color: var(--accent); flex
   transform: translateX(-50%);
 }
 .toast .link-btn { padding: 0 12px; }
+
+/* ---------- Typical mood line (week-by-week overlay on the calendar) ---------- */
+
+.cal-grid-wrap { position: relative; }
+/* With phase tints off, each day gets its own border so the grid stays readable */
+.cal-grid-wrap.no-tints .day { border: 1px solid rgba(255, 255, 255, 0.28); }
+.cal-grid-wrap.no-tints .day.is-blank { border-color: transparent; }
+.mood-trend {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  overflow: visible;
+}
+/* The line never takes clicks or taps: they always reach the day beneath */
+.mood-trend, .mood-trend * { pointer-events: none; }
+.mood-path {
+  fill: none;
+  stroke: var(--mood-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.4;
+}
+.mood-path.mood-pred { stroke-dasharray: 2 5; opacity: 0.3; }
+.mood-swatch .mood-path { opacity: 0.7; }
+.mood-swatch { width: 30px; height: 30px; flex-shrink: 0; }

@@ -1,7 +1,7 @@
 <?php
-// WebAppSuite Period Tracker Backup API
-// Optional per-user server copy of the Period tracker, synced record by record (last write wins by
-// the record's updated_at). Requires a signed-in session and access to the 'period' app.
+// WebAppSuite Cycle Tracker Backup API
+// Optional per-user server copy of the Cycle tracker, synced record by record (last write wins by
+// the record's updated_at). Requires a signed-in session and access to the 'cycle' app.
 
 // API endpoint version identifier
 $API_VERSION = '1.0';
@@ -88,12 +88,12 @@ if (!$pdo) {
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
 $body = $_SERVER['REQUEST_METHOD'] === 'POST' ? periodReadBody() : [];
 
-// Every action needs a valid session and access to the restricted 'period' app
+// Every action needs a valid session and access to the restricted 'cycle' app
 $user = authenticateUser($pdo, getAuthToken($body));
 if (!$user) {
     periodFail(401, 'Authentication required.');
 }
-if (!in_array('period', getAllowedRestrictedApps($pdo, $user), true)) {
+if (!in_array('cycle', getAllowedRestrictedApps($pdo, $user), true)) {
     periodFail(403, 'Your profile does not have access to this app.');
 }
 $userId = (int)$user['id'];

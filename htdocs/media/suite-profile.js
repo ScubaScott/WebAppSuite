@@ -65,7 +65,7 @@ const SUITE_PROFILE_VERSION = '2.6';
             path.indexOf('/FarkleScore') !== -1 ||
             path.indexOf('/HarleyVinDecoder') !== -1 ||
             path.indexOf('/Toys') !== -1 ||
-            path.indexOf('/period') !== -1) {
+            path.indexOf('/cycle') !== -1) {
             return '../api/' + endpoint;
         }
         return './api/' + endpoint;
@@ -1161,7 +1161,7 @@ const SUITE_PROFILE_VERSION = '2.6';
             path.indexOf('/FarkleScore') !== -1 ||
             path.indexOf('/HarleyVinDecoder') !== -1 ||
             path.indexOf('/Toys') !== -1 ||
-            path.indexOf('/period') !== -1
+            path.indexOf('/cycle') !== -1
         ) {
             swPath = '../sw.js';
             swScope = '../';

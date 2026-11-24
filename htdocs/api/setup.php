@@ -124,7 +124,7 @@ header('Content-Type: text/html; charset=utf-8');
                 // Idempotent seed: Ensure suite_app_access records access rules for the special-group apps
                 try {
                     $appAccessStmt = $pdo->prepare("INSERT IGNORE INTO suite_app_access (app_id, min_group_id) SELECT :app_id, id FROM suite_groups WHERE slug = 'special'");
-                    foreach (['toys', 'period'] as $specialAppId) {
+                    foreach (['toys', 'cycle'] as $specialAppId) {
                         $appAccessStmt->execute([':app_id' => $specialAppId]);
                         echo '<div class="success"><strong>App Access Seeded:</strong> <code>' . $specialAppId . '</code> access rule verified (Special group and above).</div>';
                     }
