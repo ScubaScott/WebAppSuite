@@ -382,6 +382,74 @@
     return null;
   }
 
+  /* ------------------------------------------------------------ intimacy log stats */
+
+  const SEX_TYPES = ['intercourse', 'oral', 'other'];
+
+  /**
+   * Summary of the intimacy log. `logs` are daily_logs records ({date, sex_types, deleted}); several
+   * records for one date are merged. Only days up to todayDn with at least one type count.
+   * Returns null when nothing is logged, otherwise
+   * { totalDays, types: {intercourse, oral, other}, last30, last90, daysSinceLast, spanDays, per30,
+   *   longestGap, topPhase: {phase, per10, count} | null, topWeekday: {index, count} | null }.
+   * per30 (average active days per 30 days) needs a span of 30+ days; topPhase and topWeekday need at
+   * least 5 logged days, and topPhase is the phase with the highest rate of logged days per day spent in it.
+   */
+  function sexStats(model, logs, todayDn) {
+    const byDate = {};
+    (logs || []).forEach(l => {
+      if (l.deleted || !l.date || !Array.isArray(l.sex_types)) return;
+      const dn = toDn(l.date);
+      if (dn > todayDn) return;
+      const set = byDate[dn] || (byDate[dn] = {});
+      l.sex_types.forEach(t => { if (SEX_TYPES.indexOf(t) >= 0) set[t] = true; });
+    });
+    const days = Object.keys(byDate).map(Number).filter(dn => Object.keys(byDate[dn]).length).sort((a, b) => a - b);
+    if (!days.length) return null;
+
+    const types = { intercourse: 0, oral: 0, other: 0 };
+    days.forEach(dn => Object.keys(byDate[dn]).forEach(t => { types[t]++; }));
+    const within = n => days.filter(dn => dn > todayDn - n).length;
+    const spanDays = todayDn - days[0] + 1;
+    let longestGap = null;
+    for (let i = 1; i < days.length; i++) longestGap = Math.max(longestGap || 0, days[i] - days[i - 1] - 1);
+
+    const out = {
+      totalDays: days.length, types: types, last30: within(30), last90: within(90),
+      daysSinceLast: todayDn - days[days.length - 1], spanDays: spanDays,
+      per30: spanDays >= 30 ? days.length * 30 / spanDays : null,
+      longestGap: longestGap, topPhase: null, topWeekday: null
+    };
+
+    if (days.length >= 5) {
+      const wd = [0, 0, 0, 0, 0, 0, 0];
+      days.forEach(dn => { wd[new Date(toStr(dn) + 'T00:00:00Z').getUTCDay()]++; });
+      const best = wd.indexOf(Math.max.apply(null, wd));
+      out.topWeekday = { index: best, count: wd[best] };
+
+      // Phases do not apply on hormonal birth control
+      if (!model.last || (model.settings || {}).hormonal_birth_control === 'yes') return out;
+      const spent = {};
+      const logged = {};
+      for (let dn = days[0]; dn <= todayDn; dn++) {
+        const ph = dayInfo(model, dn).phase;
+        if (ph) spent[ph] = (spent[ph] || 0) + 1;
+      }
+      days.forEach(dn => {
+        const ph = dayInfo(model, dn).phase;
+        if (ph) logged[ph] = (logged[ph] || 0) + 1;
+      });
+      let top = null;
+      Object.keys(logged).forEach(ph => {
+        if (spent[ph] < 3) return;
+        const per10 = logged[ph] * 10 / spent[ph];
+        if (!top || per10 > top.per10) top = { phase: ph, per10: per10, count: logged[ph] };
+      });
+      out.topPhase = top;
+    }
+    return out;
+  }
+
   /* ------------------------------------------------------------ statistics */
 
   // Range of eligible cycle lengths, dropping at most one extreme outlier once n >= 6
@@ -584,7 +652,7 @@
   const api = {
     toDn: toDn, toStr: toStr, isValidDate: isValidDate, localToday: localToday, round: round,
     erf: erf, phi: phi, weightedMedian: weightedMedian,
-    buildModel: buildModel, dayInfo: dayInfo, moodLevel: moodLevel, entryAt: entryAt, periodProbability: periodProbability,
+    buildModel: buildModel, dayInfo: dayInfo, moodLevel: moodLevel, sexStats: sexStats, SEX_TYPES: SEX_TYPES, entryAt: entryAt, periodProbability: periodProbability,
     variation: variation, stats: stats, chartData: chartData,
     healthNotes: healthNotes, NOTE_ORDER: NOTE_ORDER,
     validateEntry: validateEntry, cycleCheck: cycleCheck, suggestEnd: suggestEnd,

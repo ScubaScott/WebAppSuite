@@ -4,7 +4,7 @@
  * Persistence goes through CycleStore (IndexedDB). Records leave the device only when the user turns
  * on the optional server backup (CycleSync).
  */
-const APP_VERSION = "1.6";
+const APP_VERSION = "1.7";
 
 (function () {
   'use strict';
@@ -68,7 +68,7 @@ const APP_VERSION = "1.6";
   }
 
   // In-memory copy of the stored records, and the model derived from them
-  const state = { entries: [], flags: [], settings: null, dismissals: [] };
+  const state = { entries: [], flags: [], settings: null, dismissals: [], logs: [] };
   let model = null;
 
   // Calendar and navigation state
@@ -142,6 +142,33 @@ const APP_VERSION = "1.6";
 
   const bcOn = () => state.settings.hormonal_birth_control === 'yes';
 
+  // Intimacy tracking is shown only when switched on in Settings; switching it off hides the
+  // buttons, calendar icons and stats but never deletes the logged data
+  const sexOn = () => state.settings.show_sex_tracking === true;
+
+  // The three loggable kinds, in display order
+  const SEX_KINDS = [
+    { type: 'intercourse', label: 'Intercourse' },
+    { type: 'oral', label: 'Oral' },
+    { type: 'other', label: 'Other' }
+  ];
+
+  const SEX_ICON_PATHS = {
+    intercourse: ['M12 21s-7-4.4-9.3-9C1.1 8.9 3 5.5 6.3 5.5c2 0 3.5 1.1 5.7 3.3 2.2-2.2 3.7-3.3 5.7-3.3 3.3 0 5.2 3.4 3.6 6.5C19 16.6 12 21 12 21z'],
+    oral: [
+      'M2 12c2.5-3.2 5-4.8 7-4.8 1.3 0 2 .6 3 1.3 1-.7 1.7-1.3 3-1.3 2 0 4.5 1.6 7 4.8z',
+      'M2.8 13.2c4 .6 6.7.7 9.2.7s5.2-.1 9.2-.7c-2.3 3.7-5.5 5.7-9.2 5.7S5.1 16.9 2.8 13.2z'
+    ],
+    other: ['M23 5.5V20c0 2.2-1.8 4-4 4h-7.3c-1.08 0-2.1-.43-2.85-1.19L1 14.83s1.26-1.23 1.3-1.25c.22-.19.49-.29.79-.29.22 0 .42.06.6.16.04.01 4.31 2.46 4.31 2.46V4c0-.83.67-1.5 1.5-1.5S11 3.17 11 4v7h1V1.5c0-.83.67-1.5 1.5-1.5S15 .67 15 1.5V11h1V2.5c0-.83.67-1.5 1.5-1.5S19 1.67 19 2.5V11h1V5.5c0-.83.67-1.5 1.5-1.5S23 4.67 23 5.5z']
+  };
+
+  // Inline icon (heart, lips or hand) drawn in the current text color
+  function sexIcon(type) {
+    const svg = svgEl('svg', { class: 'sex-icon', viewBox: '0 0 24 24', 'aria-hidden': 'true', fill: 'currentColor' });
+    SEX_ICON_PATHS[type].forEach(d => svg.append(svgEl('path', { d: d })));
+    return svg;
+  }
+
   function phaseLabel(phase) {
     if (!phase) return '';
     return bcOn() ? 'Bleed' : PHASE_LABELS[phase];
@@ -180,6 +207,7 @@ const APP_VERSION = "1.6";
       show_fertile_window: true,
       show_phase_tints: true,
       show_mood_line: true,
+      show_sex_tracking: false,
       week_starts_on: localeWeekStart(),
       onboarding_completed_at: null,
       disclaimer_acknowledged_at: null,
@@ -193,10 +221,12 @@ const APP_VERSION = "1.6";
 
   // Loads every record from storage into memory, creating the settings record when missing
   async function loadAll() {
-    const [entries, flags, settings, dismissals] = await Promise.all([
-      S.getAll('period_entries'), S.getAll('cycle_flags'), S.getAll('settings'), S.getAll('health_note_dismissals')
+    const [entries, flags, settings, dismissals, logs] = await Promise.all([
+      S.getAll('period_entries'), S.getAll('cycle_flags'), S.getAll('settings'), S.getAll('health_note_dismissals'),
+      S.getAll('daily_logs')
     ]);
     state.entries = entries;
+    state.logs = logs;
     state.flags = flags;
     state.dismissals = dismissals;
     state.settings = settings.find(s => s.id === 'settings') || null;
@@ -218,6 +248,30 @@ const APP_VERSION = "1.6";
   const saveEntry = e => saveRec('period_entries', state.entries, e);
   const saveFlag = f => saveRec('cycle_flags', state.flags, f);
   const saveDismissal = d => saveRec('health_note_dismissals', state.dismissals, d);
+  const saveLog = l => saveRec('daily_logs', state.logs, l);
+
+  // Intimacy types logged for one date. Two devices may each have created a record for the same
+  // day, so every live record for the date is merged.
+  function sexTypesFor(dateStr) {
+    const set = {};
+    state.logs.forEach(l => {
+      if (!l.deleted && l.date === dateStr && Array.isArray(l.sex_types)) l.sex_types.forEach(t => { set[t] = true; });
+    });
+    return SEX_KINDS.map(k => k.type).filter(t => set[t]);
+  }
+
+  // Turns one intimacy type on or off for a date. The merged types are written to the first record
+  // for the date (created when missing); any duplicate records for that date are soft-deleted.
+  async function toggleSexType(dateStr, type) {
+    const recs = state.logs.filter(l => !l.deleted && l.date === dateStr);
+    const types = sexTypesFor(dateStr);
+    const next = types.indexOf(type) >= 0 ? types.filter(t => t !== type) : types.concat(type);
+    const keep = recs[0] || newRecord({ date: dateStr, sex_types: [] });
+    keep.sex_types = SEX_KINDS.map(k => k.type).filter(t => next.indexOf(t) >= 0);
+    await saveLog(keep);
+    for (const dup of recs.slice(1)) { dup.deleted = true; await saveLog(dup); }
+    return keep.sex_types;
+  }
 
   async function saveSettings(patch) {
     Object.assign(state.settings, patch);
@@ -513,6 +567,7 @@ const APP_VERSION = "1.6";
 
   function dayAriaLabel(info) {
     const bits = [fmtLong(info.dn)];
+    if (sexOn() && sexTypesFor(C.toStr(info.dn)).length) bits.push('intimacy logged');
     if (info.logged) bits.push('period logged');
     else if (info.likely) bits.push('period likely');
     else if (info.predictedEnd) bits.push('period expected');
@@ -538,6 +593,10 @@ const APP_VERSION = "1.6";
       }, el('span', { class: 'num', text: d }));
       if (info.band || info.likely) btn.style.setProperty('--p', info.prob.toFixed(2));
       if (info.ovulation) btn.append(el('i', { class: 'mk ' + (info.ovulation === 'pov' ? 'mk-pov' : 'mk-ov') }));
+      if (sexOn()) {
+        const kinds = sexTypesFor(C.toStr(dn));
+        if (kinds.length) btn.append(el('span', { class: 'sex-icons' }, kinds.map(sexIcon)));
+      }
       if (showMood) moodDays.push({ btn: btn, mood: C.moodLevel(model, dn), before: C.moodLevel(model, dn - 1), after: C.moodLevel(model, dn + 1) });
       return btn;
     }));
@@ -664,6 +723,7 @@ const APP_VERSION = "1.6";
       item(sw('', 'mk-pov'), 'Predicted ovulation'),
       item(sw('fertile'), 'Fertile window (an estimate, not “safe” or “unsafe” days)'),
       item(sw('today'), 'Today'),
+      sexOn() ? item(el('span', { class: 'sex-legend' }, SEX_KINDS.map(k => sexIcon(k.type))), 'Intimacy logged: heart, lips, hand') : null,
       item(moodSwatch(), 'Typical mood pattern (a general trend, not a prediction; everyone is different)'),
       el('p', { class: 'muted legend-note', text: 'Ovulation, the fertile window and phases are estimates from your past cycles.' })
     );
@@ -783,6 +843,39 @@ const APP_VERSION = "1.6";
       }
     }
     box.append(card);
+    if (sexOn()) box.append(sexStatsCard());
+  }
+
+  // Intimacy card for the Stats tab (shown only when sex tracking is on)
+  function sexStatsCard() {
+    const card = el('div', { class: 'card' }, el('h2', { text: 'Intimacy' }));
+    const ss = C.sexStats(model, state.logs, C.toDn(today()));
+    if (!ss) {
+      card.append(el('p', { class: 'muted', text: 'Nothing logged yet. Tap a day on the calendar to add an entry.' }));
+      return card;
+    }
+    const grid = el('div', { class: 'stat-grid' });
+    grid.append(
+      statTile(pluralDays(ss.last30), 'Logged in the last 30 days'),
+      statTile(pluralDays(ss.totalDays), 'Logged in total'),
+      statTile(ss.daysSinceLast === 0 ? 'Today' : pluralDays(ss.daysSinceLast) + ' ago', 'Most recent'));
+    if (ss.per30 !== null) grid.append(statTile(ss.per30.toFixed(1) + ' days', 'Average per 30 days'));
+    if (ss.longestGap !== null) grid.append(statTile(pluralDays(ss.longestGap), 'Longest gap between entries'));
+    card.append(grid);
+
+    const kinds = SEX_KINDS.map(k => k.label + ' ' + ss.types[k.type]).join(' \u00b7 ');
+    card.append(el('p', { class: 'muted', text: 'Days by type: ' + kinds + '.' }));
+    if (ss.topWeekday) {
+      const day = new Date(Date.UTC(2023, 0, 1 + ss.topWeekday.index)).toLocaleDateString(undefined, { weekday: 'long', timeZone: 'UTC' });
+      card.append(el('p', { text: 'Most often on ' + day + 's (' + ss.topWeekday.count + ' of ' + ss.totalDays + ' days).' }));
+    }
+    if (ss.topPhase) {
+      card.append(el('p', { text: 'Most often during the ' + PHASE_LABELS[ss.topPhase.phase].toLowerCase() + ' phase, relative to how long you spend in each phase.' }));
+    } else if (ss.totalDays < 5) {
+      card.append(el('p', { class: 'muted', text: 'Patterns by day and phase appear after 5 logged days.' }));
+    }
+    card.append(el('p', { class: 'muted', text: 'These are patterns in what you logged. Everyone is different.' }));
+    return card;
   }
 
   function statTile(big, caption, wide) {
@@ -985,9 +1078,10 @@ const APP_VERSION = "1.6";
     if (info.fertile) lines.append(el('p', { text: 'In the estimated fertile window' }));
     if (!lines.children.length) lines.append(el('p', { class: 'muted', text: 'Nothing logged or predicted for this day.' }));
 
-    const stack = el('div', { class: 'btn-stack' });
+    // Period actions share one row; buttons that don't apply to this day are left out
+    const row = el('div', { class: 'btn-row' });
     let ctl;
-    const act = (label, fn, kind) => stack.append(el('button', {
+    const act = (label, fn, kind) => row.append(el('button', {
       type: 'button', class: 'btn' + (kind ? ' btn--' + kind : ''), text: label,
       onclick: () => { ctl.close(); fn(); }
     }));
@@ -995,18 +1089,39 @@ const APP_VERSION = "1.6";
     const dStr = C.toStr(dn);
     const entry = info.entry;
     if (dn <= t) {
-      if (!entry) act('Mark period start here', () => logStart(dStr, {}), 'primary');
-      if (entry && entry.end_date !== dStr) act('Mark period end here', () => setEnd(entry, dStr));
+      if (!entry) act('Mark start', () => logStart(dStr, {}), 'primary');
+      if (entry && entry.end_date !== dStr) act('Mark end', () => setEnd(entry, dStr));
     }
-    if (entry) {
-      act('Edit this period', () => openEditEntry(entry));
-      act('Delete this period', () => deleteEntry(entry), 'danger');
-    }
+    if (entry) act('Remove', () => deleteEntry(entry), 'danger');
+
+    const body = [lines];
+    if (row.children.length) body.push(row);
+    if (sexOn() && dn <= t) body.push(sexButtons(dStr));
     ctl = openSheet({
       title: fmtLong(dn),
-      body: [lines, stack],
+      body: body,
       buttons: [{ label: 'Close' }]
     });
+  }
+
+  // Heart / lips / hand toggles for one day; each press saves immediately and refreshes the views
+  function sexButtons(dStr) {
+    const wrap = el('div', { class: 'sheet-section sex-section' }, el('h3', { text: 'Log' }));
+    const grid = el('div', { class: 'sex-grid' });
+    const active = sexTypesFor(dStr);
+    SEX_KINDS.forEach(k => {
+      const btn = el('button', { type: 'button', class: 'sex-btn', 'aria-pressed': String(active.indexOf(k.type) >= 0) },
+        sexIcon(k.type), el('span', { text: k.label }));
+      btn.addEventListener('click', async () => {
+        const types = await toggleSexType(dStr, k.type);
+        btn.setAttribute('aria-pressed', String(types.indexOf(k.type) >= 0));
+        renderCalendar();
+        renderStats();
+      });
+      grid.append(btn);
+    });
+    wrap.append(grid);
+    return wrap;
   }
 
   /* ========================================================== edit / flags */
@@ -1228,6 +1343,7 @@ const APP_VERSION = "1.6";
     const fwT = toggle('Show fertile window', 'show_fertile_window');
     const phT = toggle('Show phase tints', 'show_phase_tints');
     const mlT = toggle('Show typical mood line', 'show_mood_line');
+    const sxT = toggle('Show sex tracking', 'show_sex_tracking');
 
     const bcSel = el('select', null,
       el('option', { value: 'yes', text: 'Yes' }), el('option', { value: 'no', text: 'No' }), el('option', { value: 'unsure', text: 'Not sure' }));
@@ -1279,7 +1395,8 @@ const APP_VERSION = "1.6";
           intField('Usual cycle length (days)', 'usual_cycle_length', 15, 90, 'Default 28'),
           intField('Usual period length (days)', 'usual_period_length', 1, 15, 'Default 5'),
           field('Hormonal birth control', bcSel),
-          ovT.node, fwT.node, phT.node, mlT.node,
+          ovT.node, fwT.node, phT.node, mlT.node, sxT.node,
+          el('p', { class: 'muted', text: 'Sex tracking adds heart, lips and hand buttons to each day, calendar icons and a stats card. Turning it off only hides them; nothing is deleted.' }),
           field('Week starts on', weekSel)),
         el('div', { class: 'sheet-section' },
           el('h3', { text: 'Your data' }),
@@ -1347,7 +1464,7 @@ const APP_VERSION = "1.6";
   // Explains what will be stored, then switches backup on and runs the first sync
   async function enableBackup() {
     const ok = await SuiteDialog.confirm(
-      'Your periods, flags and settings will be copied to the server, stored with your profile, and kept in sync with your other devices. The site admin can read this data.\nYou can turn this off and delete the server copy at any time.',
+      'Your periods, flags, settings and any intimacy log entries will be copied to the server, stored with your profile, and kept in sync with your other devices. The site admin can read this data.\nYou can turn this off and delete the server copy at any time.',
       { title: 'Turn on server backup?', confirmLabel: 'Turn on backup', cancelLabel: 'Not now' });
     if (!ok) return;
     const result = await sync.enable();
@@ -1464,7 +1581,12 @@ const APP_VERSION = "1.6";
       if (!common(d, label)) return;
       if (NOTE_TYPES.indexOf(d.note_type) < 0 || typeof d.evidence_key !== 'string') bad(label + ': invalid note.');
     });
-    (r.daily_logs || []).forEach((d, i) => { common(d, 'Daily log ' + (i + 1)); });
+    (r.daily_logs || []).forEach((d, i) => {
+      const label = 'Daily log ' + (i + 1);
+      if (!common(d, label)) return;
+      if (!C.isValidDate(d.date)) bad(label + ': invalid date.');
+      if (!Array.isArray(d.sex_types) || d.sex_types.some(t => C.SEX_TYPES.indexOf(t) < 0)) bad(label + ': invalid entries.');
+    });
     return errors;
   }
 

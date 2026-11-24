@@ -424,3 +424,45 @@ label.check input { width: 22px; height: 22px; accent-color: var(--accent); flex
 .mood-path.mood-pred { stroke-dasharray: 2 5; opacity: 0.3; }
 .mood-swatch .mood-path { opacity: 0.7; }
 .mood-swatch { width: 30px; height: 30px; flex-shrink: 0; }
+
+/* ---------- Day sheet: one row of period actions, intimacy toggles ---------- */
+
+.sheet .btn-row { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 14px; }
+.sheet .btn-row .btn { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 8px 6px; font-size: 0.9rem; }
+
+.sex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sex-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 64px;
+  padding: 8px 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.sex-btn:active { transform: scale(0.97); }
+.sex-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+.sex-btn .sex-icon { width: 24px; height: 24px; }
+
+/* Calendar: small stack of icons in the day's top-left corner (the ovulation marker is top-right) */
+.sex-icons {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--text);
+  pointer-events: none;
+}
+.sex-icons .sex-icon { width: 9px; height: 9px; display: block; }
+.sex-legend { display: inline-flex; gap: 2px; width: 30px; justify-content: center; flex-shrink: 0; }
+.sex-legend .sex-icon { width: 10px; height: 10px; }

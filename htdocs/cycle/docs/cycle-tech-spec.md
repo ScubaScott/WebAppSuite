@@ -459,7 +459,7 @@ Store `daily_logs`:
 | `date` | `YYYY-MM-DD` (unique among non-deleted) |
 | `mood` | integer 1–5 or null |
 | `libido` | integer 1–5 or null |
-| `sex` | boolean or null |
+| `sex_types` | array of `intercourse`, `oral`, `other` (empty when none). Implemented first: only `date` and `sex_types` are written; the other fields stay reserved |
 | `symptom_tags` | array of strings (e.g. `cramps`, `headache`, `bloating`, `breast_tenderness`, `acne`, `fatigue`, `cravings`) |
 | `note` | string or null |
 
@@ -468,6 +468,7 @@ Cycle day and phase are **derived** at read time from §4/§5.8, so they stay co
 ### 10.2 Mood / libido / sex charts
 - Average mood and libido by cycle day (normalized to the user's typical cycle length) and by phase, across cycles.
 - Sex frequency by phase.
+- Implemented: the setting `show_sex_tracking` (default off; hides toggles, calendar icons and the stats card without deleting data) and a Stats card from `sexStats`: days in the last 30, total, most recent, average per 30 days, longest gap, days by type, most common weekday and most frequent phase (highest rate of logged days per day spent in the phase; needs 5+ logged days; not shown on hormonal birth control).
 - Requires ≥ 2 cycles with logs; show confidence the same way as stats.
 
 ### 10.3 Partner sharing
