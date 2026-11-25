@@ -56,6 +56,7 @@ One record per period (bleed).
 | `start_precision` | `"exact"` \| `"approximate"` | Default `exact` for live logging, chosen by user in backfill |
 | `end_precision` | `"exact"` \| `"approximate"` | Default `approximate` when end was auto-filled from usual length |
 | `source` | `"live"` \| `"backfill"` \| `"quick_setup"` \| `"import"` | For analytics/debugging only |
+| `note` | string or `null` | Optional period note (missing on older records means none). Edited in the day sheet on a period day or in Edit period |
 
 Index: `start_date`.
 
@@ -350,6 +351,8 @@ All steps are skippable except the disclaimer. Everything is editable later.
 - List of cycles, newest first: start date, cycle length, period length, precision, flag badge.
 - Actions per cycle: edit dates, toggle precision, **Mark as unusual** (reason picker: pregnancy, miscarriage, starting/stopping birth control, illness, other + optional note), remove flag, delete.
 - Explanation on the flag sheet: "Unusual cycles stay in your history but don't affect predictions or stats."
+- A period's note shows under its row (first three lines).
+- **Cycle report** card at the top of the list: a picker ("Current cycle" by default, then each past cycle by start date, newest first) and "View report". The report is derived at read time and never stored. It shows Timing (start, period length, cycle length or day so far and the next-period estimate, estimated ovulation, fertile window and phases where those apply, unusual flag), Notes (period note, unusual-cycle note, count of day notes) and Day by day (period start and end, estimated ovulation, intimacy when sex tracking is on, day notes). The current cycle also includes day notes after its predicted end. Copy and Share (where supported) give a plain-text version ending with the disclaimer.
 
 ### 6.6 Stats screen
 Shows items in §5.10, each with the confidence label, plus a short note when n < 6: "Predictions get more reliable after 6 cycles." Stats never show for n = 0 except the default values clearly labeled.
@@ -459,9 +462,9 @@ Store `daily_logs`:
 | `date` | `YYYY-MM-DD` (unique among non-deleted) |
 | `mood` | integer 1–5 or null |
 | `libido` | integer 1–5 or null |
-| `sex_types` | array of `intercourse`, `oral`, `other` (empty when none). Implemented first: only `date` and `sex_types` are written; the other fields stay reserved |
+| `sex_types` | array of `intercourse`, `oral`, `other` (empty when none). Implemented with `note`; the other fields stay reserved |
 | `symptom_tags` | array of strings (e.g. `cramps`, `headache`, `bloating`, `breast_tenderness`, `acne`, `fatigue`, `cravings`) |
-| `note` | string or null |
+| `note` | string or null. Implemented: the day note, edited in the day sheet for any date and marked on the calendar by a short bar in the day's bottom-right corner. Duplicate records for one date have their distinct notes joined |
 
 Cycle day and phase are **derived** at read time from §4/§5.8, so they stay correct when periods are edited. No logging during backfill.
 

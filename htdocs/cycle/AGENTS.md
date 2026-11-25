@@ -13,7 +13,7 @@ A private, local-first cycle tracker. Users log periods directly on calendar day
 - `core.js`: Pure logic with no DOM or storage (`CycleCore`): date math on day numbers, cycle derivation, weighted-median/MAD estimates, prediction with overdue shift, per-day period probability, phases, ovulation and fertile window, typical mood curve (`moodLevel`), health notes, statistics, entry validation and sanity checks. Also loads in Node.
 - `store.js`: IndexedDB persistence (`CycleStore`), one object store per record type, in-memory fallback when IndexedDB is unavailable.
 - `sync.js`: Optional server backup (`CycleSync.create(deps)`): dirty tracking, pull/merge, push, enable/disable, replace-server. No UI. Runs in Node for tests.
-- `app.js`: UI: rendering, logging flows (all period logging is by tapping calendar days: Mark start / Mark end / Remove in one row), edit/flag sheets, backfill, settings (including the Server backup section), export/import, first-run wizard. Holds `APP_VERSION`.
+- `app.js`: UI: rendering, logging flows (all period logging is by tapping calendar days: Mark start / Mark end / Remove in one row), day and period notes, the History cycle report, edit/flag sheets, backfill, settings (including the Server backup section), export/import, first-run wizard. Holds `APP_VERSION`.
 - `../api/cycle.php`: Server endpoint for the backup (tables `period_sync_state`, `period_records` in `api/schema.sql`).
 - `style.css`: Dark theme tokens and the semantic calendar roles (logged, predicted, phase tints, ovulation markers, fertile window).
 
@@ -25,11 +25,13 @@ A private, local-first cycle tracker. Users log periods directly on calendar day
 
 ## 2. Data & Privacy Rules
 
-- **Store only what the user entered** (§2): period entries, cycle flags, settings, dismissed notes, intimacy log entries (`daily_logs`). Predictions, cycles, phases, stats and flags-derived values are always recomputed by `CycleCore.buildModel`; never persist them.
+- **Store only what the user entered** (§2): period entries (with an optional `note`), cycle flags, settings, dismissed notes, daily logs (`daily_logs`: intimacy entries and day notes). Predictions, cycles, phases, stats and flags-derived values are always recomputed by `CycleCore.buildModel`; never persist them.
 - **Dates are plain `YYYY-MM-DD` strings**; math uses UTC day numbers. Only `created_at` / `updated_at` are ISO timestamps.
 - **Soft delete everywhere** (`deleted: true`); hard deletes happen only in "Delete all data" and "Replace all" import.
 - **Nothing leaves the device unless the user turns on Server backup** (Settings, off by default, per profile). Do not add any other network calls for tracker data, and do not use `SuiteProfile.loadAppData` / `saveAppData` for it.
 - **Intimacy tracking** (`daily_logs` records `{date, sex_types: ['intercourse'|'oral'|'other']}`, one per date, merged per date when devices duplicate): shown only when the setting `show_sex_tracking` is on (default off). Off is a privacy hide of the day-sheet heart/lips/hand toggles, calendar icons, legend entry and the Stats "Intimacy" card; it never deletes data. Stats come from `CycleCore.sexStats`. The records sync with Server backup like all other records (server-readable); the enable dialog says so. Keep wording neutral, never "safe/unsafe".
+- **Notes**: a day note lives in that date's `daily_logs` record (`note`, string or null) and can be added to any date from the day sheet; a period note lives on the period entry (`note`). Notes are not tied to the sex-tracking setting. Day-sheet notes save when the sheet closes and before a period action runs (so that action works on the saved record). `writeDayLog` in `app.js` merges a date's duplicate records (types and distinct notes) into one and soft-deletes the rest.
+- **Cycle report** (top of History): pick the current cycle (default) or a past cycle by start date; `buildReport` derives Timing, Notes and Day by day from the model and stored records at read time (never persisted). Copy / Share give the plain-text version from `reportText`, which ends with the disclaimer. Intimacy appears in it only when `show_sex_tracking` is on; ovulation, fertile window and phases follow the same settings and birth-control rules as the calendar and are labeled estimates.
 - Reserved empty stores (`sharing_grants`, `calendar_sync`) exist so later features need no migration (§3.6, §10); do not build those features without being asked.
 
 ---

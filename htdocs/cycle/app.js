@@ -4,7 +4,7 @@
  * Persistence goes through CycleStore (IndexedDB). Records leave the device only when the user turns
  * on the optional server backup (CycleSync).
  */
-const APP_VERSION = "1.7";
+const APP_VERSION = "1.8";
 
 (function () {
   'use strict';
@@ -72,7 +72,8 @@ const APP_VERSION = "1.7";
   let model = null;
 
   // Calendar and navigation state
-  const view = { tab: 'calendar', year: 0, month: 0, focusCycleId: null };
+  // reportId is the period entry last chosen in the History cycle report picker
+  const view = { tab: 'calendar', year: 0, month: 0, focusCycleId: null, reportId: null };
 
   // First-run wizard answers
   let ob = null;
@@ -250,27 +251,64 @@ const APP_VERSION = "1.7";
   const saveDismissal = d => saveRec('health_note_dismissals', state.dismissals, d);
   const saveLog = l => saveRec('daily_logs', state.logs, l);
 
-  // Intimacy types logged for one date. Two devices may each have created a record for the same
-  // day, so every live record for the date is merged.
+  // Live daily_logs records for one date. Two devices may each have created a record for the same
+  // day, so readers merge every live record for the date.
+  const logsFor = dateStr => state.logs.filter(l => !l.deleted && l.date === dateStr);
+
+  // Intimacy types logged for one date, merged across the date's records
   function sexTypesFor(dateStr) {
     const set = {};
-    state.logs.forEach(l => {
-      if (!l.deleted && l.date === dateStr && Array.isArray(l.sex_types)) l.sex_types.forEach(t => { set[t] = true; });
+    logsFor(dateStr).forEach(l => {
+      if (Array.isArray(l.sex_types)) l.sex_types.forEach(t => { set[t] = true; });
     });
     return SEX_KINDS.map(k => k.type).filter(t => set[t]);
   }
 
-  // Turns one intimacy type on or off for a date. The merged types are written to the first record
-  // for the date (created when missing); any duplicate records for that date are soft-deleted.
-  async function toggleSexType(dateStr, type) {
-    const recs = state.logs.filter(l => !l.deleted && l.date === dateStr);
-    const types = sexTypesFor(dateStr);
-    const next = types.indexOf(type) >= 0 ? types.filter(t => t !== type) : types.concat(type);
-    const keep = recs[0] || newRecord({ date: dateStr, sex_types: [] });
-    keep.sex_types = SEX_KINDS.map(k => k.type).filter(t => next.indexOf(t) >= 0);
+  // Day note for one date ('' when none); distinct notes from duplicate records are joined
+  function dayNoteFor(dateStr) {
+    const notes = [];
+    logsFor(dateStr).forEach(l => {
+      const n = typeof l.note === 'string' ? l.note.trim() : '';
+      if (n && notes.indexOf(n) < 0) notes.push(n);
+    });
+    return notes.join('\n\n');
+  }
+
+  // Writes the merged day log for a date, with `patch` (sex_types and/or note) replacing the merged
+  // values. The first record for the date is kept (created only when there is something to store);
+  // any duplicate records for that date are soft-deleted.
+  async function writeDayLog(dateStr, patch) {
+    const recs = logsFor(dateStr);
+    const sexTypes = 'sex_types' in patch ? patch.sex_types : sexTypesFor(dateStr);
+    const note = 'note' in patch ? patch.note : (dayNoteFor(dateStr) || null);
+    if (!recs.length && !sexTypes.length && !note) return null;
+    const keep = recs[0] || newRecord({ date: dateStr, sex_types: [], note: null });
+    keep.sex_types = SEX_KINDS.map(k => k.type).filter(t => sexTypes.indexOf(t) >= 0);
+    keep.note = note || null;
     await saveLog(keep);
     for (const dup of recs.slice(1)) { dup.deleted = true; await saveLog(dup); }
-    return keep.sex_types;
+    return keep;
+  }
+
+  // Turns one intimacy type on or off for a date and returns the date's types afterwards
+  async function toggleSexType(dateStr, type) {
+    const types = sexTypesFor(dateStr);
+    const next = types.indexOf(type) >= 0 ? types.filter(t => t !== type) : types.concat(type);
+    await writeDayLog(dateStr, { sex_types: next });
+    return sexTypesFor(dateStr);
+  }
+
+  // Saves the day note for a date (an empty note clears it)
+  async function saveDayNote(dateStr, text) {
+    await writeDayLog(dateStr, { note: text.trim() || null });
+  }
+
+  // Saves the note on a period entry, reading the latest copy of the record so other edits are kept
+  async function savePeriodNote(entryId, text) {
+    const cur = state.entries.find(x => x.id === entryId);
+    if (!cur) return;
+    cur.note = text.trim() || null;
+    await saveEntry(cur);
   }
 
   async function saveSettings(patch) {
@@ -567,6 +605,7 @@ const APP_VERSION = "1.7";
 
   function dayAriaLabel(info) {
     const bits = [fmtLong(info.dn)];
+    if (dayNoteFor(C.toStr(info.dn))) bits.push('note');
     if (sexOn() && sexTypesFor(C.toStr(info.dn)).length) bits.push('intimacy logged');
     if (info.logged) bits.push('period logged');
     else if (info.likely) bits.push('period likely');
@@ -597,6 +636,7 @@ const APP_VERSION = "1.7";
         const kinds = sexTypesFor(C.toStr(dn));
         if (kinds.length) btn.append(el('span', { class: 'sex-icons' }, kinds.map(sexIcon)));
       }
+      if (dayNoteFor(C.toStr(dn))) btn.append(el('i', { class: 'mk-note' }));
       if (showMood) moodDays.push({ btn: btn, mood: C.moodLevel(model, dn), before: C.moodLevel(model, dn - 1), after: C.moodLevel(model, dn + 1) });
       return btn;
     }));
@@ -724,6 +764,7 @@ const APP_VERSION = "1.7";
       item(sw('fertile'), 'Fertile window (an estimate, not “safe” or “unsafe” days)'),
       item(sw('today'), 'Today'),
       sexOn() ? item(el('span', { class: 'sex-legend' }, SEX_KINDS.map(k => sexIcon(k.type))), 'Intimacy logged: heart, lips, hand') : null,
+      item(sw('', 'mk-note'), 'Day note'),
       item(moodSwatch(), 'Typical mood pattern (a general trend, not a prediction; everyone is different)'),
       el('p', { class: 'muted legend-note', text: 'Ovulation, the fertile window and phases are estimates from your past cycles.' })
     );
@@ -759,6 +800,7 @@ const APP_VERSION = "1.7";
         el('button', { type: 'button', class: 'btn', text: 'Add past periods', onclick: () => openBackfill() })));
       return;
     }
+    box.append(reportPickerCard());
     for (let i = entries.length - 1; i >= 0; i--) {
       const e = entries[i];
       const cycle = model.cycles.find(c => c.id === e.id);
@@ -783,6 +825,7 @@ const APP_VERSION = "1.7";
           })),
         el('div', { class: 'muted', text: periodLen ? 'Period: ' + pluralDays(periodLen) : 'Period: still going' }),
         badges,
+        e.note ? el('p', { class: 'note-text note-preview', text: e.note }) : null,
         el('div', { class: 'row-actions' },
           el('button', { type: 'button', class: 'btn', text: 'Edit', onclick: () => openEditEntry(e) }),
           el('button', { type: 'button', class: 'btn', text: flag ? 'Edit unusual flag' : 'Mark as unusual', onclick: () => openFlagSheet(e) }),
@@ -793,6 +836,207 @@ const APP_VERSION = "1.7";
       const target = box.querySelector('[data-id="' + view.focusCycleId + '"]');
       if (target && view.tab === 'history') target.scrollIntoView({ block: 'center' });
     }
+  }
+
+  /* ---------- cycle report ---------- */
+
+  // Label for one cycle in the report picker: the latest period starts the current cycle
+  function cycleOptionLabel(idx) {
+    const e = model.entries[idx];
+    if (idx === model.entries.length - 1) return 'Current cycle (started ' + fmtStr(e.start_date) + ')';
+    const len = C.toDn(model.entries[idx + 1].start_date) - C.toDn(e.start_date);
+    return fmtStr(e.start_date) + ' · ' + len + '-day cycle';
+  }
+
+  // Card at the top of History: pick a cycle (current by default, then past cycles newest first) and open its report
+  function reportPickerCard() {
+    const entries = model.entries;
+    const sel = el('select', { 'aria-label': 'Cycle to report on' });
+    for (let i = entries.length - 1; i >= 0; i--) {
+      sel.append(el('option', { value: entries[i].id, text: cycleOptionLabel(i) }));
+    }
+    // Keep the previous choice while that cycle still exists
+    if (view.reportId && entries.some(e => e.id === view.reportId)) sel.value = view.reportId;
+    sel.addEventListener('change', () => { view.reportId = sel.value; });
+    return el('div', { class: 'card report-picker' },
+      el('h2', { text: 'Cycle report' }),
+      el('p', { class: 'muted', text: 'A summary of one cycle: timing, events and notes.' }),
+      el('div', { class: 'report-picker-row' },
+        sel,
+        el('button', { type: 'button', class: 'btn btn--primary', text: 'View report', onclick: () => openReport(sel.value) })));
+  }
+
+  /**
+   * Builds the report for the cycle that begins with entry `entryId`.
+   * Returns { title, timing: [[label, value]], notes: [[label, text]], days: [{ dn, cycleDay, items: [{ text, note, expected }] }] }.
+   * The current cycle runs from its start to the predicted next period and also takes in any later day notes.
+   */
+  function buildReport(entryId) {
+    const m = model;
+    const idx = m.entries.findIndex(e => e.id === entryId);
+    if (idx < 0) return null;
+    const e = m.entries[idx];
+    const isCurrent = idx === m.entries.length - 1;
+    const S = C.toDn(e.start_date);
+    const tl = m.timeline[idx];
+    const cycle = m.cycles.find(c => c.id === e.id) || null;
+    const flag = m.flagByEntry[e.id] || null;
+    const endDn = isCurrent ? Infinity : cycle.nextDn - 1;
+    const st = C.stats(m);
+    const s = state.settings;
+    const showOv = !bcOn() && tl.ovShown && s.show_ovulation !== false;
+    const showFertile = !bcOn() && tl.ovShown && s.show_fertile_window !== false;
+    const approx = p => (p === 'approximate' ? ' (approximate)' : '');
+
+    const timing = [];
+    timing.push(['Started', fmtLong(S) + approx(e.start_precision)]);
+    if (e.end_date) {
+      const pl = C.toDn(e.end_date) - S + 1;
+      timing.push(['Period', fmtRange(S, C.toDn(e.end_date)) + ' · ' + pluralDays(pl) + approx(e.end_precision) +
+        (m.nP > 0 ? ' (your average is ' + pluralDays(st.avgPeriod) + ')' : '')]);
+    } else {
+      timing.push(['Period', 'Still going · day ' + (m.today - S + 1)]);
+    }
+    if (cycle) {
+      timing.push(['Cycle length', pluralDays(cycle.length) + ' (' + fmtRange(S, cycle.nextDn - 1) + ')' +
+        (m.n > 0 ? ' · your average is ' + pluralDays(st.avgCycle) : '')]);
+    } else {
+      timing.push(['Cycle so far', 'Day ' + (m.today - S + 1) + (m.lateDays > 0 ? ' · period is ' + pluralDays(m.lateDays) + ' late' : '')]);
+      timing.push(['Next period', 'Likely ' + fmtRange(m.next.from, m.next.to) + ', most likely ' + fmtShort(m.next.mostLikely) + ' (an estimate)']);
+    }
+    if (showOv) {
+      const future = tl.O > m.today;
+      timing.push([future ? 'Expected ovulation' : 'Estimated ovulation', fmtShort(tl.O) + ' · cycle day ' + (tl.O - S + 1) + ' (an estimate)']);
+    }
+    if (showFertile) timing.push(['Fertile window', fmtRange(tl.O - 5, tl.O + 1) + ' (an estimate)']);
+    if (!bcOn()) {
+      const phases = tl.phases.map(p => PHASE_LABELS[p.phase] + ' ' + fmtRange(p.from, p.to)).join(' · ');
+      if (phases) timing.push(['Phases', phases + ' (estimated)']);
+    }
+    if (flag) timing.push(['Marked unusual', REASON_LABELS[flag.reason] + ' · not used for predictions']);
+    else if (cycle && !cycle.eligible) timing.push(['Not used for predictions', 'Outside the usual 15–90 day range']);
+    if (e.source === 'quick_setup') timing.push(['Source', 'Estimated from your usual cycle']);
+
+    // Day by day: period start and end, ovulation, intimacy (when shown) and day notes
+    const byDay = {};
+    const add = (dn, text, extra) => {
+      (byDay[dn] || (byDay[dn] = [])).push(Object.assign({ text: text }, extra));
+    };
+    add(S, 'Period started');
+    if (e.end_date) add(C.toDn(e.end_date), 'Period ended');
+    if (showOv) add(tl.O, tl.O > m.today ? 'Expected ovulation (estimate)' : 'Estimated ovulation', { expected: tl.O > m.today });
+    let intimacyDays = 0;
+    let noteDays = 0;
+    const dates = {};
+    state.logs.forEach(l => { if (!l.deleted && l.date) dates[l.date] = true; });
+    Object.keys(dates).sort().forEach(dStr => {
+      const dn = C.toDn(dStr);
+      if (dn < S || dn > endDn) return;
+      if (sexOn() && dn <= m.today) {
+        const kinds = sexTypesFor(dStr);
+        if (kinds.length) {
+          intimacyDays++;
+          add(dn, 'Intimacy: ' + kinds.map(t => SEX_KINDS.find(k => k.type === t).label).join(', '));
+        }
+      }
+      const note = dayNoteFor(dStr);
+      if (note) { noteDays++; add(dn, note, { note: true }); }
+    });
+    const days = Object.keys(byDay).map(Number).sort((a, b) => a - b)
+      .map(dn => ({ dn: dn, cycleDay: dn - S + 1, items: byDay[dn] }));
+    if (sexOn()) timing.push(['Intimacy', intimacyDays ? pluralDays(intimacyDays) + ' logged' : 'Nothing logged']);
+
+    const notes = [];
+    if (e.note) notes.push(['Period note', e.note]);
+    if (flag && flag.note) notes.push(['Unusual cycle note', flag.note]);
+    notes.push(['Day notes', noteDays ? pluralDays(noteDays) + ' with a note (listed day by day below)' : 'None']);
+
+    const title = isCurrent ? 'Current cycle, started ' + fmtStr(e.start_date) : 'Cycle starting ' + fmtStr(e.start_date);
+    return { title: title, timing: timing, notes: notes, days: days };
+  }
+
+  // Heading for one day in the report, e.g. "Day 3 · Wed, Mar 5"
+  function reportDayLabel(d) {
+    return 'Day ' + d.cycleDay + ' · ' + fmtDn(d.dn, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  // Plain-text version of a report, for copying or sharing
+  function reportText(r) {
+    const lines = ['Cycle report: ' + r.title, ''];
+    lines.push('TIMING');
+    r.timing.forEach(t => lines.push(t[0] + ': ' + t[1]));
+    lines.push('', 'NOTES');
+    r.notes.forEach(n => lines.push(n[0] + ': ' + n[1]));
+    lines.push('', 'DAY BY DAY');
+    r.days.forEach(d => {
+      lines.push(reportDayLabel(d));
+      d.items.forEach(it => lines.push('- ' + (it.note ? 'Note: ' : '') + it.text));
+    });
+    lines.push('', DISCLAIMER, 'Created ' + fmtLong(C.toDn(today())) + ' with Cycle Tracker.');
+    return lines.join('\n');
+  }
+
+  // Copies text to the clipboard, falling back to a hidden textarea; resolves true when it worked
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) { /* fall through to the textarea method */ }
+    try {
+      const ta = el('textarea', { readonly: true, class: 'offscreen' });
+      ta.value = text;
+      document.body.append(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Opens the report for one cycle in a sheet, with Copy (and Share where the device supports it)
+  function openReport(entryId) {
+    const r = buildReport(entryId);
+    if (!r) return;
+    const dl = rows => el('dl', { class: 'report-list' }, rows.flatMap(row => [
+      el('dt', { text: row[0] }), el('dd', { class: 'note-text', text: row[1] })]));
+    const dayList = r.days.length
+      ? el('ol', { class: 'report-days' }, r.days.map(d => el('li', null,
+        el('div', { class: 'report-day-head', text: reportDayLabel(d) }),
+        el('ul', null, d.items.map(it => el('li', { class: (it.note ? 'note-text report-note' : '') + (it.expected ? ' muted' : '') }, it.note ? el('strong', { text: 'Note: ' }) : null, it.text))))))
+      : el('p', { class: 'muted', text: 'Nothing logged for this cycle.' });
+
+    const buttons = [];
+    if (navigator.share) {
+      buttons.push({
+        label: 'Share', onClick: async () => {
+          try {
+            await navigator.share({ title: 'Cycle report', text: reportText(r) });
+          } catch (err) {
+            // Closing the share sheet rejects with AbortError; anything else falls back to copying
+            if (err && err.name !== 'AbortError' && await copyText(reportText(r))) showToast('Report copied');
+          }
+          return false;
+        }
+      });
+    }
+    buttons.push(
+      { label: 'Copy', onClick: async () => { showToast(await copyText(reportText(r)) ? 'Report copied' : 'Couldn’t copy the report'); return false; } },
+      { label: 'Close', kind: 'primary' });
+
+    openSheet({
+      title: r.title,
+      body: [
+        el('div', { class: 'sheet-section' }, el('h3', { text: 'Timing' }), dl(r.timing)),
+        el('div', { class: 'sheet-section' }, el('h3', { text: 'Notes' }), dl(r.notes)),
+        el('div', { class: 'sheet-section' }, el('h3', { text: 'Day by day' }), dayList),
+        el('p', { class: 'muted', text: 'Ovulation, the fertile window and phases are estimates. ' + DISCLAIMER })
+      ],
+      buttons: buttons
+    });
   }
 
   /* ---------- stats ---------- */
@@ -1078,16 +1322,44 @@ const APP_VERSION = "1.7";
     if (info.fertile) lines.append(el('p', { text: 'In the estimated fertile window' }));
     if (!lines.children.length) lines.append(el('p', { class: 'muted', text: 'Nothing logged or predicted for this day.' }));
 
+    const dStr = C.toStr(dn);
+    const entry = info.entry;
+
+    // Notes: a day note for any date, plus the period's note when the day is in a logged period.
+    // They save when the sheet closes, and before a period action runs so that action sees the saved note.
+    const dayNoteIn = el('textarea', { maxlength: 2000, placeholder: 'Anything about this day' });
+    dayNoteIn.value = dayNoteFor(dStr);
+    const periodNoteIn = entry ? el('textarea', { maxlength: 2000, placeholder: 'Anything about this period' }) : null;
+    if (periodNoteIn) periodNoteIn.value = entry.note || '';
+    const saved = { day: dayNoteIn.value.trim(), period: periodNoteIn ? periodNoteIn.value.trim() : '' };
+    async function saveNotes() {
+      let changed = false;
+      if (dayNoteIn.value.trim() !== saved.day) {
+        saved.day = dayNoteIn.value.trim();
+        await saveDayNote(dStr, saved.day);
+        changed = true;
+      }
+      if (periodNoteIn && periodNoteIn.value.trim() !== saved.period) {
+        saved.period = periodNoteIn.value.trim();
+        await savePeriodNote(entry.id, saved.period);
+        changed = true;
+      }
+      if (changed) { recompute(); showToast('Note saved'); }
+    }
+    const notesBox = el('div', { class: 'sheet-section' },
+      el('h3', { text: 'Notes' }),
+      field('Day note', dayNoteIn),
+      periodNoteIn ? field('Period note (period starting ' + fmtStr(entry.start_date) + ')', periodNoteIn) : null,
+      el('p', { class: 'muted', text: 'Notes save when you close this.' }));
+
     // Period actions share one row; buttons that don't apply to this day are left out
     const row = el('div', { class: 'btn-row' });
     let ctl;
     const act = (label, fn, kind) => row.append(el('button', {
       type: 'button', class: 'btn' + (kind ? ' btn--' + kind : ''), text: label,
-      onclick: () => { ctl.close(); fn(); }
+      onclick: async () => { await saveNotes(); ctl.close(); fn(); }
     }));
 
-    const dStr = C.toStr(dn);
-    const entry = info.entry;
     if (dn <= t) {
       if (!entry) act('Mark start', () => logStart(dStr, {}), 'primary');
       if (entry && entry.end_date !== dStr) act('Mark end', () => setEnd(entry, dStr));
@@ -1097,10 +1369,12 @@ const APP_VERSION = "1.7";
     const body = [lines];
     if (row.children.length) body.push(row);
     if (sexOn() && dn <= t) body.push(sexButtons(dStr));
+    body.push(notesBox);
     ctl = openSheet({
       title: fmtLong(dn),
       body: body,
-      buttons: [{ label: 'Close' }]
+      buttons: [{ label: 'Close' }],
+      onClose: saveNotes
     });
   }
 
@@ -1137,6 +1411,8 @@ const APP_VERSION = "1.7";
     ongoing.addEventListener('change', () => { endIn.disabled = ongoing.checked; });
     const startPrec = segmented([{ value: 'exact', label: 'Exact' }, { value: 'approximate', label: 'Approximate' }], entry.start_precision);
     const endPrec = segmented([{ value: 'exact', label: 'Exact' }, { value: 'approximate', label: 'Approximate' }], entry.end_precision);
+    const noteIn = el('textarea', { maxlength: 2000, placeholder: 'Optional note about this period' });
+    noteIn.value = entry.note || '';
     const errBox = el('div', { class: 'error-text', role: 'alert' });
 
     openSheet({
@@ -1147,6 +1423,7 @@ const APP_VERSION = "1.7";
         isLatest ? el('label', { class: 'check' }, ongoing, el('span', { text: 'Still going' })) : null,
         field('End date', endIn),
         el('div', { class: 'muted', text: 'How sure are you of the end date?' }), endPrec.node,
+        field('Period note', noteIn),
         errBox
       ],
       buttons: [
@@ -1159,7 +1436,8 @@ const APP_VERSION = "1.7";
               start_date: startIn.value,
               end_date: stillGoing ? null : (endIn.value || null),
               start_precision: startPrec.get(),
-              end_precision: endPrec.get()
+              end_precision: endPrec.get(),
+              note: noteIn.value.trim() || null
             });
             if (!stillGoing && !updated.end_date) { errBox.textContent = 'Choose an end date, or mark the period as still going.'; return false; }
             const err = C.validateEntry(updated, state.entries, today(), entry.id);
@@ -1464,7 +1742,7 @@ const APP_VERSION = "1.7";
   // Explains what will be stored, then switches backup on and runs the first sync
   async function enableBackup() {
     const ok = await SuiteDialog.confirm(
-      'Your periods, flags, settings and any intimacy log entries will be copied to the server, stored with your profile, and kept in sync with your other devices. The site admin can read this data.\nYou can turn this off and delete the server copy at any time.',
+      'Your periods, flags, notes, settings and any intimacy log entries will be copied to the server, stored with your profile, and kept in sync with your other devices. The site admin can read this data.\nYou can turn this off and delete the server copy at any time.',
       { title: 'Turn on server backup?', confirmLabel: 'Turn on backup', cancelLabel: 'Not now' });
     if (!ok) return;
     const result = await sync.enable();
@@ -1538,6 +1816,9 @@ const APP_VERSION = "1.7";
   const PRECISIONS = ['exact', 'approximate'];
   const NOTE_TYPES = ['cycle_length_out_of_range', 'high_variation', 'no_period_60', 'no_period_90', 'long_period'];
 
+  // Optional free-text fields (notes) are missing, null or a string
+  const isOptionalText = v => v === undefined || v === null || typeof v === 'string';
+
   // Checks an imported backup; returns a list of problems (empty when the file is valid)
   function validateImport(obj) {
     const errors = [];
@@ -1563,6 +1844,7 @@ const APP_VERSION = "1.7";
       if (e.end_date && C.isValidDate(e.start_date) && e.end_date < e.start_date) bad(label + ': ends before it starts.');
       if (PRECISIONS.indexOf(e.start_precision) < 0 || PRECISIONS.indexOf(e.end_precision) < 0) bad(label + ': invalid precision.');
       if (SOURCES.indexOf(e.source) < 0) bad(label + ': invalid source.');
+      if (!isOptionalText(e.note)) bad(label + ': invalid note.');
     });
     (r.cycle_flags || []).forEach((f, i) => {
       const label = 'Flag ' + (i + 1);
@@ -1586,6 +1868,7 @@ const APP_VERSION = "1.7";
       if (!common(d, label)) return;
       if (!C.isValidDate(d.date)) bad(label + ': invalid date.');
       if (!Array.isArray(d.sex_types) || d.sex_types.some(t => C.SEX_TYPES.indexOf(t) < 0)) bad(label + ': invalid entries.');
+      if (!isOptionalText(d.note)) bad(label + ': invalid note.');
     });
     return errors;
   }

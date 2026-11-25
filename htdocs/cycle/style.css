@@ -294,6 +294,20 @@ label.check input { width: 22px; height: 22px; accent-color: var(--accent); flex
   border-radius: 50%;
 }
 .mk-ov { background: var(--ovulation); }
+/* Day note marker: a short bar in the day's bottom-right corner */
+.day .mk-note {
+  position: absolute;
+  top: auto;
+  bottom: 7px;
+  right: 5px;
+  z-index: 2;
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.85;
+  pointer-events: none;
+}
 .mk-pov { border: 2px solid var(--ovulation); }
 .day.today { outline: 2px solid var(--today); outline-offset: -2px; }
 
@@ -319,6 +333,41 @@ label.check input { width: 22px; height: 22px; accent-color: var(--accent); flex
   font-size: 0.78rem;
 }
 .badge--flag { border-color: var(--late); color: var(--late); }
+/* Free text keeps the line breaks the user typed */
+.note-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-preview {
+  margin: 6px 0;
+  font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Cycle report picker (top of History) */
+.report-picker h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.report-picker-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.report-picker-row select { flex: 1 1 200px; min-height: 44px; }
+.report-picker-row .btn { flex: 0 0 auto; min-height: 44px; }
+
+/* Cycle report sheet */
+.report-list { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 0; }
+.report-list dt { color: var(--muted); font-size: 0.85rem; }
+.report-list dd { margin: 0; }
+.report-days { list-style: none; margin: 0; padding: 0; }
+.report-days > li { padding: 8px 0; border-top: 1px solid var(--border); }
+.report-days > li:first-child { border-top: 0; padding-top: 0; }
+.report-day-head { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; }
+.report-days ul { margin: 0; padding-left: 20px; }
+.report-note strong { color: var(--accent); font-weight: 600; }
+@media (max-width: 420px) {
+  .report-list { grid-template-columns: 1fr; gap: 2px; }
+  .report-list dd { margin-bottom: 6px; }
+}
+
+/* Hidden helper used when copying text without the Clipboard API */
+.offscreen { position: fixed; left: -9999px; top: 0; opacity: 0; }
+
 .row-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .row-actions .btn { min-height: 44px; padding: 6px 12px; font-size: 0.9rem; }
 
