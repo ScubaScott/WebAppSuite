@@ -231,6 +231,81 @@
     border: 1px solid #ceead6;
 }
 
+/* Profile preference row: label and help text on the left, switch on the right */
+.suite-pref-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    border-top: 1px solid #e8eaed;
+    padding-top: 14px;
+}
+
+.suite-pref-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.suite-pref-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #3c4043;
+}
+
+/* Toggle switch: the button is the 44px+ touch target, the track and knob are drawn inside */
+.suite-switch {
+    flex-shrink: 0;
+    position: relative;
+    width: 56px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.suite-switch::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 4px;
+    width: 48px;
+    height: 24px;
+    border-radius: 12px;
+    background-color: #bdc1c6;
+    transition: background-color 0.2s ease;
+}
+
+.suite-switch::after {
+    content: '';
+    position: absolute;
+    top: 13px;
+    left: 7px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    transition: transform 0.2s ease;
+}
+
+.suite-switch[aria-checked="true"]::before {
+    background-color: #1a73e8;
+}
+
+.suite-switch[aria-checked="true"]::after {
+    transform: translateX(24px);
+}
+
+.suite-switch:active::after {
+    width: 22px;
+}
+
+.suite-switch:focus-visible {
+    outline: 2px solid #1a73e8;
+    border-radius: 8px;
+}
+
 /* Sub-App Footer Indicator */
 .suite-footer-profile {
     display: inline-flex;

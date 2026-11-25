@@ -514,7 +514,7 @@
         </button>
         <div id="refreshStatus" class="refresh-status" aria-live="polite"></div>
         <p class="app-version" style="margin-top: 12px; font-size: 0.75rem; color: #a1a1aa;">Version <span
-                id="footerVersion">2.8</span></p>
+                id="footerVersion">2.9</span></p>
     </footer>
 
     <!-- Feedback toast for link copying -->
@@ -525,7 +525,7 @@
 
     <script>
         // Main application suite version identifier
-        const VERSION = '2.8';
+        const VERSION = '2.9';
         document.getElementById('footerVersion').textContent = VERSION;
 
         // Share button interaction using Web Share API with clipboard fallback
@@ -656,11 +656,13 @@
             showToast('App installed successfully!');
         });
 
-        // Shows group-restricted app cards (data-app-id) and the Admin link based on the cached session
+        // Shows group-restricted app cards (data-app-id) only when the user may see them and has
+        // "Show special apps" turned on in their profile; also shows the Admin link for admins
         function applyAccess() {
             if (!window.SuiteProfile) return;
+            const showSpecial = SuiteProfile.getShowSpecialApps();
             document.querySelectorAll('.app-card[data-app-id]').forEach(card => {
-                card.hidden = !SuiteProfile.canSeeApp(card.dataset.appId);
+                card.hidden = !(showSpecial && SuiteProfile.canSeeApp(card.dataset.appId));
             });
             document.getElementById('adminBtn').hidden = !SuiteProfile.isAdmin();
         }

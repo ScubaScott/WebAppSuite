@@ -2,7 +2,7 @@
 // Provides seamless offline-first user profile management and background cloud sync.
 
 // Library version identifier
-const SUITE_PROFILE_VERSION = '2.6';
+const SUITE_PROFILE_VERSION = '2.7';
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -16,6 +16,8 @@ const SUITE_PROFILE_VERSION = '2.6';
     const STORAGE_KEY = 'webappsuite_profile_session';
     const PENDING_SYNC_KEY = 'webappsuite_pending_sync';
     const GAME_PENDING_SYNC_KEY = 'webappsuite_pending_game_sync';
+    // Prefix for the per-user "Show special apps" launcher preference (suffixed with the lowercase username)
+    const SHOW_SPECIAL_KEY_PREFIX = 'webappsuite_show_special_apps:';
 
     // Per-app and per-game debounce timers and local revision tracking
     const saveTimeouts = {};
@@ -238,6 +240,63 @@ const SUITE_PROFILE_VERSION = '2.6';
     function canSeeApp(appId) {
         const user = getUser();
         return !!(user && user.token && Array.isArray(user.allowedApps) && user.allowedApps.indexOf(appId) !== -1);
+    }
+
+    /**
+     * Checks whether the current user has Special-level access (Special group or above),
+     * meaning the server granted them at least one group-restricted app.
+     *
+     * @returns {boolean}
+     */
+    function hasSpecialAccess() {
+        const user = getUser();
+        return !!(user && user.token && Array.isArray(user.allowedApps) && user.allowedApps.length > 0);
+    }
+
+    /**
+     * Builds the per-user localStorage key that stores the "Show special apps" launcher preference.
+     *
+     * @param {Object} user
+     * @returns {string}
+     */
+    function showSpecialKey(user) {
+        return SHOW_SPECIAL_KEY_PREFIX + String(user.username || '').toLowerCase();
+    }
+
+    /**
+     * Reads the "Show special apps" launcher preference for the signed-in user.
+     * Defaults to false, and is always false for users without Special access.
+     *
+     * @returns {boolean}
+     */
+    function getShowSpecialApps() {
+        if (!hasSpecialAccess()) return false;
+        try {
+            return localStorage.getItem(showSpecialKey(getUser())) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Saves the "Show special apps" launcher preference for the signed-in user
+     * and notifies listeners so the launcher list re-renders.
+     *
+     * @param {boolean} show
+     */
+    function setShowSpecialApps(show) {
+        const user = getUser();
+        if (!user || !user.token) return;
+        try {
+            if (show) {
+                localStorage.setItem(showSpecialKey(user), '1');
+            } else {
+                localStorage.removeItem(showSpecialKey(user));
+            }
+        } catch (e) {
+            // Storage unavailable: the preference simply is not persisted
+        }
+        window.dispatchEvent(new CustomEvent('suite-access-changed'));
     }
 
     /**
@@ -618,12 +677,32 @@ const SUITE_PROFILE_VERSION = '2.6';
                         <div class="suite-form-help">Protects your username from being synced by others.</div>
                     </div>
 
+                    ${hasSpecialAccess() ? `
+                    <div class="suite-pref-row">
+                        <div class="suite-pref-text">
+                            <span class="suite-pref-label" id="suiteShowSpecialLabel">Show special apps</span>
+                            <span class="suite-form-help">Lists the special apps on the main page.</span>
+                        </div>
+                        <button type="button" id="suiteShowSpecialToggle" class="suite-switch" role="switch"
+                            aria-labelledby="suiteShowSpecialLabel" aria-checked="${getShowSpecialApps()}"></button>
+                    </div>` : ''}
+
                     <div class="suite-modal-footer" style="padding: 0; margin-top: 16px;">
                         <button type="button" id="suiteLogoutBtn" class="suite-btn-secondary" style="color: #c5221f; border-color: #fad2cf;">
                             Sign Out (Switch to Guest)
                         </button>
                     </div>
                 `;
+
+                // "Show special apps" switch is only rendered for Special-level users
+                const specialToggle = document.getElementById('suiteShowSpecialToggle');
+                if (specialToggle) {
+                    specialToggle.addEventListener('click', () => {
+                        const turnOn = specialToggle.getAttribute('aria-checked') !== 'true';
+                        specialToggle.setAttribute('aria-checked', String(turnOn));
+                        setShowSpecialApps(turnOn);
+                    });
+                }
 
                 document.getElementById('suiteLogoutBtn').addEventListener('click', () => {
                     logout();
@@ -1217,6 +1296,9 @@ const SUITE_PROFILE_VERSION = '2.6';
         setPassword,
         refreshAccess,
         canSeeApp,
+        hasSpecialAccess,
+        getShowSpecialApps,
+        setShowSpecialApps,
         isAdmin,
         loadAppData,
         saveAppData,
